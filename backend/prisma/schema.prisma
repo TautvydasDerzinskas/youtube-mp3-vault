@@ -1,0 +1,84 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  displayName  String
+  language     String     @default("en")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  playlists    Playlist[]
+
+  @@map("users")
+}
+
+model Playlist {
+  id           String          @id @default(uuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  youtubeId    String
+  title        String
+  customName   String?
+  thumbnailUrl String?
+  videoCount   Int             @default(0)
+  syncStatus   String          @default("idle")
+  syncPaused   Boolean         @default(false)
+  lastSyncedAt DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  videos       PlaylistVideo[]
+
+  @@unique([userId, youtubeId])
+  @@map("playlists")
+}
+
+model PlaylistVideo {
+  id             String     @id @default(uuid())
+  playlistId     String
+  playlist       Playlist   @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  youtubeId      String
+  title          String
+  duration       Int?
+  thumbnailUrl   String?
+  position       Int
+  isAvailable    Boolean    @default(true)
+  downloadStatus String     @default("pending")
+  downloadError  String?
+  mediaFileId    String?
+  mediaFile      MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: Restrict)
+  fileSize       Int?
+  bitrate        Int?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([playlistId, youtubeId])
+  @@index([playlistId, position])
+  @@index([playlistId, downloadStatus])
+  @@map("playlist_videos")
+}
+
+/// Single shared, content-addressed copy of a downloaded YouTube video's MP3,
+/// keyed by youtubeId so the same video is stored once regardless of how many
+/// playlists/users reference it. PlaylistVideo.mediaFileId's onDelete: Restrict
+/// is what makes GC trivial — deleting a row here fails while any
+/// PlaylistVideo still points to it, succeeds once nothing does.
+model MediaFile {
+  id        String          @id @default(uuid())
+  youtubeId String          @unique
+  filename  String
+  fileSize  Int
+  bitrate   Int?
+  createdAt DateTime        @default(now())
+  videos    PlaylistVideo[]
+
+  @@map("media_files")
+}

@@ -1,0 +1,50 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import { config } from './config';
+import './services/passport';
+import authRouter from './routes/auth';
+import playlistsRouter from './routes/youtube';
+import { errorHandler } from './middleware/errorHandler';
+import { resetStuckSyncs } from './services/syncService';
+import { startScheduler } from './services/scheduler';
+import { ensureDemoUser } from './services/demoUser';
+import { isOnline, startConnectivityMonitor } from './services/connectivity';
+import { requireAuth } from './middleware/auth';
+
+const app = express();
+
+// Number of reverse-proxy hops in front of this app. Set to the highest hop
+// count across deployment topologies (nginx alone = 1; nginx behind an
+// external reverse proxy, e.g. Apache doing SSL termination on a NAS = 2) —
+// a shorter chain than this still resolves correctly, so this is safe for both.
+app.set('trust proxy', 2);
+app.use(helmet());
+app.use(cors({ origin: config.frontendUrl, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/status', requireAuth, (_req, res) => {
+  res.json({ online: isOnline() });
+});
+
+app.use('/api/auth', authRouter);
+app.use('/api/playlists', playlistsRouter);
+
+app.use(errorHandler);
+
+app.listen(config.port, '0.0.0.0', async () => {
+  console.log(`[server] Backend listening on port ${config.port} (${config.nodeEnv})`);
+  await resetStuckSyncs();
+  await ensureDemoUser();
+  startScheduler();
+  startConnectivityMonitor();
+});
+
+

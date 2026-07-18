@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ympv}
+      POSTGRES_USER: ${POSTGRES_USER:-ympv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ympv} -d ${POSTGRES_DB:-ympv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  slskd:
+    image: slskd/slskd:latest
+    container_name: slskd
+    restart: unless-stopped
+    ports:
+      - "5030:5030"      # Web UI / API
+      - "5031:5031"      # HTTPS UI
+      - "50300:50300"    # Soulseek incoming connections
+    environment:
+      - SLSKD_REMOTE_CONFIGURATION=true
+      - SLSKD_DOWNLOADS_DIR=/data/downloads
+      - SLSKD_INCOMPLETE_DIR=/data/incomplete
+      - SLSKD_SHARED_DIR=/data/shared
+    volumes:
+      - slskd_config:/app
+      - music_data:/data
+    networks:
+      - app-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ympv}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ympv}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      MUSIC_DIR: /data
+      SLSKD_URL: http://slskd:5030
+    volumes:
+      - music_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      slskd:
+        condition: service_started
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  postgres_data:
+  music_data:
+  slskd_config:
+
+networks:
+  app-net:
+    driver: bridge

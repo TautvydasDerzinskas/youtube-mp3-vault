@@ -1,0 +1,113 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading…"
+  },
+  "auth": {
+    "appName": "MusicVault",
+    "signIn": "Sign In",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Display Name",
+    "confirmPassword": "Confirm Password",
+    "createAccount": "Create Account",
+    "passwordHelper": "At least 8 characters",
+    "useDemoAccount": "Use demo account",
+    "signInFailed": "Sign in failed. Please check your credentials.",
+    "registrationFailed": "Registration failed. Please try again.",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "completingSignIn": "Completing sign-in…"
+  },
+  "nav": {
+    "playlists": "Playlists",
+    "logout": "Logout"
+  },
+  "playlists": {
+    "title": "Your Playlists",
+    "addPlaylist": "Add Playlist",
+    "failedToLoad": "Failed to load playlists.",
+    "offlineBanner": "This service can't reach the internet right now, so syncing is unavailable. Playback of already-downloaded songs still works fine.",
+    "emptyState": "No playlists yet. Click \"Add Playlist\" and paste a YouTube playlist URL.",
+    "downloadedCount": "{{count}}/{{total}} downloaded",
+    "failedCount": "{{count}} failed",
+    "syncing": "Syncing…",
+    "syncedAgo": "Synced {{time}}",
+    "neverSynced": "Never synced",
+    "notSynced": "Not synced",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "lastSyncFailed": "Last sync failed",
+    "syncPausedTooltip": "Automatic sync paused",
+    "pausingTooltip": "Waiting for the current song to finish before pausing",
+    "pausingChip": "Pausing…",
+    "pausedChip": "Paused",
+    "pausingMessage": "Pausing… waiting for \"{{title}}\" to finish syncing",
+    "pausingMessageGeneric": "Pausing… waiting for the current song to finish syncing",
+    "syncingMessage": "Syncing #{{position}}/{{total}} — {{title}}",
+    "rename": "Rename",
+    "syncNow": "Sync now",
+    "offlineUnavailable": "Unavailable — service is offline",
+    "retryFailed_one": "Retry {{count}} failed video",
+    "retryFailed_other": "Retry {{count}} failed videos",
+    "resumeSync": "Resume automatic sync",
+    "pauseSync": "Pause automatic sync",
+    "remove": "Remove",
+    "addDialog": {
+      "title": "Add Playlist",
+      "urlLabel": "YouTube Playlist URL",
+      "nameLabel": "Custom name (optional)",
+      "namePlaceholder": "Leave blank to use YouTube title",
+      "fetching": "Fetching playlist… large playlists may take a moment.",
+      "add": "Add",
+      "genericError": "Failed to add playlist. Check the URL and try again."
+    },
+    "renameDialog": {
+      "title": "Rename Playlist",
+      "displayNameLabel": "Display name",
+      "helperText": "Leave blank to use the YouTube title",
+      "genericError": "Failed to rename"
+    },
+    "videoList": {
+      "failedToLoad": "Failed to load videos.",
+      "empty": "No videos found.",
+      "unavailable": "Unavailable",
+      "play": "Play",
+      "pause": "Pause",
+      "watchOnYouTube": "Watch on YouTube",
+      "downloadMp3": "Download MP3",
+      "lowQuality": "Low source quality (~{{bitrate}}kbps)"
+    },
+    "miniPlayer": {
+      "close": "Close player"
+    },
+    "status": {
+      "pending": "pending",
+      "downloading": "downloading",
+      "done": "done",
+      "failed": "failed",
+      "removed": "removed"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "back": "Back to playlists",
+    "displayName": "Display Name",
+    "displayNameHelper": "Display name can't be changed",
+    "email": "Email",
+    "saveEmail": "Save Email",
+    "emailUpdated": "Email updated",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "savePassword": "Save Password",
+    "passwordUpdated": "Password updated",
+    "language": "Language",
+    "logout": "Logout",
+    "genericError": "Something went wrong. Please try again."
+  }
+}

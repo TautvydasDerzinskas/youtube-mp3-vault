@@ -1,0 +1,114 @@
+{
+  "common": {
+    "cancel": "Atšaukti",
+    "save": "Išsaugoti",
+    "loading": "Kraunama…"
+  },
+  "auth": {
+    "appName": "MusicVault",
+    "signIn": "Prisijungti",
+    "register": "Registruotis",
+    "email": "El. paštas",
+    "password": "Slaptažodis",
+    "displayName": "Rodomas vardas",
+    "confirmPassword": "Pakartokite slaptažodį",
+    "createAccount": "Sukurti paskyrą",
+    "passwordHelper": "Bent 8 simboliai",
+    "useDemoAccount": "Naudoti demonstracinę paskyrą",
+    "signInFailed": "Prisijungti nepavyko. Patikrinkite duomenis.",
+    "registrationFailed": "Registracija nepavyko. Bandykite dar kartą.",
+    "passwordsDoNotMatch": "Slaptažodžiai nesutampa",
+    "completingSignIn": "Baigiama prisijungti…"
+  },
+  "nav": {
+    "playlists": "Grojaraščiai",
+    "logout": "Atsijungti"
+  },
+  "playlists": {
+    "title": "Jūsų grojaraščiai",
+    "addPlaylist": "Pridėti grojaraštį",
+    "failedToLoad": "Nepavyko įkelti grojaraščių.",
+    "offlineBanner": "Šiuo metu paslauga neturi interneto ryšio, todėl sinchronizavimas negalimas. Jau atsisiųstų dainų grojimas veikia įprastai.",
+    "emptyState": "Grojaraščių dar nėra. Spustelėkite „Pridėti grojaraštį“ ir įklijuokite YouTube grojaraščio nuorodą.",
+    "downloadedCount": "Atsisiųsta: {{count}}/{{total}}",
+    "failedCount": "Nepavyko: {{count}}",
+    "syncing": "Sinchronizuojama…",
+    "syncedAgo": "Sinchronizuota {{time}}",
+    "neverSynced": "Dar nesinchronizuota",
+    "notSynced": "Nesinchronizuota",
+    "justNow": "Ką tik",
+    "minutesAgo": "prieš {{count}} min.",
+    "hoursAgo": "prieš {{count}} val.",
+    "daysAgo": "prieš {{count}} d.",
+    "lastSyncFailed": "Paskutinė sinchronizacija nepavyko",
+    "syncPausedTooltip": "Automatinė sinchronizacija pristabdyta",
+    "pausingTooltip": "Laukiama, kol baigsis dabartinės dainos sinchronizavimas, tada bus pristabdyta",
+    "pausingChip": "Stabdoma…",
+    "pausedChip": "Pristabdyta",
+    "pausingMessage": "Stabdoma… laukiama, kol baigsis „{{title}}“ sinchronizavimas",
+    "pausingMessageGeneric": "Stabdoma… laukiama, kol baigsis dabartinės dainos sinchronizavimas",
+    "syncingMessage": "Sinchronizuojama #{{position}}/{{total}} — {{title}}",
+    "rename": "Pervadinti",
+    "syncNow": "Sinchronizuoti dabar",
+    "offlineUnavailable": "Negalima — paslauga neprisijungusi prie interneto",
+    "retryFailed_one": "Pakartoti {{count}} nepavykusį vaizdo įrašą",
+    "retryFailed_few": "Pakartoti {{count}} nepavykusius vaizdo įrašus",
+    "retryFailed_other": "Pakartoti {{count}} nepavykusių vaizdo įrašų",
+    "resumeSync": "Tęsti automatinę sinchronizaciją",
+    "pauseSync": "Pristabdyti automatinę sinchronizaciją",
+    "remove": "Pašalinti",
+    "addDialog": {
+      "title": "Pridėti grojaraštį",
+      "urlLabel": "YouTube grojaraščio nuoroda",
+      "nameLabel": "Pasirinktinis pavadinimas (nebūtina)",
+      "namePlaceholder": "Palikite tuščią, kad būtų naudojamas YouTube pavadinimas",
+      "fetching": "Gaunamas grojaraštis… dideli grojaraščiai gali užtrukti.",
+      "add": "Pridėti",
+      "genericError": "Nepavyko pridėti grojaraščio. Patikrinkite nuorodą ir bandykite dar kartą."
+    },
+    "renameDialog": {
+      "title": "Pervadinti grojaraštį",
+      "displayNameLabel": "Rodomas pavadinimas",
+      "helperText": "Palikite tuščią, kad būtų naudojamas YouTube pavadinimas",
+      "genericError": "Nepavyko pervadinti"
+    },
+    "videoList": {
+      "failedToLoad": "Nepavyko įkelti vaizdo įrašų.",
+      "empty": "Vaizdo įrašų nerasta.",
+      "unavailable": "Nepasiekiamas",
+      "play": "Groti",
+      "pause": "Pristabdyti",
+      "watchOnYouTube": "Žiūrėti YouTube",
+      "downloadMp3": "Atsisiųsti MP3",
+      "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)"
+    },
+    "miniPlayer": {
+      "close": "Uždaryti grotuvą"
+    },
+    "status": {
+      "pending": "laukiama",
+      "downloading": "atsisiunčiama",
+      "done": "atlikta",
+      "failed": "nepavyko",
+      "removed": "pašalinta"
+    }
+  },
+  "profile": {
+    "title": "Profilis",
+    "back": "Grįžti į grojaraščius",
+    "displayName": "Rodomas vardas",
+    "displayNameHelper": "Rodomo vardo pakeisti negalima",
+    "email": "El. paštas",
+    "saveEmail": "Išsaugoti el. paštą",
+    "emailUpdated": "El. paštas atnaujintas",
+    "changePassword": "Keisti slaptažodį",
+    "currentPassword": "Dabartinis slaptažodis",
+    "newPassword": "Naujas slaptažodis",
+    "confirmNewPassword": "Pakartokite naują slaptažodį",
+    "savePassword": "Išsaugoti slaptažodį",
+    "passwordUpdated": "Slaptažodis atnaujintas",
+    "language": "Kalba",
+    "logout": "Atsijungti",
+    "genericError": "Įvyko klaida. Bandykite dar kartą."
+  }
+}

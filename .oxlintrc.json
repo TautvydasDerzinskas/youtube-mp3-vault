@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error"
+  },
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "env": { "builtin": true },
+  "ignorePatterns": ["**/dist/**", "**/node_modules/**"],
+  "overrides": [
+    {
+      "files": ["backend/**/*.ts"],
+      "plugins": ["typescript", "unicorn", "oxc", "import", "node"],
+      "env": { "node": true }
+    },
+    {
+      "files": ["frontend/**/*.ts", "frontend/**/*.tsx"],
+      "plugins": ["typescript", "unicorn", "oxc", "import", "react", "jsx-a11y"],
+      "env": { "browser": true }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "common": {
+    "cancel": "Anuluj",
+    "save": "Zapisz",
+    "loading": "Ładowanie…"
+  },
+  "auth": {
+    "appName": "MusicVault",
+    "signIn": "Zaloguj się",
+    "register": "Zarejestruj się",
+    "email": "E-mail",
+    "password": "Hasło",
+    "displayName": "Nazwa wyświetlana",
+    "confirmPassword": "Potwierdź hasło",
+    "createAccount": "Utwórz konto",
+    "passwordHelper": "Co najmniej 8 znaków",
+    "useDemoAccount": "Użyj konta demonstracyjnego",
+    "signInFailed": "Logowanie nie powiodło się. Sprawdź dane logowania.",
+    "registrationFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",
+    "passwordsDoNotMatch": "Hasła nie są zgodne",
+    "completingSignIn": "Kończenie logowania…"
+  },
+  "nav": {
+    "playlists": "Playlisty",
+    "logout": "Wyloguj się"
+  },
+  "playlists": {
+    "title": "Twoje playlisty",
+    "addPlaylist": "Dodaj playlistę",
+    "failedToLoad": "Nie udało się załadować playlist.",
+    "offlineBanner": "Usługa nie ma teraz połączenia z internetem, więc synchronizacja jest niedostępna. Odtwarzanie już pobranych utworów nadal działa normalnie.",
+    "emptyState": "Nie masz jeszcze żadnych playlist. Kliknij „Dodaj playlistę” i wklej link do playlisty YouTube.",
+    "downloadedCount": "Pobrano: {{count}}/{{total}}",
+    "failedCount": "Nieudane: {{count}}",
+    "syncing": "Synchronizowanie…",
+    "syncedAgo": "Zsynchronizowano {{time}}",
+    "neverSynced": "Nigdy nie synchronizowano",
+    "notSynced": "Niezsynchronizowane",
+    "justNow": "Przed chwilą",
+    "minutesAgo": "{{count}} min temu",
+    "hoursAgo": "{{count}} godz. temu",
+    "daysAgo": "{{count}} dni temu",
+    "lastSyncFailed": "Ostatnia synchronizacja nie powiodła się",
+    "syncPausedTooltip": "Automatyczna synchronizacja wstrzymana",
+    "pausingTooltip": "Oczekiwanie na zakończenie synchronizacji bieżącego utworu przed wstrzymaniem",
+    "pausingChip": "Wstrzymywanie…",
+    "pausedChip": "Wstrzymano",
+    "pausingMessage": "Wstrzymywanie… oczekiwanie na zakończenie synchronizacji „{{title}}”",
+    "pausingMessageGeneric": "Wstrzymywanie… oczekiwanie na zakończenie synchronizacji bieżącego utworu",
+    "syncingMessage": "Synchronizowanie #{{position}}/{{total}} — {{title}}",
+    "rename": "Zmień nazwę",
+    "syncNow": "Synchronizuj teraz",
+    "offlineUnavailable": "Niedostępne — usługa jest offline",
+    "retryFailed_one": "Ponów {{count}} nieudany film",
+    "retryFailed_few": "Ponów {{count}} nieudane filmy",
+    "retryFailed_many": "Ponów {{count}} nieudanych filmów",
+    "retryFailed_other": "Ponów {{count}} nieudanych filmów",
+    "resumeSync": "Wznów automatyczną synchronizację",
+    "pauseSync": "Wstrzymaj automatyczną synchronizację",
+    "remove": "Usuń",
+    "addDialog": {
+      "title": "Dodaj playlistę",
+      "urlLabel": "Link do playlisty YouTube",
+      "nameLabel": "Własna nazwa (opcjonalnie)",
+      "namePlaceholder": "Pozostaw puste, aby użyć nazwy z YouTube",
+      "fetching": "Pobieranie playlisty… duże playlisty mogą chwilę potrwać.",
+      "add": "Dodaj",
+      "genericError": "Nie udało się dodać playlisty. Sprawdź link i spróbuj ponownie."
+    },
+    "renameDialog": {
+      "title": "Zmień nazwę playlisty",
+      "displayNameLabel": "Nazwa wyświetlana",
+      "helperText": "Pozostaw puste, aby użyć nazwy z YouTube",
+      "genericError": "Nie udało się zmienić nazwy"
+    },
+    "videoList": {
+      "failedToLoad": "Nie udało się załadować filmów.",
+      "empty": "Nie znaleziono żadnych filmów.",
+      "unavailable": "Niedostępny",
+      "play": "Odtwórz",
+      "pause": "Wstrzymaj",
+      "watchOnYouTube": "Obejrzyj na YouTube",
+      "lowQuality": "Niska jakość źródła (~{{bitrate}}kbps)",
+      "downloadMp3": "Pobierz MP3"
+    },
+    "miniPlayer": {
+      "close": "Zamknij odtwarzacz"
+    },
+    "status": {
+      "pending": "oczekuje",
+      "downloading": "pobieranie",
+      "done": "gotowe",
+      "failed": "nieudane",
+      "removed": "usunięte"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "back": "Wróć do playlist",
+    "displayName": "Nazwa wyświetlana",
+    "displayNameHelper": "Nazwy wyświetlanej nie można zmienić",
+    "email": "E-mail",
+    "saveEmail": "Zapisz e-mail",
+    "emailUpdated": "E-mail zaktualizowany",
+    "changePassword": "Zmień hasło",
+    "currentPassword": "Obecne hasło",
+    "newPassword": "Nowe hasło",
+    "confirmNewPassword": "Potwierdź nowe hasło",
+    "savePassword": "Zapisz hasło",
+    "passwordUpdated": "Hasło zaktualizowane",
+    "language": "Język",
+    "logout": "Wyloguj się",
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie."
+  }
+}
