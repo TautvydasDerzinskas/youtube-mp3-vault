@@ -30,5 +30,5 @@ export async function analyzeAudio(filePath: string): Promise<AudioAnalysisResul
     return null;
   }
 
-  return await res.json();
+  return (await res.json()) as AudioAnalysisResult;
 }
