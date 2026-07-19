@@ -136,7 +136,9 @@ docker-compose down -v          # v1
 
 ## Deploying published images (e.g. on OpenMediaVault)
 
-Every push to `main`/`master` that passes lint automatically builds and publishes `backend` and `frontend` images to GitHub Container Registry (see `.github/workflows/docker-publish.yml`) — no local build needed on the machine that runs them. The same workflow also builds a debug-signed Android APK from `mobile/` and uploads it as a workflow artifact (see the **Mobile** section below).
+Every push to `main`/`master` that passes lint automatically builds and publishes `backend`/`frontend`/`audio-analysis` images to GitHub Container Registry, and builds a debug-signed Android APK from `mobile/` (see the **Mobile** section below) — but each only runs if that specific subfolder actually changed in the push (via `dorny/paths-filter`, see `.github/workflows/docker-publish.yml`), so e.g. a frontend-only change doesn't rebuild and republish the other three untouched images.
+
+Need to force-republish one that *didn't* change (e.g. after a registry hiccup, or to pick up a base-image security patch) — go to the repo's **Actions → Build & Publish → Run workflow**, pick a `component` (`backend` / `frontend` / `audio-analysis` / `mobile` / `all`), and run it manually; that bypasses the changed-files check entirely for whichever you pick.
 
 `docker-compose.prod.yml` is the same stack as above, but with `image:` references instead of `build:`, meant for a host (like an OMV Compose plugin) that only pulls images:
 
