@@ -20,6 +20,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { SidebarAudioGlow } from './SidebarAudioGlow';
 
 interface SidebarProps {
   width: number;
@@ -57,9 +58,10 @@ export default function Sidebar({ width }: SidebarProps) {
       }}
     >
       {/* Logo */}
-      <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 28 }} />
-        <Typography variant="h6" fontWeight={700} color="primary.main">
+      <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1, position: 'relative', overflow: 'hidden' }}>
+        <SidebarAudioGlow />
+        <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 28, position: 'relative' }} />
+        <Typography variant="h6" fontWeight={700} color="primary.main" sx={{ position: 'relative' }}>
           {t('auth.appName')}
         </Typography>
       </Box>

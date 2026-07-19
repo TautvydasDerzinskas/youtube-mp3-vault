@@ -10,6 +10,16 @@ interface PlayerContextType {
   isAudioPlaying: boolean;
   setIsAudioPlaying: (playing: boolean) => void;
   audioRef: React.RefObject<HTMLAudioElement>;
+  /**
+   * Web Audio analyser wired to the shared <audio> element, for anything
+   * that wants to react to what's currently playing (e.g. the sidebar's
+   * glow effect) — null whenever nothing is playing, or if Web Audio isn't
+   * available/failed to initialize. Deliberately NOT a per-frame number:
+   * this object reference only changes on play/stop, so consumers pull
+   * frequency data themselves in their own rAF loop instead of forcing
+   * every context consumer in the app to re-render 60 times a second.
+   */
+  analyserNode: AnalyserNode | null;
   hasNext: boolean;
   hasPrevious: boolean;
   /**
@@ -41,15 +51,57 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<{ playlistId: string; video: PlaylistVideo } | null>(null);
   const [queue, setQueue] = useState<PlaylistVideo[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentRef = useRef(current);
   currentRef.current = current;
+  // Web Audio's createMediaElementSource can only ever be called once per
+  // <audio> element (throws on a second call), so this remembers the graph
+  // per element to survive effect re-runs — most notably React StrictMode's
+  // dev-only setup→cleanup→setup double-invoke, which would otherwise crash.
+  const audioGraphRef = useRef<{ el: HTMLAudioElement; ctx: AudioContext; analyser: AnalyserNode } | null>(null);
 
   useEffect(() => {
     if (!current || !audioRef.current) return;
     audioRef.current.src = playlistsApi.streamUrl(current.playlistId, current.video.id);
     audioRef.current.play().catch(() => {});
   }, [current]);
+
+  // Purely cosmetic (drives the sidebar's playback glow) — never allowed to
+  // affect real playback, so every failure mode here just leaves the effect
+  // off rather than throwing. Keyed on "is a session active" rather than on
+  // `current` itself, so it sets up once per mini-player mount and survives
+  // track-to-track changes within that session instead of tearing down and
+  // recreating the AudioContext on every skip.
+  const isPlayingSession = Boolean(current);
+  useEffect(() => {
+    if (!isPlayingSession) return;
+    const audioEl = audioRef.current;
+    if (!audioEl) return;
+
+    try {
+      let graph = audioGraphRef.current;
+      if (!graph || graph.el !== audioEl) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        const ctx: AudioContext = new AudioContextClass();
+        const source = ctx.createMediaElementSource(audioEl);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.8;
+        source.connect(analyser);
+        analyser.connect(ctx.destination);
+        graph = { el: audioEl, ctx, analyser };
+        audioGraphRef.current = graph;
+      }
+      if (graph.ctx.state === 'suspended') graph.ctx.resume().catch(() => {});
+      setAnalyserNode(graph.analyser);
+    } catch {
+      setAnalyserNode(null);
+    }
+
+    return () => setAnalyserNode(null);
+  }, [isPlayingSession]);
 
   const handleTogglePlay = useCallback((playlistId: string, video: PlaylistVideo, queueOverride?: PlaylistVideo[]) => {
     const prev = currentRef.current;
@@ -113,7 +165,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const value: PlayerContextType = {
     nowPlaying: current ? { playlistId: current.playlistId, videoId: current.video.id } : null,
     nowPlayingVideo: current?.video,
-    isAudioPlaying, setIsAudioPlaying, audioRef,
+    isAudioPlaying, setIsAudioPlaying, audioRef, analyserNode,
     hasNext, hasPrevious,
     handleTogglePlay, playNext, playPrevious, handleTrackEnded, stopIfPlaylist, handleClosePlayer,
   };
