@@ -110,6 +110,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
             thumbnailUrl: v.thumbnailUrl,
             position: v.position,
             isAvailable: v.isAvailable,
+            channelName: v.channelName,
             downloadStatus: 'pending',
           })),
           skipDuplicates: true,

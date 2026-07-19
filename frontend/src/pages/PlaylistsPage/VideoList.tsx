@@ -70,7 +70,7 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
                   fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' } }}
               secondary={
                 <Typography variant="caption" color="text.secondary">
-                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genre ? ` · ${v.genre}` : ''}{!v.isAvailable ? ` · ${t('playlists.videoList.unavailable')}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
+                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genre ? ` · ${v.genre}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{!v.isAvailable ? ` · ${t('playlists.videoList.unavailable')}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
                 </Typography>
               }
             />

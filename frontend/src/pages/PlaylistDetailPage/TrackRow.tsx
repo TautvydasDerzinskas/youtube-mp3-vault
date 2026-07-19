@@ -54,6 +54,10 @@ export function TrackRow({
         </Typography>
       )}
 
+      <Typography variant="caption" color="text.secondary" sx={{ width: 40, flexShrink: 0, textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+        {v.releaseYear ?? ''}
+      </Typography>
+
       <Typography variant="caption" color="text.secondary" sx={{ width: 44, flexShrink: 0, textAlign: 'right' }}>
         {formatDuration(v.duration)}
       </Typography>

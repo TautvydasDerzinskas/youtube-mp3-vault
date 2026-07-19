@@ -57,6 +57,9 @@ model PlaylistVideo {
   thumbnailUrl   String?
   position       Int
   isAvailable    Boolean    @default(true)
+  // The uploading channel, captured at sync time — used as an artist fallback
+  // when the title itself doesn't look like "Artist - Title" (see musicbrainz.ts).
+  channelName    String?
   downloadStatus String     @default("pending")
   downloadError  String?
   mediaFileId    String?
@@ -74,6 +77,7 @@ model PlaylistVideo {
   album          String?
   trackNumber    Int?
   genre          String?
+  releaseYear    Int?
   mbRecordingId  String?
   metadataStatus String     @default("pending") // pending | found | not_found | error
   metadataFetchedAt DateTime?

@@ -51,13 +51,13 @@ async function loop(): Promise<void> {
     }
 
     try {
-      const meta = await lookupTrackMetadata(video.title);
+      const meta = await lookupTrackMetadata(video.title, video.channelName);
       await prisma.playlistVideo.update({
         where: { id: video.id },
         data: meta
           ? {
               artist: meta.artist, album: meta.album, trackNumber: meta.trackNumber,
-              genre: meta.genre, mbRecordingId: meta.mbRecordingId,
+              genre: meta.genre, releaseYear: meta.releaseYear, mbRecordingId: meta.mbRecordingId,
               metadataStatus: 'found', metadataFetchedAt: new Date(),
             }
           : { metadataStatus: 'not_found', metadataFetchedAt: new Date() },

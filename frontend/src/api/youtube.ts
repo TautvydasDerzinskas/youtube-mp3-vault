@@ -34,6 +34,7 @@ export interface PlaylistVideo {
   album: string | null;
   trackNumber: number | null;
   genre: string | null;
+  releaseYear: number | null;
   metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
 }
 

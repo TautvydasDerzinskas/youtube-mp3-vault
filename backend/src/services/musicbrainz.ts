@@ -13,6 +13,7 @@ export interface TrackMetadata {
   album: string | null;
   trackNumber: number | null;
   genre: string | null;
+  releaseYear: number | null;
   mbRecordingId: string | null;
 }
 
@@ -40,18 +41,60 @@ async function mbFetch(path: string): Promise<any | null> {
   }
 }
 
-// Strips common YouTube music-video decorations ("(Official Video)", "[HD]", …)
-// and splits the extremely common "Artist - Title" upload convention. Falls
-// back to treating the whole (cleaned) string as the title when there's no
-// dash, which still gives MusicBrainz something reasonable to search on.
-function splitArtistTitle(rawTitle: string): { artist: string | null; title: string } {
+// Channel-name "branding" noise that doesn't belong in an artist name — some
+// of these only ever appear as a whole suffix word (Official, VEVO, Music, …),
+// glued on with or without a separator ("MadonnaVEVO", "Madonna - Official").
+// The while-loop below strips these repeatedly, so compound suffixes like
+// "MadonnaOfficialMusic" resolve in two passes without needing every
+// combination spelled out here.
+const CHANNEL_NOISE_SUFFIXES = ['vevo', 'official', 'music', 'records', 'channel'];
+
+// YouTube auto-generates "<Artist> - Topic" channels for tracks it's matched
+// to a rights holder (album uploads, not user re-uploads) — when present,
+// that prefix *is* the artist name verbatim, straight from YouTube's own
+// catalog match, more reliable than anything we'd derive from the title.
+function cleanChannelName(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+
+  const topicMatch = raw.match(/^(.+?)\s*-\s*Topic$/i);
+  if (topicMatch) return topicMatch[1].trim() || null;
+
+  let cleaned = raw.trim();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const word of CHANNEL_NOISE_SUFFIXES) {
+      const re = new RegExp(`[\\s\\-_]*${word}$`, 'i');
+      if (re.test(cleaned)) {
+        cleaned = cleaned.replace(re, '').trim();
+        changed = true;
+      }
+    }
+  }
+  return cleaned || null;
+}
+
+// Strips common YouTube music-video decorations ("(Official Video)", "[HD]", …),
+// then tries a handful of "Artist <separator> Title" conventions (dash, pipe,
+// tilde, colon, or "Title by Artist"). When nothing matches — a plain track
+// title with no artist embedded in it at all — falls back to the uploading
+// channel's name, since that's very often the artist's own channel.
+function parseArtistAndTitle(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
   const cleaned = rawTitle
     .replace(/[([][^)\]]*(official|video|audio|lyrics?|hd|4k|visualizer|remaster\w*)[^)\]]*[)\]]/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  const match = cleaned.match(/^(.+?)\s[-–—]\s(.+)$/);
+
+  let match = cleaned.match(/^(.{1,60}?)\s*[-–—|~]\s*(.+)$/);
   if (match) return { artist: match[1].trim(), title: match[2].trim() };
-  return { artist: null, title: cleaned };
+
+  match = cleaned.match(/^(.{1,80}?):\s*(.+)$/);
+  if (match) return { artist: match[1].trim(), title: match[2].trim() };
+
+  match = cleaned.match(/^(.+?)\s+by\s+(.{1,60})$/i);
+  if (match) return { artist: match[2].trim(), title: match[1].trim() };
+
+  return { artist: cleanChannelName(channelName), title: cleaned };
 }
 
 // Escapes Lucene special characters for MusicBrainz's search query syntax.
@@ -61,16 +104,18 @@ function escapeLucene(value: string): string {
 
 /**
  * Best-effort MusicBrainz lookup for a single track, keyed off the YouTube
- * video title. Two throttled requests when a match is found: a search to find
- * the closest recording, then a lookup-by-MBID (the only reliable way to get
- * genres + release/track info back from MusicBrainz) for the details.
+ * video title (and, when the title alone doesn't look like "Artist - Title",
+ * the uploading channel's name as an artist fallback). Two throttled requests
+ * when a match is found: a search to find the closest recording, then a
+ * lookup-by-MBID (the only reliable way to get genres + release/track info
+ * back from MusicBrainz) for the details.
  * Returns null on no match, no connectivity, or any request/parsing failure —
  * callers treat that as "couldn't enrich this one", never as a hard error.
  */
-export async function lookupTrackMetadata(rawTitle: string): Promise<TrackMetadata | null> {
+export async function lookupTrackMetadata(rawTitle: string, channelName: string | null = null): Promise<TrackMetadata | null> {
   if (!isOnline()) return null;
 
-  const { artist, title } = splitArtistTitle(rawTitle);
+  const { artist, title } = parseArtistAndTitle(rawTitle, channelName);
   if (!title) return null;
 
   const queryParts = [`recording:"${escapeLucene(title)}"`];
@@ -107,7 +152,7 @@ export async function lookupTrackMetadata(rawTitle: string): Promise<TrackMetada
 
   const detail = await mbFetch(`/recording/${best.id}?inc=genres+releases+media&fmt=json`);
   if (!detail) {
-    return { artist: fallbackArtist, album: null, trackNumber: null, genre: null, mbRecordingId: best.id };
+    return { artist: fallbackArtist, album: null, trackNumber: null, genre: null, releaseYear: null, mbRecordingId: best.id };
   }
 
   const release = detail.releases?.[0];
@@ -117,11 +162,18 @@ export async function lookupTrackMetadata(rawTitle: string): Promise<TrackMetada
   const genreList: Array<{ name?: string; count?: number }> = Array.isArray(detail.genres) ? detail.genres : [];
   const topGenre = [...genreList].sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0]?.name ?? null;
 
+  // "first-release-date" is on the recording (i.e. the song's original release
+  // year, regardless of which particular release/compilation we matched to) —
+  // prefer it over the matched release's own (possibly much later) date.
+  const releaseDate: string | undefined = detail['first-release-date'] || release?.date;
+  const releaseYear = releaseDate ? parseInt(releaseDate.slice(0, 4), 10) : null;
+
   return {
     artist: detail['artist-credit']?.[0]?.name ?? fallbackArtist,
     album: release?.title ?? null,
     trackNumber: Number.isFinite(trackNumber) ? trackNumber : null,
     genre: topGenre,
+    releaseYear: Number.isFinite(releaseYear) ? releaseYear : null,
     mbRecordingId: best.id,
   };
 }

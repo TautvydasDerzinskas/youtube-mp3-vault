@@ -223,6 +223,7 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
           thumbnailUrl: v.thumbnailUrl,
           position: v.position,
           isAvailable: v.isAvailable,
+          channelName: v.channelName,
           downloadStatus: 'pending',
         })),
         skipDuplicates: true,

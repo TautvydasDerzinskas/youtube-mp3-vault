@@ -7,6 +7,7 @@ export interface VideoEntry {
   thumbnailUrl: string | null;
   position: number;
   isAvailable: boolean;
+  channelName: string | null;
 }
 
 export interface PlaylistInfo {
@@ -114,6 +115,7 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
         thumbnailUrl: pickThumbnail(e.thumbnails) ?? (e.thumbnail as string | null) ?? null,
         position: typeof e.playlist_index === 'number' ? (e.playlist_index as number) : idx + 1,
         isAvailable: typeof e.id === 'string' && e.id.length > 0,
+        channelName: (e.channel as string | undefined) || (e.uploader as string | undefined) || null,
       }));
 
       resolve({
