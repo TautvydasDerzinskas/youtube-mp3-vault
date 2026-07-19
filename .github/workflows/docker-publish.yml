@@ -182,6 +182,10 @@ jobs:
     needs: changes
     if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
+    # Beyond the default contents: read — needed to create/update the
+    # GitHub Release below.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -190,6 +194,12 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: mobile/package-lock.json
+
+      - name: Compute short SHA
+        id: sha
+        env:
+          SHA: ${{ github.sha }}
+        run: echo "short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         working-directory: mobile
@@ -206,21 +216,60 @@ jobs:
         working-directory: mobile
         run: npx expo prebuild --platform android
 
+      # The Expo/RN template's debug.keystore is a static file bundled with
+      # the tooling itself — the exact same key shipped in every
+      # unconfigured RN/Expo project, so it carries no real signing
+      # identity. This overwrites it with a private one only this repo's
+      # maintainer holds (generated locally, stored as this secret — see
+      # README), so consecutive builds actually share a stable identity and
+      # install as an in-place update instead of needing an uninstall each
+      # time. Same alias/password convention build.gradle already expects
+      # (androiddebugkey / android), so no build.gradle changes needed —
+      # just swap the file's bytes before the build reads it.
+      - name: Install stable signing keystore
+        working-directory: mobile
+        env:
+          KEYSTORE_B64: ${{ secrets.MOBILE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::MOBILE_KEYSTORE_BASE64 secret not set — falling back to the public template debug key, so this build won't share a signing identity with prior/future builds. See README's Mobile section."
+          else
+            echo "$KEYSTORE_B64" | base64 -d > android/app/debug.keystore
+          fi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
 
-      # Debug-signed, using Android's well-known debug keystore — good
-      # enough to sideload and test, not for Play Store distribution. Add a
-      # release keystore + signing config here if that's ever needed.
+      # Debug-signed (see the signing-keystore step above for what actually
+      # backs that now) — fine to sideload, not for Play Store distribution.
+      # EXPO_PUBLIC_* vars here are read by src/hooks/useUpdateCheck.ts,
+      # baked into the JS bundle at this step (Metro bundling runs as part
+      # of this gradle task) so a running app can identify its own build and
+      # compare it against the GitHub Release published below.
       - name: Build debug APK
         working-directory: mobile/android
+        env:
+          EXPO_PUBLIC_BUILD_SHA: ${{ steps.sha.outputs.short }}
+          EXPO_PUBLIC_GITHUB_REPO: ${{ github.repository }}
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Rename APK
         run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk YoutubeVault-debug.apk
+
+      # The release this build's own useUpdateCheck() (see above) compares
+      # itself against on every other user's already-installed app. Tag
+      # includes the short SHA (not app.json's static version field) so
+      # every build gets its own release with no manual version bumping —
+      # re-running for the same commit just updates that release in place.
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-${{ steps.sha.outputs.short }}
+          name: Mobile ${{ steps.sha.outputs.short }}
+          files: YoutubeVault-debug.apk
 
       - uses: actions/upload-artifact@v4
         with:

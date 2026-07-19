@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 
 // Placeholder landing screen — just proves the login → persisted-session
@@ -8,17 +9,15 @@ export function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Welcome back, {user?.displayName}.</Text>
-      <Pressable style={styles.button} onPress={() => logout()}>
-        <Text style={styles.buttonText}>Log out</Text>
-      </Pressable>
+      <Text variant="titleMedium" style={styles.text}>Welcome back, {user?.displayName}.</Text>
+      <Button mode="outlined" onPress={() => logout()}>
+        Log out
+      </Button>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 16, backgroundColor: '#121212' },
-  text: { fontSize: 18, color: '#fff' },
-  button: { backgroundColor: '#90caf9', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20 },
-  buttonText: { color: '#121212', fontSize: 16, fontWeight: '700' },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 16 },
+  text: { marginBottom: 8 },
 });

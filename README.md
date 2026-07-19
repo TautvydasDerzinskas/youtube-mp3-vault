@@ -49,6 +49,8 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 **Implemented**
 - **React Native app (Expo, Android-focused for now)** — lives in `mobile/`, linted by the same root oxlint config as `backend/`/`frontend/`
 - **Login, persisted session** — signs in against the existing `/api/auth/login` + `/api/auth/me` endpoints; the JWT is stored in `expo-secure-store` (Android Keystore-backed) so the session survives app restarts and only ends on explicit logout
+- **React Native Paper, themed to match the web app** — MUI itself is web/DOM-only and can't run in React Native; Paper is the RN equivalent (Material Design components), themed with the same dark palette as `frontend/src/theme.ts` (red primary, near-black backgrounds)
+- **In-app update notice** — a CI-built app checks GitHub Releases on launch and shows a dismissible snackbar if a newer build exists (see **In-app "update available" notice** under Running locally → Mobile, below)
 
 **Todo**
 - [ ] **Playlist sync** — browse synced playlists and download their MP3s to the device (backend already exposes `GET /api/playlists/:id/manifest` for this — see API reference below)
@@ -63,7 +65,7 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 | Layer | Technology |
 |---|---|
 | Frontend | React 18, TypeScript, Vite, Material UI v6, react-i18next |
-| Mobile | React Native (Expo), TypeScript — Android-focused |
+| Mobile | React Native (Expo), TypeScript, React Native Paper — Android-focused |
 | Backend | Node.js, Express, TypeScript, Passport.js |
 | Database | PostgreSQL 16 via Prisma ORM |
 | Scraping & downloads | yt-dlp (Python, installed in the backend container) |
@@ -223,7 +225,28 @@ By default (no `.env` needed) the app points at the self-hosted instance's real 
 
 > **Node version:** react-native/Metro in this Expo SDK want Node `^20.19.4 || ^22.13.0` — a couple patch versions ahead of the `^20.19.0` minimum the rest of the repo tolerates. If `npm install` here prints `EBADENGINE` warnings, bump your local Node before troubleshooting anything else.
 
-**CI builds an installable APK on every push to `main`/`master`** (alongside the Docker publish job — see `.github/workflows/docker-publish.yml`'s `android-apk` job): it runs `expo prebuild` to generate the native Android project fresh, then `./gradlew assembleDebug`. The result is debug-signed (Android's well-known debug keystore) — fine to sideload onto a device for testing, not for Play Store distribution — and shows up as a downloadable `YoutubeVault-debug-apk` artifact on the workflow run (kept for 30 days).
+**CI builds an installable APK** on every push to `main`/`master` that touches `mobile/` (or a manual dispatch — see above), alongside the Docker publish jobs: it runs `expo prebuild` to generate the native Android project fresh, then `./gradlew assembleDebug`. It's debug-signed — fine to sideload, not for Play Store distribution — and shows up two ways: a `YoutubeVault-debug-apk` workflow artifact (kept 30 days, handy for a specific CI run), and a [GitHub Release](../../releases) tagged `mobile-<short-sha>` with the APK attached (kept indefinitely — this is what the app's own update check reads, see below).
+
+#### Stable signing key (required for in-place updates)
+
+Without this, the app still builds and installs fine — it just falls back to the debug keystore bundled with every unconfigured Expo/RN project (a publicly known key, not unique to this app), so installing a newer build over an older one fails with "conflicts with an existing package" and forces an uninstall (losing the saved login) each time. To fix that, generate a private keystore **on your own machine** (never commit it, never paste it anywhere but the GitHub secret below):
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 \
+  -keystore mobile-release.keystore \
+  -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+  -storepass android -keypass android \
+  -dname "CN=YoutubeVault, OU=Personal, O=Personal, L=Unknown, ST=Unknown, C=US"
+
+base64 -i mobile-release.keystore | pbcopy   # macOS — copies to clipboard
+# base64 -w0 mobile-release.keystore          # Linux — prints to stdout instead
+```
+
+Add the copied value as a repo secret named `MOBILE_KEYSTORE_BASE64` (**Settings → Secrets and variables → Actions → New repository secret**). Keep `mobile-release.keystore` itself somewhere safe (password manager, encrypted backup) — losing it means every future build gets a new identity again, breaking the update chain for whoever already has it installed.
+
+#### In-app "update available" notice
+
+The app embeds its own build's short commit SHA at build time (`EXPO_PUBLIC_BUILD_SHA`, set by the `android-apk` job) and, on launch, checks the latest GitHub Release's tag against it (`src/hooks/useUpdateCheck.ts`) — a mismatch shows a dismissible "a newer version is available" snackbar with a link to the release. Best-effort only: no internet, rate-limited, or a locally-run dev build (`expo start`, no `EXPO_PUBLIC_BUILD_SHA` set) just means no banner, never an error.
 
 ---
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import {
-  View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LoginScreen() {
@@ -26,41 +25,35 @@ export function LoginScreen() {
   const canSubmit = email.trim().length > 0 && password.length > 0 && !loading;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
-        <Text style={styles.title}>YoutubeVault</Text>
+        <Text variant="headlineMedium" style={styles.title}>YoutubeVault</Text>
 
         <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#888"
+          mode="outlined"
+          label="Email"
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
+          style={styles.input}
         />
         <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#888"
+          mode="outlined"
+          label="Password"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
+          style={styles.input}
         />
+        <HelperText type="error" visible={error != null}>
+          {error}
+        </HelperText>
 
-        {error && <Text style={styles.error}>{error}</Text>}
-
-        <Pressable
-          style={[styles.button, !canSubmit && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={!canSubmit}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign In</Text>}
-        </Pressable>
+        <Button mode="contained" onPress={handleSubmit} loading={loading} disabled={!canSubmit}>
+          Sign In
+        </Button>
       </View>
     </KeyboardAvoidingView>
   );
@@ -68,14 +61,7 @@ export function LoginScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  container: { flex: 1, justifyContent: 'center', padding: 24, gap: 12, backgroundColor: '#121212' },
-  title: { fontSize: 28, fontWeight: '700', textAlign: 'center', color: '#fff', marginBottom: 24 },
-  input: {
-    borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 8, padding: 14,
-    fontSize: 16, color: '#fff', backgroundColor: '#1e1e1e',
-  },
-  button: { backgroundColor: '#90caf9', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 8 },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#121212', fontSize: 16, fontWeight: '700' },
-  error: { color: '#f44336', textAlign: 'center' },
+  container: { flex: 1, justifyContent: 'center', padding: 24 },
+  title: { textAlign: 'center', marginBottom: 24 },
+  input: { marginBottom: 4 },
 });
