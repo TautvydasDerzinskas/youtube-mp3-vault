@@ -4,6 +4,11 @@ import { playlistsApi, Playlist, PlaylistVideo } from '../../../api/youtube';
 
 export type GenreCount = { genre: string; count: number };
 
+// Synthetic bucket for tracks with no genre — either MusicBrainz enrichment
+// hasn't run yet, found no match, or matched a recording with no genre tags
+// of its own. "none" isn't a real MusicBrainz genre, so it can't collide.
+export const NO_GENRE_KEY = 'none';
+
 const GENRES_PARAM = 'genres';
 
 function parseGenres(raw: string | null): Set<string> {
@@ -63,12 +68,17 @@ export function usePlaylistDetail() {
 
   const genreCounts = useMemo((): GenreCount[] => {
     const counts = new Map<string, number>();
+    let noGenreCount = 0;
     for (const v of currentVideos) {
       if (v.genre) counts.set(v.genre, (counts.get(v.genre) ?? 0) + 1);
+      else noGenreCount++;
     }
-    return [...counts.entries()]
+    const sorted = [...counts.entries()]
       .map(([genre, count]) => ({ genre, count }))
       .sort((a, b) => b.count - a.count || a.genre.localeCompare(b.genre));
+    // Always last — it's a fallback bucket, not a genre competing on frequency.
+    if (noGenreCount > 0) sorted.push({ genre: NO_GENRE_KEY, count: noGenreCount });
+    return sorted;
   }, [currentVideos]);
 
   // Order tracks were actually added to this library (immutable, set once at
@@ -76,7 +86,7 @@ export function usePlaylistDetail() {
   const filteredTracks = useMemo(() => {
     const filtered = selectedGenres.size === 0
       ? currentVideos
-      : currentVideos.filter(v => v.genre && selectedGenres.has(v.genre));
+      : currentVideos.filter(v => selectedGenres.has(v.genre ?? NO_GENRE_KEY));
     return [...filtered].sort((a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime());
   }, [currentVideos, selectedGenres]);
 

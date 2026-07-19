@@ -120,6 +120,7 @@
       "syncedCount": "{{count}} zsynchronizowanych",
       "filterByGenre": "Filtruj wg gatunku:",
       "clearGenreFilter": "Wyczyść filtr gatunków",
+      "noGenre": "Bez gatunku ({{count}})",
       "noTracks": "Żaden utwór nie pasuje do wybranych gatunków."
     }
   },

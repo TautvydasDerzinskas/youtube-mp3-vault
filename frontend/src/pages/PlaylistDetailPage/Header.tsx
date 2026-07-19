@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
-import { GenreCount } from './hooks/usePlaylistDetail';
+import { GenreCount, NO_GENRE_KEY } from './hooks/usePlaylistDetail';
 
 interface HeaderProps {
   playlist: Playlist;
@@ -56,14 +56,17 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
             </Typography>
             {genreCounts.map(({ genre, count }) => {
               const selected = selectedGenres.has(genre);
+              const isNoGenre = genre === NO_GENRE_KEY;
+              const label = isNoGenre ? t('playlists.detail.noGenre', { count }) : `${genre} (${count})`;
               return (
                 <Chip
                   key={genre}
-                  label={`${genre} (${count})`}
+                  label={label}
                   size="small"
                   onClick={() => onToggleGenre(genre)}
                   color={selected ? 'primary' : 'default'}
                   variant={selected ? 'filled' : 'outlined'}
+                  sx={isNoGenre ? { fontStyle: 'italic' } : undefined}
                 />
               );
             })}

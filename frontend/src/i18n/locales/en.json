@@ -118,6 +118,7 @@
       "syncedCount": "{{count}} synced",
       "filterByGenre": "Filter by genre:",
       "clearGenreFilter": "Clear genre filter",
+      "noGenre": "No genre ({{count}})",
       "noTracks": "No tracks match the selected genres."
     }
   },

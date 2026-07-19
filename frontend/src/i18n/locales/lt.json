@@ -119,6 +119,7 @@
       "syncedCount": "{{count}} sinchronizuota",
       "filterByGenre": "Filtruoti pagal žanrą:",
       "clearGenreFilter": "Išvalyti žanrų filtrą",
+      "noGenre": "Be žanro ({{count}})",
       "noTracks": "Nėra dainų, atitinkančių pasirinktus žanrus."
     }
   },
