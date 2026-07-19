@@ -8,6 +8,9 @@ CREATE TABLE "users" (
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "emailVerificationToken" TEXT,
     "emailVerificationExpires" TIMESTAMP(3),
+    "pendingEmail" TEXT,
+    "isAdmin" BOOLEAN NOT NULL DEFAULT false,
+    "isBanned" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

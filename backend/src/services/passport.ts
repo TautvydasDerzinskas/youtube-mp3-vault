@@ -22,6 +22,12 @@ passport.use(
           code: 'EMAIL_NOT_VERIFIED',
         } as { message: string; code: string });
       }
+      if (user.isBanned) {
+        return done(null, false, {
+          message: 'Your account has been suspended',
+          code: 'ACCOUNT_BANNED',
+        } as { message: string; code: string });
+      }
       return done(null, user);
     } catch (err) {
       return done(err);

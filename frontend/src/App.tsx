@@ -6,6 +6,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import AppLayout from './components/Layout/AppLayout';
 import PlaylistsPage from './pages/PlaylistsPage';
 import ProfilePage from './pages/ProfilePage';
+import UsersPage from './pages/UsersPage';
 
 function LoadingScreen() {
   return (
@@ -35,6 +36,13 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return !user ? <>{children}</> : <Navigate to="/playlists" replace />;
 }
 
+// Nested inside the already-authenticated "/" PrivateRoute subtree, so it only
+// needs to gate on the admin flag, not re-check login state.
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return user?.isAdmin ? <>{children}</> : <Navigate to="/playlists" replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -59,6 +67,7 @@ export default function App() {
           <Route index element={<Navigate to="/playlists" replace />} />
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="users" element={<AdminRoute><UsersPage /></AdminRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

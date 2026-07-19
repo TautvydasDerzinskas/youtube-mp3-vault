@@ -15,6 +15,7 @@ import {
   QueueMusic as PlaylistsIcon,
   Logout as LogoutIcon,
   MusicNote as MusicNoteIcon,
+  Group as UsersIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -30,7 +31,10 @@ export default function Sidebar({ width }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navItems = [{ label: t('nav.playlists'), path: '/playlists', icon: <PlaylistsIcon /> }];
+  const navItems = [
+    { label: t('nav.playlists'), path: '/playlists', icon: <PlaylistsIcon /> },
+    ...(user?.isAdmin ? [{ label: t('nav.users'), path: '/users', icon: <UsersIcon /> }] : []),
+  ];
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.stopPropagation();

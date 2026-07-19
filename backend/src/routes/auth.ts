@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../services/prisma';
 import { sendVerificationEmail } from '../services/mailer';
+import { config } from '../config';
 import {
   requireAuth,
   generateToken,
@@ -27,8 +28,22 @@ const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const RESEND_VERIFICATION_MESSAGE =
   'If an account with that email needs verification, a new email has been sent.';
 
-function toSafeUser(user: { id: string; email: string; displayName: string; language: string }) {
-  return { id: user.id, email: user.email, displayName: user.displayName, language: user.language };
+function toSafeUser(user: {
+  id: string;
+  email: string;
+  displayName: string;
+  language: string;
+  isAdmin: boolean;
+  pendingEmail: string | null;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    language: user.language,
+    isAdmin: user.isAdmin,
+    pendingEmail: user.pendingEmail,
+  };
 }
 
 function newVerificationToken() {
@@ -77,6 +92,7 @@ router.post('/register', authLimiter, async (req, res, next) => {
         email: normalizedEmail,
         passwordHash,
         displayName: displayName.trim(),
+        isAdmin: config.adminEmail !== '' && normalizedEmail === config.adminEmail,
         ...newVerificationToken(),
       },
     });
@@ -133,10 +149,38 @@ router.post('/verify-email', authLimiter, async (req, res, next) => {
       return;
     }
 
-    const verified = await prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerified: true, emailVerificationToken: null, emailVerificationExpires: null },
-    });
+    let verified;
+    if (user.pendingEmail) {
+      // Confirming a requested email change, not the original signup — re-check
+      // for a conflict in case someone else took that address in the meantime.
+      const conflict = await prisma.user.findFirst({
+        where: { email: user.pendingEmail, id: { not: user.id } },
+      });
+      if (conflict) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { pendingEmail: null, emailVerificationToken: null, emailVerificationExpires: null },
+        });
+        res.status(409).json({
+          error: 'That email is no longer available — submit the change again from your profile',
+        });
+        return;
+      }
+      verified = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          email: user.pendingEmail,
+          pendingEmail: null,
+          emailVerificationToken: null,
+          emailVerificationExpires: null,
+        },
+      });
+    } else {
+      verified = await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: true, emailVerificationToken: null, emailVerificationExpires: null },
+      });
+    }
 
     const authToken = generateToken(verified.id);
     setAuthCookie(res, authToken);
@@ -185,7 +229,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, email: true, displayName: true, language: true },
+      select: { id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true },
     });
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -242,7 +286,13 @@ router.patch('/profile', requireAuth, authLimiter, async (req: AuthRequest, res,
       return;
     }
 
-    const data: { email?: string; passwordHash?: string } = {};
+    const data: {
+      passwordHash?: string;
+      pendingEmail?: string;
+      emailVerificationToken?: string;
+      emailVerificationExpires?: Date;
+    } = {};
+    let emailToVerify: string | undefined;
 
     if (email !== undefined) {
       if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -256,7 +306,11 @@ router.patch('/profile', requireAuth, authLimiter, async (req: AuthRequest, res,
           res.status(409).json({ error: 'An account with this email already exists' });
           return;
         }
-        data.email = normalizedEmail;
+        // Don't apply the change yet — it only takes effect once the new
+        // address confirms it via the same verification-link flow as signup.
+        data.pendingEmail = normalizedEmail;
+        Object.assign(data, newVerificationToken());
+        emailToVerify = normalizedEmail;
       }
     }
 
@@ -269,6 +323,9 @@ router.patch('/profile', requireAuth, authLimiter, async (req: AuthRequest, res,
     }
 
     const updated = await prisma.user.update({ where: { id: user.id }, data });
+    if (emailToVerify) {
+      await sendVerificationEmail(emailToVerify, updated.displayName, updated.emailVerificationToken!);
+    }
     res.json({ user: toSafeUser(updated) });
   } catch (err) {
     next(err);

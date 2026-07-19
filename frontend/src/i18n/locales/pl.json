@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Anuluj",
     "save": "Zapisz",
+    "close": "Zamknij",
     "loading": "Ładowanie…"
   },
   "auth": {
@@ -29,6 +30,7 @@
   },
   "nav": {
     "playlists": "Playlisty",
+    "users": "Użytkownicy",
     "logout": "Wyloguj się"
   },
   "playlists": {
@@ -108,7 +110,7 @@
     "displayNameHelper": "Nazwy wyświetlanej nie można zmienić",
     "email": "E-mail",
     "saveEmail": "Zapisz e-mail",
-    "emailUpdated": "E-mail zaktualizowany",
+    "pendingEmailNotice": "Link potwierdzający został wysłany na adres {{email}}. Kliknij go, aby dokończyć zmianę e-maila — aby wysłać ponownie, wyślij ten formularz jeszcze raz.",
     "changePassword": "Zmień hasło",
     "currentPassword": "Obecne hasło",
     "newPassword": "Nowe hasło",
@@ -118,5 +120,28 @@
     "language": "Język",
     "logout": "Wyloguj się",
     "genericError": "Coś poszło nie tak. Spróbuj ponownie."
+  },
+  "users": {
+    "title": "Użytkownicy",
+    "failedToLoad": "Nie udało się załadować użytkowników.",
+    "email": "E-mail",
+    "displayName": "Nazwa wyświetlana",
+    "verified": "Zweryfikowany",
+    "verifiedYes": "Zweryfikowany",
+    "verifiedNo": "Niezweryfikowany",
+    "admin": "Administrator",
+    "adminYes": "Administrator",
+    "status": "Status",
+    "active": "Aktywny",
+    "banned": "Zbanowany",
+    "playlists": "Playlisty",
+    "created": "Utworzono",
+    "actions": "Akcje",
+    "viewDetails": "Zobacz szczegóły",
+    "ban": "Zbanuj",
+    "unban": "Odbanuj",
+    "detailsTitle": "Szczegóły użytkownika",
+    "playlistsTitle": "Playlisty ({{count}})",
+    "noPlaylists": "Ten użytkownik nie ma żadnych playlist."
   }
 }

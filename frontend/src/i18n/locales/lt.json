@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Atšaukti",
     "save": "Išsaugoti",
+    "close": "Uždaryti",
     "loading": "Kraunama…"
   },
   "auth": {
@@ -29,6 +30,7 @@
   },
   "nav": {
     "playlists": "Grojaraščiai",
+    "users": "Naudotojai",
     "logout": "Atsijungti"
   },
   "playlists": {
@@ -107,7 +109,7 @@
     "displayNameHelper": "Rodomo vardo pakeisti negalima",
     "email": "El. paštas",
     "saveEmail": "Išsaugoti el. paštą",
-    "emailUpdated": "El. paštas atnaujintas",
+    "pendingEmailNotice": "Patvirtinimo nuoroda išsiųsta adresu {{email}}. Paspauskite ją, kad baigtumėte keisti el. paštą — norėdami išsiųsti dar kartą, pateikite šią formą iš naujo.",
     "changePassword": "Keisti slaptažodį",
     "currentPassword": "Dabartinis slaptažodis",
     "newPassword": "Naujas slaptažodis",
@@ -117,5 +119,28 @@
     "language": "Kalba",
     "logout": "Atsijungti",
     "genericError": "Įvyko klaida. Bandykite dar kartą."
+  },
+  "users": {
+    "title": "Naudotojai",
+    "failedToLoad": "Nepavyko įkelti naudotojų.",
+    "email": "El. paštas",
+    "displayName": "Rodomas vardas",
+    "verified": "Patvirtinta",
+    "verifiedYes": "Patvirtinta",
+    "verifiedNo": "Nepatvirtinta",
+    "admin": "Administratorius",
+    "adminYes": "Administratorius",
+    "status": "Būsena",
+    "active": "Aktyvus",
+    "banned": "Užblokuotas",
+    "playlists": "Grojaraščiai",
+    "created": "Sukurta",
+    "actions": "Veiksmai",
+    "viewDetails": "Peržiūrėti informaciją",
+    "ban": "Blokuoti",
+    "unban": "Atblokuoti",
+    "detailsTitle": "Naudotojo informacija",
+    "playlistsTitle": "Grojaraščiai ({{count}})",
+    "noPlaylists": "Šis naudotojas neturi grojaraščių."
   }
 }

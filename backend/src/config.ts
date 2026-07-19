@@ -13,6 +13,8 @@ export const config = {
   cookieMaxAge: 7 * 24 * 60 * 60 * 1000,
   isProduction: process.env.NODE_ENV === 'production',
   musicDir: process.env.MUSIC_DIR || '/data',
+  // Whichever email registers with this address is marked admin at creation time.
+  adminEmail: (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: parseInt(process.env.SMTP_PORT || '587', 10),

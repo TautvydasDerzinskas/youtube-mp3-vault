@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Cancel",
     "save": "Save",
+    "close": "Close",
     "loading": "Loading…"
   },
   "auth": {
@@ -29,6 +30,7 @@
   },
   "nav": {
     "playlists": "Playlists",
+    "users": "Users",
     "logout": "Logout"
   },
   "playlists": {
@@ -106,7 +108,7 @@
     "displayNameHelper": "Display name can't be changed",
     "email": "Email",
     "saveEmail": "Save Email",
-    "emailUpdated": "Email updated",
+    "pendingEmailNotice": "A confirmation link was sent to {{email}}. Click it to finish changing your email — submit this form again to resend.",
     "changePassword": "Change Password",
     "currentPassword": "Current Password",
     "newPassword": "New Password",
@@ -116,5 +118,28 @@
     "language": "Language",
     "logout": "Logout",
     "genericError": "Something went wrong. Please try again."
+  },
+  "users": {
+    "title": "Users",
+    "failedToLoad": "Failed to load users.",
+    "email": "Email",
+    "displayName": "Display Name",
+    "verified": "Verified",
+    "verifiedYes": "Verified",
+    "verifiedNo": "Unverified",
+    "admin": "Admin",
+    "adminYes": "Admin",
+    "status": "Status",
+    "active": "Active",
+    "banned": "Banned",
+    "playlists": "Playlists",
+    "created": "Created",
+    "actions": "Actions",
+    "viewDetails": "View details",
+    "ban": "Ban",
+    "unban": "Unban",
+    "detailsTitle": "User details",
+    "playlistsTitle": "Playlists ({{count}})",
+    "noPlaylists": "This user has no playlists."
   }
 }

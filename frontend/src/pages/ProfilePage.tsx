@@ -17,7 +17,6 @@ export default function ProfilePage() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [emailSuccess, setEmailSuccess] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -39,12 +38,10 @@ export default function ProfilePage() {
   const handleSaveEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError(null);
-    setEmailSuccess(false);
     setEmailLoading(true);
     try {
       await updateProfile({ currentPassword: emailPassword, email: email.trim() });
       setEmailPassword('');
-      setEmailSuccess(true);
     } catch (err: any) {
       setEmailError(err.response?.data?.error ?? t('profile.genericError'));
     } finally {
@@ -104,12 +101,16 @@ export default function ProfilePage() {
       <Divider sx={{ mb: 3 }} />
 
       <Box component="form" onSubmit={handleSaveEmail} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+        {user?.pendingEmail && (
+          <Alert severity="info">
+            {t('profile.pendingEmailNotice', { email: user.pendingEmail })}
+          </Alert>
+        )}
         <TextField label={t('profile.email')} type="email" value={email}
           onChange={e => setEmail(e.target.value)} required fullWidth />
         <TextField label={t('profile.currentPassword')} type="password" value={emailPassword}
           onChange={e => setEmailPassword(e.target.value)} required fullWidth />
         {emailError && <Alert severity="error">{emailError}</Alert>}
-        {emailSuccess && <Alert severity="success">{t('profile.emailUpdated')}</Alert>}
         <Button type="submit" variant="contained" disabled={emailLoading} sx={{ alignSelf: 'flex-start' }}>
           {t('profile.saveEmail')}
         </Button>

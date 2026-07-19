@@ -10,8 +10,9 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 
 **Accounts**
 - **Email + password auth** — register, sign in, persistent sessions via httpOnly JWT cookies
-- **Email verification** — signup sends a confirmation link via SMTP; login is blocked until it's clicked, with a resend option if the link expires (24h) or gets lost
+- **Email verification** — signup sends a confirmation link via SMTP; login is blocked until it's clicked, with a resend option if the link expires (24h) or gets lost. Changing your email from the profile page goes through the same flow — the address only changes once the new one confirms it
 - **Demo account** — `demo@gmail.com` / `demo` is seeded automatically on every backend start when `APP_ENV=dev` (the default), for one-click sign-in after a rebuild; skipped entirely for `staging`/`production`
+- **Admin account + Users page** — whichever email matches `ADMIN_EMAIL` is marked admin at signup; admins get a Users nav item listing every account (verification/ban status, playlist count), a detail view of any account's playlists, and a ban/unban action that takes effect immediately (not just on next login)
 - **Profile page** — change email or password (current password required to confirm either); display name is fixed
 - **Multi-language UI** — English, Lithuanian, Polish (react-i18next); saved per-account and switchable from the profile page
 
@@ -199,6 +200,7 @@ npm run dev
 | `POSTGRES_PASSWORD` | **Yes** | — | Database password |
 | `JWT_SECRET` | **Yes** | — | Secret used to sign JWT tokens (≥ 32 chars) |
 | `APP_ENV` | No | `dev` | Deployment tier: `dev` / `staging` / `production`. The demo account is only seeded when this is `dev` |
+| `ADMIN_EMAIL` | No | — | Whichever account registers with this email is marked admin at creation time (not retroactive — set it before that account signs up) |
 | `FRONTEND_URL` | No | `http://localhost` | Used for CORS; set to your domain in production |
 | `FRONTEND_PORT` | No | `80` | Host port the nginx container binds to |
 | `MUSIC_DIR` | No | `/data` | Path inside the backend container where downloaded MP3s live; point the `music_data` volume in `docker-compose.yml` at a host/NAS path to change where files actually land |
@@ -230,20 +232,21 @@ npm run dev
 │   └── src/
 │       ├── index.ts
 │       ├── config.ts
-│       ├── middleware/        # JWT auth helpers, error handler
-│       ├── routes/            # auth, playlists
-│       └── services/          # passport, prisma, yt-dlp wrapper, sync engine,
-│                               # downloader, connectivity check, demo user seed, scheduler
+│       ├── middleware/        # JWT auth helpers (ban check + admin gate), error handler
+│       ├── routes/            # auth, playlists, admin (admin-only user management)
+│       └── services/          # passport, prisma, mailer, yt-dlp wrapper, sync engine,
+│                               # downloader, playlist stats, connectivity check, demo user seed, scheduler
 └── frontend/
     ├── Dockerfile
     ├── nginx.conf             # SPA + /api proxy
     └── src/
-        ├── api/               # axios client, auth, playlists, status
+        ├── api/               # axios client, auth, admin, playlists, status
         ├── contexts/          # AuthContext (also syncs i18n language)
         ├── i18n/              # react-i18next setup + en/lt/pl locale files
-        ├── components/Layout/ # Sidebar, AppLayout
+        ├── components/Layout/ # Sidebar (Users nav item shown for admins), AppLayout
         └── pages/
-            ├── LoginPage, ProfilePage, AuthCallbackPage
+            ├── LoginPage, ProfilePage, VerifyEmailPage, AuthCallbackPage
+            ├── UsersPage/      # admin-only — table + UserDetailDialog
             └── PlaylistsPage/ # split into subcomponents + hooks
                 ├── PlaylistRow/    # Thumbnail, Info, Actions
                 └── hooks/          # usePlaylists, useAudioPlayer, useOnlineStatus
@@ -263,7 +266,7 @@ npm run dev
 | `POST` | `/api/auth/login` | — | Sign in (rejected until the account is verified) |
 | `POST` | `/api/auth/logout` | — | Clear session cookie |
 | `GET` | `/api/auth/me` | ✓ | Current user |
-| `PATCH` | `/api/auth/profile` | ✓ | Change email and/or password (requires current password) |
+| `PATCH` | `/api/auth/profile` | ✓ | Change email and/or password (requires current password); an email change is pending until the new address confirms it via `/verify-email` |
 | `PATCH` | `/api/auth/language` | ✓ | Change UI language (`en` / `lt` / `pl`) |
 | `GET` | `/api/playlists` | ✓ | List user's playlists |
 | `POST` | `/api/playlists` | ✓ | Add playlist by URL |
@@ -276,3 +279,7 @@ npm run dev
 | `POST` | `/api/playlists/:id/resume` | ✓ | Resume automatic sync (continues any pending downloads immediately) |
 | `GET` | `/api/playlists/:id/videos/:videoId/stream` | ✓ | Stream a downloaded video's MP3 for in-browser playback |
 | `GET` | `/api/playlists/:id/videos/:videoId/download` | ✓ | Download a video's MP3 file |
+| `GET` | `/api/admin/users` | Admin | List every account (verification/ban status, playlist count) |
+| `GET` | `/api/admin/users/:id` | Admin | Full account detail + their playlists |
+| `POST` | `/api/admin/users/:id/ban` | Admin | Suspend an account — takes effect immediately, not just on next login |
+| `POST` | `/api/admin/users/:id/unban` | Admin | Restore a suspended account |

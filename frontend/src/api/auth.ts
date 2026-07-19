@@ -5,6 +5,8 @@ export interface User {
   email: string;
   displayName: string;
   language: string;
+  isAdmin: boolean;
+  pendingEmail: string | null;
 }
 
 interface AuthResponse {

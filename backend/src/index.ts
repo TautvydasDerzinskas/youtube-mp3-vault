@@ -7,6 +7,7 @@ import { config } from './config';
 import './services/passport';
 import authRouter from './routes/auth';
 import playlistsRouter from './routes/youtube';
+import adminRouter from './routes/admin';
 import { errorHandler } from './middleware/errorHandler';
 import { resetStuckSyncs } from './services/syncService';
 import { startScheduler } from './services/scheduler';
@@ -36,6 +37,7 @@ app.get('/api/status', requireAuth, (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/playlists', playlistsRouter);
+app.use('/api/admin', adminRouter);
 
 app.use(errorHandler);
 
