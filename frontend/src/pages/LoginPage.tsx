@@ -18,12 +18,15 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const { t } = useTranslation();
-  const { login, register } = useAuth();
+  const { login, register, resendVerification } = useAuth();
   const navigate = useNavigate();
 
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [checkEmailAddress, setCheckEmailAddress] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   // Sign-in fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -38,14 +41,15 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNeedsVerification(false);
     setLoading(true);
     try {
       await login(loginEmail, loginPassword);
       navigate('/playlists');
     } catch (err: unknown) {
-      setError(
-        (err as any)?.response?.data?.error ?? t('auth.signInFailed')
-      );
+      const data = (err as any)?.response?.data;
+      setError(data?.error ?? t('auth.signInFailed'));
+      setNeedsVerification(data?.code === 'EMAIL_NOT_VERIFIED');
     } finally {
       setLoading(false);
     }
@@ -60,14 +64,23 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      await register(regEmail, regPassword, regName);
-      navigate('/playlists');
+      const { email } = await register(regEmail, regPassword, regName);
+      setCheckEmailAddress(email);
     } catch (err: unknown) {
       setError(
         (err as any)?.response?.data?.error ?? t('auth.registrationFailed')
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async (email: string) => {
+    setResendState('sending');
+    try {
+      await resendVerification(email);
+    } finally {
+      setResendState('sent');
     }
   };
 
@@ -100,9 +113,37 @@ export default function LoginPage() {
             </Typography>
           </Box>
 
+          {checkEmailAddress ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'center' }}>
+              <Typography variant="h6">{t('auth.checkYourEmailTitle')}</Typography>
+              <Typography color="text.secondary">
+                {t('auth.checkYourEmailBody', { email: checkEmailAddress })}
+              </Typography>
+              <Button
+                variant="outlined"
+                disabled={resendState === 'sending'}
+                onClick={() => handleResend(checkEmailAddress)}
+              >
+                {resendState === 'sending'
+                  ? <CircularProgress size={20} color="inherit" />
+                  : t('auth.resendEmail')}
+              </Button>
+              {resendState === 'sent' && (
+                <Alert severity="success">{t('auth.resendEmailSent')}</Alert>
+              )}
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => { setCheckEmailAddress(null); setResendState('idle'); setTab(0); }}
+              >
+                {t('auth.backToSignIn')}
+              </Button>
+            </Box>
+          ) : (
+          <>
           <Tabs
             value={tab}
-            onChange={(_, v: number) => { setTab(v); setError(null); }}
+            onChange={(_, v: number) => { setTab(v); setError(null); setNeedsVerification(false); }}
             variant="fullWidth"
             sx={{ mb: 3 }}
           >
@@ -113,7 +154,21 @@ export default function LoginPage() {
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
+              {needsVerification && (
+                <Button
+                  size="small"
+                  disabled={resendState === 'sending'}
+                  onClick={() => handleResend(loginEmail)}
+                  sx={{ display: 'block', mt: 1 }}
+                >
+                  {t('auth.resendEmail')}
+                </Button>
+              )}
             </Alert>
+          )}
+
+          {resendState === 'sent' && needsVerification && (
+            <Alert severity="success" sx={{ mb: 2 }}>{t('auth.resendEmailSent')}</Alert>
           )}
 
           {/* Sign In */}
@@ -204,6 +259,8 @@ export default function LoginPage() {
                 {loading ? <CircularProgress size={22} color="inherit" /> : t('auth.createAccount')}
               </Button>
             </Box>
+          )}
+          </>
           )}
         </CardContent>
       </Card>

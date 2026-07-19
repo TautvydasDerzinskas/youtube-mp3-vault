@@ -42,7 +42,11 @@ app.use(errorHandler);
 app.listen(config.port, '0.0.0.0', async () => {
   console.log(`[server] Backend listening on port ${config.port} (${config.nodeEnv})`);
   await resetStuckSyncs();
-  await ensureDemoUser();
+  if (config.appEnv === 'dev') {
+    await ensureDemoUser();
+  } else {
+    console.log(`[seed] Skipping demo user creation (APP_ENV=${config.appEnv})`);
+  }
   startScheduler();
   startConnectivityMonitor();
 });

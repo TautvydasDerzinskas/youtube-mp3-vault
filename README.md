@@ -10,7 +10,8 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 
 **Accounts**
 - **Email + password auth** — register, sign in, persistent sessions via httpOnly JWT cookies
-- **Demo account** — `demo@gmail.com` / `demo` is seeded automatically on every backend start, for one-click sign-in after a rebuild
+- **Email verification** — signup sends a confirmation link via SMTP; login is blocked until it's clicked, with a resend option if the link expires (24h) or gets lost
+- **Demo account** — `demo@gmail.com` / `demo` is seeded automatically on every backend start when `APP_ENV=dev` (the default), for one-click sign-in after a rebuild; skipped entirely for `staging`/`production`
 - **Profile page** — change email or password (current password required to confirm either); display name is fixed
 - **Multi-language UI** — English, Lithuanian, Polish (react-i18next); saved per-account and switchable from the profile page
 
@@ -197,9 +198,15 @@ npm run dev
 | `POSTGRES_USER` | No | `ympv` | Database user |
 | `POSTGRES_PASSWORD` | **Yes** | — | Database password |
 | `JWT_SECRET` | **Yes** | — | Secret used to sign JWT tokens (≥ 32 chars) |
+| `APP_ENV` | No | `dev` | Deployment tier: `dev` / `staging` / `production`. The demo account is only seeded when this is `dev` |
 | `FRONTEND_URL` | No | `http://localhost` | Used for CORS; set to your domain in production |
 | `FRONTEND_PORT` | No | `80` | Host port the nginx container binds to |
 | `MUSIC_DIR` | No | `/data` | Path inside the backend container where downloaded MP3s live; point the `music_data` volume in `docker-compose.yml` at a host/NAS path to change where files actually land |
+| `SMTP_HOST` | Required when `APP_ENV` isn't `dev` | — | SMTP server for sending signup verification emails; when unset in `dev`, the verification link is logged to the console instead of sent |
+| `SMTP_PORT` | No | `587` | SMTP server port |
+| `SMTP_SECURE` | No | `false` | Use implicit TLS (`true` for port 465) |
+| `SMTP_USER` / `SMTP_PASS` | No | — | SMTP auth credentials, if your server requires them |
+| `SMTP_FROM` | No | `MusicVault <no-reply@localhost>` | `From` address on verification emails |
 | `GHCR_NAMESPACE` | `docker-compose.prod.yml` only | — | `owner/repo` (lowercase) of this repo on GitHub, used to resolve the published image names |
 | `IMAGE_TAG` | No (`docker-compose.prod.yml` only) | `latest` | Which published image tag to run — `latest` or a specific commit SHA |
 
@@ -250,8 +257,10 @@ npm run dev
 |---|---|---|---|
 | `GET` | `/api/health` | — | Liveness check |
 | `GET` | `/api/status` | ✓ | Whether the backend can currently reach the internet |
-| `POST` | `/api/auth/register` | — | Create account |
-| `POST` | `/api/auth/login` | — | Sign in |
+| `POST` | `/api/auth/register` | — | Create account (unverified) and send a confirmation email |
+| `POST` | `/api/auth/verify-email` | — | Confirm the emailed token; verifies the account and signs you in |
+| `POST` | `/api/auth/resend-verification` | — | Re-send the confirmation email if the link expired or was lost |
+| `POST` | `/api/auth/login` | — | Sign in (rejected until the account is verified) |
 | `POST` | `/api/auth/logout` | — | Clear session cookie |
 | `GET` | `/api/auth/me` | ✓ | Current user |
 | `PATCH` | `/api/auth/profile` | ✓ | Change email and/or password (requires current password) |

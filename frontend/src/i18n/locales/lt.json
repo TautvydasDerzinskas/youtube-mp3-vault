@@ -18,7 +18,14 @@
     "signInFailed": "Prisijungti nepavyko. Patikrinkite duomenis.",
     "registrationFailed": "Registracija nepavyko. Bandykite dar kartą.",
     "passwordsDoNotMatch": "Slaptažodžiai nesutampa",
-    "completingSignIn": "Baigiama prisijungti…"
+    "completingSignIn": "Baigiama prisijungti…",
+    "checkYourEmailTitle": "Patikrinkite savo el. paštą",
+    "checkYourEmailBody": "Išsiuntėme patvirtinimo nuorodą adresu {{email}}. Paspauskite ją, kad baigtumėte kurti paskyrą.",
+    "resendEmail": "Siųsti dar kartą",
+    "resendEmailSent": "Jei šiam el. paštui reikia patvirtinimo, nauja nuoroda buvo išsiųsta.",
+    "backToSignIn": "Grįžti į prisijungimą",
+    "verifyingEmail": "Tikrinamas el. paštas…",
+    "verifyEmailFailed": "Ši patvirtinimo nuoroda negalioja arba nebegalioja."
   },
   "nav": {
     "playlists": "Grojaraščiai",

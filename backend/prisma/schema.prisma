@@ -9,14 +9,17 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  passwordHash String
-  displayName  String
-  language     String     @default("en")
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  playlists    Playlist[]
+  id                        String     @id @default(uuid())
+  email                     String     @unique
+  passwordHash              String
+  displayName               String
+  language                  String     @default("en")
+  emailVerified             Boolean    @default(false)
+  emailVerificationToken    String?    @unique
+  emailVerificationExpires  DateTime?
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+  playlists                 Playlist[]
 
   @@map("users")
 }

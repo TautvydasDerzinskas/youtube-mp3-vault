@@ -16,6 +16,12 @@ passport.use(
       if (!valid) {
         return done(null, false, { message: 'Invalid email or password' });
       }
+      if (!user.emailVerified) {
+        return done(null, false, {
+          message: 'Please verify your email before signing in',
+          code: 'EMAIL_NOT_VERIFIED',
+        } as { message: string; code: string });
+      }
       return done(null, user);
     } catch (err) {
       return done(err);

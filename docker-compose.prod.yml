@@ -43,12 +43,19 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      APP_ENV: ${APP_ENV:-production}
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-ympv}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ympv}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       MUSIC_DIR: /data
       SLSKD_URL: http://slskd:5030
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required for staging/production so signup emails can send}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-MusicVault <no-reply@localhost>}
     volumes:
       - music_data:/data
     depends_on:

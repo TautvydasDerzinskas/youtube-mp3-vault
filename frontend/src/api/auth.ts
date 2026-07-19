@@ -11,13 +11,22 @@ interface AuthResponse {
   user: User;
 }
 
+interface RegisterResponse {
+  message: string;
+  email: string;
+}
+
+interface MessageResponse {
+  message: string;
+}
+
 export const authApi = {
   register: async (
     email: string,
     password: string,
     displayName: string
-  ): Promise<AuthResponse> => {
-    const { data } = await client.post<AuthResponse>('/auth/register', {
+  ): Promise<RegisterResponse> => {
+    const { data } = await client.post<RegisterResponse>('/auth/register', {
       email,
       password,
       displayName,
@@ -27,6 +36,16 @@ export const authApi = {
 
   login: async (email: string, password: string): Promise<AuthResponse> => {
     const { data } = await client.post<AuthResponse>('/auth/login', { email, password });
+    return data;
+  },
+
+  verifyEmail: async (token: string): Promise<AuthResponse> => {
+    const { data } = await client.post<AuthResponse>('/auth/verify-email', { token });
+    return data;
+  },
+
+  resendVerification: async (email: string): Promise<MessageResponse> => {
+    const { data } = await client.post<MessageResponse>('/auth/resend-verification', { email });
     return data;
   },
 

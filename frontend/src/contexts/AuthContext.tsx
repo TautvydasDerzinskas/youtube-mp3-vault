@@ -13,7 +13,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string) => Promise<{ message: string; email: string }>;
+  verifyEmail: (token: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<{ message: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateLanguage: (language: string) => Promise<void>;
@@ -50,8 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, displayName: string) => {
-    const { user } = await authApi.register(email, password, displayName);
+    return authApi.register(email, password, displayName);
+  };
+
+  const verifyEmail = async (token: string) => {
+    const { user } = await authApi.verifyEmail(token);
     setUser(applyUser(user));
+  };
+
+  const resendVerification = async (email: string) => {
+    return authApi.resendVerification(email);
   };
 
   const logout = async () => {
@@ -71,7 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, refreshUser, updateLanguage, updateProfile }}
+      value={{
+        user, loading, login, register, verifyEmail, resendVerification,
+        logout, refreshUser, updateLanguage, updateProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>

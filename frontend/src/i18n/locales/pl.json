@@ -18,7 +18,14 @@
     "signInFailed": "Logowanie nie powiodło się. Sprawdź dane logowania.",
     "registrationFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",
     "passwordsDoNotMatch": "Hasła nie są zgodne",
-    "completingSignIn": "Kończenie logowania…"
+    "completingSignIn": "Kończenie logowania…",
+    "checkYourEmailTitle": "Sprawdź swoją skrzynkę e-mail",
+    "checkYourEmailBody": "Wysłaliśmy link potwierdzający na adres {{email}}. Kliknij go, aby dokończyć tworzenie konta.",
+    "resendEmail": "Wyślij ponownie",
+    "resendEmailSent": "Jeśli ten adres e-mail wymaga potwierdzenia, wysłano nowy link.",
+    "backToSignIn": "Powrót do logowania",
+    "verifyingEmail": "Weryfikowanie adresu e-mail…",
+    "verifyEmailFailed": "Ten link potwierdzający jest nieprawidłowy lub wygasł."
   },
   "nav": {
     "playlists": "Playlisty",

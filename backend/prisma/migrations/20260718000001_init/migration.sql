@@ -5,6 +5,9 @@ CREATE TABLE "users" (
     "passwordHash" TEXT NOT NULL,
     "displayName" TEXT NOT NULL,
     "language" TEXT NOT NULL DEFAULT 'en',
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "emailVerificationToken" TEXT,
+    "emailVerificationExpires" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -64,6 +67,9 @@ CREATE TABLE "playlist_videos" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_emailVerificationToken_key" ON "users"("emailVerificationToken");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "playlists_userId_youtubeId_key" ON "playlists"("userId", "youtubeId");

@@ -14,7 +14,7 @@ export async function ensureDemoUser(): Promise<void> {
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
   await prisma.user.create({
-    data: { email: DEMO_EMAIL, passwordHash, displayName: 'Demo' },
+    data: { email: DEMO_EMAIL, passwordHash, displayName: 'Demo', emailVerified: true },
   });
   console.log(`[seed] Created demo user (${DEMO_EMAIL})`);
 }
