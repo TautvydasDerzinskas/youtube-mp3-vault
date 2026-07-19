@@ -1,6 +1,6 @@
 # YoutubeVault
 
-A self-hosted service that tracks YouTube playlists, automatically downloads them as MP3s for offline listening, and lets you play them back right in the browser — with a companion mobile app planned for a future phase.
+A self-hosted service that tracks YouTube playlists, automatically downloads them as MP3s for offline listening, and lets you play them back right in the browser — with a companion Android app now in early development.
 
 ---
 
@@ -44,13 +44,17 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 
 - **Dark UI** — React + TypeScript + Material UI v6 dark theme
 
-### Todo — Phase 3 (Mobile app)
+### Phase 3 (Mobile app) — in progress
 
-- [ ] **React Native app** — iOS + Android client that connects to the self-hosted service
-- [ ] **Same auth** — login/register with the same email + password account
-- [ ] **Playlist sync** — browse synced playlists and download their MP3s to the device
+**Implemented**
+- **React Native app (Expo, Android-focused for now)** — lives in `mobile/`, linted by the same root oxlint config as `backend/`/`frontend/`
+- **Login, persisted session** — signs in against the existing `/api/auth/login` + `/api/auth/me` endpoints; the JWT is stored in `expo-secure-store` (Android Keystore-backed) so the session survives app restarts and only ends on explicit logout
+
+**Todo**
+- [ ] **Playlist sync** — browse synced playlists and download their MP3s to the device (backend already exposes `GET /api/playlists/:id/manifest` for this — see API reference below)
 - [ ] **Offline playback** — listen via the device's native media player or an in-app player
 - [ ] **Manual trigger** — kick off a server-side sync from the mobile app without waiting for the cron job
+- [ ] **Register from the app** — currently login-only; account creation still happens on the web
 
 ---
 
@@ -59,6 +63,7 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 | Layer | Technology |
 |---|---|
 | Frontend | React 18, TypeScript, Vite, Material UI v6, react-i18next |
+| Mobile | React Native (Expo), TypeScript — Android-focused |
 | Backend | Node.js, Express, TypeScript, Passport.js |
 | Database | PostgreSQL 16 via Prisma ORM |
 | Scraping & downloads | yt-dlp (Python, installed in the backend container) |
@@ -131,7 +136,7 @@ docker-compose down -v          # v1
 
 ## Deploying published images (e.g. on OpenMediaVault)
 
-Every push to `main`/`master` that passes lint automatically builds and publishes `backend` and `frontend` images to GitHub Container Registry (see `.github/workflows/docker-publish.yml`) — no local build needed on the machine that runs them.
+Every push to `main`/`master` that passes lint automatically builds and publishes `backend` and `frontend` images to GitHub Container Registry (see `.github/workflows/docker-publish.yml`) — no local build needed on the machine that runs them. The same workflow also builds a debug-signed Android APK from `mobile/` and uploads it as a workflow artifact (see the **Mobile** section below).
 
 `docker-compose.prod.yml` is the same stack as above, but with `image:` references instead of `build:`, meant for a host (like an OMV Compose plugin) that only pulls images:
 
@@ -163,7 +168,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 ### Linting
 
-A single [oxlint](https://oxc.rs/docs/guide/usage/linter) config at the repo root lints both `backend/` and `frontend/` with the same base rules (plus React/JSX rules scoped to `frontend/` only):
+A single [oxlint](https://oxc.rs/docs/guide/usage/linter) config at the repo root lints `backend/`, `frontend/`, and `mobile/` with the same base rules (plus React/JSX rules scoped to `frontend/` and `mobile/`):
 
 ```bash
 npm install   # from the repo root — installs the linter only
@@ -199,6 +204,24 @@ npm install
 npm run dev
 # → http://localhost:5173
 ```
+
+### Mobile
+
+Requires an Android emulator (via Android Studio) or a physical device with [Expo Go](https://expo.dev/go) installed.
+
+```bash
+cd mobile
+npm install
+npm run android
+```
+
+By default (no `.env` needed) the app points at the self-hosted instance's real address on the LAN, `https://youtubevault.mylan`, resolved by the router's local DNS — same as the web app, just over the network instead of same-origin. If you're instead running a backend directly on your dev machine (not the LAN instance), copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL`:
+- **Android emulator** reaches your host machine at `10.0.2.2` (its alias for the host's `localhost`)
+- **Physical device** needs your host machine's real LAN IP instead (e.g. `http://192.168.1.50:3001/api`), with the backend reachable from your phone's network
+
+> **Node version:** react-native/Metro in this Expo SDK want Node `^20.19.4 || ^22.13.0` — a couple patch versions ahead of the `^20.19.0` minimum the rest of the repo tolerates. If `npm install` here prints `EBADENGINE` warnings, bump your local Node before troubleshooting anything else.
+
+**CI builds an installable APK on every push to `main`/`master`** (alongside the Docker publish job — see `.github/workflows/docker-publish.yml`'s `android-apk` job): it runs `expo prebuild` to generate the native Android project fresh, then `./gradlew assembleDebug`. The result is debug-signed (Android's well-known debug keystore) — fine to sideload onto a device for testing, not for Play Store distribution — and shows up as a downloadable `YoutubeVault-debug-apk` artifact on the workflow run (kept for 30 days).
 
 ---
 
@@ -251,20 +274,26 @@ npm run dev
 ├── audio-analysis/            # Essentia genre classification service (opt-in, amd64-only)
 │   ├── Dockerfile             # downloads the Discogs-EffNet model files at build time
 │   └── app.py                 # FastAPI: POST /analyze { path }, GET /health
-└── frontend/
-    ├── Dockerfile
-    ├── nginx.conf             # SPA + /api proxy
+├── frontend/
+│   ├── Dockerfile
+│   ├── nginx.conf             # SPA + /api proxy
+│   └── src/
+│       ├── api/               # axios client, auth, admin, playlists, status
+│       ├── contexts/          # AuthContext, PlayerContext (also syncs i18n language)
+│       ├── i18n/              # react-i18next setup + en/lt/pl locale files
+│       ├── components/Layout/ # Sidebar (Users nav item shown for admins), AppLayout, MiniPlayer
+│       └── pages/
+│           ├── LoginPage, ProfilePage, VerifyEmailPage, AuthCallbackPage
+│           ├── UsersPage/      # admin-only — table + UserDetailDialog
+│           ├── TrackDetailPage/ # per-track view — similar songs, remixes
+│           └── PlaylistsPage/, PlaylistDetailPage/ # split into subcomponents + hooks
+└── mobile/                    # React Native (Expo), Android-focused — see "Mobile" above
+    ├── App.tsx                # Root: AuthProvider + Login/Home screen switch
     └── src/
-        ├── api/               # axios client, auth, admin, playlists, status
-        ├── contexts/          # AuthContext (also syncs i18n language)
-        ├── i18n/              # react-i18next setup + en/lt/pl locale files
-        ├── components/Layout/ # Sidebar (Users nav item shown for admins), AppLayout
-        └── pages/
-            ├── LoginPage, ProfilePage, VerifyEmailPage, AuthCallbackPage
-            ├── UsersPage/      # admin-only — table + UserDetailDialog
-            └── PlaylistsPage/ # split into subcomponents + hooks
-                ├── PlaylistRow/    # Thumbnail, Info, Actions
-                └── hooks/          # usePlaylists, useAudioPlayer, useOnlineStatus
+        ├── api/                # axios client (Bearer-token auth), auth
+        ├── auth/tokenStorage.ts # expo-secure-store wrapper — persists the session
+        ├── contexts/           # AuthContext
+        └── screens/            # LoginScreen, HomeScreen (placeholder post-login)
 ```
 
 ---
@@ -278,7 +307,7 @@ npm run dev
 | `POST` | `/api/auth/register` | — | Create account (unverified) and send a confirmation email |
 | `POST` | `/api/auth/verify-email` | — | Confirm the emailed token; verifies the account and signs you in |
 | `POST` | `/api/auth/resend-verification` | — | Re-send the confirmation email if the link expired or was lost |
-| `POST` | `/api/auth/login` | — | Sign in (rejected until the account is verified) |
+| `POST` | `/api/auth/login` | — | Sign in (rejected until the account is verified); returns the JWT in the response body as well as the cookie, for clients like the mobile app that can't use a browser cookie jar |
 | `POST` | `/api/auth/logout` | — | Clear session cookie |
 | `GET` | `/api/auth/me` | ✓ | Current user |
 | `PATCH` | `/api/auth/profile` | ✓ | Change email and/or password (requires current password); an email change is pending until the new address confirms it via `/verify-email` |
@@ -288,12 +317,15 @@ npm run dev
 | `PATCH` | `/api/playlists/:id` | ✓ | Rename playlist (custom display name) |
 | `DELETE` | `/api/playlists/:id` | ✓ | Remove playlist and its downloaded files |
 | `GET` | `/api/playlists/:id/videos` | ✓ | List videos in a playlist |
+| `GET` | `/api/playlists/:id/manifest` | ✓ | Full track list with per-track `downloadUrl` (only when downloaded) and `downloadStatus` — including removed/unavailable tracks with no URL, so a client (e.g. the mobile app) can mirror and keep a local copy in sync, not just do an initial download |
 | `POST` | `/api/playlists/:id/sync` | ✓ | Re-scrape playlist from YouTube and download any new videos |
 | `POST` | `/api/playlists/:id/retry-failed` | ✓ | Retry only the videos that previously failed to download |
 | `POST` | `/api/playlists/:id/pause` | ✓ | Pause automatic sync for this playlist |
 | `POST` | `/api/playlists/:id/resume` | ✓ | Resume automatic sync (continues any pending downloads immediately) |
 | `GET` | `/api/playlists/:id/videos/:videoId/stream` | ✓ | Stream a downloaded video's MP3 for in-browser playback |
 | `GET` | `/api/playlists/:id/videos/:videoId/download` | ✓ | Download a video's MP3 file |
+| `GET` | `/api/playlists/:id/videos/:videoId/recommendations` | ✓ | "Similar songs" — audio-embedding similarity, boosted by same-artist/same-genre |
+| `GET` | `/api/playlists/:id/videos/:videoId/remixes` | ✓ | Best-effort YouTube search for remixes of this track |
 | `GET` | `/api/admin/users` | Admin | List every account (verification/ban status, playlist count) |
 | `GET` | `/api/admin/users/:id` | Admin | Full account detail + their playlists |
 | `POST` | `/api/admin/users/:id/ban` | Admin | Suspend an account — takes effect immediately, not just on next login |

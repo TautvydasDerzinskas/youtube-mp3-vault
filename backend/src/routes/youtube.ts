@@ -203,6 +203,72 @@ router.get('/:id/videos', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
+// ─── GET /api/playlists/:id/manifest — mobile app sync feed ──────────────────
+// Everything a client needs to mirror this playlist's downloaded files
+// locally and keep them in sync on repeat calls: full track metadata, a
+// download link for whatever's actually downloaded, and — critically for
+// "sync" rather than just "download all" — a track that's no longer
+// downloadable (removed from the source YouTube playlist, or permanently
+// unavailable) still shows up here with downloadUrl: null and its current
+// downloadStatus, so the caller can tell "never downloaded this" apart from
+// "used to have this, should delete the local copy now."
+//
+// mediaFileId is included because it's stable per actual audio content (see
+// MediaFile in schema.prisma) and only changes if the file is ever
+// re-downloaded — unlike updatedAt, which also bumps on unrelated metadata
+// enrichment (genre/artist lookups), it's a reliable "does the client need to
+// re-fetch the bytes" signal.
+
+const MANIFEST_TRACK_SELECT = {
+  id: true, youtubeId: true, title: true, artist: true, album: true,
+  trackNumber: true, genres: true, releaseYear: true, duration: true,
+  thumbnailUrl: true, position: true, addedAt: true, downloadStatus: true,
+  mediaFileId: true, fileSize: true, bitrate: true,
+} as const;
+
+router.get('/:id/manifest', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+
+    const [enriched] = await withDownloadStats([playlist]);
+    const videos = await prisma.playlistVideo.findMany({
+      where: { playlistId: playlist.id },
+      orderBy: { position: 'asc' },
+      select: MANIFEST_TRACK_SELECT,
+    });
+
+    const tracks = videos.map((v) => ({
+      ...v,
+      downloadUrl: v.downloadStatus === 'done'
+        ? `/api/playlists/${playlist.id}/videos/${v.id}/download`
+        : null,
+    }));
+
+    res.json({
+      playlist: {
+        id: enriched.id,
+        title: enriched.title,
+        customName: enriched.customName,
+        thumbnailUrl: enriched.thumbnailUrl,
+        videoCount: enriched.videoCount,
+        downloadedCount: enriched.downloadedCount,
+        failedCount: enriched.failedCount,
+        totalSize: enriched.totalSize,
+        lastSyncedAt: enriched.lastSyncedAt,
+      },
+      tracks,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── GET /api/playlists/:id/videos/:videoId — single video ───────────────────
 
 router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, next) => {
@@ -295,7 +361,7 @@ router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: Auth
       })
       .sort((a, b) => b.tier - a.tier || b.similarity - a.similarity)
       .slice(0, RECOMMENDATION_LIMIT)
-      .map(({ tier, ...rest }) => rest);
+      .map(({ tier: _tier, ...rest }) => rest);
 
     res.json({ recommendations });
   } catch (err) {

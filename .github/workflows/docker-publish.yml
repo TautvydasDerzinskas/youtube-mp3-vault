@@ -1,4 +1,4 @@
-name: Docker Publish
+name: Build & Publish
 
 on:
   push:
@@ -62,3 +62,49 @@ jobs:
             ghcr.io/${{ env.REPO_LC }}/${{ matrix.image }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  android-apk:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci
+
+      # Generates the native android/ project from app.json — gitignored,
+      # regenerated fresh on every run (same as a developer running
+      # `expo prebuild` locally before opening Android Studio). Runs
+      # non-interactively because GitHub Actions sets CI=true.
+      - name: Prebuild native Android project
+        working-directory: mobile
+        run: npx expo prebuild --platform android
+
+      # Debug-signed, using Android's well-known debug keystore — good
+      # enough to sideload and test, not for Play Store distribution. Add a
+      # release keystore + signing config here if that's ever needed.
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk YoutubeVault-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YoutubeVault-debug-apk
+          path: YoutubeVault-debug.apk
+          retention-days: 30

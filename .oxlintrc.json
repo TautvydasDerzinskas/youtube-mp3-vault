@@ -16,6 +16,12 @@
       "files": ["frontend/**/*.ts", "frontend/**/*.tsx"],
       "plugins": ["typescript", "unicorn", "oxc", "import", "react", "jsx-a11y"],
       "env": { "browser": true }
+    },
+    {
+      "files": ["mobile/**/*.ts", "mobile/**/*.tsx"],
+      "plugins": ["typescript", "unicorn", "oxc", "import", "react", "jsx-a11y"],
+      "env": { "node": true },
+      "globals": { "__DEV__": "readonly" }
     }
   ]
 }

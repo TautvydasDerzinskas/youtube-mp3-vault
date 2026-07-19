@@ -129,7 +129,10 @@ router.post('/login', authLimiter, (req, res, next) => {
       }
       const token = generateToken(user.id);
       setAuthCookie(res, token);
-      res.json({ user: toSafeUser(user) });
+      // Also returned in the body (not just the cookie) for clients that can't
+      // rely on a browser cookie jar — e.g. the mobile app — to store and send
+      // back as `Authorization: Bearer <token>`.
+      res.json({ user: toSafeUser(user), token });
     }
   )(req, res, next);
 });
@@ -184,7 +187,7 @@ router.post('/verify-email', authLimiter, async (req, res, next) => {
 
     const authToken = generateToken(verified.id);
     setAuthCookie(res, authToken);
-    res.json({ user: toSafeUser(verified) });
+    res.json({ user: toSafeUser(verified), token: authToken });
   } catch (err) {
     next(err);
   }
