@@ -48,6 +48,23 @@ export async function removeSharedFile(filename: string): Promise<void> {
   }
 }
 
+// Distinguishes "this video will never download" (removed/private/geo-blocked/
+// copyright-blocked) from transient errors (network blips, PO-token 403s) that
+// are worth retrying — matched against yt-dlp's own error wording.
+const PERMANENT_UNAVAILABILITY_PATTERNS = [
+  /video (is )?unavailable/i,
+  /this video is (no longer available|not available|private)/i,
+  /private video/i,
+  /video has been removed/i,
+  /account associated with this video has been terminated/i,
+  /not available in your country/i,
+  /blocked (it|this video) (on|in|for) copyright/i,
+];
+
+export function isPermanentlyUnavailable(message: string): boolean {
+  return PERMANENT_UNAVAILABILITY_PATTERNS.some((re) => re.test(message));
+}
+
 /**
  * Downloads a single YouTube video as best-quality MP3 using yt-dlp + ffmpeg,
  * into a private per-attempt temp file (never the canonical shared path
@@ -76,6 +93,16 @@ export async function downloadVideo(
       // 403s on the actual media URL; falling back through these clients dodges
       // most of that without requiring cookies. See yt-dlp/yt-dlp#14680, #16131.
       '--extractor-args', 'youtube:player_client=default,android,-tv',
+      // Long (1-2h+) sets fail more often than short videos — a single dropped
+      // connection over a long-lived transfer otherwise kills the whole file.
+      // Chunking the download into ranged requests means a blip only costs one
+      // chunk's retry, not the entire file; raising retries/fragment-retries and
+      // downloading fragments concurrently both help finish before any
+      // throttled/short-lived signed URL expires.
+      '--http-chunk-size', '10M',
+      '--retries', '20',
+      '--fragment-retries', '20',
+      '--concurrent-fragments', '4',
       // Report the *source* stream's average bitrate, not our own transcode
       // target — --audio-quality 0 always aims for the same ~245kbps VBR
       // regardless of input, so measuring the output file can't tell a poor

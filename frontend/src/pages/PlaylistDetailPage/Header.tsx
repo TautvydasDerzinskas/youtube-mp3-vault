@@ -19,7 +19,7 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: 3, flexShrink: 0 }}>
       <Tooltip title={t('playlists.detail.back')}>
         <IconButton onClick={() => navigate('/playlists')} sx={{ mb: 1, ml: -1 }}>
           <ArrowBackIcon />

@@ -25,7 +25,7 @@ export default function PlaylistDetailPage() {
   }
 
   return (
-    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header
         playlist={playlist}
         genreCounts={genreCounts}
@@ -33,7 +33,9 @@ export default function PlaylistDetailPage() {
         onToggleGenre={toggleGenre}
         onClearGenres={clearGenres}
       />
-      <Box sx={{ flexGrow: 1, minHeight: 0, height: { xs: '50vh', sm: '65vh' } }}>
+      {/* Takes whatever height Header didn't use — TrackList's own virtualized
+          list is what actually scrolls, Header stays pinned above it. */}
+      <Box sx={{ flexGrow: 1, minHeight: 0 }}>
         <TrackList
           tracks={filteredTracks}
           playableTracks={playableTracks}

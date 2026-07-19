@@ -177,7 +177,7 @@ router.get('/:id/videos', requireAuth, async (req: AuthRequest, res, next) => {
       return;
     }
     const videos = await prisma.playlistVideo.findMany({
-      where: { playlistId: playlist.id },
+      where: { playlistId: playlist.id, isAvailable: true },
       orderBy: { position: 'asc' },
     });
     res.json({ videos });

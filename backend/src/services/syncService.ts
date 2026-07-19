@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { fetchPlaylist } from './youtube';
-import { downloadVideo, publishToSharedStore, removeSharedFile } from './downloader';
+import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable } from './downloader';
 
 /** True for a Prisma unique-constraint violation (P2002) — i.e. we lost a create race. */
 function isUniqueConstraintViolation(err: unknown): boolean {
@@ -128,9 +128,15 @@ async function _downloadPending(playlistId: string): Promise<void> {
       } catch (err) {
         const message = (err as Error).message;
         console.error(`[sync] ✗ ${video.youtubeId}:`, message);
+        // A permanently-blocked video (removed/private/geo-blocked/copyright) will
+        // fail identically forever — flag it as unavailable so it's hidden from
+        // the UI, excluded from failed-count/progress stats, and never retried,
+        // instead of sitting as a "failed" row the user can't do anything about.
         await prisma.playlistVideo.update({
           where: { id: video.id },
-          data: { downloadStatus: 'failed', downloadError: message.slice(0, 500) },
+          data: isPermanentlyUnavailable(message)
+            ? { downloadStatus: 'failed', downloadError: message.slice(0, 500), isAvailable: false }
+            : { downloadStatus: 'failed', downloadError: message.slice(0, 500) },
         });
       }
     }
@@ -267,7 +273,7 @@ export function retryFailedVideos(playlistId: string): void {
         data: { syncStatus: 'syncing' },
       });
       await prisma.playlistVideo.updateMany({
-        where: { playlistId, downloadStatus: 'failed' },
+        where: { playlistId, downloadStatus: 'failed', isAvailable: true },
         data: { downloadStatus: 'pending', downloadError: null },
       });
       await _downloadPending(playlistId);

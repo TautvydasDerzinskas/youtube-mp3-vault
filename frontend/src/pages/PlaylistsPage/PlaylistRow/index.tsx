@@ -35,16 +35,10 @@ export function PlaylistRow({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isBusy = playlist.syncStatus === 'syncing' || isSyncingLocally;
-  // syncPaused flips true the instant Pause is clicked, but the background loop
-  // only stops once the in-flight video finishes — until then syncStatus is
-  // still 'syncing'. Treat that gap as its own "pausing" transitional state.
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
-  const fullySynced = !isBusy && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
+  const isSynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
 
-  // Fully-synced playlists get a dedicated detail page instead of the inline
-  // expand-to-preview accordion — there's a full track browser/genre filter
-  // waiting for them there, so previewing a handful of rows inline isn't useful.
-  if (fullySynced) {
+  if (isSynced) {
     const open = () => navigate(`/playlists/${playlist.id}`);
     return (
       <Paper onClick={open} elevation={0}

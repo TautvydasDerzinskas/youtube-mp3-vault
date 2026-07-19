@@ -48,6 +48,15 @@ export function normalizePlaylistUrl(raw: string): { url: string; playlistId: st
   };
 }
 
+// yt-dlp passes these through as the literal title for playlist entries that
+// point at private/deleted/geo-locked videos — YouTube itself renders these
+// placeholders in the playlist UI, they're not something we're inferring.
+const PLACEHOLDER_TITLE_RE = /^\[(private video|deleted video|video unavailable|unavailable)\]$/i;
+
+function isPlaceholderTitle(title: string | undefined): boolean {
+  return !title || PLACEHOLDER_TITLE_RE.test(title.trim());
+}
+
 function pickThumbnail(thumbnails: unknown): string | null {
   if (!Array.isArray(thumbnails) || thumbnails.length === 0) return null;
   const sorted = [...thumbnails].sort((a, b) => {
@@ -108,15 +117,20 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
       const playlistTitle = (first.playlist_title ?? first.playlist ?? 'Unknown Playlist') as string;
       const playlistId = (first.playlist_id ?? '') as string;
 
-      const videos: VideoEntry[] = entries.map((e: Record<string, unknown>, idx: number) => ({
-        id: e.id as string,
-        title: (e.title as string | undefined) ?? '[Unavailable]',
-        duration: typeof e.duration === 'number' ? e.duration : null,
-        thumbnailUrl: pickThumbnail(e.thumbnails) ?? (e.thumbnail as string | null) ?? null,
-        position: typeof e.playlist_index === 'number' ? (e.playlist_index as number) : idx + 1,
-        isAvailable: typeof e.id === 'string' && e.id.length > 0,
-        channelName: (e.channel as string | undefined) || (e.uploader as string | undefined) || null,
-      }));
+      // Private/deleted/region-locked entries always fail to download and never
+      // will — drop them here so they're never inserted, never attempted, and
+      // never counted, instead of showing up as permanent "failed" rows.
+      const videos: VideoEntry[] = entries
+        .map((e: Record<string, unknown>, idx: number) => ({
+          id: e.id as string,
+          title: (e.title as string | undefined) ?? '[Unavailable]',
+          duration: typeof e.duration === 'number' ? e.duration : null,
+          thumbnailUrl: pickThumbnail(e.thumbnails) ?? (e.thumbnail as string | null) ?? null,
+          position: typeof e.playlist_index === 'number' ? (e.playlist_index as number) : idx + 1,
+          isAvailable: typeof e.id === 'string' && e.id.length > 0 && !isPlaceholderTitle(e.title as string | undefined),
+          channelName: (e.channel as string | undefined) || (e.uploader as string | undefined) || null,
+        }))
+        .filter((v) => v.isAvailable);
 
       resolve({
         id: playlistId,
