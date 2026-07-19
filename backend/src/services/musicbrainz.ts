@@ -12,7 +12,6 @@ export interface TrackMetadata {
   artist: string | null;
   album: string | null;
   trackNumber: number | null;
-  genre: string | null;
   releaseYear: number | null;
   mbRecordingId: string | null;
 }
@@ -107,8 +106,10 @@ function escapeLucene(value: string): string {
  * video title (and, when the title alone doesn't look like "Artist - Title",
  * the uploading channel's name as an artist fallback). Two throttled requests
  * when a match is found: a search to find the closest recording, then a
- * lookup-by-MBID (the only reliable way to get genres + release/track info
- * back from MusicBrainz) for the details.
+ * lookup-by-MBID (the only reliable way to get release/track info back from
+ * MusicBrainz) for the details. Doesn't fetch genre — MB's crowd-sourced
+ * genre tags are missing for most non-mainstream recordings; see
+ * audioAnalysisWorker.ts for the audio-content-based replacement.
  * Returns null on no match, no connectivity, or any request/parsing failure —
  * callers treat that as "couldn't enrich this one", never as a hard error.
  */
@@ -150,17 +151,14 @@ export async function lookupTrackMetadata(rawTitle: string, channelName: string 
 
   const fallbackArtist = best['artist-credit']?.[0]?.name ?? artist ?? null;
 
-  const detail = await mbFetch(`/recording/${best.id}?inc=genres+releases+media&fmt=json`);
+  const detail = await mbFetch(`/recording/${best.id}?inc=releases+media&fmt=json`);
   if (!detail) {
-    return { artist: fallbackArtist, album: null, trackNumber: null, genre: null, releaseYear: null, mbRecordingId: best.id };
+    return { artist: fallbackArtist, album: null, trackNumber: null, releaseYear: null, mbRecordingId: best.id };
   }
 
   const release = detail.releases?.[0];
   const track = release?.media?.[0]?.track?.[0] ?? release?.media?.[0]?.tracks?.[0];
   const trackNumber = track?.number ? parseInt(track.number, 10) : null;
-
-  const genreList: Array<{ name?: string; count?: number }> = Array.isArray(detail.genres) ? detail.genres : [];
-  const topGenre = [...genreList].sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0]?.name ?? null;
 
   // "first-release-date" is on the recording (i.e. the song's original release
   // year, regardless of which particular release/compilation we matched to) —
@@ -172,7 +170,6 @@ export async function lookupTrackMetadata(rawTitle: string, channelName: string 
     artist: detail['artist-credit']?.[0]?.name ?? fallbackArtist,
     album: release?.title ?? null,
     trackNumber: Number.isFinite(trackNumber) ? trackNumber : null,
-    genre: topGenre,
     releaseYear: Number.isFinite(releaseYear) ? releaseYear : null,
     mbRecordingId: best.id,
   };

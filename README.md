@@ -24,7 +24,8 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 - **Automatic sync** — a cron job re-syncs every non-paused playlist every 3 hours
 - **Pause / resume automatic sync** — per playlist; while paused only Rename/Delete/Resume remain available, and pausing mid-sync waits for the in-flight video to finish before actually stopping
 - **Live "currently syncing" indicator** — shows which video (title + position/total) is being processed, even while the playlist row is collapsed, without flickering a loading spinner or resetting your scroll position
-- **MusicBrainz metadata enrichment** — each video is looked up on MusicBrainz in the background (best-effort, throttled to their 1 req/sec limit) to fill in artist, album, track number and genre; skipped whenever the server is offline and never blocks downloads. Lays the groundwork for upcoming genre/artist sub-playlist views
+- **MusicBrainz metadata enrichment** — each video is looked up on MusicBrainz in the background (best-effort, throttled to their 1 req/sec limit) to fill in artist, album, track number and release year; skipped whenever the server is offline and never blocks downloads. Lays the groundwork for upcoming genre/artist sub-playlist views
+- **Offline genre classification (Essentia)** — genre isn't sourced from MusicBrainz (its crowd-sourced tags are missing for most non-mainstream recordings) but classified locally from the downloaded audio itself, via a Discogs-EffNet model running in a dedicated `audio-analysis` service. Fully offline, no internet required. Opt-in (`--profile audio-analysis`, see below) and amd64-only — see the Stack table
 
 **Downloads**
 - **MP3 download pipeline** — `yt-dlp -x --audio-format mp3 --audio-quality 0` runs in the background after each sync
@@ -61,6 +62,7 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 | Backend | Node.js, Express, TypeScript, Passport.js |
 | Database | PostgreSQL 16 via Prisma ORM |
 | Scraping & downloads | yt-dlp (Python, installed in the backend container) |
+| Genre classification | Essentia (Discogs-EffNet model), own FastAPI service — opt-in, amd64-only (no arm64 wheel upstream) |
 | Reverse proxy | nginx (serves SPA + proxies `/api` to backend) |
 | Container | Docker Compose |
 
@@ -106,6 +108,14 @@ docker-compose up --build       # v1 (standalone)
 The app is available at **http://localhost** (or the port set by `FRONTEND_PORT`).
 
 On first boot the backend automatically runs database migrations, seeds the demo account, and starts the cron scheduler before accepting requests.
+
+Genre classification (`audio-analysis`) is opt-in — it's amd64-only (no arm64 wheel for its Essentia dependency) and adds a fairly heavy image, so it's left out of a plain `docker compose up`. Enable it with:
+
+```bash
+docker compose --profile audio-analysis up --build -d
+```
+
+Without it, everything else works exactly the same — genres just never get filled in.
 
 ### Stop
 
@@ -236,7 +246,11 @@ npm run dev
 │       ├── middleware/        # JWT auth helpers (ban check + admin gate), error handler
 │       ├── routes/            # auth, playlists, admin (admin-only user management)
 │       └── services/          # passport, prisma, mailer, yt-dlp wrapper, sync engine,
-│                               # downloader, playlist stats, connectivity check, demo user seed, scheduler
+│                               # downloader, playlist stats, connectivity check, demo user seed, scheduler,
+│                               # musicbrainz + audioAnalysis workers
+├── audio-analysis/            # Essentia genre classification service (opt-in, amd64-only)
+│   ├── Dockerfile             # downloads the Discogs-EffNet model files at build time
+│   └── app.py                 # FastAPI: POST /analyze { path }, GET /health
 └── frontend/
     ├── Dockerfile
     ├── nginx.conf             # SPA + /api proxy

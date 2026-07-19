@@ -1,0 +1,10 @@
+# essentia-tensorflow ships as a compiled wheel (no sdist) — pin to a version
+# we've confirmed has a manylinux2014_x86_64 wheel for this Dockerfile's
+# Python version. Newer dev releases sometimes only publish wheels for a
+# single, very new CPython version (e.g. the latest at time of writing only
+# ships cp314), which would break `pip install` here without warning if left
+# unpinned. Bundles its own TensorFlow runtime — no separate tensorflow package.
+essentia-tensorflow==2.1b6.dev1389
+numpy>=1.25,<2
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.30,<0.31

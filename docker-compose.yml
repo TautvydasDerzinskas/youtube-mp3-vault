@@ -51,6 +51,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       MUSIC_DIR: /data
       SLSKD_URL: http://slskd:5030
+      AUDIO_ANALYSIS_URL: http://audio-analysis:8000
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -64,8 +65,44 @@ services:
         condition: service_healthy
       slskd:
         condition: service_started
+      # No dependency on audio-analysis, deliberately: it's an opt-in,
+      # best-effort companion (see below) — the backend's audioAnalysisWorker
+      # already treats "unreachable" as a normal, retry-later condition, so
+      # there's nothing to gain from coupling startup order to it, and doing
+      # so would fight the `profiles` opt-in below (Compose refuses to start
+      # a service that depends_on a profiled-off service).
     networks:
       - app-net
+
+  # Local, offline genre classification (Essentia + Discogs-EffNet) — see
+  # audio-analysis/app.py. Opt-in via Compose profile, not started by a plain
+  # `docker compose up`: essentia-tensorflow only ships amd64 Linux wheels (no
+  # arm64 build exists), so this image's build would hard-fail on an arm64
+  # host with no x86 emulation available — a real scenario for this project,
+  # since the OpenMediaVault deployment path above is often run on ARM NAS/
+  # Raspberry Pi hardware. Making it default-off means every existing
+  # deployment keeps working unchanged; enable it with:
+  #   docker compose --profile audio-analysis up -d --build
+  # (or set COMPOSE_PROFILES=audio-analysis in .env). On an amd64 host this
+  # just works; on arm64 with Docker Desktop (e.g. Apple Silicon) it still
+  # works via QEMU emulation, just slower.
+  audio-analysis:
+    profiles: ["audio-analysis"]
+    build:
+      context: ./audio-analysis
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: unless-stopped
+    volumes:
+      - music_data:/data:ro
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   frontend:
     build:

@@ -76,11 +76,26 @@ model PlaylistVideo {
   artist         String?
   album          String?
   trackNumber    Int?
+  // Sourced from local Essentia audio-content analysis (see audio-analysis/
+  // and audioAnalysisWorker.ts), not MusicBrainz — MB's crowd-sourced genre
+  // tags are missing for most non-mainstream recordings, audio analysis
+  // works on every downloaded track regardless.
   genre          String?
   releaseYear    Int?
   mbRecordingId  String?
   metadataStatus String     @default("pending") // pending | found | not_found | error
   metadataFetchedAt DateTime?
+  // Needs the actual downloaded audio (unlike metadataStatus above, which only
+  // needs the title), so this only ever progresses once downloadStatus is
+  // 'done' — see audioAnalysisWorker.ts.
+  audioAnalysisStatus    String     @default("pending") // pending | done | error
+  audioAnalysisFetchedAt DateTime?
+  // Track-level mean-pooled embedding from the Discogs-EffNet audio model —
+  // captured now, as a free byproduct of genre classification, so a future
+  // similarity/recommendation feature doesn't need to re-analyze the whole
+  // library from scratch. Raw float32 bytes (not JSON — a few KB instead of
+  // ~20KB of text per track); no consumer yet.
+  audioEmbedding Bytes?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
@@ -93,6 +108,8 @@ model PlaylistVideo {
   // without this, "find the next pending video across every playlist" degrades to a
   // full table scan once a library gets into the tens of thousands of rows.
   @@index([metadataStatus, addedAt])
+  // Same rationale, for the audio-analysis worker's equivalent global queue query.
+  @@index([audioAnalysisStatus, addedAt])
   @@map("playlist_videos")
 }
 

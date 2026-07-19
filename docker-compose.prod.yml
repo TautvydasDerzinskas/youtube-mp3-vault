@@ -51,6 +51,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       MUSIC_DIR: /data
       SLSKD_URL: http://slskd:5030
+      AUDIO_ANALYSIS_URL: http://audio-analysis:8000
       SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required for staging/production so signup emails can send}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -64,8 +65,29 @@ services:
         condition: service_healthy
       slskd:
         condition: service_started
+      # See audio-analysis service below — deliberately not depended on here.
     networks:
       - app-net
+
+  # Local, offline genre classification — opt-in via Compose profile, same
+  # reasoning as docker-compose.yml. Published as its own GHCR image (see
+  # .github/workflows/docker-publish.yml), amd64-only. Enable with:
+  #   docker compose -f docker-compose.prod.yml --profile audio-analysis up -d
+  audio-analysis:
+    profiles: ["audio-analysis"]
+    image: ghcr.io/${GHCR_NAMESPACE:?GHCR_NAMESPACE is required, e.g. yourname/youtube-music-playlist-vault}/audio-analysis:${IMAGE_TAG:-latest}
+    platform: linux/amd64
+    restart: unless-stopped
+    volumes:
+      - music_data:/data:ro
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   frontend:
     image: ghcr.io/${GHCR_NAMESPACE:?GHCR_NAMESPACE is required, e.g. yourname/youtube-music-playlist-vault}/frontend:${IMAGE_TAG:-latest}

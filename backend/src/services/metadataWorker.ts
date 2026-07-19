@@ -57,7 +57,7 @@ async function loop(): Promise<void> {
         data: meta
           ? {
               artist: meta.artist, album: meta.album, trackNumber: meta.trackNumber,
-              genre: meta.genre, releaseYear: meta.releaseYear, mbRecordingId: meta.mbRecordingId,
+              releaseYear: meta.releaseYear, mbRecordingId: meta.mbRecordingId,
               metadataStatus: 'found', metadataFetchedAt: new Date(),
             }
           : { metadataStatus: 'not_found', metadataFetchedAt: new Date() },

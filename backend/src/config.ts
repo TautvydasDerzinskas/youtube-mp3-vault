@@ -13,6 +13,9 @@ export const config = {
   cookieMaxAge: 7 * 24 * 60 * 60 * 1000,
   isProduction: process.env.NODE_ENV === 'production',
   musicDir: process.env.MUSIC_DIR || '/data',
+  // Local Essentia audio-analysis service (see /audio-analysis) — genre
+  // classification, works fully offline, no isOnline() gating needed.
+  audioAnalysisUrl: process.env.AUDIO_ANALYSIS_URL || 'http://localhost:8000',
   // Whichever email registers with this address is marked admin at creation time.
   adminEmail: (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
   smtp: {
