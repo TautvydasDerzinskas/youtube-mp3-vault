@@ -69,6 +69,10 @@ router.post('/users/:id/ban', async (req: AuthRequest, res, next) => {
       res.status(404).json({ error: 'User not found' });
       return;
     }
+    if (existing.isAdmin) {
+      res.status(400).json({ error: 'You cannot ban an admin account' });
+      return;
+    }
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: { isBanned: true },

@@ -22,7 +22,7 @@ interface PlaylistRowProps {
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
-  onDelete: (e: React.MouseEvent, playlist: Playlist) => void;
+  onDelete: (playlist: Playlist) => void;
 }
 
 export function PlaylistRow({
@@ -46,7 +46,7 @@ export function PlaylistRow({
         opacity: isPausing ? 0.55 : 1, transition: 'opacity 0.2s' }}>
 
       <AccordionSummary expandIcon={<ExpandMoreIcon />}
-        sx={{ px: 2, py: 1, '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5 } }}>
+        sx={{ px: 2, py: 1, '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5, minWidth: 0 } }}>
 
         <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
 

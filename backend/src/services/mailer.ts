@@ -33,8 +33,8 @@ export async function sendVerificationEmail(
   await getTransporter().sendMail({
     from: config.smtp.from,
     to,
-    subject: 'Confirm your MusicVault account',
-    text: `Hi ${displayName},\n\nConfirm your email address to finish creating your MusicVault account:\n${link}\n\nThis link expires in 24 hours.`,
-    html: `<p>Hi ${displayName},</p><p>Confirm your email address to finish creating your MusicVault account:</p><p><a href="${link}">${link}</a></p><p>This link expires in 24 hours.</p>`,
+    subject: 'Confirm your YoutubeVault account',
+    text: `Hi ${displayName},\n\nConfirm your email address to finish creating your YoutubeVault account:\n${link}\n\nThis link expires in 24 hours.`,
+    html: `<p>Hi ${displayName},</p><p>Confirm your email address to finish creating your YoutubeVault account:</p><p><a href="${link}">${link}</a></p><p>This link expires in 24 hours.</p>`,
   });
 }

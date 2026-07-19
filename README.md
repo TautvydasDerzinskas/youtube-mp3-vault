@@ -1,4 +1,4 @@
-# MusicVault
+# YoutubeVault
 
 A self-hosted service that tracks YouTube playlists, automatically downloads them as MP3s for offline listening, and lets you play them back right in the browser — with a companion mobile app planned for a future phase.
 
@@ -208,7 +208,7 @@ npm run dev
 | `SMTP_PORT` | No | `587` | SMTP server port |
 | `SMTP_SECURE` | No | `false` | Use implicit TLS (`true` for port 465) |
 | `SMTP_USER` / `SMTP_PASS` | No | — | SMTP auth credentials, if your server requires them |
-| `SMTP_FROM` | No | `MusicVault <no-reply@localhost>` | `From` address on verification emails |
+| `SMTP_FROM` | No | `YoutubeVault <no-reply@localhost>` | `From` address on verification emails |
 | `GHCR_NAMESPACE` | `docker-compose.prod.yml` only | — | `owner/repo` (lowercase) of this repo on GitHub, used to resolve the published image names |
 | `IMAGE_TAG` | No (`docker-compose.prod.yml` only) | `latest` | Which published image tag to run — `latest` or a specific commit SHA |
 

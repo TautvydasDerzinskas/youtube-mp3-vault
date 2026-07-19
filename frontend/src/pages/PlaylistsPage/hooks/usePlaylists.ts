@@ -100,8 +100,7 @@ export function usePlaylists() {
     updatePlaylist(updated);
   };
 
-  const handleDelete = async (e: React.MouseEvent, playlist: Playlist) => {
-    e.stopPropagation();
+  const handleDelete = async (playlist: Playlist) => {
     await playlistsApi.remove(playlist.id);
     setPlaylists(prev => prev.filter(p => p.id !== playlist.id));
     if (expanded === playlist.id) setExpanded(false);

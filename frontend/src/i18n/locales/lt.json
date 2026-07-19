@@ -1,12 +1,13 @@
 {
   "common": {
     "cancel": "Atšaukti",
+    "confirm": "Patvirtinti",
     "save": "Išsaugoti",
     "close": "Uždaryti",
     "loading": "Kraunama…"
   },
   "auth": {
-    "appName": "MusicVault",
+    "appName": "YoutubeVault",
     "signIn": "Prisijungti",
     "register": "Registruotis",
     "email": "El. paštas",
@@ -66,6 +67,7 @@
     "resumeSync": "Tęsti automatinę sinchronizaciją",
     "pauseSync": "Pristabdyti automatinę sinchronizaciją",
     "remove": "Pašalinti",
+    "unavailableWhileSyncing": "Negalima sinchronizavimo metu",
     "addDialog": {
       "title": "Pridėti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",
@@ -92,7 +94,13 @@
       "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)"
     },
     "miniPlayer": {
-      "close": "Uždaryti grotuvą"
+      "close": "Uždaryti grotuvą",
+      "previous": "Ankstesnis",
+      "next": "Kitas"
+    },
+    "deleteConfirm": {
+      "title": "Pašalinti grojaraštį?",
+      "message": "Tai visam laikui ištrins „{{name}}“ ir visus jo atsisiųstus failus. Šio veiksmo atšaukti negalėsite."
     },
     "status": {
       "pending": "laukiama",
@@ -139,6 +147,11 @@
     "viewDetails": "Peržiūrėti informaciją",
     "ban": "Blokuoti",
     "unban": "Atblokuoti",
+    "cannotBanAdmin": "Administratorių paskyrų blokuoti negalima",
+    "banConfirm": {
+      "title": "Blokuoti šį naudotoją?",
+      "message": "„{{name}}“ nedelsiant praras prieigą prie savo paskyros. Bet kada galėsite jį atblokuoti."
+    },
     "detailsTitle": "Naudotojo informacija",
     "playlistsTitle": "Grojaraščiai ({{count}})",
     "noPlaylists": "Šis naudotojas neturi grojaraščių."

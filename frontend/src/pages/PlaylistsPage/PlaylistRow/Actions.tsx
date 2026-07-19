@@ -15,7 +15,7 @@ interface ActionsProps {
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
-  onDelete: (e: React.MouseEvent, playlist: Playlist) => void;
+  onDelete: (playlist: Playlist) => void;
 }
 
 export function Actions({
@@ -25,9 +25,9 @@ export function Actions({
 
   return (
     <Box onClick={e => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
-      <Tooltip title={t('playlists.rename')}>
+      <Tooltip title={isBusy ? t('playlists.unavailableWhileSyncing') : t('playlists.rename')}>
         <span>
-          <IconButton size="small" disabled={isPausing}
+          <IconButton size="small" disabled={isPausing || isBusy}
             onClick={e => { e.stopPropagation(); onRename(playlist); }}>
             <EditIcon fontSize="small" />
           </IconButton>
@@ -58,9 +58,9 @@ export function Actions({
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip title={t('playlists.remove')}>
+      <Tooltip title={isBusy ? t('playlists.unavailableWhileSyncing') : t('playlists.remove')}>
         <span>
-          <IconButton size="small" disabled={isPausing} onClick={e => onDelete(e, playlist)} sx={{ color: 'error.main' }}>
+          <IconButton size="small" disabled={isPausing || isBusy} onClick={e => { e.stopPropagation(); onDelete(playlist); }} sx={{ color: 'error.main' }}>
             <DeleteIcon fontSize="small" />
           </IconButton>
         </span>

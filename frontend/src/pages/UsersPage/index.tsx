@@ -9,12 +9,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import { adminApi, AdminUser } from '../../api/admin';
 import { UserDetailDialog } from './UserDetailDialog';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 export default function UsersPage() {
   const { t } = useTranslation();
   const [users, setUsers] = useState<AdminUser[] | 'loading' | 'error'>('loading');
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
+  const [confirmBanUser, setConfirmBanUser] = useState<AdminUser | null>(null);
 
   const load = () => {
     setUsers('loading');
@@ -23,7 +25,7 @@ export default function UsersPage() {
 
   useEffect(load, []);
 
-  const handleToggleBan = async (user: AdminUser) => {
+  const performToggleBan = async (user: AdminUser) => {
     setActioningId(user.id);
     try {
       const updated = user.isBanned ? await adminApi.unbanUser(user.id) : await adminApi.banUser(user.id);
@@ -31,6 +33,22 @@ export default function UsersPage() {
     } finally {
       setActioningId(null);
     }
+  };
+
+  // Banning is destructive (immediately revokes access), so it goes through a
+  // confirmation step; unbanning is non-destructive and applies immediately.
+  const handleToggleBan = (user: AdminUser) => {
+    if (user.isBanned) {
+      performToggleBan(user);
+    } else {
+      setConfirmBanUser(user);
+    }
+  };
+
+  const handleConfirmBan = async () => {
+    if (!confirmBanUser) return;
+    await performToggleBan(confirmBanUser);
+    setConfirmBanUser(null);
   };
 
   if (users === 'loading') {
@@ -84,18 +102,28 @@ export default function UsersPage() {
                       <ViewIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title={user.isBanned ? t('users.unban') : t('users.ban')}>
-                    <span>
-                      <IconButton
-                        size="small"
-                        disabled={actioningId === user.id}
-                        onClick={() => handleToggleBan(user)}
-                        sx={{ color: user.isBanned ? 'success.main' : 'error.main' }}
-                      >
-                        {user.isBanned ? <UnbanIcon fontSize="small" /> : <BanIcon fontSize="small" />}
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                  {user.isAdmin && !user.isBanned ? (
+                    <Tooltip title={t('users.cannotBanAdmin')}>
+                      <span>
+                        <IconButton size="small" disabled sx={{ color: 'text.disabled' }}>
+                          <BanIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title={user.isBanned ? t('users.unban') : t('users.ban')}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={actioningId === user.id}
+                          onClick={() => handleToggleBan(user)}
+                          sx={{ color: user.isBanned ? 'success.main' : 'error.main' }}
+                        >
+                          {user.isBanned ? <UnbanIcon fontSize="small" /> : <BanIcon fontSize="small" />}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -105,6 +133,18 @@ export default function UsersPage() {
 
       {detailUserId && (
         <UserDetailDialog userId={detailUserId} onClose={() => setDetailUserId(null)} />
+      )}
+
+      {confirmBanUser && (
+        <ConfirmDialog
+          title={t('users.banConfirm.title')}
+          message={t('users.banConfirm.message', { name: confirmBanUser.displayName })}
+          confirmLabel={t('users.ban')}
+          destructive
+          loading={actioningId === confirmBanUser.id}
+          onConfirm={handleConfirmBan}
+          onCancel={() => setConfirmBanUser(null)}
+        />
       )}
     </Box>
   );

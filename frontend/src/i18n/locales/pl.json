@@ -1,12 +1,13 @@
 {
   "common": {
     "cancel": "Anuluj",
+    "confirm": "Potwierdź",
     "save": "Zapisz",
     "close": "Zamknij",
     "loading": "Ładowanie…"
   },
   "auth": {
-    "appName": "MusicVault",
+    "appName": "YoutubeVault",
     "signIn": "Zaloguj się",
     "register": "Zarejestruj się",
     "email": "E-mail",
@@ -67,6 +68,7 @@
     "resumeSync": "Wznów automatyczną synchronizację",
     "pauseSync": "Wstrzymaj automatyczną synchronizację",
     "remove": "Usuń",
+    "unavailableWhileSyncing": "Niedostępne podczas synchronizacji",
     "addDialog": {
       "title": "Dodaj playlistę",
       "urlLabel": "Link do playlisty YouTube",
@@ -93,7 +95,13 @@
       "downloadMp3": "Pobierz MP3"
     },
     "miniPlayer": {
-      "close": "Zamknij odtwarzacz"
+      "close": "Zamknij odtwarzacz",
+      "previous": "Poprzedni",
+      "next": "Następny"
+    },
+    "deleteConfirm": {
+      "title": "Usunąć playlistę?",
+      "message": "Spowoduje to trwałe usunięcie „{{name}}” i wszystkich pobranych plików. Tej operacji nie można cofnąć."
     },
     "status": {
       "pending": "oczekuje",
@@ -140,6 +148,11 @@
     "viewDetails": "Zobacz szczegóły",
     "ban": "Zbanuj",
     "unban": "Odbanuj",
+    "cannotBanAdmin": "Kont administratorów nie można zbanować",
+    "banConfirm": {
+      "title": "Zbanować tego użytkownika?",
+      "message": "„{{name}}” natychmiast straci dostęp do swojego konta. Możesz go odbanować w dowolnym momencie."
+    },
     "detailsTitle": "Szczegóły użytkownika",
     "playlistsTitle": "Playlisty ({{count}})",
     "noPlaylists": "Ten użytkownik nie ma żadnych playlist."

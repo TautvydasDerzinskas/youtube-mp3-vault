@@ -4,17 +4,20 @@ import { Add as AddIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../api/youtube';
 import { usePlaylists } from './hooks/usePlaylists';
-import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { usePlayer } from '../../contexts/PlayerContext';
 import { AddPlaylistDialog } from './AddPlaylistDialog';
 import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
-import { MiniPlayer } from './MiniPlayer';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { displayName } from './utils';
 
 export default function PlaylistsPage() {
   const { t } = useTranslation();
   const [addOpen, setAddOpen] = useState(false);
   const [renaming, setRenaming] = useState<Playlist | null>(null);
+  const [deleting, setDeleting] = useState<Playlist | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const online = useOnlineStatus();
 
   const {
@@ -23,16 +26,20 @@ export default function PlaylistsPage() {
     handleRetryFailed, handleTogglePause, handleDelete: rawHandleDelete,
   } = usePlaylists();
 
-  const {
-    nowPlaying, isAudioPlaying, setIsAudioPlaying, audioRef,
-    handleTogglePlay, handleTrackEnded, stopIfPlaylist, handleClosePlayer, nowPlayingVideo,
-  } = useAudioPlayer(videoCache);
+  const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist } = usePlayer();
 
   // Composed here (rather than threaded through usePlaylists) so the two hooks
   // stay independent: stop playback if the playlist being deleted is playing.
-  const handleDelete = async (e: React.MouseEvent, playlist: Playlist) => {
-    await rawHandleDelete(e, playlist);
-    stopIfPlaylist(playlist.id);
+  const handleConfirmDelete = async () => {
+    if (!deleting) return;
+    setDeleteLoading(true);
+    try {
+      await rawHandleDelete(deleting);
+      stopIfPlaylist(deleting.id);
+      setDeleting(null);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   if (loading) {
@@ -40,7 +47,7 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <Box sx={{ p: 3, pb: nowPlaying ? 9 : 3, maxWidth: 900 }}>
+    <Box sx={{ p: 3 }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
         <Typography variant="h5" fontWeight={700}>{t('playlists.title')}</Typography>
@@ -81,7 +88,7 @@ export default function PlaylistsPage() {
           onSync={handleSync}
           onRetryFailed={handleRetryFailed}
           onTogglePause={handleTogglePause}
-          onDelete={handleDelete}
+          onDelete={setDeleting}
         />
       ))}
 
@@ -90,16 +97,15 @@ export default function PlaylistsPage() {
         <RenameDialog playlist={renaming} onClose={() => setRenaming(null)}
           onRenamed={updated => { updatePlaylist(updated); setRenaming(null); }} />
       )}
-
-      {/* Mini player — shown whenever something is playing; drives auto-advance */}
-      {nowPlaying && (
-        <MiniPlayer
-          title={nowPlayingVideo?.title}
-          audioRef={audioRef}
-          onPlay={() => setIsAudioPlaying(true)}
-          onPause={() => setIsAudioPlaying(false)}
-          onEnded={handleTrackEnded}
-          onClose={handleClosePlayer}
+      {deleting && (
+        <ConfirmDialog
+          title={t('playlists.deleteConfirm.title')}
+          message={t('playlists.deleteConfirm.message', { name: displayName(deleting) })}
+          confirmLabel={t('playlists.remove')}
+          destructive
+          loading={deleteLoading}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleting(null)}
         />
       )}
     </Box>
