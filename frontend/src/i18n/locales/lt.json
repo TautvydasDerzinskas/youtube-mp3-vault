@@ -91,7 +91,9 @@
       "pause": "Pristabdyti",
       "watchOnYouTube": "Žiūrėti YouTube",
       "downloadMp3": "Atsisiųsti MP3",
-      "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)"
+      "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)",
+      "mbVerified": "Rasta MusicBrainz atitiktis",
+      "mbError": "Nepavyko gauti MusicBrainz duomenų — bus bandoma vėl automatiškai"
     },
     "miniPlayer": {
       "close": "Uždaryti grotuvą",

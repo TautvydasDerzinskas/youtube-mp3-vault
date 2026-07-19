@@ -24,6 +24,7 @@ A self-hosted service that tracks YouTube playlists, automatically downloads the
 - **Automatic sync** — a cron job re-syncs every non-paused playlist every 3 hours
 - **Pause / resume automatic sync** — per playlist; while paused only Rename/Delete/Resume remain available, and pausing mid-sync waits for the in-flight video to finish before actually stopping
 - **Live "currently syncing" indicator** — shows which video (title + position/total) is being processed, even while the playlist row is collapsed, without flickering a loading spinner or resetting your scroll position
+- **MusicBrainz metadata enrichment** — each video is looked up on MusicBrainz in the background (best-effort, throttled to their 1 req/sec limit) to fill in artist, album, track number and genre; skipped whenever the server is offline and never blocks downloads. Lays the groundwork for upcoming genre/artist sub-playlist views
 
 **Downloads**
 - **MP3 download pipeline** — `yt-dlp -x --audio-format mp3 --audio-quality 0` runs in the background after each sync

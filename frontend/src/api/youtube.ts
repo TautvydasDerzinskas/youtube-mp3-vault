@@ -29,6 +29,12 @@ export interface PlaylistVideo {
   downloadError: string | null;
   fileSize: number | null;
   bitrate: number | null;
+  addedAt: string;
+  artist: string | null;
+  album: string | null;
+  trackNumber: number | null;
+  genre: string | null;
+  metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
 }
 
 export const playlistsApi = {

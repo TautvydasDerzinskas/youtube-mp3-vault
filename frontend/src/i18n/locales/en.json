@@ -90,7 +90,9 @@
       "pause": "Pause",
       "watchOnYouTube": "Watch on YouTube",
       "downloadMp3": "Download MP3",
-      "lowQuality": "Low source quality (~{{bitrate}}kbps)"
+      "lowQuality": "Low source quality (~{{bitrate}}kbps)",
+      "mbVerified": "MusicBrainz match",
+      "mbError": "MusicBrainz lookup failed — will retry automatically"
     },
     "miniPlayer": {
       "close": "Close player",

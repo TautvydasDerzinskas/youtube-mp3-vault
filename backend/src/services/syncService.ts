@@ -236,6 +236,8 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
     });
 
     // ── 6. Download pending videos ────────────────────────────────────────────
+    // (MusicBrainz metadata enrichment runs independently — see metadataWorker.ts —
+    // so a large backlog there never blocks this from downloading new videos.)
     await _downloadPending(playlistId);
     // _downloadPending sets syncStatus → idle / error
 

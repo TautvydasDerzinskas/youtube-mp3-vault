@@ -6,6 +6,7 @@ import {
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, WarningAmber as WarningAmberIcon,
+  Verified as VerifiedIcon, SyncProblem as SyncProblemIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../../api/youtube';
@@ -19,6 +20,11 @@ interface VideoListProps {
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo) => void;
+}
+
+function mbVerifiedTooltip(v: PlaylistVideo, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const details = [v.artist, v.album, v.genre].filter(Boolean).join(' · ');
+  return details ? `${t('playlists.videoList.mbVerified')}: ${details}` : t('playlists.videoList.mbVerified');
 }
 
 export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlaying, onTogglePlay }: VideoListProps) {
@@ -64,7 +70,7 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
                   fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' } }}
               secondary={
                 <Typography variant="caption" color="text.secondary">
-                  #{v.position}{!v.isAvailable ? ` · ${t('playlists.videoList.unavailable')}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
+                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genre ? ` · ${v.genre}` : ''}{!v.isAvailable ? ` · ${t('playlists.videoList.unavailable')}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
                 </Typography>
               }
             />
@@ -72,6 +78,16 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
               <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
                 <Box sx={{ display: 'flex' }}>{STATUS_ICON[v.downloadStatus] ?? null}</Box>
               </Tooltip>
+              {v.metadataStatus === 'found' && (
+                <Tooltip title={mbVerifiedTooltip(v, t)}>
+                  <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                </Tooltip>
+              )}
+              {v.metadataStatus === 'error' && (
+                <Tooltip title={t('playlists.videoList.mbError')}>
+                  <SyncProblemIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                </Tooltip>
+              )}
               {v.downloadStatus === 'done' && isLowBitrate(v.bitrate) && (
                 <Tooltip title={t('playlists.videoList.lowQuality', { bitrate: v.bitrate })}>
                   <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />

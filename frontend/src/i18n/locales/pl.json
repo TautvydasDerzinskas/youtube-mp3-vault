@@ -92,7 +92,9 @@
       "pause": "Wstrzymaj",
       "watchOnYouTube": "Obejrzyj na YouTube",
       "lowQuality": "Niska jakość źródła (~{{bitrate}}kbps)",
-      "downloadMp3": "Pobierz MP3"
+      "downloadMp3": "Pobierz MP3",
+      "mbVerified": "Dopasowano w MusicBrainz",
+      "mbError": "Nie udało się pobrać danych z MusicBrainz — spróbujemy ponownie automatycznie"
     },
     "miniPlayer": {
       "close": "Zamknij odtwarzacz",

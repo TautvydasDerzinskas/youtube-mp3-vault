@@ -63,12 +63,32 @@ model PlaylistVideo {
   mediaFile      MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: Restrict)
   fileSize       Int?
   bitrate        Int?
+  // Set once at row creation and never touched again — unlike createdAt (a general
+  // audit column elsewhere in the app), this is specifically the "date added to
+  // this library" used to order/filter entries independently of YouTube's mutable
+  // playlist `position`.
+  addedAt        DateTime   @default(now())
+  // Best-effort MusicBrainz enrichment — looked up once (per video) in the
+  // background during sync, gated on connectivity and never blocking downloads.
+  artist         String?
+  album          String?
+  trackNumber    Int?
+  genre          String?
+  mbRecordingId  String?
+  metadataStatus String     @default("pending") // pending | found | not_found | error
+  metadataFetchedAt DateTime?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
   @@unique([playlistId, youtubeId])
   @@index([playlistId, position])
   @@index([playlistId, downloadStatus])
+  @@index([playlistId, artist])
+  @@index([playlistId, genre])
+  // Used by the standalone metadata worker's global (cross-playlist) queue query —
+  // without this, "find the next pending video across every playlist" degrades to a
+  // full table scan once a library gets into the tens of thousands of rows.
+  @@index([metadataStatus, addedAt])
   @@map("playlist_videos")
 }
 

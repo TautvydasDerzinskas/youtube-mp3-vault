@@ -13,6 +13,7 @@ import { resetStuckSyncs } from './services/syncService';
 import { startScheduler } from './services/scheduler';
 import { ensureDemoUser } from './services/demoUser';
 import { isOnline, startConnectivityMonitor } from './services/connectivity';
+import { startMetadataWorker } from './services/metadataWorker';
 import { requireAuth } from './middleware/auth';
 
 const app = express();
@@ -51,6 +52,7 @@ app.listen(config.port, '0.0.0.0', async () => {
   }
   startScheduler();
   startConnectivityMonitor();
+  startMetadataWorker();
 });
 
 
