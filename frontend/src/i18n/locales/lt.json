@@ -121,6 +121,16 @@
       "clearGenreFilter": "Išvalyti žanrų filtrą",
       "noGenre": "Be žanro ({{count}})",
       "noTracks": "Nėra dainų, atitinkančių pasirinktus žanrus."
+    },
+    "trackDetail": {
+      "backToPlaylist": "Grįžti į grojaraštį",
+      "failedToLoad": "Nepavyko įkelti šios dainos.",
+      "recommendedTitle": "Rekomenduojama jums",
+      "recommendedEmpty": "Kol kas nėra rekomendacijų — ši daina dar neišanalizuota arba jūsų bibliotekoje nerasta nieko panašaus.",
+      "recommendedFailed": "Nepavyko įkelti rekomendacijų.",
+      "remixesTitle": "Remiksai YouTube",
+      "remixesEmpty": "Remiksų nerasta.",
+      "remixesFailed": "Nepavyko ieškoti remiksų."
     }
   },
   "profile": {

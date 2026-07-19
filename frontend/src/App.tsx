@@ -6,6 +6,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import AppLayout from './components/Layout/AppLayout';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
+import TrackDetailPage from './pages/TrackDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
 
@@ -68,6 +69,7 @@ export default function App() {
           <Route index element={<Navigate to="/playlists" replace />} />
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />
+          <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="users" element={<AdminRoute><UsersPage /></AdminRoute>} />
         </Route>

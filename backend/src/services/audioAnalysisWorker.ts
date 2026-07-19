@@ -63,6 +63,11 @@ async function loop(): Promise<void> {
             }
           : { audioAnalysisStatus: 'error', audioAnalysisFetchedAt: new Date() },
       });
+      if (result) {
+        console.log(`[audio-analysis] ✓ ${video.youtubeId} — ${result.genre} (${video.title.slice(0, 60)})`);
+      } else {
+        console.error(`[audio-analysis] ✗ ${video.youtubeId} — analysis failed (${video.title.slice(0, 60)})`);
+      }
     } catch (err) {
       // The video (or its whole playlist) can vanish mid-analysis if the user
       // deletes it — not a real failure, just move on to the next one.

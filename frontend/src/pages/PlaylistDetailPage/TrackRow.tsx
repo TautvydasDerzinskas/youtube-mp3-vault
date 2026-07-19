@@ -6,6 +6,7 @@ import {
 } from '@mui/icons-material';
 import { RowComponentProps } from 'react-window';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { playlistsApi, PlaylistVideo } from '../../api/youtube';
 import { NowPlaying } from '../PlaylistsPage/types';
 import { formatDuration, youtubeWatchUrl, STATUS_ICON } from '../PlaylistsPage/utils';
@@ -23,14 +24,16 @@ export function TrackRow({
   index, style, tracks, playlistId, playableTracks, nowPlaying, isAudioPlaying, onTogglePlay,
 }: RowComponentProps<TrackRowProps>) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const v = tracks[index];
   const isCurrentTrack = nowPlaying?.playlistId === playlistId && nowPlaying?.videoId === v.id;
 
   return (
-    <Box style={style} sx={{
+    <Box style={style} onClick={() => navigate(`/playlists/${playlistId}/${v.id}`)} sx={{
       display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5,
-      borderBottom: '1px solid #2a2a2a',
+      borderBottom: '1px solid #2a2a2a', cursor: 'pointer',
       bgcolor: isCurrentTrack ? 'action.selected' : 'transparent',
+      '&:hover': { bgcolor: isCurrentTrack ? 'action.selected' : 'action.hover' },
     }}>
       <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1, flexShrink: 0 }}>
         <MusicNoteIcon sx={{ fontSize: 16 }} />
@@ -80,7 +83,7 @@ export function TrackRow({
         )}
         {v.downloadStatus === 'done' && (
           <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-            <IconButton size="small" onClick={() => onTogglePlay(playlistId, v, playableTracks)} sx={{ color: 'primary.main' }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onTogglePlay(playlistId, v, playableTracks); }} sx={{ color: 'primary.main' }}>
               {isCurrentTrack && isAudioPlaying
                 ? <PauseTrackIcon sx={{ fontSize: 18 }} />
                 : <PlayArrowIcon sx={{ fontSize: 18 }} />}
@@ -88,13 +91,15 @@ export function TrackRow({
           </Tooltip>
         )}
         <Tooltip title={t('playlists.videoList.watchOnYouTube')}>
-          <IconButton size="small" component="a" href={youtubeWatchUrl(v.youtubeId)} target="_blank" rel="noopener noreferrer">
+          <IconButton size="small" component="a" href={youtubeWatchUrl(v.youtubeId)} target="_blank" rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}>
             <YouTubeIcon sx={{ fontSize: 16 }} />
           </IconButton>
         </Tooltip>
         {v.downloadStatus === 'done' && (
           <Tooltip title={t('playlists.videoList.downloadMp3')}>
-            <IconButton size="small" component="a" href={playlistsApi.downloadUrl(playlistId, v.id)} download>
+            <IconButton size="small" component="a" href={playlistsApi.downloadUrl(playlistId, v.id)} download
+              onClick={(e) => e.stopPropagation()}>
               <DownloadIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>

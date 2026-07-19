@@ -78,7 +78,9 @@ function cleanChannelName(raw: string | null | undefined): string | null {
 // tilde, colon, or "Title by Artist"). When nothing matches — a plain track
 // title with no artist embedded in it at all — falls back to the uploading
 // channel's name, since that's very often the artist's own channel.
-function parseArtistAndTitle(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
+// Exported for reuse by youtube.ts's remix search — same "get a clean
+// artist/title out of a raw YouTube title" problem, not MusicBrainz-specific.
+export function parseArtistAndTitle(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
   const cleaned = rawTitle
     .replace(/[([][^)\]]*(official|video|audio|lyrics?|hd|4k|visualizer|remaster\w*)[^)\]]*[)\]]/gi, ' ')
     .replace(/\s+/g, ' ')

@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/prisma';
-import { normalizePlaylistUrl, fetchPlaylist } from '../services/youtube';
+import { normalizePlaylistUrl, fetchPlaylist, searchRemixes } from '../services/youtube';
+import { parseArtistAndTitle } from '../services/musicbrainz';
 import { getSharedFilePath, sanitizeFilename } from '../services/downloader';
 import { withDownloadStats } from '../services/playlistStats';
+import { bufferToFloat32Array, cosineSimilarity } from '../services/embeddings';
 import {
   isSyncing,
   startBackgroundDownload,
@@ -15,6 +17,20 @@ import {
 } from '../services/syncService';
 
 const router = Router();
+
+// Every PlaylistVideo field except audioEmbedding — a several-KB binary blob
+// per row (see embeddings.ts), backend-internal, never something the UI
+// needs, so every video-returning response selects around it explicitly
+// rather than shipping it to the browser.
+const VIDEO_SELECT_WITHOUT_EMBEDDING = {
+  id: true, playlistId: true, youtubeId: true, title: true, duration: true,
+  thumbnailUrl: true, position: true, isAvailable: true, channelName: true,
+  downloadStatus: true, downloadError: true, mediaFileId: true, fileSize: true,
+  bitrate: true, addedAt: true, artist: true, album: true, trackNumber: true,
+  genre: true, releaseYear: true, mbRecordingId: true, metadataStatus: true,
+  metadataFetchedAt: true, audioAnalysisStatus: true, audioAnalysisFetchedAt: true,
+  createdAt: true, updatedAt: true,
+} as const;
 
 // ─── GET /api/playlists ────────────────────────────────────────────────────────
 
@@ -179,8 +195,124 @@ router.get('/:id/videos', requireAuth, async (req: AuthRequest, res, next) => {
     const videos = await prisma.playlistVideo.findMany({
       where: { playlistId: playlist.id, isAvailable: true },
       orderBy: { position: 'asc' },
+      select: VIDEO_SELECT_WITHOUT_EMBEDDING,
     });
     res.json({ videos });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/playlists/:id/videos/:videoId — single video ───────────────────
+
+router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id, isAvailable: true },
+      select: VIDEO_SELECT_WITHOUT_EMBEDDING,
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+    res.json({ video });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/playlists/:id/videos/:videoId/recommendations ──────────────────
+// "Sounds like this" — cosine similarity over the Essentia audio embedding
+// (see audioAnalysisWorker.ts), not genre matching. Scoped to every track the
+// user owns across all their playlists, not just the current one.
+
+const RECOMMENDATION_LIMIT = 10;
+
+router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const source = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+      select: { audioEmbedding: true },
+    });
+    if (!source?.audioEmbedding) {
+      // Not analyzed yet (or analysis failed) — nothing to compare against,
+      // not an error condition.
+      res.json({ recommendations: [] });
+      return;
+    }
+
+    const candidates = await prisma.playlistVideo.findMany({
+      where: {
+        playlist: { userId: req.userId },
+        downloadStatus: 'done',
+        audioAnalysisStatus: 'done',
+        audioEmbedding: { not: null },
+        NOT: { id: req.params.videoId },
+      },
+      select: {
+        id: true, playlistId: true, youtubeId: true, title: true, artist: true,
+        genre: true, thumbnailUrl: true, duration: true, audioEmbedding: true,
+      },
+    });
+
+    const sourceVector = bufferToFloat32Array(source.audioEmbedding);
+    const recommendations = candidates
+      .map(({ audioEmbedding, ...rest }) => ({
+        ...rest,
+        similarity: cosineSimilarity(sourceVector, bufferToFloat32Array(audioEmbedding!)),
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, RECOMMENDATION_LIMIT);
+
+    res.json({ recommendations });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/playlists/:id/videos/:videoId/remixes ───────────────────────────
+// Best-effort YouTube search for remixes of this track — never errors out to
+// the client, an empty list just means "couldn't find any" (search failure,
+// yt-dlp down, nothing matched — see searchRemixes for why those aren't
+// distinguished here).
+
+router.get('/:id/videos/:videoId/remixes', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+      select: { youtubeId: true, title: true, artist: true, channelName: true },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+
+    const { artist, title } = parseArtistAndTitle(video.title, video.channelName);
+    const query = [video.artist ?? artist, title].filter(Boolean).join(' ');
+    const remixes = await searchRemixes(query, video.youtubeId);
+
+    res.json({ remixes });
   } catch (err) {
     next(err);
   }
