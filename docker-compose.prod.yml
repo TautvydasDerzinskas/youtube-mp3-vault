@@ -44,6 +44,7 @@ services:
     environment:
       NODE_ENV: production
       APP_ENV: ${APP_ENV:-production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-ympv}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ympv}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
