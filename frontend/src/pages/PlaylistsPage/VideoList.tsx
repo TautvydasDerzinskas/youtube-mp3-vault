@@ -11,7 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../../api/youtube';
 import { VideoState, NowPlaying } from './types';
-import { formatBytes, formatDuration, youtubeWatchUrl, STATUS_ICON, isLowBitrate } from './utils';
+import { formatBytes, formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON, isLowBitrate } from './utils';
 
 interface VideoListProps {
   playlistId: string;
@@ -23,7 +23,7 @@ interface VideoListProps {
 }
 
 function mbVerifiedTooltip(v: PlaylistVideo, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const details = [v.artist, v.album, v.genre].filter(Boolean).join(' · ');
+  const details = [v.artist, v.album, v.genres.length > 0 ? v.genres.map(formatGenre).join(', ') : null].filter(Boolean).join(' · ');
   return details ? `${t('playlists.videoList.mbVerified')}: ${details}` : t('playlists.videoList.mbVerified');
 }
 
@@ -70,7 +70,7 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
                   fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' } }}
               secondary={
                 <Typography variant="caption" color="text.secondary">
-                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genre ? ` · ${v.genre}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
+                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genres.length > 0 ? ` · ${v.genres.map(formatGenre).join(', ')}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
                 </Typography>
               }
             />

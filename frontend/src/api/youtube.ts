@@ -33,7 +33,11 @@ export interface PlaylistVideo {
   artist: string | null;
   album: string | null;
   trackNumber: number | null;
-  genre: string | null;
+  // Zero or more tags — a broad parent genre like "Electronic" covers wildly
+  // different-sounding music, so a track can carry more than one (a genuine
+  // Electronic/Hip Hop hybrid, say) plus a specific style. Empty, not absent,
+  // when nothing's been determined yet.
+  genres: string[];
   releaseYear: number | null;
   metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
 }
@@ -48,7 +52,7 @@ export interface RecommendedTrack {
   youtubeId: string;
   title: string;
   artist: string | null;
-  genre: string | null;
+  genres: string[];
   thumbnailUrl: string | null;
   duration: number | null;
   similarity: number;

@@ -11,6 +11,15 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// The Discogs taxonomy labels are already consistently capitalized, so this
+// is just a defensive guard against whatever the model/service ever return
+// verbatim — genre display/grouping on the frontend also normalizes case
+// independently (old pre-Essentia MusicBrainz genre values predate this and
+// aren't touched here), so this isn't the only thing keeping casing sane.
+function capitalizeFirst(s: string): string {
+  return s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 /**
  * Continuously classifies genre — via local Essentia audio-content analysis,
  * see audioAnalysis.ts — for every downloaded PlaylistVideo still
@@ -52,11 +61,12 @@ async function loop(): Promise<void> {
 
     try {
       const result = await analyzeAudio(getSharedFilePath(video.mediaFile.filename));
+      const genres = result ? result.genres.map(capitalizeFirst) : [];
       await prisma.playlistVideo.update({
         where: { id: video.id },
         data: result
           ? {
-              genre: result.genre,
+              genres,
               audioAnalysisStatus: 'done',
               audioAnalysisFetchedAt: new Date(),
               audioEmbedding: Buffer.from(new Float32Array(result.embedding).buffer),
@@ -64,7 +74,7 @@ async function loop(): Promise<void> {
           : { audioAnalysisStatus: 'error', audioAnalysisFetchedAt: new Date() },
       });
       if (result) {
-        console.log(`[audio-analysis] ✓ ${video.youtubeId} — ${result.genre} (${video.title.slice(0, 60)})`);
+        console.log(`[audio-analysis] ✓ ${video.youtubeId} — ${genres.join(', ')} (${video.title.slice(0, 60)})`);
       } else {
         console.error(`[audio-analysis] ✗ ${video.youtubeId} — analysis failed (${video.title.slice(0, 60)})`);
       }

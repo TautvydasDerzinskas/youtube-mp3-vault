@@ -54,16 +54,16 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
             <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
               {t('playlists.detail.filterByGenre')}
             </Typography>
-            {genreCounts.map(({ genre, count }) => {
-              const selected = selectedGenres.has(genre);
-              const isNoGenre = genre === NO_GENRE_KEY;
-              const label = isNoGenre ? t('playlists.detail.noGenre', { count }) : `${genre} (${count})`;
+            {genreCounts.map(({ key, label, count }) => {
+              const selected = selectedGenres.has(key);
+              const isNoGenre = key === NO_GENRE_KEY;
+              const chipLabel = isNoGenre ? t('playlists.detail.noGenre', { count }) : `${label} (${count})`;
               return (
                 <Chip
-                  key={genre}
-                  label={label}
+                  key={key}
+                  label={chipLabel}
                   size="small"
-                  onClick={() => onToggleGenre(genre)}
+                  onClick={() => onToggleGenre(key)}
                   color={selected ? 'primary' : 'default'}
                   variant={selected ? 'filled' : 'outlined'}
                   sx={isNoGenre ? { fontStyle: 'italic' } : undefined}

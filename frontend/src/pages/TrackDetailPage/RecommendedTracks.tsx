@@ -6,7 +6,7 @@ import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { RecommendedTrack } from '../../api/youtube';
-import { formatDuration } from '../PlaylistsPage/utils';
+import { formatDuration, formatGenre } from '../PlaylistsPage/utils';
 
 interface RecommendedTracksProps {
   state: RecommendedTrack[] | 'loading' | 'error';
@@ -42,7 +42,7 @@ export function RecommendedTracks({ state }: RecommendedTracksProps) {
               </ListItemAvatar>
               <ListItemText
                 primary={rec.title}
-                secondary={[rec.artist, rec.genre].filter(Boolean).join(' · ') || undefined}
+                secondary={[rec.artist, rec.genres.length > 0 ? rec.genres.map(formatGenre).join(', ') : null].filter(Boolean).join(' · ') || undefined}
                 primaryTypographyProps={{ variant: 'body2', noWrap: true }}
                 secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
               />

@@ -79,8 +79,13 @@ model PlaylistVideo {
   // Sourced from local Essentia audio-content analysis (see audio-analysis/
   // and audioAnalysisWorker.ts), not MusicBrainz — MB's crowd-sourced genre
   // tags are missing for most non-mainstream recordings, audio analysis
-  // works on every downloaded track regardless.
-  genre          String?
+  // works on every downloaded track regardless. An array, not a single
+  // value: a broad genre like "Electronic" covers wildly different-sounding
+  // music, so a track can carry more than one parent genre (a genuine
+  // Electronic/Hip Hop hybrid, say) plus one specific style tag — see
+  // audio-analysis/app.py for how the list is built. Empty, not null, when
+  // nothing's been determined yet.
+  genres         String[]  @default([])
   releaseYear    Int?
   mbRecordingId  String?
   metadataStatus String     @default("pending") // pending | found | not_found | error
@@ -103,7 +108,10 @@ model PlaylistVideo {
   @@index([playlistId, position])
   @@index([playlistId, downloadStatus])
   @@index([playlistId, artist])
-  @@index([playlistId, genre])
+  // No index on genres: it's an array now (no plain btree equivalent to the
+  // old single-value one), and genre filtering has only ever happened
+  // client-side against an already-fetched video list — no backend query
+  // filters or sorts by it, so there's nothing to speed up here.
   // Used by the standalone metadata worker's global (cross-playlist) queue query —
   // without this, "find the next pending video across every playlist" degrades to a
   // full table scan once a library gets into the tens of thousands of rows.

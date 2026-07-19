@@ -1,8 +1,10 @@
 import { config } from '../config';
 
 export interface AudioAnalysisResult {
-  genre: string;
-  subgenre: string;
+  // Broad parent genres the track scores highly on (e.g. ["Electronic",
+  // "Hip Hop"] for a genuine hybrid), plus the single most specific style
+  // appended if distinct — see audio-analysis/app.py's analyze().
+  genres: string[];
   confidence: number;
   embedding: number[];
 }

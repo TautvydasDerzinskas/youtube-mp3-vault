@@ -6,7 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PlaylistVideo } from '../../api/youtube';
-import { formatDuration, youtubeWatchUrl, STATUS_ICON } from '../PlaylistsPage/utils';
+import { formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON } from '../PlaylistsPage/utils';
 
 interface HeaderProps {
   playlistId: string;
@@ -40,7 +40,7 @@ export function Header({ playlistId, video, isPlayingThis, onTogglePlay }: Heade
           )}
 
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1.5 }}>
-            {video.genre && <Chip size="small" label={video.genre} />}
+            {video.genres.map((g) => <Chip key={g} size="small" label={formatGenre(g)} />)}
             {video.releaseYear && <Chip size="small" variant="outlined" label={video.releaseYear} />}
             {video.duration && <Chip size="small" variant="outlined" label={formatDuration(video.duration)} />}
           </Stack>

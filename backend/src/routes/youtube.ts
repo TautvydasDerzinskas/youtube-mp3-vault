@@ -27,7 +27,7 @@ const VIDEO_SELECT_WITHOUT_EMBEDDING = {
   thumbnailUrl: true, position: true, isAvailable: true, channelName: true,
   downloadStatus: true, downloadError: true, mediaFileId: true, fileSize: true,
   bitrate: true, addedAt: true, artist: true, album: true, trackNumber: true,
-  genre: true, releaseYear: true, mbRecordingId: true, metadataStatus: true,
+  genres: true, releaseYear: true, mbRecordingId: true, metadataStatus: true,
   metadataFetchedAt: true, audioAnalysisStatus: true, audioAnalysisFetchedAt: true,
   createdAt: true, updatedAt: true,
 } as const;
@@ -265,7 +265,7 @@ router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: Auth
       },
       select: {
         id: true, playlistId: true, youtubeId: true, title: true, artist: true,
-        genre: true, thumbnailUrl: true, duration: true, audioEmbedding: true,
+        genres: true, thumbnailUrl: true, duration: true, audioEmbedding: true,
       },
     });
 

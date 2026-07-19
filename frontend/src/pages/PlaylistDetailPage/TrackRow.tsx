@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { playlistsApi, PlaylistVideo } from '../../api/youtube';
 import { NowPlaying } from '../PlaylistsPage/types';
-import { formatDuration, youtubeWatchUrl, STATUS_ICON } from '../PlaylistsPage/utils';
+import { formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON } from '../PlaylistsPage/utils';
 
 export interface TrackRowProps {
   tracks: PlaylistVideo[];
@@ -51,9 +51,9 @@ export function TrackRow({
         )}
       </Box>
 
-      {v.genre && (
+      {v.genres.length > 0 && (
         <Typography variant="caption" color="text.secondary" noWrap sx={{ width: 110, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
-          {v.genre}
+          {v.genres.map(formatGenre).join(', ')}
         </Typography>
       )}
 

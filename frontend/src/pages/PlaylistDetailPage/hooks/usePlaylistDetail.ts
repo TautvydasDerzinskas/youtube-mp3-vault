@@ -1,18 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { playlistsApi, Playlist, PlaylistVideo } from '../../../api/youtube';
+import { normalizeGenreKey, formatGenre } from '../../PlaylistsPage/utils';
 
-export type GenreCount = { genre: string; count: number };
+// `key` is the normalized (lowercase) identity used for selection/filtering;
+// `label` is what's actually shown, preserving genuine multi-word casing
+// (e.g. "Drum n Bass") wherever a properly-cased variant exists — see
+// genreCounts below for why these can't just be derived from each other.
+export type GenreCount = { key: string; label: string; count: number };
 
-// Synthetic bucket for tracks with no genre — either MusicBrainz enrichment
-// hasn't run yet, found no match, or matched a recording with no genre tags
-// of its own. "none" isn't a real MusicBrainz genre, so it can't collide.
+// Synthetic bucket for tracks with no genre — either audio analysis hasn't
+// run yet, or found nothing. Already normalized (lowercase), so it can't
+// collide with a real genre key.
 export const NO_GENRE_KEY = 'none';
 
 const GENRES_PARAM = 'genres';
 
+// Selection state lives in normalized (lowercase) keys throughout — the URL,
+// the Set, the filter check — so a genre picked while displayed as
+// "Electronic" still matches tracks stored as "electronic". Only the chip
+// label (via formatGenre) is ever displayed capitalized.
 function parseGenres(raw: string | null): Set<string> {
-  return new Set((raw ?? '').split(',').map(g => g.trim()).filter(Boolean));
+  return new Set((raw ?? '').split(',').map(normalizeGenreKey).filter(Boolean));
 }
 
 /**
@@ -41,9 +50,10 @@ export function usePlaylistDetail() {
   const selectedGenres = useMemo(() => parseGenres(searchParams.get(GENRES_PARAM)), [searchParams]);
 
   const toggleGenre = useCallback((genre: string) => {
+    const key = normalizeGenreKey(genre);
     setSearchParams(prev => {
       const next = parseGenres(prev.get(GENRES_PARAM));
-      if (next.has(genre)) next.delete(genre); else next.add(genre);
+      if (next.has(key)) next.delete(key); else next.add(key);
       const params = new URLSearchParams(prev);
       if (next.size > 0) params.set(GENRES_PARAM, [...next].join(',')); else params.delete(GENRES_PARAM);
       return params;
@@ -66,27 +76,57 @@ export function usePlaylistDetail() {
     [videos]
   );
 
+  // Each tag a track carries counts toward its own chip — a track tagged
+  // ["Electronic", "Hip Hop", "Drum n Bass"] contributes to all three, not
+  // just one. Grouping on the normalized key means "Electronic" and
+  // "electronic" (old pre-Essentia MusicBrainz tags predate consistent
+  // casing) still collapse into one chip instead of showing as duplicates.
+  // The label shown for that group prefers whichever variant was already
+  // properly capitalized (real Essentia/taxonomy casing, e.g. "Drum n Bass")
+  // over a stray all-lowercase one — naively lowercasing everything for the
+  // key and re-deriving the label from *that* would flatten correct
+  // multi-word casing down to just the first letter.
   const genreCounts = useMemo((): GenreCount[] => {
     const counts = new Map<string, number>();
+    const labels = new Map<string, string>();
     let noGenreCount = 0;
     for (const v of currentVideos) {
-      if (v.genre) counts.set(v.genre, (counts.get(v.genre) ?? 0) + 1);
-      else noGenreCount++;
+      if (v.genres.length === 0) {
+        noGenreCount++;
+        continue;
+      }
+      for (const raw of v.genres) {
+        const trimmed = raw.trim();
+        if (!trimmed) continue;
+        const key = normalizeGenreKey(trimmed);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+        const existingLabel = labels.get(key);
+        if (!existingLabel || (!/^[A-Z]/.test(existingLabel) && /^[A-Z]/.test(trimmed))) {
+          labels.set(key, trimmed);
+        }
+      }
     }
     const sorted = [...counts.entries()]
-      .map(([genre, count]) => ({ genre, count }))
-      .sort((a, b) => b.count - a.count || a.genre.localeCompare(b.genre));
+      .map(([key, count]) => ({ key, label: formatGenre(labels.get(key)!), count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
     // Always last — it's a fallback bucket, not a genre competing on frequency.
-    if (noGenreCount > 0) sorted.push({ genre: NO_GENRE_KEY, count: noGenreCount });
+    if (noGenreCount > 0) sorted.push({ key: NO_GENRE_KEY, label: NO_GENRE_KEY, count: noGenreCount });
     return sorted;
   }, [currentVideos]);
 
+  // A track matches the filter if it carries *any* selected tag (union, not
+  // intersection) — selecting both "Electronic" and "Hip Hop" surfaces
+  // tracks tagged with either, which is what naturally catches a genuine
+  // hybrid track tagged with both.
+  //
   // Order tracks were actually added to this library (immutable, set once at
   // sync time) — distinct from YouTube's own mutable playlist `position`.
   const filteredTracks = useMemo(() => {
     const filtered = selectedGenres.size === 0
       ? currentVideos
-      : currentVideos.filter(v => selectedGenres.has(v.genre ?? NO_GENRE_KEY));
+      : currentVideos.filter(v => v.genres.length === 0
+          ? selectedGenres.has(NO_GENRE_KEY)
+          : v.genres.some(g => selectedGenres.has(normalizeGenreKey(g))));
     return [...filtered].sort((a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime());
   }, [currentVideos, selectedGenres]);
 
