@@ -20,13 +20,31 @@ RUN pip install --no-cache-dir -r requirements.txt
 # committed to the repo) so a rebuild always has exactly what the
 # essentia.upf.edu catalog currently serves, same reasoning as this project
 # not vendoring its own copy of yt-dlp.
-RUN mkdir -p /app/models && \
-    curl -fsSL -o /app/models/discogs-effnet-bs64-1.pb \
-      https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bs64-1.pb && \
-    curl -fsSL -o /app/models/genre_discogs400-discogs-effnet-1.pb \
-      https://essentia.upf.edu/models/classification-heads/genre_discogs400/genre_discogs400-discogs-effnet-1.pb && \
-    curl -fsSL -o /app/models/genre_discogs400-discogs-effnet-1.json \
-      https://essentia.upf.edu/models/classification-heads/genre_discogs400/genre_discogs400-discogs-effnet-1.json
+RUN mkdir -p /app/models
+
+RUN curl -v \
+    --retry 5 \
+    --retry-delay 5 \
+    --retry-all-errors \
+    -fSL \
+    -o /app/models/discogs-effnet-bs64-1.pb \
+    https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bs64-1.pb
+
+RUN curl -v \
+    --retry 5 \
+    --retry-delay 5 \
+    --retry-all-errors \
+    -fSL \
+    -o /app/models/genre_discogs400-discogs-effnet-1.pb \
+    https://essentia.upf.edu/models/classification-heads/genre_discogs400/genre_discogs400-discogs-effnet-1.pb
+
+RUN curl -v \
+    --retry 5 \
+    --retry-delay 5 \
+    --retry-all-errors \
+    -fSL \
+    -o /app/models/genre_discogs400-discogs-effnet-1.json \
+    https://essentia.upf.edu/models/classification-heads/genre_discogs400/genre_discogs400-discogs-effnet-1.json
 
 COPY app.py .
 
