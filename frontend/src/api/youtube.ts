@@ -43,6 +43,11 @@ export const playlistsApi = {
     return data;
   },
 
+  getOne: async (id: string): Promise<{ playlist: Playlist }> => {
+    const { data } = await client.get<{ playlist: Playlist }>(`/playlists/${id}`);
+    return data;
+  },
+
   add: async (url: string, customName?: string): Promise<{ playlist: Playlist }> => {
     const { data } = await client.post<{ playlist: Playlist }>('/playlists', {
       url,

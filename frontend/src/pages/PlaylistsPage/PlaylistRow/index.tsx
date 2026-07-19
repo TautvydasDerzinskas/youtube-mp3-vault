@@ -1,5 +1,7 @@
-import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { Accordion, AccordionSummary, AccordionDetails, Paper, Tooltip, IconButton } from '@mui/material';
+import { ExpandMore as ExpandMoreIcon, ChevronRight as ChevronRightIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Playlist, PlaylistVideo } from '../../../api/youtube';
 import { VideoState, NowPlaying } from '../types';
 import { VideoList } from '../VideoList';
@@ -30,11 +32,46 @@ export function PlaylistRow({
   videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay,
   onRename, onSync, onRetryFailed, onTogglePause, onDelete,
 }: PlaylistRowProps) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const isBusy = playlist.syncStatus === 'syncing' || isSyncingLocally;
   // syncPaused flips true the instant Pause is clicked, but the background loop
   // only stops once the in-flight video finishes — until then syncStatus is
   // still 'syncing'. Treat that gap as its own "pausing" transitional state.
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
+  const fullySynced = !isBusy && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
+
+  // Fully-synced playlists get a dedicated detail page instead of the inline
+  // expand-to-preview accordion — there's a full track browser/genre filter
+  // waiting for them there, so previewing a handful of rows inline isn't useful.
+  if (fullySynced) {
+    const open = () => navigate(`/playlists/${playlist.id}`);
+    return (
+      <Paper onClick={open} elevation={0}
+        sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
+          border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px',
+          '&:hover': { borderColor: 'primary.dark' } }}>
+        <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
+        <Info playlist={playlist} isBusy={isBusy} isPausing={isPausing} expanded={false} />
+        <Actions
+          playlist={playlist}
+          isBusy={isBusy}
+          isPausing={isPausing}
+          online={online}
+          onRename={onRename}
+          onSync={onSync}
+          onRetryFailed={onRetryFailed}
+          onTogglePause={onTogglePause}
+          onDelete={onDelete}
+        />
+        <Tooltip title={t('playlists.openPlaylist')}>
+          <IconButton size="small" onClick={e => { e.stopPropagation(); open(); }}>
+            <ChevronRightIcon />
+          </IconButton>
+        </Tooltip>
+      </Paper>
+    );
+  }
 
   return (
     <Accordion expanded={expanded}

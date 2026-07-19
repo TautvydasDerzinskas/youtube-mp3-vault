@@ -67,6 +67,7 @@
     "pauseSync": "Pause automatic sync",
     "remove": "Remove",
     "unavailableWhileSyncing": "Unavailable while syncing",
+    "openPlaylist": "Open playlist",
     "addDialog": {
       "title": "Add Playlist",
       "urlLabel": "YouTube Playlist URL",
@@ -109,6 +110,15 @@
       "done": "done",
       "failed": "failed",
       "removed": "removed"
+    },
+    "detail": {
+      "back": "Back to playlists",
+      "failedToLoad": "Failed to load this playlist.",
+      "trackCount": "{{count}} tracks",
+      "syncedCount": "{{count}} synced",
+      "filterByGenre": "Filter by genre:",
+      "clearGenreFilter": "Clear genre filter",
+      "noTracks": "No tracks match the selected genres."
     }
   },
   "profile": {

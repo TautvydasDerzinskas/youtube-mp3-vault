@@ -68,6 +68,7 @@
     "pauseSync": "Pristabdyti automatinę sinchronizaciją",
     "remove": "Pašalinti",
     "unavailableWhileSyncing": "Negalima sinchronizavimo metu",
+    "openPlaylist": "Atidaryti grojaraštį",
     "addDialog": {
       "title": "Pridėti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",
@@ -110,6 +111,15 @@
       "done": "atlikta",
       "failed": "nepavyko",
       "removed": "pašalinta"
+    },
+    "detail": {
+      "back": "Grįžti į grojaraščius",
+      "failedToLoad": "Nepavyko įkelti šio grojaraščio.",
+      "trackCount": "{{count}} dainų",
+      "syncedCount": "{{count}} sinchronizuota",
+      "filterByGenre": "Filtruoti pagal žanrą:",
+      "clearGenreFilter": "Išvalyti žanrų filtrą",
+      "noTracks": "Nėra dainų, atitinkančių pasirinktus žanrus."
     }
   },
   "profile": {

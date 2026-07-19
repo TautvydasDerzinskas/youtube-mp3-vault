@@ -69,6 +69,7 @@
     "pauseSync": "Wstrzymaj automatyczną synchronizację",
     "remove": "Usuń",
     "unavailableWhileSyncing": "Niedostępne podczas synchronizacji",
+    "openPlaylist": "Otwórz playlistę",
     "addDialog": {
       "title": "Dodaj playlistę",
       "urlLabel": "Link do playlisty YouTube",
@@ -111,6 +112,15 @@
       "done": "gotowe",
       "failed": "nieudane",
       "removed": "usunięte"
+    },
+    "detail": {
+      "back": "Wróć do playlist",
+      "failedToLoad": "Nie udało się załadować tej playlisty.",
+      "trackCount": "{{count}} utworów",
+      "syncedCount": "{{count}} zsynchronizowanych",
+      "filterByGenre": "Filtruj wg gatunku:",
+      "clearGenreFilter": "Wyczyść filtr gatunków",
+      "noTracks": "Żaden utwór nie pasuje do wybranych gatunków."
     }
   },
   "profile": {

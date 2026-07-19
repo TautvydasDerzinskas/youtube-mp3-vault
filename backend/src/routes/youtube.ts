@@ -31,6 +31,24 @@ router.get('/', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
+// ─── GET /api/playlists/:id — single playlist ─────────────────────────────────
+
+router.get('/:id', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const [enriched] = await withDownloadStats([playlist]);
+    res.json({ playlist: enriched });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── POST /api/playlists — add by URL ─────────────────────────────────────────
 
 router.post('/', requireAuth, async (req: AuthRequest, res, next) => {

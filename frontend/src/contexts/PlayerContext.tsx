@@ -12,7 +12,13 @@ interface PlayerContextType {
   audioRef: React.RefObject<HTMLAudioElement>;
   hasNext: boolean;
   hasPrevious: boolean;
-  handleTogglePlay: (playlistId: string, video: PlaylistVideo) => void;
+  /**
+   * `queue`, when given, is used verbatim as the play/next/previous order
+   * instead of auto-fetching+sorting the whole playlist by position — e.g.
+   * the playlist detail page passes its current genre-filtered track list so
+   * next/prev/auto-advance stay within that filtered set.
+   */
+  handleTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: PlaylistVideo[]) => void;
   playNext: () => void;
   playPrevious: () => void;
   handleTrackEnded: () => void;
@@ -25,26 +31,19 @@ const PlayerContext = createContext<PlayerContextType | null>(null);
 /**
  * Owns the single shared <audio> element and "now playing" state at the app
  * layout level (rather than per-page) so playback survives route changes.
- * The playable queue for the active playlist is fetched independently of
- * whatever page happens to be mounted, so next/prev/auto-advance keep working
- * even after navigating away from the playlist that started playback.
+ * The playable queue is resolved once, at the moment playback starts (either
+ * from an explicit queue the caller hands in, or auto-fetched+sorted by
+ * position otherwise) — not kept reactively in sync with the source
+ * playlist — so it keeps working correctly after navigating away from
+ * whatever page started it.
  */
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<{ playlistId: string; video: PlaylistVideo } | null>(null);
   const [queue, setQueue] = useState<PlaylistVideo[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  const playlistId = current?.playlistId;
-  useEffect(() => {
-    if (!playlistId) { setQueue([]); return; }
-    let cancelled = false;
-    playlistsApi.getVideos(playlistId).then(({ videos }) => {
-      if (cancelled) return;
-      setQueue(videos.filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position));
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [playlistId]);
+  const currentRef = useRef(current);
+  currentRef.current = current;
 
   useEffect(() => {
     if (!current || !audioRef.current) return;
@@ -52,16 +51,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current.play().catch(() => {});
   }, [current]);
 
-  const handleTogglePlay = useCallback((playlistId: string, video: PlaylistVideo) => {
-    setCurrent(prev => {
-      const isCurrent = prev?.playlistId === playlistId && prev?.video.id === video.id;
-      if (isCurrent) {
-        if (audioRef.current?.paused) audioRef.current.play().catch(() => {});
-        else audioRef.current?.pause();
-        return prev;
-      }
-      return { playlistId, video };
-    });
+  const handleTogglePlay = useCallback((playlistId: string, video: PlaylistVideo, queueOverride?: PlaylistVideo[]) => {
+    const prev = currentRef.current;
+    const isCurrent = prev?.playlistId === playlistId && prev?.video.id === video.id;
+    if (isCurrent) {
+      if (audioRef.current?.paused) audioRef.current.play().catch(() => {});
+      else audioRef.current?.pause();
+      return;
+    }
+
+    setCurrent({ playlistId, video });
+    if (queueOverride) {
+      setQueue(queueOverride);
+    } else {
+      playlistsApi.getVideos(playlistId)
+        .then(({ videos }) => setQueue(videos.filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position)))
+        .catch(() => setQueue([]));
+    }
   }, []);
 
   const currentIndex = current ? queue.findIndex(v => v.id === current.video.id) : -1;
