@@ -229,11 +229,19 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
 });
 
 // ─── GET /api/playlists/:id/videos/:videoId/recommendations ──────────────────
-// "Sounds like this" — cosine similarity over the Essentia audio embedding
-// (see audioAnalysisWorker.ts), not genre matching. Scoped to every track the
-// user owns across all their playlists, not just the current one.
+// "Sounds like this" — primarily cosine similarity over the Essentia audio
+// embedding (see audioAnalysisWorker.ts), but boosted with a same-artist /
+// same-genre preference on top: a candidate by the same artist ranks above
+// any candidate that merely shares a genre, which in turn ranks above the
+// rest — audio similarity only breaks ties *within* each of those tiers, it
+// doesn't override them. Scoped to every track the user owns across all
+// their playlists, not just the current one.
 
 const RECOMMENDATION_LIMIT = 10;
+
+function normalizeMatchKey(raw: string): string {
+  return raw.trim().toLowerCase();
+}
 
 router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: AuthRequest, res, next) => {
   try {
@@ -246,7 +254,7 @@ router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: Auth
     }
     const source = await prisma.playlistVideo.findFirst({
       where: { id: req.params.videoId, playlistId: playlist.id },
-      select: { audioEmbedding: true },
+      select: { audioEmbedding: true, artist: true, genres: true },
     });
     if (!source?.audioEmbedding) {
       // Not analyzed yet (or analysis failed) — nothing to compare against,
@@ -269,14 +277,25 @@ router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: Auth
       },
     });
 
+    const sourceArtistKey = source.artist ? normalizeMatchKey(source.artist) : null;
+    const sourceGenreKeys = new Set(source.genres.map(normalizeMatchKey));
+
     const sourceVector = bufferToFloat32Array(source.audioEmbedding);
     const recommendations = candidates
-      .map(({ audioEmbedding, ...rest }) => ({
-        ...rest,
-        similarity: cosineSimilarity(sourceVector, bufferToFloat32Array(audioEmbedding!)),
-      }))
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, RECOMMENDATION_LIMIT);
+      .map(({ audioEmbedding, ...rest }) => {
+        const sameArtist = sourceArtistKey !== null && rest.artist !== null
+          && normalizeMatchKey(rest.artist) === sourceArtistKey;
+        const sameGenre = rest.genres.some(g => sourceGenreKeys.has(normalizeMatchKey(g)));
+        const tier = sameArtist ? 2 : sameGenre ? 1 : 0;
+        return {
+          ...rest,
+          tier,
+          similarity: cosineSimilarity(sourceVector, bufferToFloat32Array(audioEmbedding!)),
+        };
+      })
+      .sort((a, b) => b.tier - a.tier || b.similarity - a.similarity)
+      .slice(0, RECOMMENDATION_LIMIT)
+      .map(({ tier, ...rest }) => rest);
 
     res.json({ recommendations });
   } catch (err) {

@@ -51,13 +51,15 @@ export function Actions({
           </span>
         </Tooltip>
       )}
-      <Tooltip title={!online ? t('playlists.offlineUnavailable') : isPausing ? t('playlists.pausingChip') : playlist.syncPaused ? t('playlists.resumeSync') : t('playlists.pauseSync')}>
-        <span>
-          <IconButton size="small" disabled={isPausing || !online} onClick={e => onTogglePause(e, playlist)}>
-            {playlist.syncPaused ? <ResumeIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
-          </IconButton>
-        </span>
-      </Tooltip>
+      {(isBusy || playlist.syncPaused) && (
+        <Tooltip title={!online ? t('playlists.offlineUnavailable') : isPausing ? t('playlists.pausingChip') : playlist.syncPaused ? t('playlists.resumeSync') : t('playlists.pauseSync')}>
+          <span>
+            <IconButton size="small" disabled={isPausing || !online} onClick={e => onTogglePause(e, playlist)}>
+              {playlist.syncPaused ? <ResumeIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
+            </IconButton>
+          </span>
+        </Tooltip>
+      )}
       <Tooltip title={isBusy ? t('playlists.unavailableWhileSyncing') : t('playlists.remove')}>
         <span>
           <IconButton size="small" disabled={isPausing || isBusy} onClick={e => { e.stopPropagation(); onDelete(playlist); }} sx={{ color: 'error.main' }}>

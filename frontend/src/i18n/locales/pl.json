@@ -121,12 +121,14 @@
       "filterByGenre": "Filtruj wg gatunku:",
       "clearGenreFilter": "Wyczyść filtr gatunków",
       "noGenre": "Bez gatunku ({{count}})",
-      "noTracks": "Żaden utwór nie pasuje do wybranych gatunków."
+      "noTracks": "Żaden utwór nie pasuje do wybranych gatunków.",
+      "showMoreGenres": "Pokaż {{count}} więcej",
+      "showFewerGenres": "Pokaż mniej"
     },
     "trackDetail": {
       "backToPlaylist": "Wróć do playlisty",
       "failedToLoad": "Nie udało się załadować tego utworu.",
-      "recommendedTitle": "Polecane dla Ciebie",
+      "recommendedTitle": "Podobne utwory",
       "recommendedEmpty": "Brak rekomendacji — ten utwór nie został jeszcze przeanalizowany albo w Twojej bibliotece nie znaleziono nic podobnego.",
       "recommendedFailed": "Nie udało się załadować rekomendacji.",
       "remixesTitle": "Remiksy na YouTube",

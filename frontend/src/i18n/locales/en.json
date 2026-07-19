@@ -119,12 +119,14 @@
       "filterByGenre": "Filter by genre:",
       "clearGenreFilter": "Clear genre filter",
       "noGenre": "No genre ({{count}})",
-      "noTracks": "No tracks match the selected genres."
+      "noTracks": "No tracks match the selected genres.",
+      "showMoreGenres": "Show {{count}} more",
+      "showFewerGenres": "Show fewer"
     },
     "trackDetail": {
       "backToPlaylist": "Back to playlist",
       "failedToLoad": "Failed to load this track.",
-      "recommendedTitle": "Recommended for you",
+      "recommendedTitle": "Similar songs",
       "recommendedEmpty": "No recommendations yet — this track hasn't been analyzed, or nothing similar has been found in your library.",
       "recommendedFailed": "Failed to load recommendations.",
       "remixesTitle": "Remixes on YouTube",

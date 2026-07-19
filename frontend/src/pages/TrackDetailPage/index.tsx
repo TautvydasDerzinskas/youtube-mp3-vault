@@ -31,7 +31,7 @@ export default function TrackDetailPage() {
         isPlayingThis={isPlayingThis}
         onTogglePlay={() => handleTogglePlay(playlistId, video)}
       />
-      <RecommendedTracks state={recommendations} />
+      <RecommendedTracks state={recommendations} nowPlaying={nowPlaying} isAudioPlaying={isAudioPlaying} onTogglePlay={handleTogglePlay} />
       <RemixLinks state={remixes} />
     </Box>
   );

@@ -4,6 +4,13 @@ import {
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
 import { NowPlaying } from '../pages/PlaylistsPage/types';
 
+// Most queues (a playlist's own track list) are all from one playlist, so
+// callers just pass PlaylistVideo[] and every track plays from `playlistId`.
+// A queue that spans playlists — e.g. "similar songs", which pulls from
+// across the whole library — tags each track with its own playlistId so
+// next/prev/auto-advance stream from the right playlist per track.
+export type QueueTrack = PlaylistVideo & { playlistId?: string };
+
 interface PlayerContextType {
   nowPlaying: NowPlaying | null;
   nowPlayingVideo: PlaylistVideo | undefined;
@@ -28,7 +35,7 @@ interface PlayerContextType {
    * the playlist detail page passes its current genre-filtered track list so
    * next/prev/auto-advance stay within that filtered set.
    */
-  handleTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: PlaylistVideo[]) => void;
+  handleTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: QueueTrack[]) => void;
   playNext: () => void;
   playPrevious: () => void;
   handleTrackEnded: () => void;
@@ -49,7 +56,7 @@ const PlayerContext = createContext<PlayerContextType | null>(null);
  */
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<{ playlistId: string; video: PlaylistVideo } | null>(null);
-  const [queue, setQueue] = useState<PlaylistVideo[]>([]);
+  const [queue, setQueue] = useState<QueueTrack[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -103,7 +110,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return () => setAnalyserNode(null);
   }, [isPlayingSession]);
 
-  const handleTogglePlay = useCallback((playlistId: string, video: PlaylistVideo, queueOverride?: PlaylistVideo[]) => {
+  const handleTogglePlay = useCallback((playlistId: string, video: PlaylistVideo, queueOverride?: QueueTrack[]) => {
     const prev = currentRef.current;
     const isCurrent = prev?.playlistId === playlistId && prev?.video.id === video.id;
     if (isCurrent) {
@@ -131,7 +138,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (!prev) return null;
       const idx = queue.findIndex(v => v.id === prev.video.id);
       const next = idx >= 0 ? queue[idx + 1] : undefined;
-      return next ? { playlistId: prev.playlistId, video: next } : prev;
+      return next ? { playlistId: next.playlistId ?? prev.playlistId, video: next } : prev;
     });
   }, [queue]);
 
@@ -140,7 +147,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (!prev) return null;
       const idx = queue.findIndex(v => v.id === prev.video.id);
       const previous = idx > 0 ? queue[idx - 1] : undefined;
-      return previous ? { playlistId: prev.playlistId, video: previous } : prev;
+      return previous ? { playlistId: previous.playlistId ?? prev.playlistId, video: previous } : prev;
     });
   }, [queue]);
 
@@ -149,7 +156,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (!prev) return null;
       const idx = queue.findIndex(v => v.id === prev.video.id);
       const next = idx >= 0 ? queue[idx + 1] : undefined;
-      return next ? { playlistId: prev.playlistId, video: next } : null;
+      return next ? { playlistId: next.playlistId ?? prev.playlistId, video: next } : null;
     });
   }, [queue]);
 

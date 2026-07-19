@@ -106,12 +106,13 @@ export function usePlaylistDetail() {
         }
       }
     }
-    const sorted = [...counts.entries()]
-      .map(([key, count]) => ({ key, label: formatGenre(labels.get(key)!), count }))
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-    // Always last — it's a fallback bucket, not a genre competing on frequency.
+    const sorted: GenreCount[] = [...counts.entries()]
+      .map(([key, count]) => ({ key, label: formatGenre(labels.get(key)!), count }));
+    // Competes on frequency like any other bucket, so a library dominated by
+    // untagged tracks surfaces "No genre" up near the top instead of always
+    // trailing behind genres with only a handful of tracks.
     if (noGenreCount > 0) sorted.push({ key: NO_GENRE_KEY, label: NO_GENRE_KEY, count: noGenreCount });
-    return sorted;
+    return sorted.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
   }, [currentVideos]);
 
   // A track matches the filter if it carries *any* selected tag (union, not
@@ -121,13 +122,15 @@ export function usePlaylistDetail() {
   //
   // Order tracks were actually added to this library (immutable, set once at
   // sync time) — distinct from YouTube's own mutable playlist `position`.
+  // Newest addition first, matching what a user expects after syncing in a
+  // song they just added to the source playlist.
   const filteredTracks = useMemo(() => {
     const filtered = selectedGenres.size === 0
       ? currentVideos
       : currentVideos.filter(v => v.genres.length === 0
           ? selectedGenres.has(NO_GENRE_KEY)
           : v.genres.some(g => selectedGenres.has(normalizeGenreKey(g))));
-    return [...filtered].sort((a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime());
+    return [...filtered].sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
   }, [currentVideos, selectedGenres]);
 
   // The subset of filteredTracks that's actually playable — passed to the
