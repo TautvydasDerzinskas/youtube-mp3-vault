@@ -37,6 +37,8 @@ function toQueueTrack(rec: RecommendedTrack): QueueTrack {
     genres: rec.genres,
     releaseYear: null,
     metadataStatus: 'pending',
+    playCount: 0,
+    lastPlayedAt: null,
   };
 }
 

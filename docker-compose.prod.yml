@@ -53,6 +53,7 @@ services:
       SLSKD_URL: http://slskd:5030
       AUDIO_ANALYSIS_URL: http://audio-analysis:8000
       LASTFM_API_KEY: ${LASTFM_API_KEY:-}
+      LASTFM_API_SECRET: ${LASTFM_API_SECRET:-}
       SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required for staging/production so signup emails can send}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}

@@ -5,7 +5,8 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../services/prisma';
 import { sendVerificationEmail } from '../services/mailer';
-import { isSmtpConfigured } from '../services/settings';
+import { isSmtpConfigured, isLastfmScrobblingConfigured } from '../services/settings';
+import { getAuthUrl, getSession } from '../services/lastfm';
 import { config } from '../config';
 import {
   requireAuth,
@@ -36,6 +37,8 @@ function toSafeUser(user: {
   language: string;
   isAdmin: boolean;
   pendingEmail: string | null;
+  lastfmUsername: string | null;
+  scrobblingEnabled: boolean;
 }) {
   return {
     id: user.id,
@@ -44,6 +47,8 @@ function toSafeUser(user: {
     language: user.language,
     isAdmin: user.isAdmin,
     pendingEmail: user.pendingEmail,
+    lastfmUsername: user.lastfmUsername,
+    scrobblingEnabled: user.scrobblingEnabled,
   };
 }
 
@@ -269,13 +274,20 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true },
+      select: {
+        id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true,
+        lastfmUsername: true, scrobblingEnabled: true,
+      },
     });
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    res.json({ user: toSafeUser(user) });
+    // App-wide capability, not a user field — whether "Connect to Last.fm"
+    // should even be offered in Profile (needs LASTFM_API_SECRET set, see
+    // services/settings.ts). Piggybacked on /me since it's already fetched
+    // on every app load, rather than a separate request.
+    res.json({ user: toSafeUser(user), lastfmScrobblingAvailable: isLastfmScrobblingConfigured() });
   } catch (err) {
     next(err);
   }
@@ -374,6 +386,84 @@ router.patch('/profile', requireAuth, authLimiter, async (req: AuthRequest, res,
       await sendVerificationEmail(emailToVerify, updated.displayName, updated.emailVerificationToken!);
     }
     res.json({ user: toSafeUser(updated) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/auth/lastfm/connect ──────────────────────────────────────────
+// Full-page redirect (not an XHR — Last.fm shows its own login/approve page)
+// to Last.fm's auth page, which itself redirects back to /callback below.
+
+router.get('/lastfm/connect', requireAuth, (_req, res) => {
+  const callbackUrl = `${config.frontendUrl}/api/auth/lastfm/callback`;
+  const url = getAuthUrl(callbackUrl);
+  if (!url) {
+    res.status(503).json({ error: 'Last.fm is not configured on this server' });
+    return;
+  }
+  res.redirect(url);
+});
+
+// ─── GET /api/auth/lastfm/callback ─────────────────────────────────────────
+// Where Last.fm sends the browser back to after the user approves — still a
+// full-page navigation, so requireAuth relies on the same-site auth cookie
+// (SameSite=Lax allows it on a top-level GET like this one; see
+// middleware/auth.ts's setAuthCookie). Redirects back into the SPA either
+// way so the result shows up as a normal Profile page state, not a bare API
+// response the user would otherwise land on.
+
+router.get('/lastfm/callback', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { token } = req.query as { token?: string };
+    const session = typeof token === 'string' ? await getSession(token) : null;
+    if (!session) {
+      res.redirect(`${config.frontendUrl}/profile?lastfm=error`);
+      return;
+    }
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { lastfmSessionKey: session.sessionKey, lastfmUsername: session.username },
+    });
+    res.redirect(`${config.frontendUrl}/profile?lastfm=connected`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/auth/lastfm/disconnect ──────────────────────────────────────
+
+router.post('/lastfm/disconnect', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { lastfmSessionKey: null, lastfmUsername: null, scrobblingEnabled: false },
+    });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PATCH /api/auth/lastfm/scrobbling ─────────────────────────────────────
+// Separate from "connected" — connecting doesn't turn this on by itself.
+
+router.patch('/lastfm/scrobbling', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { enabled } = req.body as { enabled?: unknown };
+    if (typeof enabled !== 'boolean') {
+      res.status(400).json({ error: 'enabled must be a boolean' });
+      return;
+    }
+    if (enabled) {
+      const existing = await prisma.user.findUnique({ where: { id: req.userId }, select: { lastfmSessionKey: true } });
+      if (!existing?.lastfmSessionKey) {
+        res.status(400).json({ error: 'Connect your Last.fm account before enabling scrobbling' });
+        return;
+      }
+    }
+    const user = await prisma.user.update({ where: { id: req.userId }, data: { scrobblingEnabled: enabled } });
+    res.json({ user: toSafeUser(user) });
   } catch (err) {
     next(err);
   }

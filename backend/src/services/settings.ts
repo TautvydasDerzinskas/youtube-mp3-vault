@@ -16,9 +16,15 @@ export interface PostgresSettings {
   password: string;
 }
 
+export interface LastfmSettings {
+  apiKey: string | null;
+  apiSecret: string | null;
+}
+
 interface SettingsCache {
   smtp: SmtpSettings;
   postgres: PostgresSettings;
+  lastfm: LastfmSettings;
 }
 
 let cache: SettingsCache | null = null;
@@ -45,6 +51,8 @@ async function ensureRow() {
       postgresDb: config.postgres.database,
       postgresUser: config.postgres.user,
       postgresPassword: config.postgres.password,
+      lastfmApiKey: config.lastfmApiKey || null,
+      lastfmApiSecret: config.lastfmApiSecret || null,
     },
   });
 }
@@ -56,6 +64,7 @@ function toCache(row: Awaited<ReturnType<typeof ensureRow>>): SettingsCache {
       user: row.smtpUser, pass: row.smtpPass, from: row.smtpFrom,
     },
     postgres: { database: row.postgresDb, user: row.postgresUser, password: row.postgresPassword },
+    lastfm: { apiKey: row.lastfmApiKey, apiSecret: row.lastfmApiSecret },
   };
 }
 
@@ -79,6 +88,23 @@ export function isSmtpConfigured(): boolean {
 
 export function getPostgresSettings(): PostgresSettings {
   return requireCache().postgres;
+}
+
+export function getLastfmSettings(): LastfmSettings {
+  return requireCache().lastfm;
+}
+
+// apiKey alone is enough for the read-only Discover section.
+export function isLastfmDiscoverEnabled(): boolean {
+  return requireCache().lastfm.apiKey !== null;
+}
+
+// Both key and secret are needed before a user can even attempt to connect
+// their own account — signing auth.getSession/track.scrobble requires the
+// secret (see services/lastfm.ts).
+export function isLastfmScrobblingConfigured(): boolean {
+  const { apiKey, apiSecret } = requireCache().lastfm;
+  return apiKey !== null && apiSecret !== null;
 }
 
 export async function updateSmtpSettings(input: SmtpSettings): Promise<SmtpSettings> {
@@ -116,4 +142,16 @@ export async function persistPostgresSettings(input: PostgresSettings): Promise<
     },
   });
   cache = toCache(row);
+}
+
+export async function updateLastfmSettings(input: LastfmSettings): Promise<LastfmSettings> {
+  const row = await prisma.appSettings.update({
+    where: { id: 1 },
+    data: {
+      lastfmApiKey: input.apiKey || null,
+      lastfmApiSecret: input.apiSecret || null,
+    },
+  });
+  cache = toCache(row);
+  return cache.lastfm;
 }

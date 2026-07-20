@@ -20,6 +20,14 @@ model User {
   pendingEmail             String?
   isAdmin                  Boolean    @default(false)
   isBanned                 Boolean    @default(false)
+  // Last.fm account link — see routes/auth.ts's /lastfm/connect+callback for
+  // how this gets set (their "desktop auth" flow: a permanent session key,
+  // not an expiring OAuth token) and services/lastfm.ts's scrobble() for how
+  // it's used. scrobblingEnabled is a separate flag from "is connected" —
+  // connecting doesn't turn it on by itself, see ProfilePage's toggle.
+  lastfmSessionKey         String?
+  lastfmUsername           String?
+  scrobblingEnabled        Boolean    @default(false)
   createdAt                DateTime   @default(now())
   updatedAt                DateTime   @updatedAt
   playlists                Playlist[]
@@ -101,6 +109,12 @@ model PlaylistVideo {
   // library from scratch. Raw float32 bytes (not JSON — a few KB instead of
   // ~20KB of text per track); no consumer yet.
   audioEmbedding         Bytes?
+  // Internal listening stats — incremented from POST .../played whenever
+  // playback reaches the end naturally (see PlayerContext's handleTrackEnded
+  // on the frontend), independent of whether Last.fm scrobbling is on. Not
+  // gated on any minimum-listened threshold: "finished" already implies that.
+  playCount              Int        @default(0)
+  lastPlayedAt           DateTime?
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 
@@ -144,6 +158,13 @@ model AppSettings {
   postgresDb       String
   postgresUser     String
   postgresPassword String
+
+  // Both optional. apiKey alone is enough for the read-only "Discover"
+  // section (see routes/youtube.ts's /discover); apiSecret is only needed
+  // once a user tries to actually connect+scrobble, since signing
+  // auth.getSession/track.scrobble requires it — see services/lastfm.ts.
+  lastfmApiKey    String?
+  lastfmApiSecret String?
 
   updatedAt DateTime @updatedAt
 

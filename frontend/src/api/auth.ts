@@ -7,10 +7,20 @@ export interface User {
   language: string;
   isAdmin: boolean;
   pendingEmail: string | null;
+  lastfmUsername: string | null;
+  scrobblingEnabled: boolean;
 }
 
 interface AuthResponse {
   user: User;
+}
+
+interface MeResponse {
+  user: User;
+  // App-wide — whether the backend has a Last.fm shared secret configured at
+  // all (see isLastfmScrobblingConfigured on the backend), independent of
+  // whether *this* user has connected their own account.
+  lastfmScrobblingAvailable: boolean;
 }
 
 // Two shapes depending on whether the backend has SMTP configured (see
@@ -59,8 +69,8 @@ export const authApi = {
     await client.post('/auth/logout');
   },
 
-  me: async (): Promise<AuthResponse> => {
-    const { data } = await client.get<AuthResponse>('/auth/me');
+  me: async (): Promise<MeResponse> => {
+    const { data } = await client.get<MeResponse>('/auth/me');
     return data;
   },
 
@@ -75,6 +85,21 @@ export const authApi = {
     newPassword?: string;
   }): Promise<AuthResponse> => {
     const { data } = await client.patch<AuthResponse>('/auth/profile', params);
+    return data;
+  },
+
+  // Not a fetch — a full-page navigation, since Last.fm shows its own
+  // login/approve page before redirecting back to our callback. See
+  // ProfilePage's "Connect" button (a plain <a href>, not an onClick).
+  lastfmConnectUrl: '/api/auth/lastfm/connect',
+
+  disconnectLastfm: async (): Promise<AuthResponse> => {
+    const { data } = await client.post<AuthResponse>('/auth/lastfm/disconnect');
+    return data;
+  },
+
+  setScrobbling: async (enabled: boolean): Promise<AuthResponse> => {
+    const { data } = await client.patch<AuthResponse>('/auth/lastfm/scrobbling', { enabled });
     return data;
   },
 };

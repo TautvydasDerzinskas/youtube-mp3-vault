@@ -152,6 +152,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [queue]);
 
   const handleTrackEnded = useCallback(() => {
+    // Fire-and-forget — internal play-count/last-played and any Last.fm
+    // scrobble happen server-side (see POST .../played); queue advance below
+    // must never wait on or be affected by that call.
+    const prev = currentRef.current;
+    if (prev) playlistsApi.markPlayed(prev.playlistId, prev.video.id).catch(() => {});
+
     setCurrent(prev => {
       if (!prev) return null;
       const idx = queue.findIndex(v => v.id === prev.video.id);

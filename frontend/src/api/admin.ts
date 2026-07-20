@@ -31,6 +31,13 @@ export interface PostgresSettings {
   password: string;
 }
 
+// apiKey alone enables the Discover section; both are needed before any
+// user's "Connect to Last.fm" option appears in their Profile.
+export interface LastfmSettings {
+  apiKey: string | null;
+  apiSecret: string | null;
+}
+
 export const adminApi = {
   listUsers: async (): Promise<AdminUser[]> => {
     const { data } = await client.get<{ users: AdminUser[] }>('/admin/users');
@@ -52,8 +59,8 @@ export const adminApi = {
     return data.user;
   },
 
-  getSettings: async (): Promise<{ smtp: SmtpSettings; postgres: PostgresSettings }> => {
-    const { data } = await client.get<{ smtp: SmtpSettings; postgres: PostgresSettings }>('/admin/settings');
+  getSettings: async (): Promise<{ smtp: SmtpSettings; postgres: PostgresSettings; lastfm: LastfmSettings }> => {
+    const { data } = await client.get<{ smtp: SmtpSettings; postgres: PostgresSettings; lastfm: LastfmSettings }>('/admin/settings');
     return data;
   },
 
@@ -68,5 +75,10 @@ export const adminApi = {
   updatePostgresSettings: async (settings: PostgresSettings): Promise<PostgresSettings> => {
     const { data } = await client.post<{ postgres: PostgresSettings }>('/admin/settings/postgres', settings);
     return data.postgres;
+  },
+
+  updateLastfmSettings: async (settings: LastfmSettings): Promise<LastfmSettings> => {
+    const { data } = await client.patch<{ lastfm: LastfmSettings }>('/admin/settings/lastfm', settings);
+    return data.lastfm;
   },
 };

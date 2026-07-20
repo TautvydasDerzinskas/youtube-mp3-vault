@@ -3,9 +3,9 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/prisma';
 import { normalizePlaylistUrl, fetchPlaylist, searchRemixes, resolveTopMatch } from '../services/youtube';
 import { parseArtistAndTitle } from '../services/musicbrainz';
-import { getSimilarTracks } from '../services/lastfm';
+import { getSimilarTracks, scrobble } from '../services/lastfm';
 import { getSharedFilePath, sanitizeFilename } from '../services/downloader';
-import { config } from '../config';
+import { isLastfmDiscoverEnabled } from '../services/settings';
 import { withDownloadStats } from '../services/playlistStats';
 import { bufferToFloat32Array, cosineSimilarity } from '../services/embeddings';
 import {
@@ -31,6 +31,7 @@ const VIDEO_SELECT_WITHOUT_EMBEDDING = {
   bitrate: true, addedAt: true, artist: true, album: true, trackNumber: true,
   genres: true, releaseYear: true, mbRecordingId: true, metadataStatus: true,
   metadataFetchedAt: true, audioAnalysisStatus: true, audioAnalysisFetchedAt: true,
+  playCount: true, lastPlayedAt: true,
   createdAt: true, updatedAt: true,
 } as const;
 
@@ -418,7 +419,7 @@ const DISCOVER_LIMIT = 8;
 
 router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    if (!config.lastfmApiKey) {
+    if (!isLastfmDiscoverEnabled()) {
       res.json({ enabled: false, discover: [] });
       return;
     }
@@ -460,6 +461,56 @@ router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest
     );
 
     res.json({ enabled: true, discover });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/playlists/:id/videos/:videoId/played ───────────────────────────
+// Called once a track finishes playing naturally (see PlayerContext's
+// handleTrackEnded on the frontend) — always bumps the internal play count,
+// and best-effort scrobbles to Last.fm if the user has that enabled. The
+// scrobble outcome never affects the response: a Last.fm hiccup shouldn't
+// turn "the song finished" into a client-visible error (see scrobble()'s own
+// never-throws contract in services/lastfm.ts).
+
+router.post('/:id/videos/:videoId/played', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+
+    const updated = await prisma.playlistVideo.update({
+      where: { id: video.id },
+      data: { playCount: { increment: 1 }, lastPlayedAt: new Date() },
+      select: { playCount: true, lastPlayedAt: true },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { scrobblingEnabled: true, lastfmSessionKey: true },
+    });
+    if (user?.scrobblingEnabled && user.lastfmSessionKey) {
+      const { artist: parsedArtist, title } = parseArtistAndTitle(video.title, video.channelName);
+      const artist = video.artist ?? parsedArtist;
+      // Approximates when playback started, since we don't track that
+      // separately — Last.fm doesn't verify this against wall-clock time.
+      const timestamp = Math.floor(Date.now() / 1000) - (video.duration ?? 0);
+      if (artist) void scrobble({ sessionKey: user.lastfmSessionKey, artist, track: title, timestamp });
+    }
+
+    res.json(updated);
   } catch (err) {
     next(err);
   }

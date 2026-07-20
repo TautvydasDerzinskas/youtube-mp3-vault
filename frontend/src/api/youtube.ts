@@ -40,6 +40,11 @@ export interface PlaylistVideo {
   genres: string[];
   releaseYear: number | null;
   metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
+  // Bumped by markPlayed() below whenever this track finishes playing
+  // naturally — internal listening stats, independent of Last.fm
+  // scrobbling. No UI consumes these yet.
+  playCount: number;
+  lastPlayedAt: string | null;
 }
 
 // "Sounds like this" — ranked by Essentia audio-embedding cosine similarity
@@ -134,6 +139,16 @@ export const playlistsApi = {
   getDiscover: async (playlistId: string, videoId: string): Promise<{ enabled: boolean; discover: DiscoverResult[] }> => {
     const { data } = await client.get<{ enabled: boolean; discover: DiscoverResult[] }>(
       `/playlists/${playlistId}/videos/${videoId}/discover`
+    );
+    return data;
+  },
+
+  // Called once a track finishes playing naturally — bumps its internal play
+  // count and, if the user has scrobbling on, best-effort scrobbles to
+  // Last.fm server-side. See PlayerContext's handleTrackEnded.
+  markPlayed: async (playlistId: string, videoId: string): Promise<{ playCount: number; lastPlayedAt: string }> => {
+    const { data } = await client.post<{ playCount: number; lastPlayedAt: string }>(
+      `/playlists/${playlistId}/videos/${videoId}/played`
     );
     return data;
   },

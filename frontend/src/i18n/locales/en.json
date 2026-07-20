@@ -164,7 +164,17 @@
     "passwordUpdated": "Password updated",
     "language": "Language",
     "logout": "Logout",
-    "genericError": "Something went wrong. Please try again."
+    "genericError": "Something went wrong. Please try again.",
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Connect your Last.fm account to scrobble songs you finish listening to.",
+      "connect": "Connect to Last.fm",
+      "connectedAs": "Connected as {{username}}",
+      "enableScrobbling": "Scrobble songs I finish listening to",
+      "disconnect": "Disconnect",
+      "connectedAlert": "Connected to Last.fm.",
+      "errorAlert": "Couldn't connect to Last.fm. Please try again."
+    }
   },
   "downloads": {
     "title": "Downloads",
@@ -196,6 +206,12 @@
       "password": "Password",
       "required": "Database, username, and password are all required.",
       "testAndSave": "Test & Save"
+    },
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "From the same free registration at last.fm/api/account/create. The API key alone powers the track page's \"Discover\" section; both key and secret are needed before users can connect their account and scrobble.",
+      "apiKey": "API key",
+      "apiSecret": "Shared secret"
     }
   },
   "users": {

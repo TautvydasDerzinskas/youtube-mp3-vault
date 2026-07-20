@@ -166,7 +166,17 @@
     "passwordUpdated": "Hasło zaktualizowane",
     "language": "Język",
     "logout": "Wyloguj się",
-    "genericError": "Coś poszło nie tak. Spróbuj ponownie."
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Połącz swoje konto Last.fm, aby zapisywać (scrobblować) utwory, których wysłuchasz do końca.",
+      "connect": "Połącz z Last.fm",
+      "connectedAs": "Połączono jako {{username}}",
+      "enableScrobbling": "Zapisuj utwory, których wysłucham do końca",
+      "disconnect": "Rozłącz",
+      "connectedAlert": "Połączono z Last.fm.",
+      "errorAlert": "Nie udało się połączyć z Last.fm. Spróbuj ponownie."
+    }
   },
   "downloads": {
     "title": "Pobieranie",
@@ -198,6 +208,12 @@
       "password": "Hasło",
       "required": "Nazwa bazy danych, użytkownik i hasło są wymagane.",
       "testAndSave": "Testuj i zapisz"
+    },
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Z tej samej darmowej rejestracji na last.fm/api/account/create. Sam klucz API włącza sekcję „Odkrywaj” na stronie utworu; do połączenia konta i scrobblowania przez użytkowników potrzebne są zarówno klucz, jak i sekret.",
+      "apiKey": "Klucz API",
+      "apiSecret": "Sekret współdzielony"
     }
   },
   "users": {

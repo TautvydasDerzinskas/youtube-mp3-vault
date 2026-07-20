@@ -165,7 +165,17 @@
     "passwordUpdated": "Slaptažodis atnaujintas",
     "language": "Kalba",
     "logout": "Atsijungti",
-    "genericError": "Įvyko klaida. Bandykite dar kartą."
+    "genericError": "Įvyko klaida. Bandykite dar kartą.",
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Prijunkite savo Last.fm paskyrą, kad būtų fiksuojamos (scrobbinamos) iki galo išklausytos dainos.",
+      "connect": "Prisijungti prie Last.fm",
+      "connectedAs": "Prisijungta kaip {{username}}",
+      "enableScrobbling": "Fiksuoti dainas, kurias išklausau iki galo",
+      "disconnect": "Atsijungti",
+      "connectedAlert": "Prisijungta prie Last.fm.",
+      "errorAlert": "Nepavyko prisijungti prie Last.fm. Bandykite dar kartą."
+    }
   },
   "downloads": {
     "title": "Atsisiuntimai",
@@ -197,6 +207,12 @@
       "password": "Slaptažodis",
       "required": "Būtina nurodyti duomenų bazę, naudotojo vardą ir slaptažodį.",
       "testAndSave": "Patikrinti ir išsaugoti"
+    },
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Iš tos pačios nemokamos registracijos last.fm/api/account/create. Vien API raktas įjungia takelio puslapio „Atraskite“ skiltį; norint, kad naudotojai galėtų prijungti savo paskyrą ir fiksuoti klausymus, reikia ir rakto, ir slapto rakto.",
+      "apiKey": "API raktas",
+      "apiSecret": "Slaptas raktas"
     }
   },
   "users": {

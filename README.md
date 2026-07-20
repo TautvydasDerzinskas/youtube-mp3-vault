@@ -257,14 +257,14 @@ The app embeds its own build's short commit SHA at build time (`EXPO_PUBLIC_BUIL
 
 ## Environment variables
 
-The `POSTGRES_*` and `SMTP_*` values below are only ever read once — the
-first time the backend starts against a fresh database, to seed an
-`app_settings` row (see `services/settings.ts`). Every read and write after
-that goes through the database, not the environment, so an admin's changes
-via **Administration → Settings** survive redeploys even if these env vars
-still have their old values. Postgres changes there are tested (reachable,
-and already this app's own schema) before ever being applied, so a typo
-can't take the app down — see `services/prisma.ts`'s `switchDatabase`.
+The `POSTGRES_*`, `SMTP_*`, and `LASTFM_*` values below are only ever read
+once — the first time the backend starts against a fresh database, to seed
+an `app_settings` row (see `services/settings.ts`). Every read and write
+after that goes through the database, not the environment, so an admin's
+changes via **Administration → Settings** survive redeploys even if these
+env vars still have their old values. Postgres changes there are tested
+(reachable, and already this app's own schema) before ever being applied,
+so a typo can't take the app down — see `services/prisma.ts`'s `switchDatabase`.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
@@ -282,7 +282,8 @@ can't take the app down — see `services/prisma.ts`'s `switchDatabase`.
 | `SMTP_SECURE` | No | `false` | Use implicit TLS (`true` for port 465) |
 | `SMTP_USER` / `SMTP_PASS` | No | — | SMTP auth credentials, if your server requires them |
 | `SMTP_FROM` | No | `YoutubeVault <no-reply@localhost>` | `From` address on verification emails |
-| `LASTFM_API_KEY` | No | — | Free key from [last.fm/api/account/create](https://www.last.fm/api/account/create); powers the track page's "Discover" section (external similar-track suggestions). Unlike SMTP/Postgres above, this one's env-only — unset just means that section doesn't render at all |
+| `LASTFM_API_KEY` | No | — | From [last.fm/api/account/create](https://www.last.fm/api/account/create) (free); alone, powers the track page's "Discover" section (external similar-track suggestions) — unset just means that section doesn't render |
+| `LASTFM_API_SECRET` | No | — | From the same Last.fm API registration. Additionally required before the "Connect to Last.fm" option appears in Profile — without it, a user has no way to link their account and scrobble plays |
 | `GHCR_NAMESPACE` | `docker-compose.prod.yml` only | — | `owner/repo` (lowercase) of this repo on GitHub, used to resolve the published image names |
 | `IMAGE_TAG` | No (`docker-compose.prod.yml` only) | `latest` | Which published image tag to run — `latest` or a specific commit SHA |
 
@@ -352,6 +353,10 @@ can't take the app down — see `services/prisma.ts`'s `switchDatabase`.
 | `GET` | `/api/auth/me` | ✓ | Current user |
 | `PATCH` | `/api/auth/profile` | ✓ | Change email and/or password (requires current password); an email change is pending until the new address confirms it via `/verify-email` |
 | `PATCH` | `/api/auth/language` | ✓ | Change UI language (`en` / `lt` / `pl`) |
+| `GET` | `/api/auth/lastfm/connect` | ✓ | Redirects to Last.fm's own authorize page; only available when the admin has set both a Last.fm API key and shared secret |
+| `GET` | `/api/auth/lastfm/callback` | ✓ | Where Last.fm redirects back to after the user approves; exchanges the token for a permanent session key, then redirects into the Profile page |
+| `POST` | `/api/auth/lastfm/disconnect` | ✓ | Unlink this account from Last.fm and turn scrobbling off |
+| `PATCH` | `/api/auth/lastfm/scrobbling` | ✓ | Turn scrobbling on/off (requires already being connected) |
 | `GET` | `/api/playlists` | ✓ | List user's playlists |
 | `POST` | `/api/playlists` | ✓ | Add playlist by URL |
 | `PATCH` | `/api/playlists/:id` | ✓ | Rename playlist (custom display name) |
@@ -367,10 +372,12 @@ can't take the app down — see `services/prisma.ts`'s `switchDatabase`.
 | `GET` | `/api/playlists/:id/videos/:videoId/recommendations` | ✓ | "Similar songs" — audio-embedding similarity, boosted by same-artist/same-genre |
 | `GET` | `/api/playlists/:id/videos/:videoId/discover` | ✓ | "Discover" — external similar tracks via Last.fm, each resolved to a best-guess YouTube link plus a Spotify search link |
 | `GET` | `/api/playlists/:id/videos/:videoId/remixes` | ✓ | Best-effort YouTube search for remixes of this track |
+| `POST` | `/api/playlists/:id/videos/:videoId/played` | ✓ | Call once a track finishes playing — bumps its internal play count/last-played time, and best-effort scrobbles to Last.fm if the user has that enabled |
 | `GET` | `/api/admin/users` | Admin | List every account (verification/ban status, playlist count) |
 | `GET` | `/api/admin/users/:id` | Admin | Full account detail + their playlists |
 | `POST` | `/api/admin/users/:id/ban` | Admin | Suspend an account — takes effect immediately, not just on next login |
 | `POST` | `/api/admin/users/:id/unban` | Admin | Restore a suspended account |
-| `GET` | `/api/admin/settings` | Admin | Current SMTP + Postgres settings |
+| `GET` | `/api/admin/settings` | Admin | Current SMTP + Postgres + Last.fm settings |
 | `PATCH` | `/api/admin/settings/smtp` | Admin | Update SMTP settings |
 | `POST` | `/api/admin/settings/postgres` | Admin | Test and, only if reachable, switch to a different Postgres database/user/password (host/port stay fixed) |
+| `PATCH` | `/api/admin/settings/lastfm` | Admin | Update the Last.fm API key/shared secret |

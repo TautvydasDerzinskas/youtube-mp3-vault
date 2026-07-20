@@ -4,10 +4,11 @@ import {
   Switch, FormControlLabel, CircularProgress,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { adminApi, SmtpSettings, PostgresSettings } from '../../api/admin';
+import { adminApi, SmtpSettings, PostgresSettings, LastfmSettings } from '../../api/admin';
 
 const EMPTY_SMTP: SmtpSettings = { host: null, port: 587, secure: false, user: null, pass: null, from: '' };
 const EMPTY_POSTGRES: PostgresSettings = { database: '', user: '', password: '' };
+const EMPTY_LASTFM: LastfmSettings = { apiKey: null, apiSecret: null };
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -24,9 +25,14 @@ export default function SettingsPage() {
   const [postgresError, setPostgresError] = useState<string | null>(null);
   const [postgresSaved, setPostgresSaved] = useState(false);
 
+  const [lastfm, setLastfm] = useState<LastfmSettings>(EMPTY_LASTFM);
+  const [lastfmSaving, setLastfmSaving] = useState(false);
+  const [lastfmError, setLastfmError] = useState<string | null>(null);
+  const [lastfmSaved, setLastfmSaved] = useState(false);
+
   useEffect(() => {
     adminApi.getSettings()
-      .then(({ smtp, postgres }) => { setSmtp(smtp); setPostgres(postgres); })
+      .then(({ smtp, postgres, lastfm }) => { setSmtp(smtp); setPostgres(postgres); setLastfm(lastfm); })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, []);
@@ -62,6 +68,21 @@ export default function SettingsPage() {
       setPostgresError(err.response?.data?.error ?? t('settings.genericError'));
     } finally {
       setPostgresSaving(false);
+    }
+  };
+
+  const handleSaveLastfm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLastfmError(null);
+    setLastfmSaved(false);
+    setLastfmSaving(true);
+    try {
+      setLastfm(await adminApi.updateLastfmSettings(lastfm));
+      setLastfmSaved(true);
+    } catch (err: any) {
+      setLastfmError(err.response?.data?.error ?? t('settings.genericError'));
+    } finally {
+      setLastfmSaving(false);
     }
   };
 
@@ -106,6 +127,31 @@ export default function SettingsPage() {
         {smtpError && <Alert severity="error">{smtpError}</Alert>}
         {smtpSaved && <Alert severity="success">{t('settings.saved')}</Alert>}
         <Button type="submit" variant="contained" disabled={smtpSaving} sx={{ alignSelf: 'flex-start' }}>
+          {t('settings.save')}
+        </Button>
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
+      <Typography variant="subtitle1" fontWeight={600} mb={1}>{t('settings.lastfm.title')}</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>{t('settings.lastfm.description')}</Typography>
+      <Box component="form" onSubmit={handleSaveLastfm} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+        <TextField
+          label={t('settings.lastfm.apiKey')}
+          value={lastfm.apiKey ?? ''}
+          onChange={(e) => setLastfm({ ...lastfm, apiKey: e.target.value || null })}
+          fullWidth
+        />
+        <TextField
+          label={t('settings.lastfm.apiSecret')}
+          type="password"
+          value={lastfm.apiSecret ?? ''}
+          onChange={(e) => setLastfm({ ...lastfm, apiSecret: e.target.value || null })}
+          fullWidth
+        />
+        {lastfmError && <Alert severity="error">{lastfmError}</Alert>}
+        {lastfmSaved && <Alert severity="success">{t('settings.saved')}</Alert>}
+        <Button type="submit" variant="contained" disabled={lastfmSaving} sx={{ alignSelf: 'flex-start' }}>
           {t('settings.save')}
         </Button>
       </Box>

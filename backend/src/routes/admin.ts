@@ -4,6 +4,7 @@ import { prisma, switchDatabase, buildDatabaseUrl } from '../services/prisma';
 import { withDownloadStats } from '../services/playlistStats';
 import {
   getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
+  getLastfmSettings, updateLastfmSettings,
 } from '../services/settings';
 
 const router = Router();
@@ -114,7 +115,7 @@ router.post('/users/:id/unban', async (req, res, next) => {
 
 router.get('/settings', async (_req, res, next) => {
   try {
-    res.json({ smtp: getSmtpSettings(), postgres: getPostgresSettings() });
+    res.json({ smtp: getSmtpSettings(), postgres: getPostgresSettings(), lastfm: getLastfmSettings() });
   } catch (err) {
     next(err);
   }
@@ -181,6 +182,24 @@ router.post('/settings/postgres', async (req, res, next) => {
 
     await persistPostgresSettings(candidate);
     res.json({ postgres: getPostgresSettings() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PATCH /api/admin/settings/lastfm ──────────────────────────────────────
+// Both fields optional — apiKey alone enables Discover; both together are
+// needed before any user's "Connect to Last.fm" option appears (see
+// isLastfmScrobblingConfigured in services/settings.ts).
+
+router.patch('/settings/lastfm', async (req, res, next) => {
+  try {
+    const { apiKey, apiSecret } = req.body as Record<string, unknown>;
+    const updated = await updateLastfmSettings({
+      apiKey: typeof apiKey === 'string' && apiKey.trim() ? apiKey.trim() : null,
+      apiSecret: typeof apiSecret === 'string' && apiSecret.trim() ? apiSecret.trim() : null,
+    });
+    res.json({ lastfm: updated });
   } catch (err) {
     next(err);
   }

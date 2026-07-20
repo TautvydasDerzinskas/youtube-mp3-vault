@@ -1,18 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, TextField, Button, Alert, MenuItem,
-  Divider, Stack, IconButton, Tooltip,
+  Divider, Stack, IconButton, Tooltip, Switch, FormControlLabel,
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { authApi } from '../api/auth';
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, SupportedLanguage } from '../i18n';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, updateLanguage, updateProfile, logout } = useAuth();
+  const {
+    user, updateLanguage, updateProfile, logout,
+    lastfmScrobblingAvailable, disconnectLastfm, setScrobbling,
+  } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const lastfmResult = searchParams.get('lastfm');
+  const [scrobblingLoading, setScrobblingLoading] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  // Strip ?lastfm=connected|error (left by the backend's /lastfm/callback
+  // redirect) once read, on mount only, so a later refresh of this same
+  // page doesn't re-show the alert.
+  useEffect(() => {
+    if (lastfmResult) setSearchParams({}, { replace: true });
+  }, []);
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [emailPassword, setEmailPassword] = useState('');
@@ -29,6 +44,24 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleToggleScrobbling = async (enabled: boolean) => {
+    setScrobblingLoading(true);
+    try {
+      await setScrobbling(enabled);
+    } finally {
+      setScrobblingLoading(false);
+    }
+  };
+
+  const handleDisconnectLastfm = async () => {
+    setDisconnecting(true);
+    try {
+      await disconnectLastfm();
+    } finally {
+      setDisconnecting(false);
+    }
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,6 +165,45 @@ export default function ProfilePage() {
           {t('profile.savePassword')}
         </Button>
       </Box>
+
+      {lastfmScrobblingAvailable && (
+        <>
+          <Divider sx={{ mb: 3 }} />
+
+          <Typography variant="subtitle1" fontWeight={600} mb={1}>{t('profile.lastfm.title')}</Typography>
+
+          {lastfmResult === 'connected' && <Alert severity="success" sx={{ mb: 2 }}>{t('profile.lastfm.connectedAlert')}</Alert>}
+          {lastfmResult === 'error' && <Alert severity="error" sx={{ mb: 2 }}>{t('profile.lastfm.errorAlert')}</Alert>}
+
+          {user?.lastfmUsername ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+              <Typography color="text.secondary">
+                {t('profile.lastfm.connectedAs', { username: user.lastfmUsername })}
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={user.scrobblingEnabled}
+                    disabled={scrobblingLoading}
+                    onChange={(e) => handleToggleScrobbling(e.target.checked)}
+                  />
+                }
+                label={t('profile.lastfm.enableScrobbling')}
+              />
+              <Button variant="outlined" color="error" disabled={disconnecting} onClick={handleDisconnectLastfm} sx={{ alignSelf: 'flex-start' }}>
+                {t('profile.lastfm.disconnect')}
+              </Button>
+            </Box>
+          ) : (
+            <Box sx={{ mb: 4 }}>
+              <Typography color="text.secondary" mb={2}>{t('profile.lastfm.description')}</Typography>
+              <Button component="a" href={authApi.lastfmConnectUrl} variant="contained">
+                {t('profile.lastfm.connect')}
+              </Button>
+            </Box>
+          )}
+        </>
+      )}
 
       <Divider sx={{ mb: 3 }} />
 

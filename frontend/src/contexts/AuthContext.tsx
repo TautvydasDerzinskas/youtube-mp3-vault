@@ -12,6 +12,11 @@ import { authApi, User, RegisterResponse } from '../api/auth';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  // Whether the backend has a Last.fm shared secret configured at all — see
+  // MeResponse in api/auth.ts. ProfilePage hides its Last.fm section
+  // entirely when this is false, rather than offering a "Connect" button
+  // that would just 503.
+  lastfmScrobblingAvailable: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<RegisterResponse>;
   verifyEmail: (token: string) => Promise<void>;
@@ -20,6 +25,8 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   updateLanguage: (language: string) => Promise<void>;
   updateProfile: (params: { currentPassword: string; email?: string; newPassword?: string }) => Promise<void>;
+  disconnectLastfm: () => Promise<void>;
+  setScrobbling: (enabled: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -32,11 +39,13 @@ function applyUser(user: User) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastfmScrobblingAvailable, setLastfmScrobblingAvailable] = useState(false);
 
   const refreshUser = useCallback(async () => {
     try {
-      const { user } = await authApi.me();
+      const { user, lastfmScrobblingAvailable } = await authApi.me();
       setUser(applyUser(user));
+      setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
     } catch {
       setUser(null);
     }
@@ -86,11 +95,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(applyUser(user));
   };
 
+  const disconnectLastfm = async () => {
+    const { user } = await authApi.disconnectLastfm();
+    setUser(applyUser(user));
+  };
+
+  const setScrobbling = async (enabled: boolean) => {
+    const { user } = await authApi.setScrobbling(enabled);
+    setUser(applyUser(user));
+  };
+
   return (
     <AuthContext.Provider
       value={{
-        user, loading, login, register, verifyEmail, resendVerification,
-        logout, refreshUser, updateLanguage, updateProfile,
+        user, loading, lastfmScrobblingAvailable, login, register, verifyEmail, resendVerification,
+        logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
       }}
     >
       {children}
