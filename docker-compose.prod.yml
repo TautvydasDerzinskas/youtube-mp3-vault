@@ -59,7 +59,7 @@ services:
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-MusicVault <no-reply@localhost>}
+      SMTP_FROM: ${SMTP_FROM:-YoutubeVault <no-reply@localhost>}
     volumes:
       - music_data:/data
     depends_on:
