@@ -36,7 +36,9 @@
   },
   "nav": {
     "playlists": "Grojaraščiai",
+    "administration": "Administravimas",
     "users": "Naudotojai",
+    "settings": "Nustatymai",
     "downloads": "Atsisiuntimai",
     "logout": "Atsijungti",
     "expandMenu": "Išskleisti meniu",
@@ -170,6 +172,32 @@
     "back": "Grįžti į grojaraščius",
     "downloadCta": "Atsisiųsti Android versiją",
     "description": "Atsisiųskite YoutubeVault programėlę Android telefonui, kad galėtumėte naršyti grojaraščius ir klausytis neprisijungę."
+  },
+  "settings": {
+    "title": "Nustatymai",
+    "failedToLoad": "Nepavyko įkelti nustatymų.",
+    "save": "Išsaugoti",
+    "saved": "Išsaugota.",
+    "genericError": "Įvyko klaida. Bandykite dar kartą.",
+    "smtp": {
+      "title": "El. paštas (SMTP)",
+      "description": "Naudojama registracijos patvirtinimo laiškams siųsti. Palikite serverio lauką tuščią, kad visiškai išjungtumėte el. pašto patvirtinimą — nauji naudotojai tuomet iš karto patvirtinami ir prijungiami.",
+      "host": "Serveris",
+      "port": "Prievadas",
+      "secure": "Naudoti TLS",
+      "user": "Naudotojo vardas",
+      "pass": "Slaptažodis",
+      "from": "Siuntėjo adresas"
+    },
+    "postgres": {
+      "title": "Duomenų bazė (PostgreSQL)",
+      "description": "Ryšys patikrinamas prieš jį pritaikant — neteisingos reikšmės atmetamos, kad programa toliau veiktų su dabartine duomenų baze.",
+      "database": "Duomenų bazės pavadinimas",
+      "user": "Naudotojo vardas",
+      "password": "Slaptažodis",
+      "required": "Būtina nurodyti duomenų bazę, naudotojo vardą ir slaptažodį.",
+      "testAndSave": "Patikrinti ir išsaugoti"
+    }
   },
   "users": {
     "title": "Naudotojai",

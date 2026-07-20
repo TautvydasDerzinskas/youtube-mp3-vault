@@ -1,6 +1,6 @@
 import {
   Box, Typography, List, ListItemButton, ListItemAvatar, Avatar, ListItemText,
-  CircularProgress, Alert, IconButton, Tooltip,
+  Alert, IconButton, Tooltip,
 } from '@mui/material';
 import { MusicNote as MusicNoteIcon, YouTube as YouTubeIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,7 @@ import { DiscoverResult } from '../../api/youtube';
 import { formatDuration, youtubeWatchUrl } from '../PlaylistsPage/utils';
 
 interface DiscoverTracksProps {
-  state: DiscoverResult[] | 'loading' | 'error';
+  state: DiscoverResult[] | 'loading' | 'error' | 'disabled';
 }
 
 /**
@@ -17,9 +17,16 @@ interface DiscoverTracksProps {
  * YouTube video where possible. Rows without a resolved match still show
  * (no YouTube icon, not clickable) since the Spotify search link — a plain
  * deep link, no API involved — always works regardless.
+ *
+ * Renders nothing at all — not even the section title — while loading or
+ * when the backend has no LASTFM_API_KEY configured (see /discover's
+ * `enabled` flag), rather than showing an empty section most self-hosted
+ * instances would never turn on.
  */
 export function DiscoverTracks({ state }: DiscoverTracksProps) {
   const { t } = useTranslation();
+
+  if (state === 'loading' || state === 'disabled') return null;
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -27,9 +34,6 @@ export function DiscoverTracks({ state }: DiscoverTracksProps) {
         {t('playlists.trackDetail.discoverTitle')}
       </Typography>
 
-      {state === 'loading' && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>
-      )}
       {state === 'error' && <Alert severity="error">{t('playlists.trackDetail.discoverFailed')}</Alert>}
       {Array.isArray(state) && state.length === 0 && (
         <Typography color="text.secondary">{t('playlists.trackDetail.discoverEmpty')}</Typography>

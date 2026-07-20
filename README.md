@@ -257,6 +257,15 @@ The app embeds its own build's short commit SHA at build time (`EXPO_PUBLIC_BUIL
 
 ## Environment variables
 
+The `POSTGRES_*` and `SMTP_*` values below are only ever read once — the
+first time the backend starts against a fresh database, to seed an
+`app_settings` row (see `services/settings.ts`). Every read and write after
+that goes through the database, not the environment, so an admin's changes
+via **Administration → Settings** survive redeploys even if these env vars
+still have their old values. Postgres changes there are tested (reachable,
+and already this app's own schema) before ever being applied, so a typo
+can't take the app down — see `services/prisma.ts`'s `switchDatabase`.
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `POSTGRES_DB` | No | `ympv` | Database name |
@@ -268,12 +277,12 @@ The app embeds its own build's short commit SHA at build time (`EXPO_PUBLIC_BUIL
 | `FRONTEND_URL` | No | `http://localhost` | Used for CORS; set to your domain in production |
 | `FRONTEND_PORT` | No | `80` | Host port the nginx container binds to |
 | `MUSIC_DIR` | No | `/data` | Path inside the backend container where downloaded MP3s live; point the `music_data` volume in `docker-compose.yml` at a host/NAS path to change where files actually land |
-| `SMTP_HOST` | Required when `APP_ENV` isn't `dev` | — | SMTP server for sending signup verification emails; when unset in `dev`, the verification link is logged to the console instead of sent |
+| `SMTP_HOST` | No | — | SMTP server for sending signup verification emails. Unset (in any tier, not just `dev`) means no verification step at all — new accounts are created already-verified and signed in immediately, since there's no way to email a confirmation link. In `dev` specifically, the link is logged to the console instead, so the full flow stays testable locally with zero setup |
 | `SMTP_PORT` | No | `587` | SMTP server port |
 | `SMTP_SECURE` | No | `false` | Use implicit TLS (`true` for port 465) |
 | `SMTP_USER` / `SMTP_PASS` | No | — | SMTP auth credentials, if your server requires them |
 | `SMTP_FROM` | No | `YoutubeVault <no-reply@localhost>` | `From` address on verification emails |
-| `LASTFM_API_KEY` | No | — | Free key from [last.fm/api/account/create](https://www.last.fm/api/account/create); powers the track page's "Discover" section (external similar-track suggestions). Unset just means that section is empty |
+| `LASTFM_API_KEY` | No | — | Free key from [last.fm/api/account/create](https://www.last.fm/api/account/create); powers the track page's "Discover" section (external similar-track suggestions). Unlike SMTP/Postgres above, this one's env-only — unset just means that section doesn't render at all |
 | `GHCR_NAMESPACE` | `docker-compose.prod.yml` only | — | `owner/repo` (lowercase) of this repo on GitHub, used to resolve the published image names |
 | `IMAGE_TAG` | No (`docker-compose.prod.yml` only) | `latest` | Which published image tag to run — `latest` or a specific commit SHA |
 
@@ -362,3 +371,6 @@ The app embeds its own build's short commit SHA at build time (`EXPO_PUBLIC_BUIL
 | `GET` | `/api/admin/users/:id` | Admin | Full account detail + their playlists |
 | `POST` | `/api/admin/users/:id/ban` | Admin | Suspend an account — takes effect immediately, not just on next login |
 | `POST` | `/api/admin/users/:id/unban` | Admin | Restore a suspended account |
+| `GET` | `/api/admin/settings` | Admin | Current SMTP + Postgres settings |
+| `PATCH` | `/api/admin/settings/smtp` | Admin | Update SMTP settings |
+| `POST` | `/api/admin/settings/postgres` | Admin | Test and, only if reachable, switch to a different Postgres database/user/password (host/port stay fixed) |

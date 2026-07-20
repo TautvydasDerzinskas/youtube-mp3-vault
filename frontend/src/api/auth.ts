@@ -13,10 +13,14 @@ interface AuthResponse {
   user: User;
 }
 
-interface RegisterResponse {
-  message: string;
-  email: string;
-}
+// Two shapes depending on whether the backend has SMTP configured (see
+// backend/src/routes/auth.ts's skipsEmailVerification): normally a "check
+// your email" response, but with no way to send that email outside dev, the
+// account is created already-verified and signed in immediately instead —
+// same shape login's response has.
+export type RegisterResponse =
+  | { verificationRequired: true; message: string; email: string }
+  | { verificationRequired: false; user: User; token: string };
 
 interface MessageResponse {
   message: string;

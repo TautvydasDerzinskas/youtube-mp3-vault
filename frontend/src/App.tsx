@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -9,6 +9,7 @@ import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import TrackDetailPage from './pages/TrackDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
+import SettingsPage from './pages/SettingsPage';
 import DownloadsPage from './pages/DownloadsPage';
 
 function LoadingScreen() {
@@ -73,7 +74,11 @@ export default function App() {
           <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="downloads" element={<DownloadsPage />} />
-          <Route path="users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+          <Route path="admin" element={<AdminRoute><Outlet /></AdminRoute>}>
+            <Route index element={<Navigate to="/admin/users" replace />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

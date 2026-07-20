@@ -5,6 +5,7 @@ import { normalizePlaylistUrl, fetchPlaylist, searchRemixes, resolveTopMatch } f
 import { parseArtistAndTitle } from '../services/musicbrainz';
 import { getSimilarTracks } from '../services/lastfm';
 import { getSharedFilePath, sanitizeFilename } from '../services/downloader';
+import { config } from '../config';
 import { withDownloadStats } from '../services/playlistStats';
 import { bufferToFloat32Array, cosineSimilarity } from '../services/embeddings';
 import {
@@ -409,13 +410,19 @@ router.get('/:id/videos/:videoId/remixes', requireAuth, async (req: AuthRequest,
 // services/lastfm.ts), each candidate then resolved to a playable YouTube
 // video via the same no-API-key yt-dlp search searchRemixes uses, run
 // concurrently (one yt-dlp process per candidate sequentially would be too
-// slow for a page load). Never errors out to the client — empty just means
-// no LASTFM_API_KEY configured, offline, or no similar tracks found.
+// slow for a page load). `enabled: false` (no LASTFM_API_KEY at all) is
+// distinct from an empty `discover` list (key present, nothing found) — the
+// frontend hides the whole section only for the former, see DiscoverTracks.tsx.
 
 const DISCOVER_LIMIT = 8;
 
 router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest, res, next) => {
   try {
+    if (!config.lastfmApiKey) {
+      res.json({ enabled: false, discover: [] });
+      return;
+    }
+
     const playlist = await prisma.playlist.findFirst({
       where: { id: req.params.id, userId: req.userId },
     });
@@ -452,7 +459,7 @@ router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest
       }),
     );
 
-    res.json({ discover });
+    res.json({ enabled: true, discover });
   } catch (err) {
     next(err);
   }

@@ -1,10 +1,6 @@
 import {
   Box,
   Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Avatar,
   Typography,
   Divider,
@@ -13,10 +9,11 @@ import {
 } from '@mui/material';
 import { Logout as LogoutIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { SidebarAudioGlow } from './SidebarAudioGlow';
 import { useNavItems } from './useNavItems';
+import { NavList } from './NavList';
 
 interface SidebarProps {
   width: number;
@@ -26,7 +23,6 @@ export default function Sidebar({ width }: SidebarProps) {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const navItems = useNavItems();
 
   const handleLogout = async (e: React.MouseEvent) => {
@@ -61,43 +57,9 @@ export default function Sidebar({ width }: SidebarProps) {
       <Divider sx={{ borderColor: '#2a2a2a' }} />
 
       {/* Navigation */}
-      <List sx={{ flexGrow: 1, pt: 1, px: 1 }}>
-        {navItems.map(({ label, path, icon }) => {
-          const active = location.pathname.startsWith(path);
-          return (
-            <ListItemButton
-              key={path}
-              selected={active}
-              onClick={() => navigate(path)}
-              sx={{
-                borderRadius: 2,
-                mb: 0.5,
-                '&.Mui-selected': {
-                  backgroundColor: 'rgba(255, 0, 0, 0.12)',
-                  '&:hover': { backgroundColor: 'rgba(255, 0, 0, 0.18)' },
-                },
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 40,
-                  color: active ? 'primary.main' : 'text.secondary',
-                }}
-              >
-                {icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={label}
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  fontWeight: active ? 600 : 400,
-                  color: active ? 'primary.main' : 'text.primary',
-                }}
-              />
-            </ListItemButton>
-          );
-        })}
-      </List>
+      <Box sx={{ flexGrow: 1, pt: 1, px: 1, overflowY: 'auto' }}>
+        <NavList items={navItems} />
+      </Box>
 
       <Divider sx={{ borderColor: '#2a2a2a' }} />
 

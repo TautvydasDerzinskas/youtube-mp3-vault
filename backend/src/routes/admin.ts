@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
-import { prisma } from '../services/prisma';
+import { prisma, switchDatabase, buildDatabaseUrl } from '../services/prisma';
 import { withDownloadStats } from '../services/playlistStats';
+import {
+  getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
+} from '../services/settings';
 
 const router = Router();
 
@@ -98,6 +101,86 @@ router.post('/users/:id/unban', async (req, res, next) => {
       select: USER_LIST_SELECT,
     });
     res.json({ user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/admin/settings ───────────────────────────────────────────────
+// Returns live values, passwords included — this is a single-admin,
+// self-hosted app where the admin already controls these values directly in
+// their own docker-compose environment, so there's no separation-of-trust
+// reason to mask them the way a multi-tenant SaaS admin panel would.
+
+router.get('/settings', async (_req, res, next) => {
+  try {
+    res.json({ smtp: getSmtpSettings(), postgres: getPostgresSettings() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PATCH /api/admin/settings/smtp ────────────────────────────────────────
+// All fields optional — an empty host is a valid, deliberate "turn email
+// verification off" state (see skipsEmailVerification in routes/auth.ts),
+// not a validation error.
+
+router.patch('/settings/smtp', async (req, res, next) => {
+  try {
+    const { host, port, secure, user, pass, from } = req.body as Record<string, unknown>;
+
+    const trimmedHost = typeof host === 'string' ? host.trim() : '';
+    const parsedPort = Number(port);
+    if (trimmedHost && (!Number.isFinite(parsedPort) || parsedPort <= 0)) {
+      res.status(400).json({ error: 'A valid SMTP port is required when a host is set' });
+      return;
+    }
+
+    const input: SmtpSettings = {
+      host: trimmedHost || null,
+      port: Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 587,
+      secure: secure === true,
+      user: typeof user === 'string' && user.trim() ? user.trim() : null,
+      pass: typeof pass === 'string' && pass ? pass : null,
+      from: typeof from === 'string' && from.trim() ? from.trim() : 'YoutubeVault <no-reply@localhost>',
+    };
+
+    const updated = await updateSmtpSettings(input);
+    res.json({ smtp: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/admin/settings/postgres ─────────────────────────────────────
+// Unlike SMTP, this tests before ever touching the live connection —
+// switchDatabase() (see services/prisma.ts) rejects unreachable credentials
+// and databases that aren't already-migrated instances of this app's own
+// schema, so a typo here can't take the app down.
+
+router.post('/settings/postgres', async (req, res, next) => {
+  try {
+    const { database, user, password } = req.body as Record<string, unknown>;
+    if (
+      typeof database !== 'string' || !database.trim() ||
+      typeof user !== 'string' || !user.trim() ||
+      typeof password !== 'string' || !password
+    ) {
+      res.status(400).json({ error: 'Database, user, and password are all required' });
+      return;
+    }
+
+    const candidate = { database: database.trim(), user: user.trim(), password };
+
+    try {
+      await switchDatabase(buildDatabaseUrl(candidate));
+    } catch (err: any) {
+      res.status(422).json({ error: err.message });
+      return;
+    }
+
+    await persistPostgresSettings(candidate);
+    res.json({ postgres: getPostgresSettings() });
   } catch (err) {
     next(err);
   }

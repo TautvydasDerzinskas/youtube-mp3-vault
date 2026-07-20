@@ -36,7 +36,9 @@
   },
   "nav": {
     "playlists": "Playlists",
+    "administration": "Administration",
     "users": "Users",
+    "settings": "Settings",
     "downloads": "Downloads",
     "logout": "Logout",
     "expandMenu": "Expand menu",
@@ -169,6 +171,32 @@
     "back": "Back to playlists",
     "downloadCta": "Download for Android",
     "description": "Get the YoutubeVault Android app to browse your playlists and listen offline on your phone."
+  },
+  "settings": {
+    "title": "Settings",
+    "failedToLoad": "Failed to load settings.",
+    "save": "Save",
+    "saved": "Saved.",
+    "genericError": "Something went wrong. Please try again.",
+    "smtp": {
+      "title": "Email (SMTP)",
+      "description": "Used to send signup verification emails. Leave the host blank to turn email verification off entirely — new accounts are then verified and signed in immediately.",
+      "host": "Host",
+      "port": "Port",
+      "secure": "Use implicit TLS",
+      "user": "Username",
+      "pass": "Password",
+      "from": "From address"
+    },
+    "postgres": {
+      "title": "Database (PostgreSQL)",
+      "description": "The connection is tested before it's applied — invalid values are rejected so the app keeps running on the current database.",
+      "database": "Database name",
+      "user": "Username",
+      "password": "Password",
+      "required": "Database, username, and password are all required.",
+      "testAndSave": "Test & Save"
+    }
   },
   "users": {
     "title": "Users",

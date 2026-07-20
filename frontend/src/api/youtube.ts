@@ -131,8 +131,10 @@ export const playlistsApi = {
     return data;
   },
 
-  getDiscover: async (playlistId: string, videoId: string): Promise<{ discover: DiscoverResult[] }> => {
-    const { data } = await client.get<{ discover: DiscoverResult[] }>(`/playlists/${playlistId}/videos/${videoId}/discover`);
+  getDiscover: async (playlistId: string, videoId: string): Promise<{ enabled: boolean; discover: DiscoverResult[] }> => {
+    const { data } = await client.get<{ enabled: boolean; discover: DiscoverResult[] }>(
+      `/playlists/${playlistId}/videos/${videoId}/discover`
+    );
     return data;
   },
 

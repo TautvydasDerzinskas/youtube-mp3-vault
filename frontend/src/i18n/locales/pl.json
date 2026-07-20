@@ -36,7 +36,9 @@
   },
   "nav": {
     "playlists": "Playlisty",
+    "administration": "Administracja",
     "users": "Użytkownicy",
+    "settings": "Ustawienia",
     "downloads": "Pobieranie",
     "logout": "Wyloguj się",
     "expandMenu": "Rozwiń menu",
@@ -171,6 +173,32 @@
     "back": "Wróć do playlist",
     "downloadCta": "Pobierz na Androida",
     "description": "Pobierz aplikację YoutubeVault na Androida, aby przeglądać playlisty i słuchać offline na telefonie."
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "failedToLoad": "Nie udało się załadować ustawień.",
+    "save": "Zapisz",
+    "saved": "Zapisano.",
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "smtp": {
+      "title": "E-mail (SMTP)",
+      "description": "Używane do wysyłania e-maili potwierdzających rejestrację. Pozostaw pole hosta puste, aby całkowicie wyłączyć weryfikację e-mail — nowe konta będą wtedy od razu zweryfikowane i zalogowane.",
+      "host": "Host",
+      "port": "Port",
+      "secure": "Użyj TLS",
+      "user": "Nazwa użytkownika",
+      "pass": "Hasło",
+      "from": "Adres nadawcy"
+    },
+    "postgres": {
+      "title": "Baza danych (PostgreSQL)",
+      "description": "Połączenie jest testowane przed zastosowaniem — nieprawidłowe wartości są odrzucane, aby aplikacja nadal działała na bieżącej bazie danych.",
+      "database": "Nazwa bazy danych",
+      "user": "Nazwa użytkownika",
+      "password": "Hasło",
+      "required": "Nazwa bazy danych, użytkownik i hasło są wymagane.",
+      "testAndSave": "Testuj i zapisz"
+    }
   },
   "users": {
     "title": "Użytkownicy",

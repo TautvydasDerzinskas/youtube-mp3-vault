@@ -7,13 +7,13 @@ import {
   ReactNode,
 } from 'react';
 import i18next from 'i18next';
-import { authApi, User } from '../api/auth';
+import { authApi, User, RegisterResponse } from '../api/auth';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<{ message: string; email: string }>;
+  register: (email: string, password: string, displayName: string) => Promise<RegisterResponse>;
   verifyEmail: (token: string) => Promise<void>;
   resendVerification: (email: string) => Promise<{ message: string }>;
   logout: () => Promise<void>;
@@ -52,7 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, displayName: string) => {
-    return authApi.register(email, password, displayName);
+    const result = await authApi.register(email, password, displayName);
+    // No verification step to go through — the backend already fully signed
+    // this account in (see RegisterResponse), so app-wide auth state should
+    // reflect that immediately, same as login() does.
+    if (!result.verificationRequired) {
+      setUser(applyUser(result.user));
+    }
+    return result;
   };
 
   const verifyEmail = async (token: string) => {

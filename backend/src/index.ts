@@ -12,6 +12,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { resetStuckSyncs } from './services/syncService';
 import { startScheduler } from './services/scheduler';
 import { ensureDemoUser } from './services/demoUser';
+import { loadSettings } from './services/settings';
 import { isOnline, startConnectivityMonitor } from './services/connectivity';
 import { startMetadataWorker } from './services/metadataWorker';
 import { startAudioAnalysisWorker } from './services/audioAnalysisWorker';
@@ -45,6 +46,11 @@ app.use(errorHandler);
 
 app.listen(config.port, '0.0.0.0', async () => {
   console.log(`[server] Backend listening on port ${config.port} (${config.nodeEnv})`);
+  // Runs on every boot, before any request can be served — seeds the
+  // AppSettings row from env on a fresh database, or just loads the
+  // already-saved one, then caches it. mailer.ts and the admin settings
+  // routes read the cache, never the DB, from here on (see services/settings.ts).
+  await loadSettings();
   await resetStuckSyncs();
   if (config.appEnv === 'dev') {
     await ensureDemoUser();

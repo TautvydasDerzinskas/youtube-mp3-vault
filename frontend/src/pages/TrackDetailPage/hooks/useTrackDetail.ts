@@ -13,7 +13,10 @@ export function useTrackDetail() {
 
   const [video, setVideo] = useState<PlaylistVideo | 'loading' | 'error'>('loading');
   const [recommendations, setRecommendations] = useState<RecommendedTrack[] | 'loading' | 'error'>('loading');
-  const [discover, setDiscover] = useState<DiscoverResult[] | 'loading' | 'error'>('loading');
+  // 'disabled' (no LASTFM_API_KEY configured) is distinct from an empty
+  // array (key present, nothing found) — DiscoverTracks renders nothing at
+  // all for the former instead of an empty-state message.
+  const [discover, setDiscover] = useState<DiscoverResult[] | 'loading' | 'error' | 'disabled'>('loading');
   const [remixes, setRemixes] = useState<RemixResult[] | 'loading' | 'error'>('loading');
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export function useTrackDetail() {
       .then(({ recommendations }) => setRecommendations(recommendations))
       .catch(() => setRecommendations('error'));
     playlistsApi.getDiscover(id, trackId)
-      .then(({ discover }) => setDiscover(discover))
+      .then(({ enabled, discover }) => setDiscover(enabled ? discover : 'disabled'))
       .catch(() => setDiscover('error'));
     playlistsApi.getRemixes(id, trackId)
       .then(({ remixes }) => setRemixes(remixes))

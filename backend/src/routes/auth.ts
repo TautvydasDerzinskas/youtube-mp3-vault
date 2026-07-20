@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../services/prisma';
 import { sendVerificationEmail } from '../services/mailer';
+import { isSmtpConfigured } from '../services/settings';
 import { config } from '../config';
 import {
   requireAuth,
@@ -53,6 +54,14 @@ function newVerificationToken() {
   };
 }
 
+// dev keeps requiring the click-through (see mailer.ts's console-logged-link
+// fallback) so the flow is still testable locally with zero SMTP setup —
+// only staging/production, where a real unconfigured SMTP would otherwise
+// just throw and break registration outright, skip verification entirely.
+function skipsEmailVerification(): boolean {
+  return !isSmtpConfigured() && config.appEnv !== 'dev';
+}
+
 // POST /api/auth/register
 router.post('/register', authLimiter, async (req, res, next) => {
   try {
@@ -87,12 +96,28 @@ router.post('/register', authLimiter, async (req, res, next) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const isAdmin = config.adminEmail !== '' && normalizedEmail === config.adminEmail;
+
+    if (skipsEmailVerification()) {
+      // No SMTP configured outside dev — there's no way to email a
+      // verification link, so there's nothing to gate sign-in on. Create the
+      // account already verified and sign them in immediately, same as if
+      // they'd just clicked that link.
+      const user = await prisma.user.create({
+        data: { email: normalizedEmail, passwordHash, displayName: displayName.trim(), isAdmin, emailVerified: true },
+      });
+      const token = generateToken(user.id);
+      setAuthCookie(res, token);
+      res.status(201).json({ verificationRequired: false, user: toSafeUser(user), token });
+      return;
+    }
+
     const user = await prisma.user.create({
       data: {
         email: normalizedEmail,
         passwordHash,
         displayName: displayName.trim(),
-        isAdmin: config.adminEmail !== '' && normalizedEmail === config.adminEmail,
+        isAdmin,
         ...newVerificationToken(),
       },
     });
@@ -107,6 +132,7 @@ router.post('/register', authLimiter, async (req, res, next) => {
     }
 
     res.status(201).json({
+      verificationRequired: true,
       message: 'Registered — check your email to verify your account before signing in',
       email: user.email,
     });
@@ -208,11 +234,22 @@ router.post('/resend-verification', authLimiter, async (req, res, next) => {
     // Same response whether the account exists, is already verified, or doesn't
     // exist at all — resending shouldn't be usable to probe registered emails.
     if (user && !user.emailVerified) {
-      const updated = await prisma.user.update({
-        where: { id: user.id },
-        data: newVerificationToken(),
-      });
-      await sendVerificationEmail(updated.email, updated.displayName, updated.emailVerificationToken!);
+      if (skipsEmailVerification()) {
+        // SMTP was on when this account registered but has since been turned
+        // off (or was never configured and this is a pre-existing stuck
+        // account) — self-heal instead of calling sendVerificationEmail,
+        // which would just throw.
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: true, emailVerificationToken: null, emailVerificationExpires: null },
+        });
+      } else {
+        const updated = await prisma.user.update({
+          where: { id: user.id },
+          data: newVerificationToken(),
+        });
+        await sendVerificationEmail(updated.email, updated.displayName, updated.emailVerificationToken!);
+      }
     }
 
     res.json({ message: RESEND_VERIFICATION_MESSAGE });
@@ -290,6 +327,7 @@ router.patch('/profile', requireAuth, authLimiter, async (req: AuthRequest, res,
     }
 
     const data: {
+      email?: string;
       passwordHash?: string;
       pendingEmail?: string;
       emailVerificationToken?: string;
@@ -309,11 +347,17 @@ router.patch('/profile', requireAuth, authLimiter, async (req: AuthRequest, res,
           res.status(409).json({ error: 'An account with this email already exists' });
           return;
         }
-        // Don't apply the change yet — it only takes effect once the new
-        // address confirms it via the same verification-link flow as signup.
-        data.pendingEmail = normalizedEmail;
-        Object.assign(data, newVerificationToken());
-        emailToVerify = normalizedEmail;
+        if (skipsEmailVerification()) {
+          // No way to confirm a change via email — apply it immediately
+          // instead of queuing an unconfirmable pendingEmail.
+          data.email = normalizedEmail;
+        } else {
+          // Don't apply the change yet — it only takes effect once the new
+          // address confirms it via the same verification-link flow as signup.
+          data.pendingEmail = normalizedEmail;
+          Object.assign(data, newVerificationToken());
+          emailToVerify = normalizedEmail;
+        }
       }
     }
 

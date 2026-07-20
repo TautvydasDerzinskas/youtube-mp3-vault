@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Box,
   AppBar,
   Toolbar,
   IconButton,
@@ -19,9 +20,10 @@ import {
   MusicNote as MusicNoteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavItems } from './useNavItems';
+import { NavList } from './NavList';
 import { MOBILE_TOPBAR_HEIGHT } from './constants';
 
 // Small-screen substitute for the permanent Sidebar (see AppLayout) — a
@@ -32,7 +34,6 @@ export default function MobileTopBar() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const navItems = useNavItems();
   const [open, setOpen] = useState(false);
 
@@ -72,47 +73,20 @@ export default function MobileTopBar() {
       </Toolbar>
 
       <Collapse in={open}>
-        <List sx={{ px: 1, pb: 1 }}>
-          {navItems.map(({ label, path, icon }) => {
-            const active = location.pathname.startsWith(path);
-            return (
-              <ListItemButton
-                key={path}
-                selected={active}
-                onClick={() => handleNavigate(path)}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  '&.Mui-selected': {
-                    backgroundColor: 'rgba(255, 0, 0, 0.12)',
-                    '&:hover': { backgroundColor: 'rgba(255, 0, 0, 0.18)' },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40, color: active ? 'primary.main' : 'text.secondary' }}>
-                  {icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={label}
-                  primaryTypographyProps={{
-                    fontSize: 14,
-                    fontWeight: active ? 600 : 400,
-                    color: active ? 'primary.main' : 'text.primary',
-                  }}
-                />
-              </ListItemButton>
-            );
-          })}
+        <Box sx={{ px: 1, pb: 1 }}>
+          <NavList items={navItems} onNavigate={() => setOpen(false)} />
 
           <Divider sx={{ my: 1, borderColor: '#2a2a2a' }} />
 
-          <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2 }}>
-            <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>
-              <LogoutIcon />
-            </ListItemIcon>
-            <ListItemText primary={t('nav.logout')} primaryTypographyProps={{ fontSize: 14 }} />
-          </ListItemButton>
-        </List>
+          <List disablePadding>
+            <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2 }}>
+              <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>
+                <LogoutIcon />
+              </ListItemIcon>
+              <ListItemText primary={t('nav.logout')} primaryTypographyProps={{ fontSize: 14 }} />
+            </ListItemButton>
+          </List>
+        </Box>
       </Collapse>
     </AppBar>
   );

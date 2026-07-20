@@ -62,8 +62,12 @@ export function useLoginState() {
     }
     setLoading(true);
     try {
-      const { email } = await register(regEmail, regPassword, regName);
-      setCheckEmailAddress(email);
+      const result = await register(regEmail, regPassword, regName);
+      if (result.verificationRequired) {
+        setCheckEmailAddress(result.email);
+      } else {
+        navigate('/playlists');
+      }
     } catch (err: unknown) {
       setError((err as any)?.response?.data?.error ?? t('auth.registrationFailed'));
     } finally {

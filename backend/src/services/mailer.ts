@@ -1,19 +1,6 @@
-import nodemailer, { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { config } from '../config';
-
-let transporter: Transporter | null = null;
-
-function getTransporter(): Transporter {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: config.smtp.host,
-      port: config.smtp.port,
-      secure: config.smtp.secure,
-      auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
-    });
-  }
-  return transporter;
-}
+import { getSmtpSettings } from './settings';
 
 export async function sendVerificationEmail(
   to: string,
@@ -21,17 +8,32 @@ export async function sendVerificationEmail(
   token: string
 ): Promise<void> {
   const link = `${config.frontendUrl}/verify-email?token=${token}`;
+  const smtp = getSmtpSettings();
 
-  if (!config.smtp.host) {
+  if (!smtp.host) {
     if (config.appEnv === 'dev') {
       console.log(`[mailer] SMTP not configured — verification link for ${to}: ${link}`);
       return;
     }
-    throw new Error('SMTP is not configured (SMTP_HOST missing)');
+    // Callers are expected to check isSmtpConfigured() first and skip
+    // verification entirely outside dev (see routes/auth.ts) — reaching
+    // here means that check was missed somewhere.
+    throw new Error('SMTP is not configured');
   }
 
-  await getTransporter().sendMail({
-    from: config.smtp.from,
+  // Built fresh per send rather than cached — settings can change at
+  // runtime via the admin Settings page (see services/settings.ts), and a
+  // cached transporter would otherwise keep using stale credentials/host
+  // until the next process restart.
+  const transporter = nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: smtp.user ? { user: smtp.user, pass: smtp.pass ?? undefined } : undefined,
+  });
+
+  await transporter.sendMail({
+    from: smtp.from,
     to,
     subject: 'Confirm your YoutubeVault account',
     text: `Hi ${displayName},\n\nConfirm your email address to finish creating your YoutubeVault account:\n${link}\n\nThis link expires in 24 hours.`,

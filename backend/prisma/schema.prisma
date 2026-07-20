@@ -9,20 +9,20 @@ datasource db {
 }
 
 model User {
-  id                        String     @id @default(uuid())
-  email                     String     @unique
-  passwordHash              String
-  displayName               String
-  language                  String     @default("en")
-  emailVerified             Boolean    @default(false)
-  emailVerificationToken    String?    @unique
-  emailVerificationExpires  DateTime?
-  pendingEmail              String?
-  isAdmin                   Boolean    @default(false)
-  isBanned                  Boolean    @default(false)
-  createdAt                 DateTime   @default(now())
-  updatedAt                 DateTime   @updatedAt
-  playlists                 Playlist[]
+  id                       String     @id @default(uuid())
+  email                    String     @unique
+  passwordHash             String
+  displayName              String
+  language                 String     @default("en")
+  emailVerified            Boolean    @default(false)
+  emailVerificationToken   String?    @unique
+  emailVerificationExpires DateTime?
+  pendingEmail             String?
+  isAdmin                  Boolean    @default(false)
+  isBanned                 Boolean    @default(false)
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+  playlists                Playlist[]
 
   @@map("users")
 }
@@ -48,34 +48,34 @@ model Playlist {
 }
 
 model PlaylistVideo {
-  id             String     @id @default(uuid())
-  playlistId     String
-  playlist       Playlist   @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  youtubeId      String
-  title          String
-  duration       Int?
-  thumbnailUrl   String?
-  position       Int
-  isAvailable    Boolean    @default(true)
+  id                     String     @id @default(uuid())
+  playlistId             String
+  playlist               Playlist   @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  youtubeId              String
+  title                  String
+  duration               Int?
+  thumbnailUrl           String?
+  position               Int
+  isAvailable            Boolean    @default(true)
   // The uploading channel, captured at sync time — used as an artist fallback
   // when the title itself doesn't look like "Artist - Title" (see musicbrainz.ts).
-  channelName    String?
-  downloadStatus String     @default("pending")
-  downloadError  String?
-  mediaFileId    String?
-  mediaFile      MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: Restrict)
-  fileSize       Int?
-  bitrate        Int?
+  channelName            String?
+  downloadStatus         String     @default("pending")
+  downloadError          String?
+  mediaFileId            String?
+  mediaFile              MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: Restrict)
+  fileSize               Int?
+  bitrate                Int?
   // Set once at row creation and never touched again — unlike createdAt (a general
   // audit column elsewhere in the app), this is specifically the "date added to
   // this library" used to order/filter entries independently of YouTube's mutable
   // playlist `position`.
-  addedAt        DateTime   @default(now())
+  addedAt                DateTime   @default(now())
   // Best-effort MusicBrainz enrichment — looked up once (per video) in the
   // background during sync, gated on connectivity and never blocking downloads.
-  artist         String?
-  album          String?
-  trackNumber    Int?
+  artist                 String?
+  album                  String?
+  trackNumber            Int?
   // Sourced from local Essentia audio-content analysis (see audio-analysis/
   // and audioAnalysisWorker.ts), not MusicBrainz — MB's crowd-sourced genre
   // tags are missing for most non-mainstream recordings, audio analysis
@@ -85,11 +85,11 @@ model PlaylistVideo {
   // Electronic/Hip Hop hybrid, say) plus one specific style tag — see
   // audio-analysis/app.py for how the list is built. Empty, not null, when
   // nothing's been determined yet.
-  genres         String[]  @default([])
-  releaseYear    Int?
-  mbRecordingId  String?
-  metadataStatus String     @default("pending") // pending | found | not_found | error
-  metadataFetchedAt DateTime?
+  genres                 String[]   @default([])
+  releaseYear            Int?
+  mbRecordingId          String?
+  metadataStatus         String     @default("pending") // pending | found | not_found | error
+  metadataFetchedAt      DateTime?
   // Needs the actual downloaded audio (unlike metadataStatus above, which only
   // needs the title), so this only ever progresses once downloadStatus is
   // 'done' — see audioAnalysisWorker.ts.
@@ -100,9 +100,9 @@ model PlaylistVideo {
   // similarity/recommendation feature doesn't need to re-analyze the whole
   // library from scratch. Raw float32 bytes (not JSON — a few KB instead of
   // ~20KB of text per track); no consumer yet.
-  audioEmbedding Bytes?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  audioEmbedding         Bytes?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
 
   @@unique([playlistId, youtubeId])
   @@index([playlistId, position])
@@ -119,6 +119,35 @@ model PlaylistVideo {
   // Same rationale, for the audio-analysis worker's equivalent global queue query.
   @@index([audioAnalysisStatus, addedAt])
   @@map("playlist_videos")
+}
+
+/// Singleton settings row (always id=1) — SMTP and Postgres connection values
+/// that started life as env vars (see config.ts) but are now admin-editable
+/// at runtime via /api/admin/settings, taking precedence over env from then
+/// on. See services/settings.ts for the env-seeding-on-first-read and
+/// services/prisma.ts for how a Postgres change is tested before it's ever
+/// applied to the live connection.
+model AppSettings {
+  id Int @id @default(1)
+
+  // Optional — a null host means "email verification is off"; see
+  // services/mailer.ts and the register/resend/profile-update routes.
+  smtpHost   String?
+  smtpPort   Int     @default(587)
+  smtpSecure Boolean @default(false)
+  smtpUser   String?
+  smtpPass   String?
+  smtpFrom   String  @default("YoutubeVault <no-reply@localhost>")
+
+  // Required — this app always needs *a* database; the admin UI only lets
+  // you point at a different already-migrated one, never an empty value.
+  postgresDb       String
+  postgresUser     String
+  postgresPassword String
+
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
 }
 
 /// Single shared, content-addressed copy of a downloaded YouTube video's MP3,
