@@ -221,6 +221,37 @@ jobs:
           SHA: ${{ github.sha }}
         run: echo "short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
 
+      # When mobile/ didn't change this push (e.g. a frontend-only fix still
+      # triggers this job — see the `if:` above), the APK built below is
+      # byte-for-byte identical to the last real mobile release, and
+      # "Publish GitHub Release" further down deliberately skips publishing
+      # a new tag for it (see that step's comment). If EXPO_PUBLIC_BUILD_SHA
+      # were still set to *this* commit's sha, the app baked into this
+      # otherwise-identical APK would report a build identity with no
+      # matching release — useUpdateCheck.ts would then permanently believe
+      # a newer version exists, since the sha it's baked with never matches
+      # the latest GitHub Release tag. Reusing the last release's sha here
+      # keeps every reachable APK's baked identity consistent with an
+      # actual published release.
+      - name: Determine build SHA
+        id: build_sha
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MOBILE_CHANGED: ${{ needs.changes.outputs.mobile }}
+          CURRENT_SHA: ${{ steps.sha.outputs.short }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$MOBILE_CHANGED" = "true" ]; then
+            echo "sha=$CURRENT_SHA" >> "$GITHUB_OUTPUT"
+          else
+            latest_tag=$(gh release view --repo "$REPO" --json tagName -q .tagName 2>/dev/null || true)
+            if [ -n "$latest_tag" ]; then
+              echo "sha=${latest_tag#mobile-}" >> "$GITHUB_OUTPUT"
+            else
+              echo "sha=$CURRENT_SHA" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
       - name: Install dependencies
         working-directory: mobile
         run: npm ci
@@ -283,7 +314,7 @@ jobs:
       - name: Build release APK
         working-directory: mobile/android
         env:
-          EXPO_PUBLIC_BUILD_SHA: ${{ steps.sha.outputs.short }}
+          EXPO_PUBLIC_BUILD_SHA: ${{ steps.build_sha.outputs.sha }}
           EXPO_PUBLIC_GITHUB_REPO: ${{ github.repository }}
         run: ./gradlew assembleRelease --no-daemon
 

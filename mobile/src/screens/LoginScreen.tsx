@@ -7,6 +7,7 @@ export function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,10 +43,17 @@ export function LoginScreen() {
         <TextInput
           mode="outlined"
           label="Password"
-          secureTextEntry
+          secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
           style={styles.input}
+          right={
+            <TextInput.Icon
+              icon={showPassword ? 'eye-off' : 'eye'}
+              onPress={() => setShowPassword((v) => !v)}
+              forceTextInputFocus={false}
+            />
+          }
         />
         <HelperText type="error" visible={error != null}>
           {error}
