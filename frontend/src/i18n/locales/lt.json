@@ -138,15 +138,9 @@
       "backToPlaylist": "Grįžti į grojaraštį",
       "failedToLoad": "Nepavyko įkelti šios dainos.",
       "recommendedTitle": "Panašios dainos",
-      "recommendedEmpty": "Kol kas nėra rekomendacijų — ši daina dar neišanalizuota arba jūsų bibliotekoje nerasta nieko panašaus.",
-      "recommendedFailed": "Nepavyko įkelti rekomendacijų.",
       "discoverTitle": "Atraskite",
-      "discoverEmpty": "Panašių dainų nerasta.",
-      "discoverFailed": "Nepavyko įkelti atradimų.",
       "openInSpotify": "Ieškoti Spotify",
-      "remixesTitle": "Remiksai YouTube",
-      "remixesEmpty": "Remiksų nerasta.",
-      "remixesFailed": "Nepavyko ieškoti remiksų."
+      "remixesTitle": "Remiksai YouTube"
     }
   },
   "profile": {

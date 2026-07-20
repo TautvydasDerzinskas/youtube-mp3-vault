@@ -139,15 +139,9 @@
       "backToPlaylist": "Wróć do playlisty",
       "failedToLoad": "Nie udało się załadować tego utworu.",
       "recommendedTitle": "Podobne utwory",
-      "recommendedEmpty": "Brak rekomendacji — ten utwór nie został jeszcze przeanalizowany albo w Twojej bibliotece nie znaleziono nic podobnego.",
-      "recommendedFailed": "Nie udało się załadować rekomendacji.",
       "discoverTitle": "Odkrywaj",
-      "discoverEmpty": "Nie znaleziono podobnych utworów.",
-      "discoverFailed": "Nie udało się załadować propozycji.",
       "openInSpotify": "Szukaj na Spotify",
-      "remixesTitle": "Remiksy na YouTube",
-      "remixesEmpty": "Nie znaleziono remiksów.",
-      "remixesFailed": "Nie udało się wyszukać remiksów."
+      "remixesTitle": "Remiksy na YouTube"
     }
   },
   "profile": {
