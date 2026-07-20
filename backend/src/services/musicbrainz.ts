@@ -60,13 +60,54 @@ function cleanChannelName(raw: string | null | undefined): string | null {
   return cleaned || null;
 }
 
-export function parseArtistAndTitle(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
-  const cleaned = rawTitle
-    .replace(/[([][^)\]]*(official|video|audio|lyrics?|hd|4k|visualizer|remaster\w*)[^)\]]*[)\]]/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+// Phrases that only ever describe the *video upload* (official/lyrics/HD tag,
+// "clip"/"premiere" in Russian and Lithuanian, etc.) rather than the track
+// itself — safe to strip. Deliberately excludes remix/mix/edit/version/feat
+// wording, which is real track information we want to keep.
+const JUNK_TAG_WORDS = [
+  'official', 'video', 'audio', 'lyrics?', 'visualizer', 'remaster\\w*',
+  'hd', 'hq', '4k', 'cover\\s*art', 'out\\s*now',
+  'клип', 'официальн\\w*', 'премьера\\w*',
+  'oficialus', 'klipas',
+];
+// Multi-word phrases only meaningful as a *trailing, unbracketed* suffix —
+// kept separate from JUNK_TAG_WORDS above because a bare "music"/"mood"
+// would be too aggressive inside JUNK_BRACKET_RE (e.g. it'd gut a
+// legitimate descriptive bracket like "(Deep House Music Mix)").
+const JUNK_TRAILING_PHRASES = ['music\\s*video', 'lyric\\s*video', 'video\\s*clip', 'mood\\s*video', 'video\\s*visual'];
 
-  let match = cleaned.match(/^(.{1,60}?)\s*[-–—|~]\s*(.+)$/);
+const JUNK_BRACKET_RE = new RegExp(`[([][^)\\]]*\\b(${JUNK_TAG_WORDS.join('|')})\\b[^)\\]]*[)\\]]`, 'gi');
+const JUNK_TRAILING_RE = new RegExp(`[\\s\\-|/,]+\\b(${[...JUNK_TRAILING_PHRASES, ...JUNK_TAG_WORDS].join('|')})\\b\\s*$`, 'i');
+
+function stripJunkTags(rawTitle: string): string {
+  let cleaned = rawTitle.replace(JUNK_BRACKET_RE, ' ').replace(/\s+/g, ' ').trim();
+
+  // Bare (non-bracketed) junk suffixes, e.g. `Song Title - Official Video`
+  // with no brackets at all. Strip iteratively for chains like `Lyrics / Lyric Video`.
+  for (let i = 0; i < 10; i++) {
+    const next = cleaned.replace(JUNK_TRAILING_RE, '').trim();
+    if (next === cleaned) break;
+    cleaned = next;
+  }
+
+  cleaned = cleaned.replace(/^[\s\-|,:]+|[\s\-|,:]+$/g, '').trim();
+
+  // If every word turned out to be junk (e.g. the whole title was
+  // "[Official Video]"), fall back to the untouched original rather than
+  // persisting an empty string.
+  return cleaned || rawTitle.trim();
+}
+
+export function parseArtistAndTitle(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
+  const cleaned = stripJunkTags(rawTitle);
+
+  // Requires whitespace on at least one side of the dash-like separator, so
+  // a bare mid-word hyphen in an artist name (T-Pain, Hi-Rez, j-LO, Ta-ku,
+  // Б-2…) isn't mistaken for the "Artist - Title" split.
+  let match = cleaned.match(/^(.{1,70}?)(?:\s+[-–—|~•]\s*|\s*[-–—|~•]\s+)(.+)$/);
+  if (match) return { artist: match[1].trim(), title: match[2].trim() };
+
+  match = cleaned.match(/^(.{1,70}?)\s*(?:::|\/\/)\s*(.+)$/);
   if (match) return { artist: match[1].trim(), title: match[2].trim() };
 
   match = cleaned.match(/^(.{1,80}?):\s*(.+)$/);
@@ -76,6 +117,57 @@ export function parseArtistAndTitle(rawTitle: string, channelName: string | null
   if (match) return { artist: match[2].trim(), title: match[1].trim() };
 
   return { artist: cleanChannelName(channelName), title: cleaned };
+}
+
+// Common short connector words that stay lowercase in title case, unless
+// they open or close the string (matches the convention most music/media
+// apps — Spotify, Apple Music, MusicBrainz editors — use for display names).
+const TITLE_CASE_MINOR_WORDS = new Set([
+  'a', 'an', 'and', 'as', 'at', 'but', 'by', 'en', 'for', 'if', 'in', 'nor',
+  'of', 'on', 'or', 'per', 'so', 'the', 'to', 'up', 'via', 'vs', 'vs.', 'x',
+  'ft', 'ft.', 'feat', 'feat.', 'with', 'from',
+]);
+
+// Capitalizes the first letter of each contiguous letter-run within a word,
+// so slash/hyphen-separated segments (e.g. "Melodic/Uplifting/Liquid",
+// "T-Pain") each get capitalized — except a run right after an apostrophe
+// that looks like a contraction suffix ('s, 't, 're, 've, 'll, 'd, 'm),
+// which stays lowercase so "Carla's"/"Won't" don't become "Carla'S"/"Won'T".
+const APOSTROPHE_CONTRACTION_SUFFIXES = new Set(['s', 't', 're', 've', 'll', 'd', 'm']);
+
+function capitalizeWord(word: string): string {
+  return word.replace(/(^|[^\p{L}])(\p{L}+)/gu, (_whole, boundary: string, run: string) => {
+    if (/['’‘]/.test(boundary) && APOSTROPHE_CONTRACTION_SUFFIXES.has(run.toLocaleLowerCase())) {
+      return boundary + run.toLocaleLowerCase();
+    }
+    return boundary + run[0].toLocaleUpperCase() + run.slice(1).toLocaleLowerCase();
+  });
+}
+
+export function toTitleCase(input: string): string {
+  const tokens = input.split(/(\s+)/);
+  const wordTokenIndices = tokens.map((t, i) => (t.trim() ? i : -1)).filter(i => i >= 0);
+  const lastWordIndex = wordTokenIndices[wordTokenIndices.length - 1];
+
+  return tokens
+    .map((token, i) => {
+      if (!token.trim()) return token;
+      const bareWord = token.toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+      const isEdge = i === wordTokenIndices[0] || i === lastWordIndex;
+      if (!isEdge && TITLE_CASE_MINOR_WORDS.has(bareWord)) return token.toLocaleLowerCase();
+      return capitalizeWord(token);
+    })
+    .join('');
+}
+
+// Used when MusicBrainz has no match for a track — a purely local, offline
+// best-effort guess so the library isn't left with a blank artist.
+export function deriveFallbackMetadata(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
+  const { artist, title } = parseArtistAndTitle(rawTitle, channelName);
+  return {
+    artist: artist ? toTitleCase(artist) : null,
+    title: toTitleCase(title),
+  };
 }
 
 // Escapes Lucene special characters for MusicBrainz's search query syntax.

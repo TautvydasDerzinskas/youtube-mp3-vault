@@ -43,6 +43,45 @@ export async function getSimilarTracks(artist: string, title: string, limit = 8)
   }
 }
 
+export interface TrackCorrection {
+  artist: string;
+  title: string;
+}
+
+// Used as a last-resort fallback when MusicBrainz has no match: hands Last.fm
+// our best local guess at artist/title and asks it to correct it against its
+// own catalog (spelling, canonical capitalization, etc). Requires both an
+// artist and a title — Last.fm's track.getcorrection doesn't accept title-only.
+export async function getTrackCorrection(artist: string, title: string): Promise<TrackCorrection | null> {
+  const { apiKey } = getLastfmSettings();
+  if (!apiKey || !isOnline()) return null;
+  if (!artist.trim() || !title.trim()) return null;
+
+  const params = new URLSearchParams({
+    method: 'track.getcorrection',
+    artist,
+    track: title,
+    api_key: apiKey,
+    format: 'json',
+  });
+
+  try {
+    const res = await fetch(`${LASTFM_BASE}?${params.toString()}`);
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    const correction = data?.corrections?.correction;
+    const track = Array.isArray(correction) ? correction[0]?.track : correction?.track;
+    const correctedArtist = track?.artist?.name;
+    const correctedTitle = track?.name;
+    if (typeof correctedArtist !== 'string' || typeof correctedTitle !== 'string' || !correctedArtist || !correctedTitle) {
+      return null;
+    }
+    return { artist: correctedArtist, title: correctedTitle };
+  } catch {
+    return null;
+  }
+}
+
 function sign(params: Record<string, string>, secret: string): string {
   const base = Object.keys(params).sort().map((k) => `${k}${params[k]}`).join('');
   return createHash('md5').update(base + secret, 'utf8').digest('hex');
