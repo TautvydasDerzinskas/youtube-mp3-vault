@@ -10,6 +10,10 @@ const USER_AGENT = `YoutubeVault/1.0 ( ${config.frontendUrl} )`;
 
 export interface TrackMetadata {
   artist: string | null;
+  // MusicBrainz's own canonical recording title — not derived from our own
+  // regex-cleaned title, so it's authoritative and never carries the
+  // artist/junk-suffix noise the raw YouTube title has.
+  title: string;
   album: string | null;
   trackNumber: number | null;
   releaseYear: number | null;
@@ -175,10 +179,20 @@ function escapeLucene(value: string): string {
   return value.replace(/[+\-&|!(){}[\]^"~*?:\\/]/g, '\\$&');
 }
 
-export async function lookupTrackMetadata(rawTitle: string, channelName: string | null = null): Promise<TrackMetadata | null> {
+export async function lookupTrackMetadata(
+  rawTitle: string,
+  channelName: string | null = null,
+  // Used when re-matching a video that's already been through the pipeline
+  // before (see reimport.ts): once `title` has had its artist stripped out
+  // by an earlier pass, parseArtistAndTitle has nothing left to split, so
+  // without this hint the search would silently lose its artist constraint.
+  knownArtist: string | null = null,
+): Promise<TrackMetadata | null> {
   if (!isOnline()) return null;
 
-  const { artist, title } = parseArtistAndTitle(rawTitle, channelName);
+  const parsed = parseArtistAndTitle(rawTitle, channelName);
+  const artist = knownArtist || parsed.artist;
+  const title = parsed.title;
   if (!title) return null;
 
   const queryParts = [`recording:"${escapeLucene(title)}"`];
@@ -205,9 +219,11 @@ export async function lookupTrackMetadata(rawTitle: string, channelName: string 
 
   const fallbackArtist = best['artist-credit']?.[0]?.name ?? artist ?? null;
 
+  const fallbackTitle = best.title ?? title;
+
   const detail = await mbFetch(`/recording/${best.id}?inc=releases+media&fmt=json`);
   if (!detail) {
-    return { artist: fallbackArtist, album: null, trackNumber: null, releaseYear: null, mbRecordingId: best.id };
+    return { artist: fallbackArtist, title: fallbackTitle, album: null, trackNumber: null, releaseYear: null, mbRecordingId: best.id };
   }
 
   const release = detail.releases?.[0];
@@ -219,6 +235,7 @@ export async function lookupTrackMetadata(rawTitle: string, channelName: string 
 
   return {
     artist: detail['artist-credit']?.[0]?.name ?? fallbackArtist,
+    title: detail.title ?? fallbackTitle,
     album: release?.title ?? null,
     trackNumber: Number.isFinite(trackNumber) ? trackNumber : null,
     releaseYear: Number.isFinite(releaseYear) ? releaseYear : null,

@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { fetchPlaylist } from './youtube';
 import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable } from './downloader';
+import { resolvePlaylistMetadata } from './metadataWorker';
 
 /** True for a Prisma unique-constraint violation (P2002) — i.e. we lost a create race. */
 function isUniqueConstraintViolation(err: unknown): boolean {
@@ -49,6 +50,20 @@ export function isSyncing(playlistId: string): boolean {
   return activeSyncs.has(playlistId);
 }
 
+// Claims the same busy-slot regular syncing uses, for callers outside this
+// file (see reimport.ts) that need to touch a playlist's videos without
+// racing a real sync — or another such caller — on the same playlist.
+// Returns false if it was already claimed.
+export function tryClaimSync(playlistId: string): boolean {
+  if (activeSyncs.has(playlistId)) return false;
+  activeSyncs.add(playlistId);
+  return true;
+}
+
+export function releaseSyncClaim(playlistId: string): void {
+  activeSyncs.delete(playlistId);
+}
+
 export async function resetStuckSyncs(): Promise<void> {
   const [playlists, videos] = await Promise.all([
     prisma.playlist.updateMany({
@@ -65,6 +80,72 @@ export async function resetStuckSyncs(): Promise<void> {
       `[sync] Reset ${playlists.count} stuck playlist(s) and ${videos.count} stuck video(s)`
     );
   }
+}
+
+// Fetches the current video list from YouTube and reconciles it against the
+// DB: marks videos no longer in the playlist as removed, inserts brand-new
+// ones as `pending`, and refreshes the playlist's own title/thumbnail/count.
+// Shared by the regular sync flow and the admin-triggered soft reimport —
+// both need identical reconciliation, just followed by different next steps.
+export async function refreshPlaylistFromYoutube(playlistId: string): Promise<void> {
+  const playlist = await prisma.playlist.findUniqueOrThrow({
+    where: { id: playlistId },
+    select: { id: true, youtubeId: true },
+  });
+
+  // ── 1. Fetch current video list ────────────────────────────────────────────
+  const info = await fetchPlaylist(
+    `https://www.youtube.com/playlist?list=${playlist.youtubeId}`
+  );
+  const freshIds = new Set(info.videos.map((v) => v.id));
+
+  // ── 2. Current DB videos (non-removed) ────────────────────────────────────
+  const dbVideos = await prisma.playlistVideo.findMany({
+    where: { playlistId, downloadStatus: { not: 'removed' } },
+    select: { id: true, youtubeId: true, mediaFileId: true },
+  });
+  const dbIds = new Set(dbVideos.map((v) => v.youtubeId));
+
+  // ── 3. Remove videos no longer in the playlist ────────────────────────────
+  for (const dbVideo of dbVideos) {
+    if (!freshIds.has(dbVideo.youtubeId)) {
+      await prisma.playlistVideo.update({
+        where: { id: dbVideo.id },
+        data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null },
+      });
+      // Break this row's reference before trying to GC the shared file —
+      // it only actually deletes once no other playlist_video points at it.
+      if (dbVideo.mediaFileId) {
+        await tryDeleteMediaFile(dbVideo.mediaFileId);
+      }
+    }
+  }
+
+  // ── 4. Add new videos ─────────────────────────────────────────────────────
+  const newVideos = info.videos.filter((v) => !dbIds.has(v.id));
+  if (newVideos.length > 0) {
+    await prisma.playlistVideo.createMany({
+      data: newVideos.map((v) => ({
+        playlistId,
+        youtubeId: v.id,
+        title: v.title,
+        originalTitle: v.title,
+        duration: v.duration,
+        thumbnailUrl: v.thumbnailUrl,
+        position: v.position,
+        isAvailable: v.isAvailable,
+        channelName: v.channelName,
+        downloadStatus: 'pending',
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  // ── 5. Update playlist metadata ───────────────────────────────────────────
+  await prisma.playlist.update({
+    where: { id: playlistId },
+    data: { title: info.title, thumbnailUrl: info.thumbnailUrl, videoCount: info.videos.length },
+  });
 }
 
 async function _downloadPending(playlistId: string): Promise<void> {
@@ -113,6 +194,10 @@ async function _downloadPending(playlistId: string): Promise<void> {
       }
     }
 
+    // Downloads are done — resolve metadata for whatever's still pending in
+    // this playlist as the last step of the same sync pass.
+    await resolvePlaylistMetadata(playlistId);
+
     await prisma.playlist.update({
       where: { id: playlistId },
       data: { syncStatus: 'idle', lastSyncedAt: new Date() },
@@ -140,7 +225,7 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
 
   const playlist = await prisma.playlist.findUnique({
     where: { id: playlistId },
-    select: { id: true, youtubeId: true },
+    select: { id: true },
   });
   if (!playlist) {
     activeSyncs.delete(playlistId);
@@ -153,59 +238,7 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
   });
 
   try {
-    // ── 1. Fetch current video list ────────────────────────────────────────────
-    const info = await fetchPlaylist(
-      `https://www.youtube.com/playlist?list=${playlist.youtubeId}`
-    );
-    const freshIds = new Set(info.videos.map((v) => v.id));
-
-    // ── 2. Current DB videos (non-removed) ────────────────────────────────────
-    const dbVideos = await prisma.playlistVideo.findMany({
-      where: { playlistId, downloadStatus: { not: 'removed' } },
-      select: { id: true, youtubeId: true, mediaFileId: true },
-    });
-    const dbIds = new Set(dbVideos.map((v) => v.youtubeId));
-
-    // ── 3. Remove videos no longer in the playlist ────────────────────────────
-    for (const dbVideo of dbVideos) {
-      if (!freshIds.has(dbVideo.youtubeId)) {
-        await prisma.playlistVideo.update({
-          where: { id: dbVideo.id },
-          data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null },
-        });
-        // Break this row's reference before trying to GC the shared file —
-        // it only actually deletes once no other playlist_video points at it.
-        if (dbVideo.mediaFileId) {
-          await tryDeleteMediaFile(dbVideo.mediaFileId);
-        }
-      }
-    }
-
-    // ── 4. Add new videos ─────────────────────────────────────────────────────
-    const newVideos = info.videos.filter((v) => !dbIds.has(v.id));
-    if (newVideos.length > 0) {
-      await prisma.playlistVideo.createMany({
-        data: newVideos.map((v) => ({
-          playlistId,
-          youtubeId: v.id,
-          title: v.title,
-          duration: v.duration,
-          thumbnailUrl: v.thumbnailUrl,
-          position: v.position,
-          isAvailable: v.isAvailable,
-          channelName: v.channelName,
-          downloadStatus: 'pending',
-        })),
-        skipDuplicates: true,
-      });
-    }
-
-    // ── 5. Update playlist metadata ───────────────────────────────────────────
-    await prisma.playlist.update({
-      where: { id: playlistId },
-      data: { title: info.title, thumbnailUrl: info.thumbnailUrl, videoCount: info.videos.length },
-    });
-
+    await refreshPlaylistFromYoutube(playlistId);
     await _downloadPending(playlistId);
     // _downloadPending sets syncStatus → idle / error
 

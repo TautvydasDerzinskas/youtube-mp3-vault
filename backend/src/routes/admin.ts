@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import { prisma, switchDatabase, buildDatabaseUrl } from '../services/prisma';
 import { withDownloadStats } from '../services/playlistStats';
+import { startSoftReimport } from '../services/reimport';
 import {
   getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
   getLastfmSettings, updateLastfmSettings,
@@ -102,6 +103,32 @@ router.post('/users/:id/unban', async (req, res, next) => {
       select: USER_LIST_SELECT,
     });
     res.json({ user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/playlists/:id/soft-reimport
+// Re-runs title normalization, MusicBrainz (re)matching, and audio analysis
+// for every video in the playlist using files already downloaded — skips
+// the mp3 download step entirely. See services/reimport.ts.
+router.post('/playlists/:id/soft-reimport', async (req, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: req.params.id },
+      select: { id: true },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+
+    if (!startSoftReimport(playlist.id)) {
+      res.status(409).json({ error: 'Playlist is already syncing' });
+      return;
+    }
+
+    res.json({ started: true });
   } catch (err) {
     next(err);
   }

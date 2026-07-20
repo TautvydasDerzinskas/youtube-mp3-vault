@@ -38,6 +38,7 @@
     "playlists": "Grojaraščiai",
     "administration": "Administravimas",
     "users": "Naudotojai",
+    "triggers": "Trigeriai",
     "settings": "Nustatymai",
     "downloads": "Atsisiuntimai",
     "logout": "Atsijungti",
@@ -245,5 +246,20 @@
     "detailsTitle": "Naudotojo informacija",
     "playlistsTitle": "Grojaraščiai ({{count}})",
     "noPlaylists": "Šis naudotojas neturi grojaraščių."
+  },
+  "triggers": {
+    "title": "Trigeriai",
+    "selectUser": "Naudotojas",
+    "selectPlaylist": "Grojaraštis",
+    "noPlaylists": "Šis naudotojas neturi grojaraščių.",
+    "loadUsersError": "Nepavyko įkelti naudotojų.",
+    "loadPlaylistsError": "Nepavyko įkelti šio naudotojo grojaraščių.",
+    "softReimport": {
+      "title": "Švelnus pakartotinis importas",
+      "description": "Iš naujo sutvarko pavadinimus, iš naujo suderina su MusicBrainz ir pakartoja garso analizę bei žanrų nustatymą kiekvienam pasirinkto grojaraščio vaizdo įrašui — naudojant jau atsisiųstus mp3 failus. Niekas nesisunčiama iš naujo.",
+      "trigger": "Švelnus pakartotinis importas",
+      "started": "Pakartotinis importas pradėtas. Eigą matysite grojaraščio puslapyje.",
+      "genericError": "Nepavyko pradėti pakartotinio importo. Grojaraštis gali jau būti sinchronizuojamas."
+    }
   }
 }

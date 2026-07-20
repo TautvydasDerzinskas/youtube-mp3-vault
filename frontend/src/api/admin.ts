@@ -75,4 +75,8 @@ export const adminApi = {
     const { data } = await client.patch<{ lastfm: LastfmSettings }>('/admin/settings/lastfm', settings);
     return data.lastfm;
   },
+
+  triggerSoftReimport: async (playlistId: string): Promise<void> => {
+    await client.post(`/admin/playlists/${playlistId}/soft-reimport`);
+  },
 };

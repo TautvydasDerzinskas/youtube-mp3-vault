@@ -5,6 +5,7 @@ import {
   Android as DownloadsIcon,
   AdminPanelSettings as AdministrationIcon,
   Settings as SettingsIcon,
+  Bolt as TriggersIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,6 +29,7 @@ export function useNavItems(): NavItem[] {
       icon: <AdministrationIcon />,
       children: [
         { label: t('nav.users'), path: '/admin/users', icon: <UsersIcon /> },
+        { label: t('nav.triggers'), path: '/admin/triggers', icon: <TriggersIcon /> },
         { label: t('nav.settings'), path: '/admin/settings', icon: <SettingsIcon /> },
       ],
     }] : []),

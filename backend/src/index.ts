@@ -14,7 +14,6 @@ import { startScheduler } from './services/scheduler';
 import { ensureDemoUser } from './services/demoUser';
 import { loadSettings } from './services/settings';
 import { isOnline, startConnectivityMonitor } from './services/connectivity';
-import { startMetadataWorker } from './services/metadataWorker';
 import { startAudioAnalysisWorker } from './services/audioAnalysisWorker';
 import { requireAuth } from './middleware/auth';
 
@@ -51,7 +50,6 @@ app.listen(config.port, '0.0.0.0', async () => {
   }
   startScheduler();
   startConnectivityMonitor();
-  startMetadataWorker();
   startAudioAnalysisWorker();
 });
 

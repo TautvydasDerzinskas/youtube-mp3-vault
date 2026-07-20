@@ -38,6 +38,7 @@
     "playlists": "Playlists",
     "administration": "Administration",
     "users": "Users",
+    "triggers": "Triggers",
     "settings": "Settings",
     "downloads": "Downloads",
     "logout": "Logout",
@@ -244,5 +245,20 @@
     "detailsTitle": "User details",
     "playlistsTitle": "Playlists ({{count}})",
     "noPlaylists": "This user has no playlists."
+  },
+  "triggers": {
+    "title": "Triggers",
+    "selectUser": "User",
+    "selectPlaylist": "Playlist",
+    "noPlaylists": "This user has no playlists.",
+    "loadUsersError": "Failed to load users.",
+    "loadPlaylistsError": "Failed to load this user's playlists.",
+    "softReimport": {
+      "title": "Soft Reimport",
+      "description": "Re-normalizes titles, re-matches MusicBrainz, and redoes audio analysis/genre tagging for every video in the selected playlist — using the mp3 files already downloaded. Nothing is re-downloaded.",
+      "trigger": "Soft Reimport",
+      "started": "Soft reimport started. Progress will show on the playlist's own page.",
+      "genericError": "Failed to start soft reimport. The playlist may already be syncing."
+    }
   }
 }

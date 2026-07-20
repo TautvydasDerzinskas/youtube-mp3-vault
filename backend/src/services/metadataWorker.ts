@@ -4,15 +4,6 @@ import { isOnline } from './connectivity';
 import { lookupTrackMetadata, deriveFallbackMetadata } from './musicbrainz';
 import { getTrackCorrection } from './lastfm';
 
-const IDLE_POLL_MS = 60_000;   // nothing pending right now — check back in a minute
-const OFFLINE_POLL_MS = 30_000; // no internet — check back sooner, this is cheap
-
-let started = false;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 // Three-tier fallback once MusicBrainz has no match: local heuristic parse
 // first, then — if that produced an artist to work with — ask Last.fm to
 // correct/canonicalize it. A Last.fm correction is trusted as-is (like a
@@ -27,71 +18,59 @@ async function resolveFallbackMetadata(title: string, channelName: string | null
   return corrected ?? local;
 }
 
-export function startMetadataWorker(): void {
-  if (started) return;
-  started = true;
-  void loop();
-}
+// Resolves metadata (MusicBrainz, falling back to the local parser + Last.fm
+// correction) for videos in this playlist. Called at the end of a playlist's
+// download pass (see _downloadPending in syncService.ts) — i.e. only
+// alongside sync activity a user or the cron scheduler actually triggered,
+// rather than an independent background loop polling continuously regardless
+// of activity.
+//
+// By default only processes videos still awaiting a first attempt
+// (`metadataStatus: 'pending'`). Pass `force: true` (used by the admin soft
+// reimport flow — see reimport.ts) to instead reprocess every video in the
+// playlist regardless of its current status, e.g. to pick up improvements to
+// the parsing/matching logic itself.
+export async function resolvePlaylistMetadata(playlistId: string, options: { force?: boolean } = {}): Promise<void> {
+  const { force = false } = options;
 
-async function loop(): Promise<void> {
-  // Videos already marked 'not_found' from a previous server run get one
-  // local-fallback backfill pass below. Gating on this boot-time cutoff
-  // (rather than e.g. `artist: null`) guarantees each such row is only
-  // reprocessed once per run, even if the fallback parser can't extract an
-  // artist from it either — otherwise a row that stays artist-less forever
-  // would keep matching the query and starve the rest of the queue.
-  const backfillCutoff = new Date();
+  const videos = await prisma.playlistVideo.findMany({
+    where: force
+      ? { playlistId, downloadStatus: { not: 'removed' } }
+      : { playlistId, metadataStatus: 'pending', downloadStatus: { not: 'removed' } },
+    orderBy: { position: 'asc' },
+  });
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    if (!isOnline()) {
-      await sleep(OFFLINE_POLL_MS);
-      continue;
-    }
+  for (const video of videos) {
+    if (!isOnline()) return;
 
-    const video = await prisma.playlistVideo.findFirst({
-      where: {
-        downloadStatus: { not: 'removed' },
-        OR: [
-          { metadataStatus: 'pending' },
-          { metadataStatus: 'not_found', metadataFetchedAt: { lt: backfillCutoff } },
-        ],
-      },
-      orderBy: { addedAt: 'asc' },
-    });
-
-    if (!video) {
-      await sleep(IDLE_POLL_MS);
-      continue;
-    }
+    // Prefer the untouched original YouTube title as the search input — once
+    // a video's `title` has been cleaned by an earlier pass (artist/junk
+    // suffix stripped), re-deriving the search artist from it alone would
+    // lose information a fresh pass could otherwise recover from. Falls back
+    // to `title` for rows that predate the originalTitle column, where the
+    // two are identical anyway for a video that's never been processed.
+    const searchTitle = video.originalTitle ?? video.title;
 
     try {
-      if (video.metadataStatus === 'not_found') {
-        // Already tried MusicBrainz once — re-querying it wouldn't find
-        // anything new, so just run the local parser + Last.fm correction.
-        const fallback = await resolveFallbackMetadata(video.title, video.channelName);
-        await prisma.playlistVideo.update({
-          where: { id: video.id },
-          data: { artist: fallback.artist, title: fallback.title, metadataFetchedAt: new Date() },
-        });
-        continue;
-      }
-
-      const meta = await lookupTrackMetadata(video.title, video.channelName);
+      const meta = await lookupTrackMetadata(searchTitle, video.channelName, video.artist);
       if (meta) {
         await prisma.playlistVideo.update({
           where: { id: video.id },
           data: {
-            artist: meta.artist, album: meta.album, trackNumber: meta.trackNumber,
+            artist: meta.artist, title: meta.title, album: meta.album, trackNumber: meta.trackNumber,
             releaseYear: meta.releaseYear, mbRecordingId: meta.mbRecordingId,
             metadataStatus: 'found', metadataFetchedAt: new Date(),
           },
         });
       } else {
-        const fallback = await resolveFallbackMetadata(video.title, video.channelName);
+        const fallback = await resolveFallbackMetadata(searchTitle, video.channelName);
+        // Never regress a known artist to null — a rematch finding less than
+        // we already knew (e.g. because the title's already been cleaned)
+        // shouldn't erase previously-good data.
+        const artist = fallback.artist ?? video.artist;
         await prisma.playlistVideo.update({
           where: { id: video.id },
-          data: { artist: fallback.artist, title: fallback.title, metadataStatus: 'not_found', metadataFetchedAt: new Date() },
+          data: { artist, title: fallback.title, metadataStatus: 'not_found', metadataFetchedAt: new Date() },
         });
       }
     } catch (err) {

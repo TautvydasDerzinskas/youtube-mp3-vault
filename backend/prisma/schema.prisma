@@ -61,6 +61,12 @@ model PlaylistVideo {
   playlist               Playlist   @relation(fields: [playlistId], references: [id], onDelete: Cascade)
   youtubeId              String
   title                  String
+  // The raw YouTube title exactly as it was when this row was first created —
+  // set once and never touched again, unlike `title` which gets cleaned up
+  // (artist/junk-suffix stripped) by the metadata pipeline over time. Kept
+  // around as a source of truth for re-matching later, since `title` alone
+  // can lose information (e.g. the artist) once it's been cleaned.
+  originalTitle          String?
   duration               Int?
   thumbnailUrl           String?
   position               Int

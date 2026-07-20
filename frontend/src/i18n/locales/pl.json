@@ -38,6 +38,7 @@
     "playlists": "Playlisty",
     "administration": "Administracja",
     "users": "Użytkownicy",
+    "triggers": "Wyzwalacze",
     "settings": "Ustawienia",
     "downloads": "Pobieranie",
     "logout": "Wyloguj się",
@@ -246,5 +247,20 @@
     "detailsTitle": "Szczegóły użytkownika",
     "playlistsTitle": "Playlisty ({{count}})",
     "noPlaylists": "Ten użytkownik nie ma żadnych playlist."
+  },
+  "triggers": {
+    "title": "Wyzwalacze",
+    "selectUser": "Użytkownik",
+    "selectPlaylist": "Playlista",
+    "noPlaylists": "Ten użytkownik nie ma żadnych playlist.",
+    "loadUsersError": "Nie udało się wczytać użytkowników.",
+    "loadPlaylistsError": "Nie udało się wczytać playlist tego użytkownika.",
+    "softReimport": {
+      "title": "Miękki reimport",
+      "description": "Ponownie normalizuje tytuły, ponownie dopasowuje MusicBrainz oraz powtarza analizę audio i przypisywanie gatunków dla każdego utworu w wybranej playliście — używając już pobranych plików mp3. Nic nie jest pobierane ponownie.",
+      "trigger": "Miękki reimport",
+      "started": "Miękki reimport rozpoczęty. Postęp będzie widoczny na stronie playlisty.",
+      "genericError": "Nie udało się rozpocząć miękkiego reimportu. Playlista może już być synchronizowana."
+    }
   }
 }

@@ -122,6 +122,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
             playlistId: created.id,
             youtubeId: v.id,
             title: v.title,
+            originalTitle: v.title,
             duration: v.duration,
             thumbnailUrl: v.thumbnailUrl,
             position: v.position,
