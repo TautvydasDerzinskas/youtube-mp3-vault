@@ -129,11 +129,27 @@ jobs:
           cache-to: type=gha,mode=max
 
   publish-frontend:
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
+    # Frontend always ships the current Android APK baked in (see
+    # MobileAppGate in the web app) — not a link to something that can
+    # expire, an actual file in the image — so it needs a fresh one from
+    # android-apk on *every* publish, including one triggered only by a
+    # mobile change with no frontend source change of its own. The reverse
+    # holds too: android-apk itself runs whenever frontend OR mobile
+    # changed, for the same reason (see its `if:` below).
+    needs: [changes, android-apk]
+    if: |
+      !failure() && !cancelled() &&
+      (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.mobile == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download built APK
+        uses: actions/download-artifact@v4
+        with:
+          name: YoutubeVault-apk
+          path: frontend/public/download
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -180,7 +196,11 @@ jobs:
 
   android-apk:
     needs: changes
-    if: needs.changes.outputs.mobile == 'true'
+    # Runs whenever mobile changed (the normal case) OR frontend changed —
+    # the frontend's own image always needs a freshly built apk to embed
+    # (see publish-frontend above), so a frontend-only push still triggers a
+    # full mobile build here even though mobile/ itself didn't move.
+    if: needs.changes.outputs.mobile == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     # Beyond the default contents: read — needed to create/update the
     # GitHub Release below.
@@ -257,22 +277,27 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Rename APK
-        run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk YoutubeVault-debug.apk
+        run: cp mobile/android/app/build/outputs/apk/debug/app-debug.apk YoutubeVault.apk
 
-      # The release this build's own useUpdateCheck() (see above) compares
-      # itself against on every other user's already-installed app. Tag
-      # includes the short SHA (not app.json's static version field) so
-      # every build gets its own release with no manual version bumping —
-      # re-running for the same commit just updates that release in place.
+      # Only when mobile itself actually changed — a rebuild triggered
+      # solely by a frontend change produces a byte-for-byte-equivalent apk
+      # (mobile/ source didn't move), so publishing it as a "new" release
+      # would just be a no-op entry that also spuriously tells every
+      # already-installed app "update available" via useUpdateCheck() (see
+      # above) for a build with nothing actually different in it.
       - name: Publish GitHub Release
+        if: needs.changes.outputs.mobile == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: mobile-${{ steps.sha.outputs.short }}
           name: Mobile ${{ steps.sha.outputs.short }}
-          files: YoutubeVault-debug.apk
+          files: YoutubeVault.apk
 
+      # Always uploaded (even for a frontend-only-triggered build) — this is
+      # what publish-frontend downloads to embed, regardless of whether a
+      # GitHub Release was also published above.
       - uses: actions/upload-artifact@v4
         with:
-          name: YoutubeVault-debug-apk
-          path: YoutubeVault-debug.apk
+          name: YoutubeVault-apk
+          path: YoutubeVault.apk
           retention-days: 30

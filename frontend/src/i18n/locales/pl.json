@@ -6,6 +6,11 @@
     "close": "Zamknij",
     "loading": "Ładowanie…"
   },
+  "mobileGate": {
+    "downloadCta": "Pobierz aplikację na Androida",
+    "description": "Doświadczenie mobilne jest dostępne tylko przez aplikację YoutubeVault na Androida. Dotknij powyżej, aby pobrać, albo kontynuuj w przeglądarce.",
+    "continueOnWeb": "Kontynuuj w przeglądarce"
+  },
   "auth": {
     "appName": "YoutubeVault",
     "signIn": "Zaloguj się",

@@ -6,6 +6,11 @@
     "close": "Uždaryti",
     "loading": "Kraunama…"
   },
+  "mobileGate": {
+    "downloadCta": "Atsisiųskite Android programėlę",
+    "description": "Mobilioji patirtis pasiekiama tik per YoutubeVault Android programėlę. Palieskite aukščiau, kad atsisiųstumėte, arba tęskite naršyklėje.",
+    "continueOnWeb": "Tęsti naršyklėje"
+  },
   "auth": {
     "appName": "YoutubeVault",
     "signIn": "Prisijungti",

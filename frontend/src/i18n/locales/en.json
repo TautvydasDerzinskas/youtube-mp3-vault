@@ -6,6 +6,11 @@
     "close": "Close",
     "loading": "Loading…"
   },
+  "mobileGate": {
+    "downloadCta": "Get the Android app",
+    "description": "The mobile experience is only available through the YoutubeVault Android app. Tap above to download it, or continue in your browser.",
+    "continueOnWeb": "Continue in browser"
+  },
   "auth": {
     "appName": "YoutubeVault",
     "signIn": "Sign In",

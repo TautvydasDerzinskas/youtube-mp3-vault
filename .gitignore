@@ -26,3 +26,7 @@ yarn-debug.log*
 
 # Docker volumes (local dev)
 .docker/
+
+# Placed here by CI before the frontend Docker build (see publish-frontend
+# job) — never committed, see frontend/public/download/.gitkeep
+frontend/public/download/*.apk

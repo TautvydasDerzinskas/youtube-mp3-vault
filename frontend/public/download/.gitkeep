@@ -1,0 +1,9 @@
+This directory's actual YoutubeVault.apk is placed here by CI (see the
+publish-frontend job in .github/workflows/docker-publish.yml, which downloads
+the android-apk job's freshly built artifact into this exact path before the
+Docker image builds) — never committed, so this placeholder is what keeps the
+directory itself present in git.
+
+A local `docker compose up --build` without going through CI won't have an
+apk here, so /download/YoutubeVault.apk will 404 — harmless for local dev,
+where the frontend is normally run via `npm run dev` anyway (see README).
