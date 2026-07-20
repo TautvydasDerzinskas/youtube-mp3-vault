@@ -8,6 +8,8 @@ import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import TrackDetailPage from './pages/TrackDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import ChangeEmailPage from './pages/ProfilePage/ChangeEmailPage';
+import ChangePasswordPage from './pages/ProfilePage/ChangePasswordPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
 import DownloadsPage from './pages/DownloadsPage';
@@ -73,6 +75,8 @@ export default function App() {
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />
           <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="profile/email" element={<ChangeEmailPage />} />
+          <Route path="profile/password" element={<ChangePasswordPage />} />
           <Route path="downloads" element={<DownloadsPage />} />
           <Route path="admin" element={<AdminRoute><Outlet /></AdminRoute>}>
             <Route index element={<Navigate to="/admin/users" replace />} />
