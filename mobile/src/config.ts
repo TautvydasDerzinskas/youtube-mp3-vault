@@ -11,16 +11,21 @@ export const DEFAULT_API_URL = 'https://youtubevault.mylan/api';
 // machine) instead of whatever's saved on-device. See .env.example.
 export const DEV_API_URL_OVERRIDE = process.env.EXPO_PUBLIC_API_URL;
 
-// Normalizes free-form user input ("youtubevault.mylan", "10.0.2.2:3001",
-// "https://host/api/") into a consistent API base URL
-// ("https://youtubevault.mylan/api", "http://10.0.2.2:3001/api").
+// Whether a server address is a complete URL — scheme required. No default
+// scheme (and so no implied default port) is ever guessed: a self-hosted
+// instance is as likely to be plain HTTP on a custom port as HTTPS on 443,
+// so the user's typed address (port included, if not the scheme's default)
+// is used exactly as given.
+export function isCompleteServerUrl(input: string): boolean {
+  return /^https?:\/\/.+/i.test(input.trim());
+}
+
+// Normalizes an already-complete URL ("https://host/api/",
+// "http://192.168.1.50:8065") into a consistent API base URL by trimming
+// trailing slashes and ensuring the fixed backend API path is present —
+// this part isn't user-configurable, every instance mounts its API at
+// /api (see frontend/nginx.conf's proxy_pass).
 export function normalizeServerUrl(input: string): string {
-  let url = input.trim().replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(url)) {
-    url = `https://${url}`;
-  }
-  if (!/\/api$/i.test(url)) {
-    url = `${url}/api`;
-  }
-  return url;
+  const url = input.trim().replace(/\/+$/, '');
+  return /\/api$/i.test(url) ? url : `${url}/api`;
 }

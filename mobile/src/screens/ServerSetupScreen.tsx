@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Dialog, HelperText, Portal, Text, TextInput } from 'react-native-paper';
 import axios from 'axios';
 import { useServerConfig } from '../contexts/ServerConfigContext';
-import { DEFAULT_API_URL, normalizeServerUrl } from '../config';
+import { DEFAULT_API_URL, isCompleteServerUrl, normalizeServerUrl } from '../config';
 
 export function ServerSetupScreen() {
   const { setServerUrl } = useServerConfig();
@@ -18,6 +18,10 @@ export function ServerSetupScreen() {
     const trimmed = url.trim();
     if (!trimmed) {
       setError('Enter the address of your YoutubeVault service.');
+      return;
+    }
+    if (!isCompleteServerUrl(trimmed)) {
+      setError('Include http:// or https://, and a port if your server uses a custom one.');
       return;
     }
 
@@ -55,13 +59,14 @@ export function ServerSetupScreen() {
       <View style={styles.container}>
         <Text variant="headlineMedium" style={styles.title}>YoutubeVault</Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
-          Enter the address of your YoutubeVault service to get started.
+          Enter the address of your YoutubeVault service, including the port if it uses a
+          custom one.
         </Text>
 
         <TextInput
           mode="outlined"
           label="Service URL"
-          placeholder={DEFAULT_API_URL.replace(/\/api$/, '')}
+          placeholder={`${DEFAULT_API_URL.replace(/\/api$/, '')} or http://192.168.1.50:8065`}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
