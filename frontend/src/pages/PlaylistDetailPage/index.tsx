@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import { ListImperativeAPI } from 'react-window';
 import { useTranslation } from 'react-i18next';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { usePlaylistDetail } from './hooks/usePlaylistDetail';
@@ -14,6 +16,25 @@ export default function PlaylistDetailPage() {
     filteredTracks, playableTracks,
   } = usePlaylistDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
+  const location = useLocation();
+  const listRef = useRef<ListImperativeAPI>(null);
+  // Guards against re-scrolling on every render — only once per distinct
+  // navigation (location.key changes on each new history entry, even to the
+  // same path), matching the mini player's "act like back-to-playlist"
+  // click, which can fire repeatedly while already on this page.
+  const scrolledForKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!location.state?.scrollToNowPlaying) return;
+    if (scrolledForKeyRef.current === location.key) return;
+    if (!nowPlaying || nowPlaying.playlistId !== playlistId) return;
+
+    const index = filteredTracks.findIndex(v => v.id === nowPlaying.videoId);
+    if (index < 0) return; // e.g. filtered out by the active genre filter
+
+    listRef.current?.scrollToRow({ index, align: 'center', behavior: 'smooth' });
+    scrolledForKeyRef.current = location.key;
+  }, [location, nowPlaying, filteredTracks, playlistId, listRef]);
 
   if (!playlistId) return <Navigate to="/playlists" replace />;
 
@@ -43,6 +64,7 @@ export default function PlaylistDetailPage() {
           nowPlaying={nowPlaying}
           isAudioPlaying={isAudioPlaying}
           onTogglePlay={handleTogglePlay}
+          listRef={listRef}
         />
       </Box>
     </Box>

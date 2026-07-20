@@ -78,6 +78,7 @@
     "pauseSync": "Pause automatic sync",
     "remove": "Remove",
     "unavailableWhileSyncing": "Unavailable while syncing",
+    "unavailableWhileGenerating": "Unavailable while a similar playlist is being generated from this one",
     "openPlaylist": "Open playlist",
     "moreActions": "More actions",
     "generateSimilar": "Generate similar playlist",
@@ -115,7 +116,8 @@
     "miniPlayer": {
       "close": "Close player",
       "previous": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "backToPlaylist": "Back to playlist"
     },
     "deleteConfirm": {
       "title": "Remove playlist?",
@@ -147,6 +149,7 @@
     "trackDetail": {
       "backToPlaylist": "Back to playlist",
       "failedToLoad": "Failed to load this track.",
+      "usedInTitle": "Used in playlists",
       "recommendedTitle": "Similar songs",
       "discoverTitle": "Discover",
       "openInSpotify": "Search on Spotify",

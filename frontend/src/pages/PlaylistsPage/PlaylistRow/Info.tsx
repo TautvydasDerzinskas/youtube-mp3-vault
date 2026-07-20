@@ -80,7 +80,14 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
         )
       )}
 
-      {isBusy && <LinearProgress variant="determinate" value={progress} sx={{ mt: 0.5, height: 3, borderRadius: 2 }} />}
+      {isBusy && (
+        playlist.videoCount > 0
+          ? <LinearProgress variant="determinate" value={progress} sx={{ mt: 0.5, height: 3, borderRadius: 2 }} />
+          // No real denominator yet (e.g. a generated playlist still
+          // discovering candidates) — an indeterminate bar just signals
+          // "something is happening" instead of looking stuck at 0%.
+          : <LinearProgress variant="indeterminate" sx={{ mt: 0.5, height: 3, borderRadius: 2 }} />
+      )}
     </Box>
   );
 }

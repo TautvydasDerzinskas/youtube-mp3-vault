@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { playlistsApi, PlaylistVideo, RecommendedTrack, RemixResult, DiscoverResult } from '../../../api/youtube';
+import { playlistsApi, PlaylistVideo, RecommendedTrack, RemixResult, DiscoverResult, UsedInPlaylist } from '../../../api/youtube';
 
 export function useTrackDetail() {
   const { id, trackId } = useParams<{ id: string; trackId: string }>();
@@ -9,6 +9,7 @@ export function useTrackDetail() {
   const [recommendations, setRecommendations] = useState<RecommendedTrack[] | 'loading' | 'error'>('loading');
   const [discover, setDiscover] = useState<DiscoverResult[] | 'loading' | 'error' | 'disabled'>('loading');
   const [remixes, setRemixes] = useState<RemixResult[] | 'loading' | 'error'>('loading');
+  const [usedIn, setUsedIn] = useState<UsedInPlaylist[] | 'loading' | 'error'>('loading');
 
   useEffect(() => {
     if (!id || !trackId) return;
@@ -16,6 +17,7 @@ export function useTrackDetail() {
     setRecommendations('loading');
     setDiscover('loading');
     setRemixes('loading');
+    setUsedIn('loading');
 
     playlistsApi.getVideo(id, trackId)
       .then(({ video }) => setVideo(video))
@@ -29,7 +31,10 @@ export function useTrackDetail() {
     playlistsApi.getRemixes(id, trackId)
       .then(({ remixes }) => setRemixes(remixes))
       .catch(() => setRemixes('error'));
+    playlistsApi.getUsedIn(id, trackId)
+      .then(({ usedIn }) => setUsedIn(usedIn))
+      .catch(() => setUsedIn('error'));
   }, [id, trackId]);
 
-  return { playlistId: id ?? '', video, recommendations, discover, remixes };
+  return { playlistId: id ?? '', video, recommendations, discover, remixes, usedIn };
 }

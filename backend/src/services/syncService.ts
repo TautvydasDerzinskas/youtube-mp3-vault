@@ -320,12 +320,15 @@ export async function cleanupMediaFiles(mediaFileIds: string[]): Promise<void> {
   }
 }
 
-// Used by the audio-analysis dedup check for generated playlists (see
-// audioAnalysisWorker.ts) — a candidate turned out, after analysis, to be an
-// audio duplicate of something already in the source or generated playlist,
-// so it's dropped outright rather than kept as a "removed" row, since it was
-// never a real entry from the user's perspective.
-export async function removeDuplicateVideo(playlistVideoId: string, mediaFileId: string | null): Promise<void> {
+// Deletes a single playlist_video row outright (not the soft "removed"
+// status a real resync uses), keeping playlist.videoCount and the shared
+// media file store consistent. Used for two cases where the row was never a
+// deliberate addition from the user's perspective: the audio-analysis dedup
+// check for generated playlists (see audioAnalysisWorker.ts), and dropping a
+// generated playlist's failed downloads after its initial build (see
+// playlistGenerator.ts) — a generated playlist never gets a normal resync to
+// retry/clean those up otherwise.
+export async function removePlaylistVideo(playlistVideoId: string, mediaFileId: string | null): Promise<void> {
   const video = await prisma.playlistVideo.delete({ where: { id: playlistVideoId } });
   await prisma.playlist.update({
     where: { id: video.playlistId },

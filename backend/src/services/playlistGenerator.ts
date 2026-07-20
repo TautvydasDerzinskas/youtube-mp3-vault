@@ -4,7 +4,7 @@ import { isLastfmDiscoverEnabled } from './settings';
 import { getSimilarTracks } from './lastfm';
 import { searchTopMatches, searchRemixes, isRemixTitle, stripRemixQualifier, RemixResult } from './youtube';
 import { parseArtistAndTitle } from './musicbrainz';
-import { tryClaimSync, releaseSyncClaim, downloadPendingVideos } from './syncService';
+import { tryClaimSync, releaseSyncClaim, downloadPendingVideos, removePlaylistVideo } from './syncService';
 
 const CANDIDATES_PER_TIER = 10;
 const CONCURRENCY = 4;
@@ -184,7 +184,7 @@ export async function startGeneratePlaylist(sourcePlaylistId: string, userId: st
     data: {
       userId,
       youtubeId: null,
-      title: `${source.customName ?? source.title} (Similar)`,
+      title: `${source.customName ?? source.title} (YoutubeVault Remix)`,
       thumbnailUrl: source.thumbnailUrl,
       sourcePlaylistId: source.id,
       sourcePlaylistName: source.customName ?? source.title,
@@ -230,6 +230,18 @@ async function runGeneration(newPlaylistId: string, sourcePlaylistId: string): P
     try {
       await downloadPendingVideos(newPlaylistId);
       // downloadPendingVideos resolves metadata and sets syncStatus → idle/error
+
+      // A failed candidate isn't something the user deliberately chose to
+      // keep retrying — a generated playlist never gets a normal resync to
+      // clean these up otherwise, so just drop them rather than leaving
+      // permanently-stuck "failed" entries behind.
+      const failedVideos = await prisma.playlistVideo.findMany({
+        where: { playlistId: newPlaylistId, downloadStatus: 'failed' },
+        select: { id: true, mediaFileId: true },
+      });
+      for (const video of failedVideos) {
+        await removePlaylistVideo(video.id, video.mediaFileId);
+      }
     } finally {
       releaseSyncClaim(newPlaylistId);
     }

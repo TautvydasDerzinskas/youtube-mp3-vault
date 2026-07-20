@@ -280,6 +280,52 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
   }
 });
 
+// ─── GET /api/playlists/:id/videos/:videoId/used-in ───────────────────────────
+// Other playlists (this user's own) that also contain this exact YouTube
+// video — e.g. a generated ("similar") playlist and the source it came from,
+// or simply the same video added to two playlists manually.
+
+router.get('/:id/videos/:videoId/used-in', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+      select: { youtubeId: true },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+
+    const matches = await prisma.playlistVideo.findMany({
+      where: {
+        youtubeId: video.youtubeId,
+        playlistId: { not: playlist.id },
+        downloadStatus: { not: 'removed' },
+        playlist: { userId: req.userId },
+      },
+      select: { playlist: { select: { id: true, title: true, customName: true, thumbnailUrl: true } } },
+      distinct: ['playlistId'],
+    });
+
+    const usedIn = matches.map(({ playlist: p }) => ({
+      id: p.id,
+      title: p.customName ?? p.title,
+      thumbnailUrl: p.thumbnailUrl,
+    }));
+
+    res.json({ usedIn });
+  } catch (err) {
+    next(err);
+  }
+});
+
 const RECOMMENDATION_LIMIT = 10;
 
 function normalizeMatchKey(raw: string): string {

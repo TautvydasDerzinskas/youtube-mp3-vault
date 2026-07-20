@@ -9,6 +9,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface MiniPlayerProps {
   title: string | undefined;
+  artist: string | null | undefined;
   thumbnailUrl: string | null | undefined;
   audioRef: React.RefObject<HTMLAudioElement>;
   hasNext: boolean;
@@ -19,11 +20,13 @@ interface MiniPlayerProps {
   onNext: () => void;
   onPrevious: () => void;
   onClose: () => void;
+  // Undefined when there's nowhere sensible to navigate to yet (e.g. still loading).
+  onTitleClick: (() => void) | undefined;
 }
 
 export function MiniPlayer({
-  title, thumbnailUrl, audioRef, hasNext, hasPrevious,
-  onPlay, onPause, onEnded, onNext, onPrevious, onClose,
+  title, artist, thumbnailUrl, audioRef, hasNext, hasPrevious,
+  onPlay, onPause, onEnded, onNext, onPrevious, onClose, onTitleClick,
 }: MiniPlayerProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -56,6 +59,26 @@ export function MiniPlayer({
     </Tooltip>
   );
 
+  // Acts like "back to playlist" + auto-scroll to the playing track there —
+  // see PlaylistDetailPage's scrollToNowPlaying handling.
+  const titleBlock = (
+    <Tooltip title={onTitleClick ? t('playlists.miniPlayer.backToPlaylist') : ''}>
+      <Box
+        onClick={onTitleClick}
+        sx={{ minWidth: 0, cursor: onTitleClick ? 'pointer' : 'default' }}
+      >
+        <Typography variant="body2" noWrap>
+          {title ?? t('common.loading')}
+        </Typography>
+        {artist && (
+          <Typography variant="caption" color="text.secondary" noWrap component="div">
+            {artist}
+          </Typography>
+        )}
+      </Box>
+    </Tooltip>
+  );
+
   if (isMobile) {
     return (
       <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
@@ -63,9 +86,7 @@ export function MiniPlayer({
         {thumbnail}
         {previousButton}
         <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-          <Typography variant="body2" noWrap>
-            {title ?? t('common.loading')}
-          </Typography>
+          {titleBlock}
           <audio
             ref={audioRef}
             controls
@@ -85,9 +106,9 @@ export function MiniPlayer({
     <Box sx={{ position: 'fixed', bottom: 0, left: SIDEBAR_WIDTH, right: 0, bgcolor: 'background.paper',
       borderTop: '1px solid #2a2a2a', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
       {thumbnail}
-      <Typography variant="body2" noWrap sx={{ minWidth: 120, maxWidth: 280 }}>
-        {title ?? t('common.loading')}
-      </Typography>
+      <Box sx={{ minWidth: 120, maxWidth: 280 }}>
+        {titleBlock}
+      </Box>
       {previousButton}
       <audio
         ref={audioRef}

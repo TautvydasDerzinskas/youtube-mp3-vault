@@ -21,6 +21,11 @@ export function startSoftReimport(playlistId: string): boolean {
 
 async function softReimportPlaylist(playlistId: string): Promise<void> {
   try {
+    const playlist = await prisma.playlist.findUniqueOrThrow({
+      where: { id: playlistId },
+      select: { sourcePlaylistId: true },
+    });
+
     await prisma.playlist.update({
       where: { id: playlistId },
       data: { syncStatus: 'syncing' },
@@ -29,8 +34,12 @@ async function softReimportPlaylist(playlistId: string): Promise<void> {
     // 1. Reconcile against YouTube — identical to a regular sync's first
     // step. Any brand-new videos are inserted as `pending`, but since this
     // flow never calls _downloadPending, they're left for the next real
-    // sync (cron or manual) to actually download.
-    await refreshPlaylistFromYoutube(playlistId);
+    // sync (cron or manual) to actually download. Skipped for a generated
+    // playlist — it has no real YouTube playlist to reconcile against, so
+    // this just re-runs the metadata/audio-analysis passes on what's there.
+    if (!playlist.sourcePlaylistId) {
+      await refreshPlaylistFromYoutube(playlistId);
+    }
 
     // 2. Re-run metadata resolution for every video in the playlist,
     // regardless of its current status — the "hard force rematch" this

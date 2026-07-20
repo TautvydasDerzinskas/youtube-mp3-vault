@@ -78,6 +78,12 @@ export interface DiscoverResult {
   spotifySearchUrl: string;
 }
 
+export interface UsedInPlaylist {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+}
+
 export const playlistsApi = {
   getAll: async (): Promise<{ playlists: Playlist[] }> => {
     const { data } = await client.get<{ playlists: Playlist[] }>('/playlists');
@@ -130,6 +136,11 @@ export const playlistsApi = {
     const { data } = await client.get<{ enabled: boolean; discover: DiscoverResult[] }>(
       `/playlists/${playlistId}/videos/${videoId}/discover`
     );
+    return data;
+  },
+
+  getUsedIn: async (playlistId: string, videoId: string): Promise<{ usedIn: UsedInPlaylist[] }> => {
+    const { data } = await client.get<{ usedIn: UsedInPlaylist[] }>(`/playlists/${playlistId}/videos/${videoId}/used-in`);
     return data;
   },
 

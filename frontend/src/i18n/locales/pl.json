@@ -80,6 +80,7 @@
     "pauseSync": "Wstrzymaj automatyczną synchronizację",
     "remove": "Usuń",
     "unavailableWhileSyncing": "Niedostępne podczas synchronizacji",
+    "unavailableWhileGenerating": "Niedostępne, dopóki generowana jest podobna playlista na podstawie tej",
     "openPlaylist": "Otwórz playlistę",
     "moreActions": "Więcej opcji",
     "generateSimilar": "Wygeneruj podobną playlistę",
@@ -117,7 +118,8 @@
     "miniPlayer": {
       "close": "Zamknij odtwarzacz",
       "previous": "Poprzedni",
-      "next": "Następny"
+      "next": "Następny",
+      "backToPlaylist": "Wróć do playlisty"
     },
     "deleteConfirm": {
       "title": "Usunąć playlistę?",
@@ -149,6 +151,7 @@
     "trackDetail": {
       "backToPlaylist": "Wróć do playlisty",
       "failedToLoad": "Nie udało się załadować tego utworu.",
+      "usedInTitle": "Używany w playlistach",
       "recommendedTitle": "Podobne utwory",
       "discoverTitle": "Odkrywaj",
       "openInSpotify": "Szukaj na Spotify",

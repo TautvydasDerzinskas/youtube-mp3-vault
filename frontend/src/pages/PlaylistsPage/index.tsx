@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Box, Typography, Button, Alert, CircularProgress, Stack } from '@mui/material';
 import { Add as AddIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,26 @@ export default function PlaylistsPage() {
   } = usePlaylists();
 
   const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist } = usePlayer();
+
+  // A generated playlist's own row already shows this in its own list entry
+  // (via sourcePlaylistId/sourcePlaylistName) — derived here from the same
+  // already-loaded list so the SOURCE playlist's row can, in turn, know
+  // whether a derivative already exists for it (hide "Generate similar" for
+  // good, only one is ever allowed) and whether that derivative is still
+  // being built (lock rename/delete/sync on the source while it's reading
+  // from it, to avoid the video list shifting out from under it).
+  const { generatedSourceIds, busyGeneratedSourceIds } = useMemo(() => {
+    const generated = new Set<string>();
+    const busy = new Set<string>();
+    for (const p of playlists) {
+      if (!p.sourcePlaylistId) continue;
+      generated.add(p.sourcePlaylistId);
+      if (p.syncStatus === 'generating' || p.syncStatus === 'syncing') {
+        busy.add(p.sourcePlaylistId);
+      }
+    }
+    return { generatedSourceIds: generated, busyGeneratedSourceIds: busy };
+  }, [playlists]);
 
   const handleConfirmGenerate = async () => {
     if (!generating) return;
@@ -104,6 +124,8 @@ export default function PlaylistsPage() {
           isSyncingLocally={syncing.has(playlist.id)}
           online={online}
           canGenerateSimilar={canGenerateSimilar}
+          hasGeneratedPlaylist={generatedSourceIds.has(playlist.id)}
+          isLockedBySource={busyGeneratedSourceIds.has(playlist.id)}
           videoCache={videoCache}
           setVideoCache={setVideoCache}
           nowPlaying={nowPlaying}

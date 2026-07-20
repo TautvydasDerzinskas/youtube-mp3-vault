@@ -16,6 +16,8 @@ interface PlaylistRowProps {
   isSyncingLocally: boolean;
   online: boolean;
   canGenerateSimilar: boolean;
+  hasGeneratedPlaylist: boolean;
+  isLockedBySource: boolean;
   videoCache: Record<string, VideoState>;
   setVideoCache: React.Dispatch<React.SetStateAction<Record<string, VideoState>>>;
   nowPlaying: NowPlaying | null;
@@ -31,6 +33,7 @@ interface PlaylistRowProps {
 
 export function PlaylistRow({
   playlist, expanded, onToggleExpand, isSyncingLocally, online, canGenerateSimilar,
+  hasGeneratedPlaylist, isLockedBySource,
   videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay,
   onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
 }: PlaylistRowProps) {
@@ -39,6 +42,10 @@ export function PlaylistRow({
   const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isSyncingLocally;
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
   const isSynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
+  // No PlaylistVideo rows exist yet during this phase (they're only created
+  // once candidate discovery finishes) — expanding would just show a
+  // confusing "no videos found" empty state, so don't offer it at all.
+  const isGenerating = playlist.syncStatus === 'generating';
 
   if (isSynced) {
     const open = () => navigate(`/playlists/${playlist.id}`);
@@ -55,6 +62,8 @@ export function PlaylistRow({
           isPausing={isPausing}
           online={online}
           canGenerateSimilar={canGenerateSimilar}
+          hasGeneratedPlaylist={hasGeneratedPlaylist}
+          isLockedBySource={isLockedBySource}
           onRename={onRename}
           onSync={onSync}
           onRetryFailed={onRetryFailed}
@@ -72,16 +81,17 @@ export function PlaylistRow({
   }
 
   return (
-    <Accordion expanded={expanded}
-      onChange={(_, open) => onToggleExpand(open)}
+    <Accordion expanded={!isGenerating && expanded}
+      onChange={(_, open) => { if (!isGenerating) onToggleExpand(open); }}
       disableGutters
       sx={{ mb: 1, '&:before': { display: 'none' }, border: '1px solid',
         borderColor: expanded ? 'primary.dark' : '#2a2a2a',
         borderRadius: '8px !important', overflow: 'hidden',
         opacity: isPausing ? 0.55 : 1, transition: 'opacity 0.2s' }}>
 
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}
-        sx={{ px: 2, py: 1, '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5, minWidth: 0 } }}>
+      <AccordionSummary expandIcon={isGenerating ? undefined : <ExpandMoreIcon />}
+        sx={{ px: 2, py: 1, cursor: isGenerating ? 'default' : 'pointer',
+          '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5, minWidth: 0 } }}>
 
         <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
 
@@ -93,6 +103,8 @@ export function PlaylistRow({
           isPausing={isPausing}
           online={online}
           canGenerateSimilar={canGenerateSimilar}
+          hasGeneratedPlaylist={hasGeneratedPlaylist}
+          isLockedBySource={isLockedBySource}
           onRename={onRename}
           onSync={onSync}
           onRetryFailed={onRetryFailed}

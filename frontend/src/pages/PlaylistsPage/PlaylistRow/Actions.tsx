@@ -15,6 +15,15 @@ interface ActionsProps {
   isPausing: boolean;
   online: boolean;
   canGenerateSimilar: boolean;
+  // True once a similar playlist has already been generated from this one —
+  // only one is ever allowed, so the action disappears for good rather than
+  // just being disabled.
+  hasGeneratedPlaylist: boolean;
+  // True while this playlist's own generated derivative is actively being
+  // built (still reading this playlist's video list) — rename/delete/sync
+  // are disabled for the duration, since any of them could change the very
+  // data the generation process is reading.
+  isLockedBySource: boolean;
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
@@ -24,7 +33,7 @@ interface ActionsProps {
 }
 
 export function Actions({
-  playlist, isBusy, isPausing, online, canGenerateSimilar,
+  playlist, isBusy, isPausing, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
   onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
 }: ActionsProps) {
   const { t } = useTranslation();
@@ -39,7 +48,14 @@ export function Actions({
   // on a playlist that's actually finished downloading something, not one
   // still mid-first-sync or a generated playlist itself.
   const isFullySynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
-  const showGenerateSimilar = !isGenerated && isFullySynced && canGenerateSimilar;
+  const showGenerateSimilar = !isGenerated && isFullySynced && canGenerateSimilar && !hasGeneratedPlaylist;
+  const renameDisabled = isPausing || isBusy || isLockedBySource;
+  const syncDisabled = isBusy || !online || isLockedBySource;
+  const deleteDisabled = isPausing || isBusy || isLockedBySource;
+  const renameTooltip = isBusy ? t('playlists.unavailableWhileSyncing')
+    : isLockedBySource ? t('playlists.unavailableWhileGenerating') : t('playlists.rename');
+  const deleteTooltip = isBusy ? t('playlists.unavailableWhileSyncing')
+    : isLockedBySource ? t('playlists.unavailableWhileGenerating') : t('playlists.remove');
 
   if (isMobile) {
     const closeMenu = () => setMenuAnchor(null);
@@ -49,12 +65,12 @@ export function Actions({
           <MoreVertIcon fontSize="small" />
         </IconButton>
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} onClick={e => e.stopPropagation()}>
-          <MenuItem disabled={isPausing || isBusy} onClick={() => { closeMenu(); onRename(playlist); }}>
+          <MenuItem disabled={renameDisabled} onClick={() => { closeMenu(); onRename(playlist); }}>
             <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
             <ListItemText>{t('playlists.rename')}</ListItemText>
           </MenuItem>
           {showSync && (
-            <MenuItem disabled={isBusy || !online} onClick={e => { closeMenu(); onSync(e, playlist.id); }}>
+            <MenuItem disabled={syncDisabled} onClick={e => { closeMenu(); onSync(e, playlist.id); }}>
               <ListItemIcon>{isBusy ? <CircularProgress size={16} /> : <SyncIcon fontSize="small" />}</ListItemIcon>
               <ListItemText>{isBusy ? t('playlists.syncing') : t('playlists.syncNow')}</ListItemText>
             </MenuItem>
@@ -77,7 +93,7 @@ export function Actions({
               <ListItemText>{t('playlists.generateSimilar')}</ListItemText>
             </MenuItem>
           )}
-          <MenuItem disabled={isPausing || isBusy} onClick={() => { closeMenu(); onDelete(playlist); }} sx={{ color: 'error.main' }}>
+          <MenuItem disabled={deleteDisabled} onClick={() => { closeMenu(); onDelete(playlist); }} sx={{ color: 'error.main' }}>
             <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
             <ListItemText>{t('playlists.remove')}</ListItemText>
           </MenuItem>
@@ -88,18 +104,18 @@ export function Actions({
 
   return (
     <Box onClick={e => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
-      <Tooltip title={isBusy ? t('playlists.unavailableWhileSyncing') : t('playlists.rename')}>
+      <Tooltip title={renameTooltip}>
         <span>
-          <IconButton size="small" disabled={isPausing || isBusy}
+          <IconButton size="small" disabled={renameDisabled}
             onClick={e => { e.stopPropagation(); onRename(playlist); }}>
             <EditIcon fontSize="small" />
           </IconButton>
         </span>
       </Tooltip>
       {showSync && (
-        <Tooltip title={!online ? t('playlists.offlineUnavailable') : isBusy ? t('playlists.syncing') : t('playlists.syncNow')}>
+        <Tooltip title={!online ? t('playlists.offlineUnavailable') : isBusy ? t('playlists.syncing') : isLockedBySource ? t('playlists.unavailableWhileGenerating') : t('playlists.syncNow')}>
           <span>
-            <IconButton size="small" onClick={e => onSync(e, playlist.id)} disabled={isBusy || !online}>
+            <IconButton size="small" onClick={e => onSync(e, playlist.id)} disabled={syncDisabled}>
               {isBusy ? <CircularProgress size={16} /> : <SyncIcon fontSize="small" />}
             </IconButton>
           </span>
@@ -130,9 +146,9 @@ export function Actions({
           </IconButton>
         </Tooltip>
       )}
-      <Tooltip title={isBusy ? t('playlists.unavailableWhileSyncing') : t('playlists.remove')}>
+      <Tooltip title={deleteTooltip}>
         <span>
-          <IconButton size="small" disabled={isPausing || isBusy} onClick={e => { e.stopPropagation(); onDelete(playlist); }} sx={{ color: 'error.main' }}>
+          <IconButton size="small" disabled={deleteDisabled} onClick={e => { e.stopPropagation(); onDelete(playlist); }} sx={{ color: 'error.main' }}>
             <DeleteIcon fontSize="small" />
           </IconButton>
         </span>

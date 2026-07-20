@@ -79,6 +79,7 @@
     "pauseSync": "Pristabdyti automatinę sinchronizaciją",
     "remove": "Pašalinti",
     "unavailableWhileSyncing": "Negalima sinchronizavimo metu",
+    "unavailableWhileGenerating": "Negalima, kol iš šio grojaraščio generuojamas panašus grojaraštis",
     "openPlaylist": "Atidaryti grojaraštį",
     "moreActions": "Daugiau veiksmų",
     "generateSimilar": "Generuoti panašų grojaraštį",
@@ -116,7 +117,8 @@
     "miniPlayer": {
       "close": "Uždaryti grotuvą",
       "previous": "Ankstesnis",
-      "next": "Kitas"
+      "next": "Kitas",
+      "backToPlaylist": "Grįžti į grojaraštį"
     },
     "deleteConfirm": {
       "title": "Pašalinti grojaraštį?",
@@ -148,6 +150,7 @@
     "trackDetail": {
       "backToPlaylist": "Grįžti į grojaraštį",
       "failedToLoad": "Nepavyko įkelti šios dainos.",
+      "usedInTitle": "Naudojama grojaraščiuose",
       "recommendedTitle": "Panašios dainos",
       "discoverTitle": "Atraskite",
       "openInSpotify": "Ieškoti Spotify",

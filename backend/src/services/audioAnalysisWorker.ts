@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { analyzeAudio } from './audioAnalysis';
 import { getSharedFilePath } from './downloader';
-import { removeDuplicateVideo } from './syncService';
+import { removePlaylistVideo } from './syncService';
 import { bufferToFloat32Array, cosineSimilarity } from './embeddings';
 
 const IDLE_POLL_MS = 60_000; // nothing pending, or the analysis service is unreachable
@@ -101,7 +101,7 @@ async function loop(): Promise<void> {
 
         if (embeddingBuffer && await isAudioDuplicate(video, bufferToFloat32Array(embeddingBuffer))) {
           console.log(`[audio-analysis] Dropping ${video.youtubeId} — audio duplicate of an existing track (${video.title.slice(0, 60)})`);
-          await removeDuplicateVideo(video.id, video.mediaFileId).catch(() => {});
+          await removePlaylistVideo(video.id, video.mediaFileId).catch(() => {});
         }
       } else {
         console.error(`[audio-analysis] ✗ ${video.youtubeId} — analysis failed (${video.title.slice(0, 60)})`);

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Box, Typography } from '@mui/material';
-import { List } from 'react-window';
+import { List, ListImperativeAPI } from 'react-window';
 import { useTranslation } from 'react-i18next';
 import { PlaylistVideo } from '../../api/youtube';
 import { NowPlaying } from '../PlaylistsPage/types';
@@ -13,11 +13,12 @@ interface TrackListProps {
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: PlaylistVideo[]) => void;
+  listRef?: React.RefObject<ListImperativeAPI>;
 }
 
 const ROW_HEIGHT = 56;
 
-export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay }: TrackListProps) {
+export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay, listRef }: TrackListProps) {
   const { t } = useTranslation();
 
   const rowProps = useMemo((): TrackRowProps => (
@@ -35,6 +36,7 @@ export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAu
   return (
     <Box sx={{ height: '100%', border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px', overflow: 'hidden' }}>
       <List
+        listRef={listRef}
         rowCount={tracks.length}
         rowHeight={ROW_HEIGHT}
         rowComponent={TrackRow}
