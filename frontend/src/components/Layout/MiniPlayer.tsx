@@ -27,22 +27,68 @@ export function MiniPlayer({
 }: MiniPlayerProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+
+  const thumbnail = (
+    <Avatar src={thumbnailUrl ?? undefined} variant="rounded"
+      sx={{ width: isMobile ? 48 : 40, height: isMobile ? 48 : 40, borderRadius: 1, flexShrink: 0 }}>
+      <MusicNoteIcon />
+    </Avatar>
+  );
+  const previousButton = hasPrevious && (
+    <Tooltip title={t('playlists.miniPlayer.previous')}>
+      <IconButton size="small" onClick={onPrevious} sx={{ flexShrink: 0 }}>
+        <SkipPreviousIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+  const nextButton = hasNext && (
+    <Tooltip title={t('playlists.miniPlayer.next')}>
+      <IconButton size="small" onClick={onNext} sx={{ flexShrink: 0 }}>
+        <SkipNextIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+  const closeButton = (
+    <Tooltip title={t('playlists.miniPlayer.close')}>
+      <IconButton size="small" onClick={onClose} sx={{ flexShrink: 0 }}>
+        <CloseIcon sx={{ fontSize: 18 }} />
+      </IconButton>
+    </Tooltip>
+  );
+
+  if (isMobile) {
+    return (
+      <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
+        borderTop: '1px solid #2a2a2a', px: 1, py: 0.75, display: 'flex', alignItems: 'center', gap: 1, zIndex: 1200 }}>
+        {thumbnail}
+        {previousButton}
+        <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          <Typography variant="body2" noWrap>
+            {title ?? t('common.loading')}
+          </Typography>
+          <audio
+            ref={audioRef}
+            controls
+            style={{ width: '100%', height: 28 }}
+            onPlay={onPlay}
+            onPause={onPause}
+            onEnded={onEnded}
+          />
+        </Box>
+        {nextButton}
+        {closeButton}
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ position: 'fixed', bottom: 0, left: isMobile ? 0 : SIDEBAR_WIDTH, right: 0, bgcolor: 'background.paper',
+    <Box sx={{ position: 'fixed', bottom: 0, left: SIDEBAR_WIDTH, right: 0, bgcolor: 'background.paper',
       borderTop: '1px solid #2a2a2a', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
-      <Avatar src={thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 40, height: 40, borderRadius: 1, flexShrink: 0 }}>
-        <MusicNoteIcon />
-      </Avatar>
+      {thumbnail}
       <Typography variant="body2" noWrap sx={{ minWidth: 120, maxWidth: 280 }}>
         {title ?? t('common.loading')}
       </Typography>
-      {hasPrevious && (
-        <Tooltip title={t('playlists.miniPlayer.previous')}>
-          <IconButton size="small" onClick={onPrevious} sx={{ flexShrink: 0 }}>
-            <SkipPreviousIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      )}
+      {previousButton}
       <audio
         ref={audioRef}
         controls
@@ -51,18 +97,8 @@ export function MiniPlayer({
         onPause={onPause}
         onEnded={onEnded}
       />
-      {hasNext && (
-        <Tooltip title={t('playlists.miniPlayer.next')}>
-          <IconButton size="small" onClick={onNext} sx={{ flexShrink: 0 }}>
-            <SkipNextIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      )}
-      <Tooltip title={t('playlists.miniPlayer.close')}>
-        <IconButton size="small" onClick={onClose} sx={{ flexShrink: 0 }}>
-          <CloseIcon sx={{ fontSize: 18 }} />
-        </IconButton>
-      </Tooltip>
+      {nextButton}
+      {closeButton}
     </Box>
   );
 }

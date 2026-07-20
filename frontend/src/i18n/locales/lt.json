@@ -79,6 +79,7 @@
     "remove": "Pašalinti",
     "unavailableWhileSyncing": "Negalima sinchronizavimo metu",
     "openPlaylist": "Atidaryti grojaraštį",
+    "moreActions": "Daugiau veiksmų",
     "addDialog": {
       "title": "Pridėti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",

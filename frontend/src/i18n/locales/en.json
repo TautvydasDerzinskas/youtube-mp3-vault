@@ -78,6 +78,7 @@
     "remove": "Remove",
     "unavailableWhileSyncing": "Unavailable while syncing",
     "openPlaylist": "Open playlist",
+    "moreActions": "More actions",
     "addDialog": {
       "title": "Add Playlist",
       "urlLabel": "YouTube Playlist URL",

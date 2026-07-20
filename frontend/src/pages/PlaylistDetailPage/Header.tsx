@@ -6,8 +6,10 @@ import { useNavigate } from 'react-router-dom';
 import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
 import { GenreCount, NO_GENRE_KEY } from './hooks/usePlaylistDetail';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
-const VISIBLE_GENRES_LIMIT = 20;
+const VISIBLE_GENRES_LIMIT_DESKTOP = 20;
+const VISIBLE_GENRES_LIMIT_MOBILE = 5;
 
 interface HeaderProps {
   playlist: Playlist;
@@ -20,12 +22,14 @@ interface HeaderProps {
 export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, onClearGenres }: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [showAllGenres, setShowAllGenres] = useState(false);
 
-  const hasMoreGenres = genreCounts.length > VISIBLE_GENRES_LIMIT;
+  const visibleGenresLimit = isMobile ? VISIBLE_GENRES_LIMIT_MOBILE : VISIBLE_GENRES_LIMIT_DESKTOP;
+  const hasMoreGenres = genreCounts.length > visibleGenresLimit;
   const visibleGenres = showAllGenres
     ? genreCounts
-    : genreCounts.filter((g, i) => i < VISIBLE_GENRES_LIMIT || selectedGenres.has(g.key));
+    : genreCounts.filter((g, i) => i < visibleGenresLimit || selectedGenres.has(g.key));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>
@@ -83,7 +87,7 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
               <Chip
                 size="small"
                 variant="outlined"
-                label={showAllGenres ? t('playlists.detail.showFewerGenres') : t('playlists.detail.showMoreGenres', { count: genreCounts.length - VISIBLE_GENRES_LIMIT })}
+                label={showAllGenres ? t('playlists.detail.showFewerGenres') : t('playlists.detail.showMoreGenres', { count: genreCounts.length - visibleGenresLimit })}
                 onClick={() => setShowAllGenres(v => !v)}
                 sx={{ borderStyle: 'dashed' }}
               />

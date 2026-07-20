@@ -80,6 +80,7 @@
     "remove": "Usuń",
     "unavailableWhileSyncing": "Niedostępne podczas synchronizacji",
     "openPlaylist": "Otwórz playlistę",
+    "moreActions": "Więcej opcji",
     "addDialog": {
       "title": "Dodaj playlistę",
       "urlLabel": "Link do playlisty YouTube",
