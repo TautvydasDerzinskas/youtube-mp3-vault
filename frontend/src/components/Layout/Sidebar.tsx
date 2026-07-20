@@ -11,16 +11,12 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
-import {
-  QueueMusic as PlaylistsIcon,
-  Logout as LogoutIcon,
-  MusicNote as MusicNoteIcon,
-  Group as UsersIcon,
-} from '@mui/icons-material';
+import { Logout as LogoutIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { SidebarAudioGlow } from './SidebarAudioGlow';
+import { useNavItems } from './useNavItems';
 
 interface SidebarProps {
   width: number;
@@ -31,11 +27,7 @@ export default function Sidebar({ width }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const navItems = [
-    { label: t('nav.playlists'), path: '/playlists', icon: <PlaylistsIcon /> },
-    ...(user?.isAdmin ? [{ label: t('nav.users'), path: '/users', icon: <UsersIcon /> }] : []),
-  ];
+  const navItems = useNavItems();
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.stopPropagation();

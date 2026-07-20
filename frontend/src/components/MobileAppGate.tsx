@@ -2,15 +2,11 @@ import { useState } from 'react';
 import { Box, Typography, IconButton, Button } from '@mui/material';
 import { Android as AndroidIcon, Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { APK_URL } from '../constants';
 
 // Persisted (not just component state) so dismissing it sticks across page
 // loads/navigations for that browser — it shouldn't nag on every visit.
 const DISMISSED_KEY = 'mobileAppGateDismissed';
-
-// Baked into the frontend image at build time from the mobile CI build — see
-// the publish-frontend job in .github/workflows/docker-publish.yml and
-// frontend/public/download/.gitkeep. Never an external/expiring link.
-const APK_URL = '/download/YoutubeVault.apk';
 
 function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);

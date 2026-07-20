@@ -9,6 +9,7 @@ import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import TrackDetailPage from './pages/TrackDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import UsersPage from './pages/UsersPage';
+import DownloadsPage from './pages/DownloadsPage';
 
 function LoadingScreen() {
   return (
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />
           <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="downloads" element={<DownloadsPage />} />
           <Route path="users" element={<AdminRoute><UsersPage /></AdminRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

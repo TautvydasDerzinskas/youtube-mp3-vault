@@ -37,7 +37,10 @@
   "nav": {
     "playlists": "Playlists",
     "users": "Users",
-    "logout": "Logout"
+    "downloads": "Downloads",
+    "logout": "Logout",
+    "expandMenu": "Expand menu",
+    "collapseMenu": "Collapse menu"
   },
   "playlists": {
     "title": "Your Playlists",
@@ -156,6 +159,12 @@
     "language": "Language",
     "logout": "Logout",
     "genericError": "Something went wrong. Please try again."
+  },
+  "downloads": {
+    "title": "Downloads",
+    "back": "Back to playlists",
+    "downloadCta": "Download for Android",
+    "description": "Get the YoutubeVault Android app to browse your playlists and listen offline on your phone."
   },
   "users": {
     "title": "Users",

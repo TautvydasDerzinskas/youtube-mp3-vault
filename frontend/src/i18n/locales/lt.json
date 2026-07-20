@@ -37,7 +37,10 @@
   "nav": {
     "playlists": "Grojaraščiai",
     "users": "Naudotojai",
-    "logout": "Atsijungti"
+    "downloads": "Atsisiuntimai",
+    "logout": "Atsijungti",
+    "expandMenu": "Išskleisti meniu",
+    "collapseMenu": "Suskleisti meniu"
   },
   "playlists": {
     "title": "Jūsų grojaraščiai",
@@ -157,6 +160,12 @@
     "language": "Kalba",
     "logout": "Atsijungti",
     "genericError": "Įvyko klaida. Bandykite dar kartą."
+  },
+  "downloads": {
+    "title": "Atsisiuntimai",
+    "back": "Grįžti į grojaraščius",
+    "downloadCta": "Atsisiųsti Android versiją",
+    "description": "Atsisiųskite YoutubeVault programėlę Android telefonui, kad galėtumėte naršyti grojaraščius ir klausytis neprisijungę."
   },
   "users": {
     "title": "Naudotojai",

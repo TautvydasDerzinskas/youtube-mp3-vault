@@ -37,7 +37,10 @@
   "nav": {
     "playlists": "Playlisty",
     "users": "Użytkownicy",
-    "logout": "Wyloguj się"
+    "downloads": "Pobieranie",
+    "logout": "Wyloguj się",
+    "expandMenu": "Rozwiń menu",
+    "collapseMenu": "Zwiń menu"
   },
   "playlists": {
     "title": "Twoje playlisty",
@@ -158,6 +161,12 @@
     "language": "Język",
     "logout": "Wyloguj się",
     "genericError": "Coś poszło nie tak. Spróbuj ponownie."
+  },
+  "downloads": {
+    "title": "Pobieranie",
+    "back": "Wróć do playlist",
+    "downloadCta": "Pobierz na Androida",
+    "description": "Pobierz aplikację YoutubeVault na Androida, aby przeglądać playlisty i słuchać offline na telefonie."
   },
   "users": {
     "title": "Użytkownicy",

@@ -5,6 +5,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { SIDEBAR_WIDTH } from './constants';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface MiniPlayerProps {
   title: string | undefined;
@@ -24,15 +25,17 @@ interface MiniPlayerProps {
  * Fixed bottom bar shown whenever a track is playing; owns no playback state itself.
  * Rendered from AppLayout (not a page) so it persists across route changes.
  * Left-offset by the sidebar width so it sits over the main content area only,
- * rather than overlaying the sidebar's user/profile strip.
+ * rather than overlaying the sidebar's user/profile strip — no offset on
+ * mobile, where the sidebar is replaced by MobileTopBar (see AppLayout).
  */
 export function MiniPlayer({
   title, thumbnailUrl, audioRef, hasNext, hasPrevious,
   onPlay, onPause, onEnded, onNext, onPrevious, onClose,
 }: MiniPlayerProps) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   return (
-    <Box sx={{ position: 'fixed', bottom: 0, left: SIDEBAR_WIDTH, right: 0, bgcolor: 'background.paper',
+    <Box sx={{ position: 'fixed', bottom: 0, left: isMobile ? 0 : SIDEBAR_WIDTH, right: 0, bgcolor: 'background.paper',
       borderTop: '1px solid #2a2a2a', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
       <Avatar src={thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 40, height: 40, borderRadius: 1, flexShrink: 0 }}>
         <MusicNoteIcon />
