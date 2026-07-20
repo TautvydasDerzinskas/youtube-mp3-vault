@@ -16,9 +16,6 @@ export interface TrackMetadata {
   mbRecordingId: string | null;
 }
 
-// Module-level, not per-call — every lookup in the process shares one clock so
-// concurrent playlists (each syncing on their own sequential loop) still can't
-// collectively exceed the 1 req/sec ceiling.
 let lastRequestAt = 0;
 
 async function throttle(): Promise<void> {
@@ -40,18 +37,8 @@ async function mbFetch(path: string): Promise<any | null> {
   }
 }
 
-// Channel-name "branding" noise that doesn't belong in an artist name — some
-// of these only ever appear as a whole suffix word (Official, VEVO, Music, …),
-// glued on with or without a separator ("MadonnaVEVO", "Madonna - Official").
-// The while-loop below strips these repeatedly, so compound suffixes like
-// "MadonnaOfficialMusic" resolve in two passes without needing every
-// combination spelled out here.
 const CHANNEL_NOISE_SUFFIXES = ['vevo', 'official', 'music', 'records', 'channel'];
 
-// YouTube auto-generates "<Artist> - Topic" channels for tracks it's matched
-// to a rights holder (album uploads, not user re-uploads) — when present,
-// that prefix *is* the artist name verbatim, straight from YouTube's own
-// catalog match, more reliable than anything we'd derive from the title.
 function cleanChannelName(raw: string | null | undefined): string | null {
   if (!raw) return null;
 
@@ -73,13 +60,6 @@ function cleanChannelName(raw: string | null | undefined): string | null {
   return cleaned || null;
 }
 
-// Strips common YouTube music-video decorations ("(Official Video)", "[HD]", …),
-// then tries a handful of "Artist <separator> Title" conventions (dash, pipe,
-// tilde, colon, or "Title by Artist"). When nothing matches — a plain track
-// title with no artist embedded in it at all — falls back to the uploading
-// channel's name, since that's very often the artist's own channel.
-// Exported for reuse by youtube.ts's remix search — same "get a clean
-// artist/title out of a raw YouTube title" problem, not MusicBrainz-specific.
 export function parseArtistAndTitle(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
   const cleaned = rawTitle
     .replace(/[([][^)\]]*(official|video|audio|lyrics?|hd|4k|visualizer|remaster\w*)[^)\]]*[)\]]/gi, ' ')
@@ -103,18 +83,6 @@ function escapeLucene(value: string): string {
   return value.replace(/[+\-&|!(){}[\]^"~*?:\\/]/g, '\\$&');
 }
 
-/**
- * Best-effort MusicBrainz lookup for a single track, keyed off the YouTube
- * video title (and, when the title alone doesn't look like "Artist - Title",
- * the uploading channel's name as an artist fallback). Two throttled requests
- * when a match is found: a search to find the closest recording, then a
- * lookup-by-MBID (the only reliable way to get release/track info back from
- * MusicBrainz) for the details. Doesn't fetch genre — MB's crowd-sourced
- * genre tags are missing for most non-mainstream recordings; see
- * audioAnalysisWorker.ts for the audio-content-based replacement.
- * Returns null on no match, no connectivity, or any request/parsing failure —
- * callers treat that as "couldn't enrich this one", never as a hard error.
- */
 export async function lookupTrackMetadata(rawTitle: string, channelName: string | null = null): Promise<TrackMetadata | null> {
   if (!isOnline()) return null;
 
@@ -128,14 +96,6 @@ export async function lookupTrackMetadata(rawTitle: string, channelName: string 
   const candidates: any[] = Array.isArray(searchResult?.recordings) ? searchResult.recordings : [];
   if (candidates.length === 0) return null;
 
-  // Text-match score alone tends to favor whatever has the most alternate
-  // recordings — heavily-bootlegged songs return pages of live/demo variants
-  // that all score 100, crowding out the actual studio track a YouTube
-  // upload is almost always ripped from. release-group's primary/secondary
-  // type is the most reliable "is this a plain studio album" signal MB
-  // exposes (a live album is still primary-type "Album", just with a "Live"
-  // secondary type); disambiguation text catches a few things that slip
-  // past it (rehearsal tapes, karaoke backing tracks, …).
   const rank = (r: any): number => {
     let score = r?.score ?? 0;
     const releaseGroup = r?.releases?.[0]?.['release-group'];
@@ -162,9 +122,6 @@ export async function lookupTrackMetadata(rawTitle: string, channelName: string 
   const track = release?.media?.[0]?.track?.[0] ?? release?.media?.[0]?.tracks?.[0];
   const trackNumber = track?.number ? parseInt(track.number, 10) : null;
 
-  // "first-release-date" is on the recording (i.e. the song's original release
-  // year, regardless of which particular release/compilation we matched to) —
-  // prefer it over the matched release's own (possibly much later) date.
   const releaseDate: string | undefined = detail['first-release-date'] || release?.date;
   const releaseYear = releaseDate ? parseInt(releaseDate.slice(0, 4), 10) : null;
 

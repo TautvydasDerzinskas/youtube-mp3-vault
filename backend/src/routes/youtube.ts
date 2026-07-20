@@ -6,6 +6,7 @@ import { parseArtistAndTitle } from '../services/musicbrainz';
 import { getSimilarTracks, scrobble } from '../services/lastfm';
 import { getSharedFilePath, sanitizeFilename } from '../services/downloader';
 import { isLastfmDiscoverEnabled } from '../services/settings';
+import { isOnline } from '../services/connectivity';
 import { withDownloadStats } from '../services/playlistStats';
 import { bufferToFloat32Array, cosineSimilarity } from '../services/embeddings';
 import {
@@ -20,10 +21,6 @@ import {
 
 const router = Router();
 
-// Every PlaylistVideo field except audioEmbedding — a several-KB binary blob
-// per row (see embeddings.ts), backend-internal, never something the UI
-// needs, so every video-returning response selects around it explicitly
-// rather than shipping it to the browser.
 const VIDEO_SELECT_WITHOUT_EMBEDDING = {
   id: true, playlistId: true, youtubeId: true, title: true, duration: true,
   thumbnailUrl: true, position: true, isAvailable: true, channelName: true,
@@ -206,22 +203,6 @@ router.get('/:id/videos', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
-// ─── GET /api/playlists/:id/manifest — mobile app sync feed ──────────────────
-// Everything a client needs to mirror this playlist's downloaded files
-// locally and keep them in sync on repeat calls: full track metadata, a
-// download link for whatever's actually downloaded, and — critically for
-// "sync" rather than just "download all" — a track that's no longer
-// downloadable (removed from the source YouTube playlist, or permanently
-// unavailable) still shows up here with downloadUrl: null and its current
-// downloadStatus, so the caller can tell "never downloaded this" apart from
-// "used to have this, should delete the local copy now."
-//
-// mediaFileId is included because it's stable per actual audio content (see
-// MediaFile in schema.prisma) and only changes if the file is ever
-// re-downloaded — unlike updatedAt, which also bumps on unrelated metadata
-// enrichment (genre/artist lookups), it's a reliable "does the client need to
-// re-fetch the bytes" signal.
-
 const MANIFEST_TRACK_SELECT = {
   id: true, youtubeId: true, title: true, artist: true, album: true,
   trackNumber: true, genres: true, releaseYear: true, duration: true,
@@ -297,15 +278,6 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
   }
 });
 
-// ─── GET /api/playlists/:id/videos/:videoId/recommendations ──────────────────
-// "Sounds like this" — primarily cosine similarity over the Essentia audio
-// embedding (see audioAnalysisWorker.ts), but boosted with a same-artist /
-// same-genre preference on top: a candidate by the same artist ranks above
-// any candidate that merely shares a genre, which in turn ranks above the
-// rest — audio similarity only breaks ties *within* each of those tiers, it
-// doesn't override them. Scoped to every track the user owns across all
-// their playlists, not just the current one.
-
 const RECOMMENDATION_LIMIT = 10;
 
 function normalizeMatchKey(raw: string): string {
@@ -372,12 +344,6 @@ router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: Auth
   }
 });
 
-// ─── GET /api/playlists/:id/videos/:videoId/remixes ───────────────────────────
-// Best-effort YouTube search for remixes of this track — never errors out to
-// the client, an empty list just means "couldn't find any" (search failure,
-// yt-dlp down, nothing matched — see searchRemixes for why those aren't
-// distinguished here).
-
 router.get('/:id/videos/:videoId/remixes', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const playlist = await prisma.playlist.findFirst({
@@ -406,20 +372,11 @@ router.get('/:id/videos/:videoId/remixes', requireAuth, async (req: AuthRequest,
   }
 });
 
-// ─── GET /api/playlists/:id/videos/:videoId/discover ──────────────────────────
-// External "you might also like" — Last.fm's track.getsimilar (see
-// services/lastfm.ts), each candidate then resolved to a playable YouTube
-// video via the same no-API-key yt-dlp search searchRemixes uses, run
-// concurrently (one yt-dlp process per candidate sequentially would be too
-// slow for a page load). `enabled: false` (no LASTFM_API_KEY at all) is
-// distinct from an empty `discover` list (key present, nothing found) — the
-// frontend hides the whole section only for the former, see DiscoverTracks.tsx.
-
 const DISCOVER_LIMIT = 8;
 
 router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    if (!isLastfmDiscoverEnabled()) {
+    if (!isLastfmDiscoverEnabled() || !isOnline()) {
       res.json({ enabled: false, discover: [] });
       return;
     }
@@ -465,14 +422,6 @@ router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest
     next(err);
   }
 });
-
-// ─── POST /api/playlists/:id/videos/:videoId/played ───────────────────────────
-// Called once a track finishes playing naturally (see PlayerContext's
-// handleTrackEnded on the frontend) — always bumps the internal play count,
-// and best-effort scrobbles to Last.fm if the user has that enabled. The
-// scrobble outcome never affects the response: a Last.fm hiccup shouldn't
-// turn "the song finished" into a client-visible error (see scrobble()'s own
-// never-throws contract in services/lastfm.ts).
 
 router.post('/:id/videos/:videoId/played', requireAuth, async (req: AuthRequest, res, next) => {
   try {
@@ -657,10 +606,6 @@ router.get('/:id/videos/:videoId/download', requireAuth, async (req: AuthRequest
   }
 });
 
-// ─── GET /api/playlists/:id/videos/:videoId/stream ────────────────────────────
-// Same file as /download, but served inline (no Content-Disposition) for
-// playback in an <audio> element rather than triggering a save-as.
-
 router.get('/:id/videos/:videoId/stream', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const playlist = await prisma.playlist.findFirst({
@@ -700,9 +645,6 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res, next) => {
       res.status(404).json({ error: 'Playlist not found' });
       return;
     }
-    // Snapshot which shared media files this playlist used BEFORE deleting it —
-    // the cascade delete below removes the playlist_videos rows (and thus their
-    // references), so there's nothing left to read afterward.
     const mediaFileIds = await mediaFilesUsedBy(playlist.id);
     await prisma.playlist.delete({ where: { id: playlist.id } });
     // GC shared files no longer referenced by any playlist — asynchronously, don't fail the request

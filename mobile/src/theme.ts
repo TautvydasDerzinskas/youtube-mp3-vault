@@ -1,10 +1,5 @@
 import { MD3DarkTheme } from 'react-native-paper';
 
-// Mirrors frontend/src/theme.ts's MUI dark palette, translated into Material
-// Design 3 color roles (Paper's theme shape, not MUI's — MUI itself is
-// web/DOM-only and can't run in React Native, Paper is the RN equivalent)
-// so the app reads as the same product as the web frontend: same red
-// "YouTube-ish" primary, same near-black backgrounds and card/border tones.
 export const theme = {
   ...MD3DarkTheme,
   colors: {

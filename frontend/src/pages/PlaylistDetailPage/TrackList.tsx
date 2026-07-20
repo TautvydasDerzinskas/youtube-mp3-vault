@@ -17,11 +17,6 @@ interface TrackListProps {
 
 const ROW_HEIGHT = 56;
 
-/**
- * Virtualized (react-window) — this page is built for playlists in the
- * thousands-of-tracks range, where mounting one DOM row per track would
- * visibly stall scrolling and initial render.
- */
 export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay }: TrackListProps) {
   const { t } = useTranslation();
 

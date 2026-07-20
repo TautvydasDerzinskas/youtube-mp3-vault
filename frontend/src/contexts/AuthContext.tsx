@@ -12,10 +12,6 @@ import { authApi, User, RegisterResponse } from '../api/auth';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  // Whether the backend has a Last.fm shared secret configured at all — see
-  // MeResponse in api/auth.ts. ProfilePage hides its Last.fm section
-  // entirely when this is false, rather than offering a "Connect" button
-  // that would just 503.
   lastfmScrobblingAvailable: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<RegisterResponse>;
@@ -62,9 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string, displayName: string) => {
     const result = await authApi.register(email, password, displayName);
-    // No verification step to go through — the backend already fully signed
-    // this account in (see RegisterResponse), so app-wide auth state should
-    // reflect that immediately, same as login() does.
     if (!result.verificationRequired) {
       setUser(applyUser(result.user));
     }

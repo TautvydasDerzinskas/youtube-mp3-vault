@@ -29,13 +29,6 @@ interface SettingsCache {
 
 let cache: SettingsCache | null = null;
 
-// Called from loadSettings() at process boot (see index.ts), not lazily on
-// first admin request — so by the time anyone could open the Settings page,
-// this has already run. On a fresh database it creates the row, seeded from
-// whatever env vars this process booted with (see config.ts); on every
-// later boot the row already exists and env vars are never consulted again,
-// so an admin's saved changes survive a redeploy even if the underlying
-// env/.env still has the old values.
 async function ensureRow() {
   const existing = await prisma.appSettings.findUnique({ where: { id: 1 } });
   if (existing) return existing;
@@ -99,9 +92,6 @@ export function isLastfmDiscoverEnabled(): boolean {
   return requireCache().lastfm.apiKey !== null;
 }
 
-// Both key and secret are needed before a user can even attempt to connect
-// their own account — signing auth.getSession/track.scrobble requires the
-// secret (see services/lastfm.ts).
 export function isLastfmScrobblingConfigured(): boolean {
   const { apiKey, apiSecret } = requireCache().lastfm;
   return apiKey !== null && apiSecret !== null;
@@ -123,9 +113,6 @@ export async function updateSmtpSettings(input: SmtpSettings): Promise<SmtpSetti
   return cache.smtp;
 }
 
-// Called only after services/prisma.ts's switchDatabase() has already tested
-// and applied the new connection — this just records "this is who we are"
-// on the (now live) database, it never itself decides whether to switch.
 export async function persistPostgresSettings(input: PostgresSettings): Promise<void> {
   const row = await prisma.appSettings.upsert({
     where: { id: 1 },

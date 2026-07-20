@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react';
 
-// CI (.github/workflows/docker-publish.yml, android-apk job) bakes these in
-// at build time and tags each GitHub Release "mobile-<short-sha>" — see
-// that workflow for the release side of this. A local `expo start`/dev
-// client has neither set, so there's nothing to compare and the check is a
-// no-op — only a CI-built APK has a build identity worth checking.
 const BUILD_SHA = process.env.EXPO_PUBLIC_BUILD_SHA;
 const GITHUB_REPO = process.env.EXPO_PUBLIC_GITHUB_REPO;
 
@@ -13,12 +8,6 @@ interface LatestRelease {
   html_url: string;
 }
 
-/**
- * Best-effort "is a newer build published" check against the GitHub
- * Releases API (public, unauthenticated, no backend involvement needed).
- * Never throws or blocks the UI — offline or rate-limited just means no
- * banner, not an error state.
- */
 export function useUpdateCheck(): { available: boolean; releaseUrl: string | null } {
   const [available, setAvailable] = useState(false);
   const [releaseUrl, setReleaseUrl] = useState<string | null>(null);

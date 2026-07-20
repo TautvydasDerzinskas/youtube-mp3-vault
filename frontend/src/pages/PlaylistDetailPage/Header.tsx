@@ -7,10 +7,6 @@ import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
 import { GenreCount, NO_GENRE_KEY } from './hooks/usePlaylistDetail';
 
-// Most libraries have a handful of genres with real weight and a long tail of
-// one/two-track genres from misc tagging — showing all of them by default
-// buries the useful filters. Collapsed to this many, with a link to reveal
-// the rest, since the list is already sorted by count.
 const VISIBLE_GENRES_LIMIT = 20;
 
 interface HeaderProps {
@@ -27,9 +23,6 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
   const [showAllGenres, setShowAllGenres] = useState(false);
 
   const hasMoreGenres = genreCounts.length > VISIBLE_GENRES_LIMIT;
-  // A genre selected via URL (e.g. a shared link) must stay visible even if
-  // it falls outside the collapsed top N, or its active chip — and the only
-  // way to clear it — would silently disappear.
   const visibleGenres = showAllGenres
     ? genreCounts
     : genreCounts.filter((g, i) => i < VISIBLE_GENRES_LIMIT || selectedGenres.has(g.key));

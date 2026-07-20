@@ -169,6 +169,7 @@
       "title": "Last.fm",
       "description": "Connect your Last.fm account to scrobble songs you finish listening to.",
       "connect": "Connect to Last.fm",
+      "offlineNotice": "This service can't reach the internet right now, so connecting is unavailable.",
       "connectedAs": "Connected as {{username}}",
       "enableScrobbling": "Scrobble songs I finish listening to",
       "disconnect": "Disconnect",

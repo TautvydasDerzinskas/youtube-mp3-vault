@@ -15,16 +15,9 @@ export async function sendVerificationEmail(
       console.log(`[mailer] SMTP not configured — verification link for ${to}: ${link}`);
       return;
     }
-    // Callers are expected to check isSmtpConfigured() first and skip
-    // verification entirely outside dev (see routes/auth.ts) — reaching
-    // here means that check was missed somewhere.
     throw new Error('SMTP is not configured');
   }
 
-  // Built fresh per send rather than cached — settings can change at
-  // runtime via the admin Settings page (see services/settings.ts), and a
-  // cached transporter would otherwise keep using stale credentials/host
-  // until the next process restart.
   const transporter = nodemailer.createTransport({
     host: smtp.host,
     port: smtp.port,

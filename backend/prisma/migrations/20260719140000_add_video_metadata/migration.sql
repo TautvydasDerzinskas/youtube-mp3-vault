@@ -8,9 +8,6 @@ ADD COLUMN     "mbRecordingId" TEXT,
 ADD COLUMN     "metadataStatus" TEXT NOT NULL DEFAULT 'pending',
 ADD COLUMN     "metadataFetchedAt" TIMESTAMP(3);
 
--- Backfill: for rows that already existed, addedAt should reflect when they were
--- actually added, not the moment this migration ran — createdAt already carries
--- that (it's never updated after insert), so copy it over once.
 UPDATE "playlist_videos" SET "addedAt" = "createdAt";
 
 -- CreateIndex

@@ -26,10 +26,6 @@ import { useNavItems } from './useNavItems';
 import { NavList } from './NavList';
 import { MOBILE_TOPBAR_HEIGHT } from './constants';
 
-// Small-screen substitute for the permanent Sidebar (see AppLayout) — a
-// fixed top bar whose hamburger button expands the same nav items as an
-// accordion overlaying the page below, instead of a fixed-width drawer
-// squeezing the content sideways.
 export default function MobileTopBar() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();

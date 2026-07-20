@@ -17,17 +17,9 @@ interface AuthResponse {
 
 interface MeResponse {
   user: User;
-  // App-wide — whether the backend has a Last.fm shared secret configured at
-  // all (see isLastfmScrobblingConfigured on the backend), independent of
-  // whether *this* user has connected their own account.
   lastfmScrobblingAvailable: boolean;
 }
 
-// Two shapes depending on whether the backend has SMTP configured (see
-// backend/src/routes/auth.ts's skipsEmailVerification): normally a "check
-// your email" response, but with no way to send that email outside dev, the
-// account is created already-verified and signed in immediately instead —
-// same shape login's response has.
 export type RegisterResponse =
   | { verificationRequired: true; message: string; email: string }
   | { verificationRequired: false; user: User; token: string };
@@ -88,9 +80,6 @@ export const authApi = {
     return data;
   },
 
-  // Not a fetch — a full-page navigation, since Last.fm shows its own
-  // login/approve page before redirecting back to our callback. See
-  // ProfilePage's "Connect" button (a plain <a href>, not an onClick).
   lastfmConnectUrl: '/api/auth/lastfm/connect',
 
   disconnectLastfm: async (): Promise<AuthResponse> => {

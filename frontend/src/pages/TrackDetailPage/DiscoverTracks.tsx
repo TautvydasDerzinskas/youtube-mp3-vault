@@ -11,18 +11,6 @@ interface DiscoverTracksProps {
   state: DiscoverResult[] | 'loading' | 'error' | 'disabled';
 }
 
-/**
- * External "you might also like" — Last.fm similar-track data (see
- * services/lastfm.ts), each resolved server-side to a best-guess playable
- * YouTube video where possible. Rows without a resolved match still show
- * (no YouTube icon, not clickable) since the Spotify search link — a plain
- * deep link, no API involved — always works regardless.
- *
- * Renders nothing at all — not even the section title — while loading or
- * when the backend has no LASTFM_API_KEY configured (see /discover's
- * `enabled` flag), rather than showing an empty section most self-hosted
- * instances would never turn on.
- */
 export function DiscoverTracks({ state }: DiscoverTracksProps) {
   const { t } = useTranslation();
 

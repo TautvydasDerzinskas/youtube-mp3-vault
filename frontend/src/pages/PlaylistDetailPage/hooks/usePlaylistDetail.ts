@@ -3,35 +3,16 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { playlistsApi, Playlist, PlaylistVideo } from '../../../api/youtube';
 import { normalizeGenreKey, formatGenre } from '../../PlaylistsPage/utils';
 
-// `key` is the normalized (lowercase) identity used for selection/filtering;
-// `label` is what's actually shown, preserving genuine multi-word casing
-// (e.g. "Drum n Bass") wherever a properly-cased variant exists — see
-// genreCounts below for why these can't just be derived from each other.
 export type GenreCount = { key: string; label: string; count: number };
 
-// Synthetic bucket for tracks with no genre — either audio analysis hasn't
-// run yet, or found nothing. Already normalized (lowercase), so it can't
-// collide with a real genre key.
 export const NO_GENRE_KEY = 'none';
 
 const GENRES_PARAM = 'genres';
 
-// Selection state lives in normalized (lowercase) keys throughout — the URL,
-// the Set, the filter check — so a genre picked while displayed as
-// "Electronic" still matches tracks stored as "electronic". Only the chip
-// label (via formatGenre) is ever displayed capitalized.
 function parseGenres(raw: string | null): Set<string> {
   return new Set((raw ?? '').split(',').map(normalizeGenreKey).filter(Boolean));
 }
 
-/**
- * Owns the detail page's data (playlist + its full track list, fetched once)
- * and its genre-filter state. The filter lives in the URL (?genres=a,b) so a
- * refresh or a shared link reproduces the same filtered view — selecting it
- * is intentionally kept client-side-only (no re-fetch), since with playlists
- * in the thousands-of-tracks range a full list is already in memory and
- * re-filtering it is much cheaper than a round trip.
- */
 export function usePlaylistDetail() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,24 +49,11 @@ export function usePlaylistDetail() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  // Videos no longer in the source YouTube playlist (removed on a later sync)
-  // stick around in the DB for MediaFile bookkeeping but shouldn't show up
-  // as playlist content here.
   const currentVideos = useMemo(
     () => (Array.isArray(videos) ? videos.filter(v => v.downloadStatus !== 'removed') : []),
     [videos]
   );
 
-  // Each tag a track carries counts toward its own chip — a track tagged
-  // ["Electronic", "Hip Hop", "Drum n Bass"] contributes to all three, not
-  // just one. Grouping on the normalized key means "Electronic" and
-  // "electronic" (old pre-Essentia MusicBrainz tags predate consistent
-  // casing) still collapse into one chip instead of showing as duplicates.
-  // The label shown for that group prefers whichever variant was already
-  // properly capitalized (real Essentia/taxonomy casing, e.g. "Drum n Bass")
-  // over a stray all-lowercase one — naively lowercasing everything for the
-  // key and re-deriving the label from *that* would flatten correct
-  // multi-word casing down to just the first letter.
   const genreCounts = useMemo((): GenreCount[] => {
     const counts = new Map<string, number>();
     const labels = new Map<string, string>();
@@ -108,22 +76,10 @@ export function usePlaylistDetail() {
     }
     const sorted: GenreCount[] = [...counts.entries()]
       .map(([key, count]) => ({ key, label: formatGenre(labels.get(key)!), count }));
-    // Competes on frequency like any other bucket, so a library dominated by
-    // untagged tracks surfaces "No genre" up near the top instead of always
-    // trailing behind genres with only a handful of tracks.
     if (noGenreCount > 0) sorted.push({ key: NO_GENRE_KEY, label: NO_GENRE_KEY, count: noGenreCount });
     return sorted.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
   }, [currentVideos]);
 
-  // A track matches the filter if it carries *any* selected tag (union, not
-  // intersection) — selecting both "Electronic" and "Hip Hop" surfaces
-  // tracks tagged with either, which is what naturally catches a genuine
-  // hybrid track tagged with both.
-  //
-  // Order tracks were actually added to this library (immutable, set once at
-  // sync time) — distinct from YouTube's own mutable playlist `position`.
-  // Newest addition first, matching what a user expects after syncing in a
-  // song they just added to the source playlist.
   const filteredTracks = useMemo(() => {
     const filtered = selectedGenres.size === 0
       ? currentVideos
@@ -133,9 +89,6 @@ export function usePlaylistDetail() {
     return [...filtered].sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
   }, [currentVideos, selectedGenres]);
 
-  // The subset of filteredTracks that's actually playable — passed to the
-  // player as an explicit queue so next/prev/auto-advance only ever land on
-  // tracks that are both downloaded and within the current genre filter.
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
   return {

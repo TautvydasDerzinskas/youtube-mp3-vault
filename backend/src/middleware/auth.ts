@@ -9,11 +9,6 @@ export interface AuthRequest extends Request {
   isAdmin?: boolean;
 }
 
-// The web app authenticates via httpOnly cookie, which isn't usable from a
-// native app (no browser cookie jar, and the cookie's httpOnly anyway). The
-// mobile client instead gets the JWT back in the login response body (see
-// routes/auth.ts) and sends it as a Bearer header — same token, same
-// verification path below either way.
 function extractToken(req: Request): string | undefined {
   const cookieToken = req.cookies?.auth_token as string | undefined;
   if (cookieToken) return cookieToken;
@@ -37,9 +32,6 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    // Looked up on every request (rather than trusting the JWT alone) so a ban
-    // takes effect immediately instead of only blocking the next login — the
-    // JWT itself is otherwise stateless and would stay valid for its full 7d life.
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: { isAdmin: true, isBanned: true },

@@ -17,9 +17,6 @@ function AuthGate() {
   const { available, releaseUrl } = useUpdateCheck();
   const [dismissed, setDismissed] = useState(false);
 
-  // Re-arm the banner if a check somehow flips from unavailable to
-  // available later (e.g. a release publishes mid-session) rather than
-  // permanently hiding it after one dismissal.
   useEffect(() => {
     if (!available) setDismissed(false);
   }, [available]);
@@ -50,19 +47,12 @@ function Root() {
   const { serverUrl, loading } = useServerConfig();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // AuthProvider (below) only mounts once serverUrl is set, so its own
-  // token-check request never fires against an unset/stale baseURL — see
-  // ServerConfigContext.
   useEffect(() => {
     registerToastListener(setToastMessage);
     return () => registerToastListener(null);
   }, []);
 
   return (
-    // Screens themselves don't set a background color, so without this the
-    // app falls back to the native default (white) behind them instead of
-    // the Paper dark theme — this single wrapper covers every screen rather
-    // than patching each one individually.
     <View style={styles.appBackground}>
       {loading ? (
         <View style={styles.loading}>

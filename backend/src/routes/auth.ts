@@ -7,6 +7,7 @@ import { prisma } from '../services/prisma';
 import { sendVerificationEmail } from '../services/mailer';
 import { isSmtpConfigured, isLastfmScrobblingConfigured } from '../services/settings';
 import { getAuthUrl, getSession } from '../services/lastfm';
+import { isOnline } from '../services/connectivity';
 import { config } from '../config';
 import {
   requireAuth,
@@ -59,10 +60,6 @@ function newVerificationToken() {
   };
 }
 
-// dev keeps requiring the click-through (see mailer.ts's console-logged-link
-// fallback) so the flow is still testable locally with zero SMTP setup —
-// only staging/production, where a real unconfigured SMTP would otherwise
-// just throw and break registration outright, skip verification entirely.
 function skipsEmailVerification(): boolean {
   return !isSmtpConfigured() && config.appEnv !== 'dev';
 }
@@ -104,10 +101,6 @@ router.post('/register', authLimiter, async (req, res, next) => {
     const isAdmin = config.adminEmail !== '' && normalizedEmail === config.adminEmail;
 
     if (skipsEmailVerification()) {
-      // No SMTP configured outside dev — there's no way to email a
-      // verification link, so there's nothing to gate sign-in on. Create the
-      // account already verified and sign them in immediately, same as if
-      // they'd just clicked that link.
       const user = await prisma.user.create({
         data: { email: normalizedEmail, passwordHash, displayName: displayName.trim(), isAdmin, emailVerified: true },
       });
@@ -160,9 +153,6 @@ router.post('/login', authLimiter, (req, res, next) => {
       }
       const token = generateToken(user.id);
       setAuthCookie(res, token);
-      // Also returned in the body (not just the cookie) for clients that can't
-      // rely on a browser cookie jar — e.g. the mobile app — to store and send
-      // back as `Authorization: Bearer <token>`.
       res.json({ user: toSafeUser(user), token });
     }
   )(req, res, next);
@@ -240,10 +230,6 @@ router.post('/resend-verification', authLimiter, async (req, res, next) => {
     // exist at all — resending shouldn't be usable to probe registered emails.
     if (user && !user.emailVerified) {
       if (skipsEmailVerification()) {
-        // SMTP was on when this account registered but has since been turned
-        // off (or was never configured and this is a pre-existing stuck
-        // account) — self-heal instead of calling sendVerificationEmail,
-        // which would just throw.
         await prisma.user.update({
           where: { id: user.id },
           data: { emailVerified: true, emailVerificationToken: null, emailVerificationExpires: null },
@@ -283,10 +269,6 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    // App-wide capability, not a user field — whether "Connect to Last.fm"
-    // should even be offered in Profile (needs LASTFM_API_SECRET set, see
-    // services/settings.ts). Piggybacked on /me since it's already fetched
-    // on every app load, rather than a separate request.
     res.json({ user: toSafeUser(user), lastfmScrobblingAvailable: isLastfmScrobblingConfigured() });
   } catch (err) {
     next(err);
@@ -391,11 +373,11 @@ router.patch('/profile', requireAuth, authLimiter, async (req: AuthRequest, res,
   }
 });
 
-// ─── GET /api/auth/lastfm/connect ──────────────────────────────────────────
-// Full-page redirect (not an XHR — Last.fm shows its own login/approve page)
-// to Last.fm's auth page, which itself redirects back to /callback below.
-
 router.get('/lastfm/connect', requireAuth, (_req, res) => {
+  if (!isOnline()) {
+    res.status(503).json({ error: 'No internet connectivity — try again once this server is back online' });
+    return;
+  }
   const callbackUrl = `${config.frontendUrl}/api/auth/lastfm/callback`;
   const url = getAuthUrl(callbackUrl);
   if (!url) {
@@ -404,14 +386,6 @@ router.get('/lastfm/connect', requireAuth, (_req, res) => {
   }
   res.redirect(url);
 });
-
-// ─── GET /api/auth/lastfm/callback ─────────────────────────────────────────
-// Where Last.fm sends the browser back to after the user approves — still a
-// full-page navigation, so requireAuth relies on the same-site auth cookie
-// (SameSite=Lax allows it on a top-level GET like this one; see
-// middleware/auth.ts's setAuthCookie). Redirects back into the SPA either
-// way so the result shows up as a normal Profile page state, not a bare API
-// response the user would otherwise land on.
 
 router.get('/lastfm/callback', requireAuth, async (req: AuthRequest, res, next) => {
   try {

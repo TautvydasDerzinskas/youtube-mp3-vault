@@ -171,6 +171,7 @@
       "title": "Last.fm",
       "description": "Połącz swoje konto Last.fm, aby zapisywać (scrobblować) utwory, których wysłuchasz do końca.",
       "connect": "Połącz z Last.fm",
+      "offlineNotice": "Usługa nie ma teraz połączenia z internetem, więc łączenie jest niedostępne.",
       "connectedAs": "Połączono jako {{username}}",
       "enableScrobbling": "Zapisuj utwory, których wysłucham do końca",
       "disconnect": "Rozłącz",

@@ -20,10 +20,6 @@ import { requireAuth } from './middleware/auth';
 
 const app = express();
 
-// Number of reverse-proxy hops in front of this app. Set to the highest hop
-// count across deployment topologies (nginx alone = 1; nginx behind an
-// external reverse proxy, e.g. Apache doing SSL termination on a NAS = 2) —
-// a shorter chain than this still resolves correctly, so this is safe for both.
 app.set('trust proxy', 2);
 app.use(helmet());
 app.use(cors({ origin: config.frontendUrl, credentials: true }));
@@ -46,10 +42,6 @@ app.use(errorHandler);
 
 app.listen(config.port, '0.0.0.0', async () => {
   console.log(`[server] Backend listening on port ${config.port} (${config.nodeEnv})`);
-  // Runs on every boot, before any request can be served — seeds the
-  // AppSettings row from env on a fresh database, or just loads the
-  // already-saved one, then caches it. mailer.ts and the admin settings
-  // routes read the cache, never the DB, from here on (see services/settings.ts).
   await loadSettings();
   await resetStuckSyncs();
   if (config.appEnv === 'dev') {
@@ -62,5 +54,4 @@ app.listen(config.port, '0.0.0.0', async () => {
   startMetadataWorker();
   startAudioAnalysisWorker();
 });
-
 

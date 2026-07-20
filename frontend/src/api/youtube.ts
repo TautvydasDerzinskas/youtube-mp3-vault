@@ -33,24 +33,13 @@ export interface PlaylistVideo {
   artist: string | null;
   album: string | null;
   trackNumber: number | null;
-  // Zero or more tags — a broad parent genre like "Electronic" covers wildly
-  // different-sounding music, so a track can carry more than one (a genuine
-  // Electronic/Hip Hop hybrid, say) plus a specific style. Empty, not absent,
-  // when nothing's been determined yet.
   genres: string[];
   releaseYear: number | null;
   metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
-  // Bumped by markPlayed() below whenever this track finishes playing
-  // naturally — internal listening stats, independent of Last.fm
-  // scrobbling. No UI consumes these yet.
   playCount: number;
   lastPlayedAt: string | null;
 }
 
-// "Sounds like this" — ranked by Essentia audio-embedding cosine similarity
-// (see backend/src/routes/youtube.ts), not genre matching. Spans every
-// playlist the user owns, not just the one the source track is in — hence
-// playlistId is included, to link into that track's own detail page.
 export interface RecommendedTrack {
   id: string;
   playlistId: string;
@@ -73,11 +62,6 @@ export interface RemixResult {
   duration: number | null;
 }
 
-// "You might also like", sourced from Last.fm (outside the local library —
-// see /recommendations for the in-library equivalent). youtubeId is a
-// best-guess match resolved server-side and may be null if nothing was
-// found; spotifySearchUrl is always present since it's just a constructed
-// deep link, no API/auth needed to build it.
 export interface DiscoverResult {
   artist: string;
   title: string;
@@ -143,9 +127,6 @@ export const playlistsApi = {
     return data;
   },
 
-  // Called once a track finishes playing naturally — bumps its internal play
-  // count and, if the user has scrobbling on, best-effort scrobbles to
-  // Last.fm server-side. See PlayerContext's handleTrackEnded.
   markPlayed: async (playlistId: string, videoId: string): Promise<{ playCount: number; lastPlayedAt: string }> => {
     const { data } = await client.post<{ playCount: number; lastPlayedAt: string }>(
       `/playlists/${playlistId}/videos/${videoId}/played`

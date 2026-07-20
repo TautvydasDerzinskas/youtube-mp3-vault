@@ -13,9 +13,6 @@ interface InfoProps {
 
 export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
   const { t } = useTranslation();
-  // Failed videos are done being processed too (just unsuccessfully) — count
-  // them toward progress so the bar doesn't stall short of 100% while a sync
-  // with some failures is otherwise finished.
   const progress = playlist.videoCount > 0
     ? Math.round(((playlist.downloadedCount + playlist.failedCount) / playlist.videoCount) * 100) : 0;
 

@@ -4,11 +4,6 @@ import {
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
 import { NowPlaying } from '../pages/PlaylistsPage/types';
 
-// Most queues (a playlist's own track list) are all from one playlist, so
-// callers just pass PlaylistVideo[] and every track plays from `playlistId`.
-// A queue that spans playlists — e.g. "similar songs", which pulls from
-// across the whole library — tags each track with its own playlistId so
-// next/prev/auto-advance stream from the right playlist per track.
 export type QueueTrack = PlaylistVideo & { playlistId?: string };
 
 interface PlayerContextType {
@@ -17,24 +12,9 @@ interface PlayerContextType {
   isAudioPlaying: boolean;
   setIsAudioPlaying: (playing: boolean) => void;
   audioRef: React.RefObject<HTMLAudioElement>;
-  /**
-   * Web Audio analyser wired to the shared <audio> element, for anything
-   * that wants to react to what's currently playing (e.g. the sidebar's
-   * glow effect) — null whenever nothing is playing, or if Web Audio isn't
-   * available/failed to initialize. Deliberately NOT a per-frame number:
-   * this object reference only changes on play/stop, so consumers pull
-   * frequency data themselves in their own rAF loop instead of forcing
-   * every context consumer in the app to re-render 60 times a second.
-   */
   analyserNode: AnalyserNode | null;
   hasNext: boolean;
   hasPrevious: boolean;
-  /**
-   * `queue`, when given, is used verbatim as the play/next/previous order
-   * instead of auto-fetching+sorting the whole playlist by position — e.g.
-   * the playlist detail page passes its current genre-filtered track list so
-   * next/prev/auto-advance stay within that filtered set.
-   */
   handleTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: QueueTrack[]) => void;
   playNext: () => void;
   playPrevious: () => void;
@@ -45,15 +25,6 @@ interface PlayerContextType {
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
-/**
- * Owns the single shared <audio> element and "now playing" state at the app
- * layout level (rather than per-page) so playback survives route changes.
- * The playable queue is resolved once, at the moment playback starts (either
- * from an explicit queue the caller hands in, or auto-fetched+sorted by
- * position otherwise) — not kept reactively in sync with the source
- * playlist — so it keeps working correctly after navigating away from
- * whatever page started it.
- */
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<{ playlistId: string; video: PlaylistVideo } | null>(null);
   const [queue, setQueue] = useState<QueueTrack[]>([]);
@@ -62,10 +33,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentRef = useRef(current);
   currentRef.current = current;
-  // Web Audio's createMediaElementSource can only ever be called once per
-  // <audio> element (throws on a second call), so this remembers the graph
-  // per element to survive effect re-runs — most notably React StrictMode's
-  // dev-only setup→cleanup→setup double-invoke, which would otherwise crash.
   const audioGraphRef = useRef<{ el: HTMLAudioElement; ctx: AudioContext; analyser: AnalyserNode } | null>(null);
 
   useEffect(() => {
@@ -74,12 +41,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current.play().catch(() => {});
   }, [current]);
 
-  // Purely cosmetic (drives the sidebar's playback glow) — never allowed to
-  // affect real playback, so every failure mode here just leaves the effect
-  // off rather than throwing. Keyed on "is a session active" rather than on
-  // `current` itself, so it sets up once per mini-player mount and survives
-  // track-to-track changes within that session instead of tearing down and
-  // recreating the AudioContext on every skip.
   const isPlayingSession = Boolean(current);
   useEffect(() => {
     if (!isPlayingSession) return;
@@ -152,9 +113,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [queue]);
 
   const handleTrackEnded = useCallback(() => {
-    // Fire-and-forget — internal play-count/last-played and any Last.fm
-    // scrobble happen server-side (see POST .../played); queue advance below
-    // must never wait on or be affected by that call.
     const prev = currentRef.current;
     if (prev) playlistsApi.markPlayed(prev.playlistId, prev.video.id).catch(() => {});
 

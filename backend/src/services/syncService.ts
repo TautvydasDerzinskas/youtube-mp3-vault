@@ -13,13 +13,6 @@ function isForeignKeyRestrictViolation(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003';
 }
 
-/**
- * Downloads (or reuses an existing shared copy of) a video and returns the
- * MediaFile row to attach to a PlaylistVideo. Two concurrent first-time
- * downloads of the same video race harmlessly here — whichever create() wins
- * is used by both, since publishToSharedStore already wrote equivalent bytes
- * to the same canonical path before either create() runs.
- */
 async function resolveMediaFile(youtubeId: string) {
   const existing = await prisma.mediaFile.findUnique({ where: { youtubeId } });
   if (existing) return existing;
@@ -38,11 +31,6 @@ async function resolveMediaFile(youtubeId: string) {
   }
 }
 
-/**
- * Deletes a MediaFile (and its physical file) iff no PlaylistVideo still
- * references it — relies on the mediaFileId FK's onDelete: Restrict to make
- * that check atomic at the DB level instead of scanning for referrers.
- */
 async function tryDeleteMediaFile(mediaFileId: string): Promise<void> {
   let mediaFile;
   try {
@@ -61,10 +49,6 @@ export function isSyncing(playlistId: string): boolean {
   return activeSyncs.has(playlistId);
 }
 
-/**
- * Reset any "stuck" states left over from a previous server crash.
- * Call once on startup.
- */
 export async function resetStuckSyncs(): Promise<void> {
   const [playlists, videos] = await Promise.all([
     prisma.playlist.updateMany({
@@ -83,18 +67,10 @@ export async function resetStuckSyncs(): Promise<void> {
   }
 }
 
-/**
- * Internal: iterate all pending videos for a playlist and download them.
- * Caller is responsible for managing activeSyncs and setting syncStatus before calling.
- * Sets syncStatus → 'idle' | 'error' when finished.
- */
 async function _downloadPending(playlistId: string): Promise<void> {
   try {
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      // Re-check pause state before every video so clicking "Pause" mid-sync
-      // takes effect as soon as the in-flight download finishes, instead of
-      // running through the whole remaining queue.
       const current = await prisma.playlist.findUnique({
         where: { id: playlistId },
         select: { syncPaused: true },
@@ -128,10 +104,6 @@ async function _downloadPending(playlistId: string): Promise<void> {
       } catch (err) {
         const message = (err as Error).message;
         console.error(`[sync] ✗ ${video.youtubeId}:`, message);
-        // A permanently-blocked video (removed/private/geo-blocked/copyright) will
-        // fail identically forever — flag it as unavailable so it's hidden from
-        // the UI, excluded from failed-count/progress stats, and never retried,
-        // instead of sitting as a "failed" row the user can't do anything about.
         await prisma.playlistVideo.update({
           where: { id: video.id },
           data: isPermanentlyUnavailable(message)
@@ -153,20 +125,12 @@ async function _downloadPending(playlistId: string): Promise<void> {
   }
 }
 
-/**
- * Start downloading pending videos in the background (no metadata re-fetch).
- * Used after POST /api/playlists where metadata was already fetched.
- */
 export function startBackgroundDownload(playlistId: string): void {
   if (activeSyncs.has(playlistId)) return;
   activeSyncs.add(playlistId);
   _downloadPending(playlistId).finally(() => activeSyncs.delete(playlistId));
 }
 
-/**
- * Full sync: re-fetch video list → diff against DB → remove deleted → add new → download pending.
- * Used by the manual sync button and the cron job.
- */
 export async function syncPlaylist(playlistId: string): Promise<void> {
   if (activeSyncs.has(playlistId)) {
     console.log(`[sync] ${playlistId} already syncing — skipped`);
@@ -242,9 +206,6 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
       data: { title: info.title, thumbnailUrl: info.thumbnailUrl, videoCount: info.videos.length },
     });
 
-    // ── 6. Download pending videos ────────────────────────────────────────────
-    // (MusicBrainz metadata enrichment runs independently — see metadataWorker.ts —
-    // so a large backlog there never blocks this from downloading new videos.)
     await _downloadPending(playlistId);
     // _downloadPending sets syncStatus → idle / error
 
@@ -258,10 +219,6 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
   }
 }
 
-/**
- * Retry only the videos that previously failed to download (no metadata re-fetch).
- * Used by the "Retry failed" button — only sensible once a sync has already run.
- */
 export function retryFailedVideos(playlistId: string): void {
   if (activeSyncs.has(playlistId)) return;
   activeSyncs.add(playlistId);
@@ -289,9 +246,6 @@ export function retryFailedVideos(playlistId: string): void {
   })();
 }
 
-/**
- * Sync every non-paused playlist in the system — used by the cron job.
- */
 export async function syncAllPlaylists(): Promise<void> {
   const playlists = await prisma.playlist.findMany({
     select: { id: true },
@@ -307,12 +261,6 @@ export async function syncAllPlaylists(): Promise<void> {
   }
 }
 
-/**
- * Pause/unpause syncing for a playlist. While paused, the cron job skips it
- * entirely, and any in-progress or newly-triggered download loop stops before
- * starting its next video (metadata refresh via "Sync now" still runs, but no
- * further videos are downloaded until resumed).
- */
 export async function setSyncPaused(playlistId: string, paused: boolean) {
   return prisma.playlist.update({
     where: { id: playlistId },
@@ -320,12 +268,6 @@ export async function setSyncPaused(playlistId: string, paused: boolean) {
   });
 }
 
-/**
- * GC shared media files that were only referenced by this now-deleted
- * playlist. Callers must gather `mediaFileIds` via `mediaFilesUsedBy` BEFORE
- * deleting the playlist — the playlist_videos rows (and their references)
- * are gone by the time this runs, via cascade delete.
- */
 export async function cleanupMediaFiles(mediaFileIds: string[]): Promise<void> {
   for (const id of mediaFileIds) {
     await tryDeleteMediaFile(id);

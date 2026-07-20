@@ -16,9 +16,6 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-// Shared by Sidebar (desktop) and MobileTopBar (small screens) — via the
-// shared NavList component that renders this — so the two stay in sync
-// automatically instead of duplicating this list.
 export function useNavItems(): NavItem[] {
   const { t } = useTranslation();
   const { user } = useAuth();

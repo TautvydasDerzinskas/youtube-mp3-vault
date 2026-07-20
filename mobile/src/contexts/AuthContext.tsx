@@ -15,9 +15,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Runs once on launch: a token left over from a previous session is still
-  // in SecureStore, so the user stays signed in across app restarts until
-  // they explicitly log out — no re-login on every open.
   useEffect(() => {
     (async () => {
       const token = await tokenStorage.get();

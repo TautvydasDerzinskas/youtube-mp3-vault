@@ -3,11 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 
-/**
- * Owns every piece of state and every handler for the login/register card —
- * the two form field sets, the shared error/tab/resend state, and the
- * submit handlers — so the page component can stay a plain layout.
- */
 export function useLoginState() {
   const { t } = useTranslation();
   const { login, register, resendVerification } = useAuth();

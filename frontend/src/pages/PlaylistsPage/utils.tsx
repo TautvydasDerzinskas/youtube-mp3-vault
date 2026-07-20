@@ -25,12 +25,6 @@ export function youtubeWatchUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
-// Genre values are consistently capitalized going forward (see
-// audioAnalysisWorker.ts), but tracks analyzed before that — or still
-// carrying an old pre-Essentia MusicBrainz genre tag — can have arbitrary
-// casing. Grouping/filtering key: trimmed + lowercased, so "Electronic" and
-// "electronic" are treated as the same genre instead of producing duplicate
-// chips.
 export function normalizeGenreKey(genre: string): string {
   return genre.trim().toLowerCase();
 }
@@ -42,10 +36,6 @@ export function formatGenre(genre: string): string {
   return trimmed.length > 0 ? trimmed.charAt(0).toUpperCase() + trimmed.slice(1) : trimmed;
 }
 
-// YouTube's own audio-only streams are typically ~128-160kbps opus/aac even at
-// "best" quality, so a bar like 320kbps would flag almost everything. This is
-// meant to single out unusually bad sources (old/re-encoded uploads), not to
-// second-guess YouTube's normal ceiling.
 export const LOW_BITRATE_THRESHOLD_KBPS = 96;
 
 export function isLowBitrate(bitrate: number | null): boolean {

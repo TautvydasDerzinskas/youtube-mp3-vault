@@ -13,9 +13,6 @@ export interface AdminUser {
   playlistCount: number;
 }
 
-// host: null means email verification is off — see backend's
-// skipsEmailVerification. Values (including password) are returned as-is,
-// not masked — see routes/admin.ts's GET /settings for why that's fine here.
 export interface SmtpSettings {
   host: string | null;
   port: number;
@@ -69,9 +66,6 @@ export const adminApi = {
     return data.smtp;
   },
 
-  // Backend tests the connection before applying it — rejects (422) instead
-  // of switching if it can't connect or the target isn't already a migrated
-  // instance of this app's schema. See services/prisma.ts's switchDatabase.
   updatePostgresSettings: async (settings: PostgresSettings): Promise<PostgresSettings> => {
     const { data } = await client.post<{ postgres: PostgresSettings }>('/admin/settings/postgres', settings);
     return data.postgres;

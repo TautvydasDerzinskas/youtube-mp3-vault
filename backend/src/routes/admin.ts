@@ -107,12 +107,6 @@ router.post('/users/:id/unban', async (req, res, next) => {
   }
 });
 
-// ─── GET /api/admin/settings ───────────────────────────────────────────────
-// Returns live values, passwords included — this is a single-admin,
-// self-hosted app where the admin already controls these values directly in
-// their own docker-compose environment, so there's no separation-of-trust
-// reason to mask them the way a multi-tenant SaaS admin panel would.
-
 router.get('/settings', async (_req, res, next) => {
   try {
     res.json({ smtp: getSmtpSettings(), postgres: getPostgresSettings(), lastfm: getLastfmSettings() });
@@ -120,11 +114,6 @@ router.get('/settings', async (_req, res, next) => {
     next(err);
   }
 });
-
-// ─── PATCH /api/admin/settings/smtp ────────────────────────────────────────
-// All fields optional — an empty host is a valid, deliberate "turn email
-// verification off" state (see skipsEmailVerification in routes/auth.ts),
-// not a validation error.
 
 router.patch('/settings/smtp', async (req, res, next) => {
   try {
@@ -153,12 +142,6 @@ router.patch('/settings/smtp', async (req, res, next) => {
   }
 });
 
-// ─── POST /api/admin/settings/postgres ─────────────────────────────────────
-// Unlike SMTP, this tests before ever touching the live connection —
-// switchDatabase() (see services/prisma.ts) rejects unreachable credentials
-// and databases that aren't already-migrated instances of this app's own
-// schema, so a typo here can't take the app down.
-
 router.post('/settings/postgres', async (req, res, next) => {
   try {
     const { database, user, password } = req.body as Record<string, unknown>;
@@ -186,11 +169,6 @@ router.post('/settings/postgres', async (req, res, next) => {
     next(err);
   }
 });
-
-// ─── PATCH /api/admin/settings/lastfm ──────────────────────────────────────
-// Both fields optional — apiKey alone enables Discover; both together are
-// needed before any user's "Connect to Last.fm" option appears (see
-// isLastfmScrobblingConfigured in services/settings.ts).
 
 router.patch('/settings/lastfm', async (req, res, next) => {
   try {

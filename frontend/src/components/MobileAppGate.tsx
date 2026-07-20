@@ -12,14 +12,6 @@ function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
-/**
- * Full-screen, dismissible cover shown when the web app is opened from a
- * phone browser — the actual mobile experience only exists as the native
- * Android app, so this points there instead of letting someone use the
- * desktop-oriented web UI awkwardly on a small screen. Above every other
- * layer (sidebar/dialogs/snackbars) so it truly blocks the app until
- * dismissed, at which point the web app behaves completely normally.
- */
 export function MobileAppGate() {
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISSED_KEY) === 'true');

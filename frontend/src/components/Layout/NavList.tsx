@@ -18,13 +18,6 @@ const selectedSx = {
   },
 };
 
-/**
- * Renders Sidebar's and MobileTopBar's nav items identically, including one
- * level of nesting (see the admin-only "Administration" item in
- * useNavItems.tsx) — a parent with children toggles its own Collapse instead
- * of navigating, auto-expanded whenever the current route is already inside
- * it.
- */
 export function NavList({ items, onNavigate }: NavListProps) {
   const navigate = useNavigate();
   const location = useLocation();

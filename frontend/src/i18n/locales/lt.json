@@ -170,6 +170,7 @@
       "title": "Last.fm",
       "description": "Prijunkite savo Last.fm paskyrą, kad būtų fiksuojamos (scrobbinamos) iki galo išklausytos dainos.",
       "connect": "Prisijungti prie Last.fm",
+      "offlineNotice": "Šiuo metu paslauga neturi interneto ryšio, todėl prisijungti negalima.",
       "connectedAs": "Prisijungta kaip {{username}}",
       "enableScrobbling": "Fiksuoti dainas, kurias išklausau iki galo",
       "disconnect": "Atsijungti",

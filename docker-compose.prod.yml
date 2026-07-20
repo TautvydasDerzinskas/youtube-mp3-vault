@@ -71,10 +71,6 @@ services:
     networks:
       - app-net
 
-  # Local, offline genre classification — opt-in via Compose profile, same
-  # reasoning as docker-compose.yml. Published as its own GHCR image (see
-  # .github/workflows/docker-publish.yml), amd64-only. Enable with:
-  #   docker compose -f docker-compose.prod.yml --profile audio-analysis up -d
   audio-analysis:
     profiles: ["audio-analysis"]
     image: ghcr.io/${GHCR_NAMESPACE:?GHCR_NAMESPACE is required, e.g. yourname/youtube-music-playlist-vault}/audio-analysis:${IMAGE_TAG:-latest}

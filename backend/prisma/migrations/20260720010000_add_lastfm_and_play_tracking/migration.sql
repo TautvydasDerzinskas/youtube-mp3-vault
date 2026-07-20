@@ -1,6 +1,3 @@
--- Last.fm account link per user (see routes/auth.ts's /lastfm/connect +
--- /lastfm/callback) and internal per-track listening stats (see the new
--- POST .../played route in routes/youtube.ts).
 ALTER TABLE "users"
   ADD COLUMN "lastfmSessionKey" TEXT,
   ADD COLUMN "lastfmUsername" TEXT,

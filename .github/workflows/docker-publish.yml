@@ -31,13 +31,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
-  # Decides which of backend/frontend/audio-analysis/mobile should publish:
-  # on a push, whichever actually changed (via dorny/paths-filter, diffed
-  # against the pre-push commit); on a manual workflow_dispatch run, whichever
-  # the `component` input names (or all of them) — a push has no "component"
-  # input, and a manual dispatch has no before/after commit range to diff, so
-  # each event type is handled its own way in the "Decide what to publish"
-  # step below, which is what every publish job's `if:` actually reads.
   changes:
     needs: lint
     runs-on: ubuntu-latest
@@ -52,10 +45,6 @@ jobs:
         id: repo
         run: echo "lc=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      # paths-filter needs an actual git repo to diff against — fetch-depth 0
-      # (full history) rather than the default shallow depth-1 clone, since a
-      # push can carry more than one commit and a depth-1 clone wouldn't have
-      # github.event.before locally to diff against.
       - uses: actions/checkout@v4
         if: github.event_name == 'push'
         with:
@@ -129,13 +118,6 @@ jobs:
           cache-to: type=gha,mode=max
 
   publish-frontend:
-    # Frontend always ships the current Android APK baked in (see
-    # MobileAppGate in the web app) — not a link to something that can
-    # expire, an actual file in the image — so it needs a fresh one from
-    # android-apk on *every* publish, including one triggered only by a
-    # mobile change with no frontend source change of its own. The reverse
-    # holds too: android-apk itself runs whenever frontend OR mobile
-    # changed, for the same reason (see its `if:` below).
     needs: [changes, android-apk]
     if: |
       !failure() && !cancelled() &&
@@ -196,10 +178,6 @@ jobs:
 
   android-apk:
     needs: changes
-    # Runs whenever mobile changed (the normal case) OR frontend changed —
-    # the frontend's own image always needs a freshly built apk to embed
-    # (see publish-frontend above), so a frontend-only push still triggers a
-    # full mobile build here even though mobile/ itself didn't move.
     if: needs.changes.outputs.mobile == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     # Beyond the default contents: read — needed to create/update the
@@ -221,18 +199,6 @@ jobs:
           SHA: ${{ github.sha }}
         run: echo "short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
 
-      # When mobile/ didn't change this push (e.g. a frontend-only fix still
-      # triggers this job — see the `if:` above), the APK built below is
-      # byte-for-byte identical to the last real mobile release, and
-      # "Publish GitHub Release" further down deliberately skips publishing
-      # a new tag for it (see that step's comment). If EXPO_PUBLIC_BUILD_SHA
-      # were still set to *this* commit's sha, the app baked into this
-      # otherwise-identical APK would report a build identity with no
-      # matching release — useUpdateCheck.ts would then permanently believe
-      # a newer version exists, since the sha it's baked with never matches
-      # the latest GitHub Release tag. Reusing the last release's sha here
-      # keeps every reachable APK's baked identity consistent with an
-      # actual published release.
       - name: Determine build SHA
         id: build_sha
         env:
@@ -256,27 +222,10 @@ jobs:
         working-directory: mobile
         run: npm ci
 
-      # Generates the native android/ project from app.json — gitignored,
-      # regenerated fresh on every run (same as a developer running
-      # `expo prebuild` locally before opening Android Studio). Runs
-      # non-interactively because GitHub Actions sets CI=true. Must happen
-      # before setup-java below: its `cache: gradle` option hashes gradle
-      # files (gradlew, gradle-wrapper.properties, etc.) to key the cache,
-      # and those don't exist until this step generates them.
       - name: Prebuild native Android project
         working-directory: mobile
         run: npx expo prebuild --platform android
 
-      # The Expo/RN template's debug.keystore is a static file bundled with
-      # the tooling itself — the exact same key shipped in every
-      # unconfigured RN/Expo project, so it carries no real signing
-      # identity. This overwrites it with a private one only this repo's
-      # maintainer holds (generated locally, stored as this secret — see
-      # README), so consecutive builds actually share a stable identity and
-      # install as an in-place update instead of needing an uninstall each
-      # time. Same alias/password convention build.gradle already expects
-      # (androiddebugkey / android), so no build.gradle changes needed —
-      # just swap the file's bytes before the build reads it.
       - name: Install stable signing keystore
         working-directory: mobile
         env:
@@ -294,23 +243,6 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      # A *release* build, not debug: debug builds don't bundle the JS into
-      # the APK at all — they load it from a Metro dev server running on
-      # whatever machine built it, which is why a sideloaded debug APK
-      # errors with "unable to load script, is Metro running?" on a phone
-      # that obviously isn't on the same network as anyone's dev machine.
-      # Release bundles the JS in at build time (this gradle task runs
-      # Metro itself, once, as part of the build — nothing needs to be
-      # running afterward), producing a fully standalone APK. Still signed
-      # with our own stable key (the release build type also points
-      # signingConfig at signingConfigs.debug — see the previous step) and
-      # minification/shrinking stay off (project defaults), so this is
-      # otherwise identical to before, just self-contained. "Release" here
-      # only describes the build type, not Play Store distribution.
-      # EXPO_PUBLIC_* vars here are read by src/hooks/useUpdateCheck.ts,
-      # baked into the JS bundle by this same step, so a running app can
-      # identify its own build and compare it against the GitHub Release
-      # published below.
       - name: Build release APK
         working-directory: mobile/android
         env:
@@ -321,12 +253,6 @@ jobs:
       - name: Rename APK
         run: cp mobile/android/app/build/outputs/apk/release/app-release.apk YoutubeVault.apk
 
-      # Only when mobile itself actually changed — a rebuild triggered
-      # solely by a frontend change produces a byte-for-byte-equivalent apk
-      # (mobile/ source didn't move), so publishing it as a "new" release
-      # would just be a no-op entry that also spuriously tells every
-      # already-installed app "update available" via useUpdateCheck() (see
-      # above) for a build with nothing actually different in it.
       - name: Publish GitHub Release
         if: needs.changes.outputs.mobile == 'true'
         uses: softprops/action-gh-release@v2
@@ -335,9 +261,6 @@ jobs:
           name: Mobile ${{ steps.sha.outputs.short }}
           files: YoutubeVault.apk
 
-      # Always uploaded (even for a frontend-only-triggered build) — this is
-      # what publish-frontend downloads to embed, regardless of whether a
-      # GitHub Release was also published above.
       - uses: actions/upload-artifact@v4
         with:
           name: YoutubeVault-apk

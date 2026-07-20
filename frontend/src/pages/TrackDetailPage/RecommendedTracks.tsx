@@ -12,10 +12,6 @@ import { formatDuration, formatGenre } from '../PlaylistsPage/utils';
 import { NowPlaying } from '../PlaylistsPage/types';
 import { QueueTrack } from '../../contexts/PlayerContext';
 
-// Recommendations don't carry the full PlaylistVideo shape (no downloadStatus,
-// position, etc.) since the endpoint already filters to downloaded, analyzed
-// tracks — this fills in the rest with values the player never actually reads
-// for a queue track, so the list can double as a playable queue.
 function toQueueTrack(rec: RecommendedTrack): QueueTrack {
   return {
     id: rec.id,

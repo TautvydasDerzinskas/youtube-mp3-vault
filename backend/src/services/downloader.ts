@@ -18,11 +18,6 @@ export function sanitizeFilename(raw: string): string {
   ) || 'untitled';
 }
 
-/**
- * Single shared store for downloaded MP3s — one physical file per YouTube video ID.
- * Named "library" (not "shared") to avoid colliding with slskd's SLSKD_SHARED_DIR,
- * which points at <musicDir>/shared on this same volume for its own Soulseek uploads.
- */
 export function getSharedDir(): string {
   return join(config.musicDir, 'library');
 }
@@ -48,9 +43,6 @@ export async function removeSharedFile(filename: string): Promise<void> {
   }
 }
 
-// Distinguishes "this video will never download" (removed/private/geo-blocked/
-// copyright-blocked) from transient errors (network blips, PO-token 403s) that
-// are worth retrying — matched against yt-dlp's own error wording.
 const PERMANENT_UNAVAILABILITY_PATTERNS = [
   /video (is )?unavailable/i,
   /this video is (no longer available|not available|private)/i,
@@ -65,12 +57,6 @@ export function isPermanentlyUnavailable(message: string): boolean {
   return PERMANENT_UNAVAILABILITY_PATTERNS.some((re) => re.test(message));
 }
 
-/**
- * Downloads a single YouTube video as best-quality MP3 using yt-dlp + ffmpeg,
- * into a private per-attempt temp file (never the canonical shared path
- * directly — the caller renames it into place once it's ready, so concurrent
- * downloads of the same video never interleave writes to the same file).
- */
 export async function downloadVideo(
   videoId: string
 ): Promise<{ tempFilePath: string; fileSize: number; sourceBitrateKbps: number | null }> {
@@ -89,24 +75,11 @@ export async function downloadVideo(
       '--no-warnings',
       '--embed-thumbnail',
       '--add-metadata',
-      // The "web" client (yt-dlp's default) increasingly needs a PO token to avoid
-      // 403s on the actual media URL; falling back through these clients dodges
-      // most of that without requiring cookies. See yt-dlp/yt-dlp#14680, #16131.
       '--extractor-args', 'youtube:player_client=default,android,-tv',
-      // Long (1-2h+) sets fail more often than short videos — a single dropped
-      // connection over a long-lived transfer otherwise kills the whole file.
-      // Chunking the download into ranged requests means a blip only costs one
-      // chunk's retry, not the entire file; raising retries/fragment-retries and
-      // downloading fragments concurrently both help finish before any
-      // throttled/short-lived signed URL expires.
       '--http-chunk-size', '10M',
       '--retries', '20',
       '--fragment-retries', '20',
       '--concurrent-fragments', '4',
-      // Report the *source* stream's average bitrate, not our own transcode
-      // target — --audio-quality 0 always aims for the same ~245kbps VBR
-      // regardless of input, so measuring the output file can't tell a poor
-      // original upload from a good one. abr reflects what YouTube actually had.
       '--print', 'after_move:%(abr)s',
       '-o', outputTemplate,
       `https://www.youtube.com/watch?v=${videoId}`,
@@ -140,12 +113,6 @@ export async function downloadVideo(
   });
 }
 
-/**
- * Moves a completed temp download to its canonical shared-store path.
- * Atomic within the same filesystem — if two downloads of the same video
- * race here, the last rename simply wins with no partial/corrupt bytes,
- * and both sides produced equivalent content anyway.
- */
 export async function publishToSharedStore(tempFilePath: string, filename: string): Promise<void> {
   await rename(tempFilePath, getSharedFilePath(filename));
 }

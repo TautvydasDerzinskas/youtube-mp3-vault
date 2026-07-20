@@ -10,13 +10,6 @@ export interface SimilarTrack {
   matchScore: number;
 }
 
-/**
- * Best-effort Last.fm track.getsimilar lookup — powers the track page's
- * "Discover" section (external similar tracks, as opposed to /recommendations'
- * in-library ones). Mirrors musicbrainz.ts's contract: returns [] on no API
- * key, no connectivity, no match, or any request/parsing failure, never
- * throws — callers treat that as "nothing to show", not an error state.
- */
 export async function getSimilarTracks(artist: string, title: string, limit = 8): Promise<SimilarTrack[]> {
   const { apiKey } = getLastfmSettings();
   if (!apiKey || !isOnline()) return [];
@@ -50,23 +43,11 @@ export async function getSimilarTracks(artist: string, title: string, limit = 8)
   }
 }
 
-// Last.fm's signing scheme (distinct from OAuth — this is their older
-// "desktop application" auth flow, still the only way to get a scrobbling
-// session): sort params by key, concatenate key+value pairs with no
-// delimiter, append the shared secret, MD5 the result. Required on every
-// call below except track.getsimilar above (that one's read-only and only
-// needs the plain api_key). See https://www.last.fm/api/authspec.
 function sign(params: Record<string, string>, secret: string): string {
   const base = Object.keys(params).sort().map((k) => `${k}${params[k]}`).join('');
   return createHash('md5').update(base + secret, 'utf8').digest('hex');
 }
 
-/**
- * The URL to send a user to in order to authorize this app — Last.fm shows
- * its own login/approve page, then redirects back to `callbackUrl` with a
- * `?token=`. Null if apiKey isn't configured (caller should 503 rather than
- * redirect into a broken flow).
- */
 export function getAuthUrl(callbackUrl: string): string | null {
   const { apiKey } = getLastfmSettings();
   if (!apiKey) return null;
@@ -74,15 +55,9 @@ export function getAuthUrl(callbackUrl: string): string | null {
   return `https://www.last.fm/api/auth/?${params.toString()}`;
 }
 
-/**
- * Exchanges the token from getAuthUrl's callback for a permanent session
- * key (unlike OAuth, this never expires — only revocable from the user's own
- * Last.fm account settings, or by disconnecting in our Profile page). Null
- * on missing config, an invalid/expired token, or any request failure.
- */
 export async function getSession(token: string): Promise<{ sessionKey: string; username: string } | null> {
   const { apiKey, apiSecret } = getLastfmSettings();
-  if (!apiKey || !apiSecret) return null;
+  if (!apiKey || !apiSecret || !isOnline()) return null;
 
   const params: Record<string, string> = { method: 'auth.getSession', api_key: apiKey, token };
   const qs = new URLSearchParams({ ...params, api_sig: sign(params, apiSecret), format: 'json' });
@@ -100,13 +75,6 @@ export async function getSession(token: string): Promise<{ sessionKey: string; u
   }
 }
 
-/**
- * Records a completed play against the user's Last.fm profile. Best-effort
- * like getSimilarTracks — returns false rather than throwing, since a
- * scrobble failure should never surface as an error for "the song finished
- * playing" (see the /played route in routes/youtube.ts, which always applies
- * the internal play-count bump regardless of this call's outcome).
- */
 export async function scrobble(params: {
   sessionKey: string;
   artist: string;

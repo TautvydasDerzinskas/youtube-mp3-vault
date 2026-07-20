@@ -3,11 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { playlistsApi, Playlist } from '../../../api/youtube';
 import { VideoState } from '../types';
 
-/**
- * Owns the playlist list, its polling-while-syncing lifecycle, and every
- * playlist-level mutation (add/rename/sync/retry/pause/delete). Also owns the
- * per-playlist video cache, since the sync poll needs to refresh it in place.
- */
 export function usePlaylists() {
   const { t } = useTranslation();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -39,9 +34,6 @@ export function usePlaylists() {
     if (!hasSyncing) return;
     pollRef.current = setTimeout(async () => {
       const fresh = await loadPlaylists();
-      // Refresh the video list in place for the currently expanded playlist only —
-      // swap the array directly (never drop to the 'loading' cache state) so the
-      // list doesn't flash a spinner and reset its scroll position mid-sync.
       const currentExpanded = expandedRef.current;
       if (currentExpanded) {
         playlistsApi.getVideos(currentExpanded)

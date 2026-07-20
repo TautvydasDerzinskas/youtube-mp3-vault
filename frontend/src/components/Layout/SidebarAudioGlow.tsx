@@ -2,16 +2,6 @@ import { useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
 import { usePlayer } from '../../contexts/PlayerContext';
 
-/**
- * Soft glow behind the sidebar logo that pulses with whatever's currently
- * playing in the mini player, and fades out (via its own effect cleanup)
- * the moment playback stops.
- *
- * Reads frequency data via its own requestAnimationFrame loop and writes
- * straight to the DOM through a ref — deliberately not React state, since
- * that would re-render (and re-render everything reading player context)
- * up to 60 times a second for a purely decorative effect.
- */
 export function SidebarAudioGlow() {
   const { analyserNode } = usePlayer();
   const glowRef = useRef<HTMLDivElement>(null);

@@ -9,6 +9,7 @@ import { ArrowBack as ArrowBackIcon, Logout as LogoutIcon } from '@mui/icons-mat
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../api/auth';
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, SupportedLanguage } from '../i18n';
+import { useOnlineStatus } from './PlaylistsPage/hooks/useOnlineStatus';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -17,14 +18,12 @@ export default function ProfilePage() {
     user, updateLanguage, updateProfile, logout,
     lastfmScrobblingAvailable, disconnectLastfm, setScrobbling,
   } = useAuth();
+  const online = useOnlineStatus();
   const [searchParams, setSearchParams] = useSearchParams();
   const lastfmResult = searchParams.get('lastfm');
   const [scrobblingLoading, setScrobblingLoading] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  // Strip ?lastfm=connected|error (left by the backend's /lastfm/callback
-  // redirect) once read, on mount only, so a later refresh of this same
-  // page doesn't re-show the alert.
   useEffect(() => {
     if (lastfmResult) setSearchParams({}, { replace: true });
   }, []);
@@ -197,9 +196,20 @@ export default function ProfilePage() {
           ) : (
             <Box sx={{ mb: 4 }}>
               <Typography color="text.secondary" mb={2}>{t('profile.lastfm.description')}</Typography>
-              <Button component="a" href={authApi.lastfmConnectUrl} variant="contained">
-                {t('profile.lastfm.connect')}
-              </Button>
+              {online ? (
+                <Button component="a" href={authApi.lastfmConnectUrl} variant="contained">
+                  {t('profile.lastfm.connect')}
+                </Button>
+              ) : (
+                <>
+                  <Button variant="contained" disabled sx={{ mb: 1 }}>
+                    {t('profile.lastfm.connect')}
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {t('profile.lastfm.offlineNotice')}
+                  </Typography>
+                </>
+              )}
             </Box>
           )}
         </>

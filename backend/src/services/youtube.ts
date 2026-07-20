@@ -48,9 +48,6 @@ export function normalizePlaylistUrl(raw: string): { url: string; playlistId: st
   };
 }
 
-// yt-dlp passes these through as the literal title for playlist entries that
-// point at private/deleted/geo-locked videos — YouTube itself renders these
-// placeholders in the playlist UI, they're not something we're inferring.
 const PLACEHOLDER_TITLE_RE = /^\[(private video|deleted video|video unavailable|unavailable)\]$/i;
 
 function isPlaceholderTitle(title: string | undefined): boolean {
@@ -65,10 +62,6 @@ function pickThumbnail(thumbnails: unknown): string | null {
   return (sorted[0]?.url as string) ?? null;
 }
 
-/**
- * Runs yt-dlp --flat-playlist against a normalised playlist URL and returns
- * structured playlist + video metadata.
- */
 export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> {
   return new Promise((resolve, reject) => {
     const args = [
@@ -117,9 +110,6 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
       const playlistTitle = (first.playlist_title ?? first.playlist ?? 'Unknown Playlist') as string;
       const playlistId = (first.playlist_id ?? '') as string;
 
-      // Private/deleted/region-locked entries always fail to download and never
-      // will — drop them here so they're never inserted, never attempted, and
-      // never counted, instead of showing up as permanent "failed" rows.
       const videos: VideoEntry[] = entries
         .map((e: Record<string, unknown>, idx: number) => ({
           id: e.id as string,
@@ -150,12 +140,6 @@ export interface RemixResult {
   duration: number | null;
 }
 
-/**
- * Runs a yt-dlp search and returns whatever JSON entries it prints — best
- * effort throughout (unlike fetchPlaylist, nothing here is critical-path):
- * yt-dlp missing, a search returning nothing, or malformed output all just
- * resolve to an empty list rather than rejecting.
- */
 function runYtDlpSearch(searchQuery: string): Promise<Record<string, unknown>[]> {
   return new Promise((resolve) => {
     const proc = spawn('yt-dlp', ['--flat-playlist', '--dump-json', '--no-warnings', '--ignore-errors', searchQuery]);
@@ -177,12 +161,6 @@ function runYtDlpSearch(searchQuery: string): Promise<Record<string, unknown>[]>
   });
 }
 
-// Tried in order against a candidate remix title to pull out *who* remixed
-// it — "(David Guetta Remix)", "[David Guetta Remix]", "Title - David Guetta
-// Remix", "Remix by David Guetta", and a bare "Title David Guetta Remix"
-// with no separator at all. The point isn't perfect attribution, just a
-// stable-enough key that the same remix retitled slightly differently
-// collapses to one dedup bucket instead of five near-identical rows.
 const REMIX_KEY_PATTERNS: RegExp[] = [
   /\(([^)]+?)\s*remix\)/i,
   /\[([^\]]+?)\s*remix\]/i,
@@ -208,20 +186,10 @@ function extractRemixKey(rawTitle: string): string {
   return normalizeKey(rawTitle);
 }
 
-/**
- * Searches YouTube (via yt-dlp's ytsearch, no API key) for remixes of a
- * track and de-dupes results that are the same remix reuploaded or retitled
- * slightly differently — see REMIX_KEY_PATTERNS. `query` should already be a
- * clean "artist title" string (see parseArtistAndTitle in musicbrainz.ts) —
- * this function only appends "remix" and doesn't otherwise clean it up.
- */
 export async function searchRemixes(query: string, excludeYoutubeId: string, limit = 5): Promise<RemixResult[]> {
   const trimmedQuery = query.trim();
   if (!trimmedQuery) return [];
 
-  // Search wider than `limit` — most of the raw hits will collapse into a
-  // handful of dedup buckets (or aren't remixes at all), so 5 raw results
-  // would rarely survive down to 5 *distinct* ones.
   const entries = await runYtDlpSearch(`ytsearch25:${trimmedQuery} remix`);
 
   const seenKeys = new Set<string>();
@@ -255,13 +223,6 @@ export interface YoutubeMatch {
   duration: number | null;
 }
 
-/**
- * Resolves a plain "artist title" query (e.g. from an external recommendation
- * source that has no YouTube ID of its own — see lastfm.ts) to a single best-
- * guess playable YouTube video, the same yt-dlp-search-no-API-key mechanism
- * searchRemixes uses. Best-effort: null on no match, yt-dlp down, or the only
- * hit being the track we're already looking at recommendations for.
- */
 export async function resolveTopMatch(query: string, excludeYoutubeId?: string): Promise<YoutubeMatch | null> {
   const trimmedQuery = query.trim();
   if (!trimmedQuery) return null;

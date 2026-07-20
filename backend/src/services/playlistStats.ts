@@ -7,9 +7,6 @@ export async function withDownloadStats<T extends { id: string; videoCount: numb
   }
 
   const [stats, downloading] = await Promise.all([
-    // Split by isAvailable too — a video flagged unavailable (permanently
-    // blocked/removed/private) is excluded from every count below, including
-    // the total, so it doesn't drag the progress bar/chip below 100% forever.
     prisma.playlistVideo.groupBy({
       by: ['playlistId', 'downloadStatus', 'isAvailable'],
       where: { playlistId: { in: playlists.map((p) => p.id) } },

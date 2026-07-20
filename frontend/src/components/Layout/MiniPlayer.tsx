@@ -21,13 +21,6 @@ interface MiniPlayerProps {
   onClose: () => void;
 }
 
-/**
- * Fixed bottom bar shown whenever a track is playing; owns no playback state itself.
- * Rendered from AppLayout (not a page) so it persists across route changes.
- * Left-offset by the sidebar width so it sits over the main content area only,
- * rather than overlaying the sidebar's user/profile strip — no offset on
- * mobile, where the sidebar is replaced by MobileTopBar (see AppLayout).
- */
 export function MiniPlayer({
   title, thumbnailUrl, audioRef, hasNext, hasPrevious,
   onPlay, onPause, onEnded, onNext, onPrevious, onClose,
