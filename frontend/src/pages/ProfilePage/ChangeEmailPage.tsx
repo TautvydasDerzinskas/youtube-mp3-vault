@@ -30,24 +30,26 @@ export default function ChangeEmailPage() {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 480 }}>
+    <Box sx={{ p: 3 }}>
       <ProfileHeader title={t('profile.changeEmailTitle')} onBack={() => navigate('/profile')} />
 
-      {user?.pendingEmail && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          {t('profile.pendingEmailNotice', { email: user.pendingEmail })}
-        </Alert>
-      )}
+      <Box sx={{ maxWidth: 480 }}>
+        {user?.pendingEmail && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {t('profile.pendingEmailNotice', { email: user.pendingEmail })}
+          </Alert>
+        )}
 
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField label={t('profile.email')} type="email" value={email}
-          onChange={e => setEmail(e.target.value)} required fullWidth />
-        <TextField label={t('profile.currentPassword')} type="password" value={password}
-          onChange={e => setPassword(e.target.value)} required fullWidth />
-        {error && <Alert severity="error">{error}</Alert>}
-        <Button type="submit" variant="contained" disabled={loading} sx={{ alignSelf: 'flex-start' }}>
-          {t('profile.saveEmail')}
-        </Button>
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField label={t('profile.email')} type="email" value={email}
+            onChange={e => setEmail(e.target.value)} required fullWidth />
+          <TextField label={t('profile.currentPassword')} type="password" value={password}
+            onChange={e => setPassword(e.target.value)} required fullWidth />
+          {error && <Alert severity="error">{error}</Alert>}
+          <Button type="submit" variant="contained" disabled={loading} sx={{ alignSelf: 'flex-start' }}>
+            {t('profile.saveEmail')}
+          </Button>
+        </Box>
       </Box>
     </Box>
   );

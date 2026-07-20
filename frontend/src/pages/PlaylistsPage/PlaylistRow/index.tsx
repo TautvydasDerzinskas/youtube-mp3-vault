@@ -15,6 +15,7 @@ interface PlaylistRowProps {
   onToggleExpand: (open: boolean) => void;
   isSyncingLocally: boolean;
   online: boolean;
+  canGenerateSimilar: boolean;
   videoCache: Record<string, VideoState>;
   setVideoCache: React.Dispatch<React.SetStateAction<Record<string, VideoState>>>;
   nowPlaying: NowPlaying | null;
@@ -25,16 +26,17 @@ interface PlaylistRowProps {
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
   onDelete: (playlist: Playlist) => void;
+  onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;
 }
 
 export function PlaylistRow({
-  playlist, expanded, onToggleExpand, isSyncingLocally, online,
+  playlist, expanded, onToggleExpand, isSyncingLocally, online, canGenerateSimilar,
   videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay,
-  onRename, onSync, onRetryFailed, onTogglePause, onDelete,
+  onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
 }: PlaylistRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const isBusy = playlist.syncStatus === 'syncing' || isSyncingLocally;
+  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isSyncingLocally;
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
   const isSynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
 
@@ -52,11 +54,13 @@ export function PlaylistRow({
           isBusy={isBusy}
           isPausing={isPausing}
           online={online}
+          canGenerateSimilar={canGenerateSimilar}
           onRename={onRename}
           onSync={onSync}
           onRetryFailed={onRetryFailed}
           onTogglePause={onTogglePause}
           onDelete={onDelete}
+          onGenerateSimilar={onGenerateSimilar}
         />
         <Tooltip title={t('playlists.openPlaylist')}>
           <IconButton size="small" onClick={e => { e.stopPropagation(); open(); }}>
@@ -88,11 +92,13 @@ export function PlaylistRow({
           isBusy={isBusy}
           isPausing={isPausing}
           online={online}
+          canGenerateSimilar={canGenerateSimilar}
           onRename={onRename}
           onSync={onSync}
           onRetryFailed={onRetryFailed}
           onTogglePause={onTogglePause}
           onDelete={onDelete}
+          onGenerateSimilar={onGenerateSimilar}
         />
       </AccordionSummary>
 

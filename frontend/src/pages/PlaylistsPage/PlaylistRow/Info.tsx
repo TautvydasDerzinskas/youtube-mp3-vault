@@ -29,10 +29,18 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
               sx={{ fontSize: 10, height: 18 }} />
           </Tooltip>
         )}
+        {playlist.sourcePlaylistName && (
+          <Tooltip title={t('playlists.generatedFrom', { name: playlist.sourcePlaylistName })}>
+            <Chip label={t('playlists.generatedBadge')} size="small" variant="outlined" color="secondary"
+              sx={{ fontSize: 10, height: 18 }} />
+          </Tooltip>
+        )}
       </Stack>
 
       <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
-        {isBusy ? (
+        {playlist.syncStatus === 'generating' ? (
+          <Chip label={t('playlists.generatingChip')} size="small" color="info" sx={{ fontSize: 11 }} />
+        ) : isBusy ? (
           <Chip label={t('playlists.syncing')} size="small" color="info" sx={{ fontSize: 11 }} />
         ) : (
           <Chip label={t('playlists.downloadedCount', { count: playlist.downloadedCount, total: playlist.videoCount })}

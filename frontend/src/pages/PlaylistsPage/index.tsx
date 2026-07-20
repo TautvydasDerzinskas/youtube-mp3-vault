@@ -6,6 +6,7 @@ import { Playlist } from '../../api/youtube';
 import { usePlaylists } from './hooks/usePlaylists';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { usePlayer } from '../../contexts/PlayerContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { AddPlaylistDialog } from './AddPlaylistDialog';
 import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
@@ -18,15 +19,35 @@ export default function PlaylistsPage() {
   const [renaming, setRenaming] = useState<Playlist | null>(null);
   const [deleting, setDeleting] = useState<Playlist | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [generating, setGenerating] = useState<Playlist | null>(null);
+  const [generateLoading, setGenerateLoading] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const online = useOnlineStatus();
+  const { lastfmDiscoverAvailable } = useAuth();
+  const canGenerateSimilar = online && lastfmDiscoverAvailable;
 
   const {
     playlists, loading, error, syncing, videoCache, setVideoCache,
     expanded, setExpanded, updatePlaylist, handleAdded, handleSync,
     handleRetryFailed, handleTogglePause, handleDelete: rawHandleDelete,
+    handleGenerateSimilar,
   } = usePlaylists();
 
   const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist } = usePlayer();
+
+  const handleConfirmGenerate = async () => {
+    if (!generating) return;
+    setGenerateLoading(true);
+    setGenerateError(null);
+    try {
+      await handleGenerateSimilar(generating.id);
+      setGenerating(null);
+    } catch (err: any) {
+      setGenerateError(err.response?.data?.error ?? t('playlists.generateSimilarError'));
+    } finally {
+      setGenerateLoading(false);
+    }
+  };
 
   // Composed here (rather than threaded through usePlaylists) so the two hooks
   // stay independent: stop playback if the playlist being deleted is playing.
@@ -55,6 +76,9 @@ export default function PlaylistsPage() {
       </Stack>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {generateError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setGenerateError(null)}>{generateError}</Alert>
+      )}
 
       {!online && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -79,6 +103,7 @@ export default function PlaylistsPage() {
           onToggleExpand={open => setExpanded(open ? playlist.id : false)}
           isSyncingLocally={syncing.has(playlist.id)}
           online={online}
+          canGenerateSimilar={canGenerateSimilar}
           videoCache={videoCache}
           setVideoCache={setVideoCache}
           nowPlaying={nowPlaying}
@@ -89,6 +114,7 @@ export default function PlaylistsPage() {
           onRetryFailed={handleRetryFailed}
           onTogglePause={handleTogglePause}
           onDelete={setDeleting}
+          onGenerateSimilar={(e, playlist) => { e.stopPropagation(); setGenerateError(null); setGenerating(playlist); }}
         />
       ))}
 
@@ -106,6 +132,16 @@ export default function PlaylistsPage() {
           loading={deleteLoading}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleting(null)}
+        />
+      )}
+      {generating && (
+        <ConfirmDialog
+          title={t('playlists.generateSimilarConfirm.title')}
+          message={t('playlists.generateSimilarConfirm.message', { name: displayName(generating) })}
+          confirmLabel={t('playlists.generateSimilar')}
+          loading={generateLoading}
+          onConfirm={handleConfirmGenerate}
+          onCancel={() => setGenerating(null)}
         />
       )}
     </Box>

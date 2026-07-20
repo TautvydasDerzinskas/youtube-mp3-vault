@@ -80,6 +80,11 @@
     "unavailableWhileSyncing": "Unavailable while syncing",
     "openPlaylist": "Open playlist",
     "moreActions": "More actions",
+    "generateSimilar": "Generate similar playlist",
+    "generateSimilarError": "Failed to start generating a similar playlist.",
+    "generatingChip": "Generating…",
+    "generatedBadge": "Generated",
+    "generatedFrom": "Based on {{name}}",
     "addDialog": {
       "title": "Add Playlist",
       "urlLabel": "YouTube Playlist URL",
@@ -115,6 +120,10 @@
     "deleteConfirm": {
       "title": "Remove playlist?",
       "message": "This will permanently delete \"{{name}}\" and all its downloaded files. This can't be undone."
+    },
+    "generateSimilarConfirm": {
+      "title": "Generate a similar playlist?",
+      "message": "This looks for an alternative or similar track for every song in \"{{name}}\" (via Last.fm, falling back to remixes/originals on YouTube) and builds a new playlist from the results. It can take a long time for large playlists, and the result is usually smaller than the source, since not every song has a good alternative."
     },
     "status": {
       "pending": "pending",

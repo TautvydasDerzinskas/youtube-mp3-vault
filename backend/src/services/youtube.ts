@@ -186,7 +186,7 @@ function extractRemixKey(rawTitle: string): string {
   return normalizeKey(rawTitle);
 }
 
-export async function searchRemixes(query: string, excludeYoutubeId: string, limit = 5): Promise<RemixResult[]> {
+export async function searchRemixes(query: string, excludeYoutubeIds: Set<string>, limit = 5): Promise<RemixResult[]> {
   const trimmedQuery = query.trim();
   if (!trimmedQuery) return [];
 
@@ -199,7 +199,7 @@ export async function searchRemixes(query: string, excludeYoutubeId: string, lim
 
     const id = e.id as string | undefined;
     const title = (e.title as string | undefined) ?? '';
-    if (!id || id === excludeYoutubeId || !title) continue;
+    if (!id || excludeYoutubeIds.has(id) || !title) continue;
     if (!/remix/i.test(title)) continue;
 
     const key = extractRemixKey(title);
@@ -215,6 +215,53 @@ export async function searchRemixes(query: string, excludeYoutubeId: string, lim
     });
   }
   return results;
+}
+
+// General-purpose multi-result search — unlike resolveTopMatch (which only
+// ever looks at YouTube's #1 hit), this returns up to `limit` candidates so a
+// caller can walk past ones that turn out to be duplicates/unusable. Used by
+// playlistGenerator.ts for both similar-track resolution and "search for the
+// original version" lookups.
+export async function searchTopMatches(query: string, limit = 10): Promise<RemixResult[]> {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) return [];
+
+  const entries = await runYtDlpSearch(`ytsearch${limit}:${trimmedQuery}`);
+  const results: RemixResult[] = [];
+  for (const e of entries) {
+    const id = e.id as string | undefined;
+    if (!id) continue;
+    results.push({
+      id,
+      title: (e.title as string | undefined) ?? '',
+      channelName: (e.channel as string | undefined) || (e.uploader as string | undefined) || null,
+      thumbnailUrl: pickThumbnail(e.thumbnails) ?? (e.thumbnail as string | null) ?? null,
+      duration: typeof e.duration === 'number' ? e.duration : null,
+    });
+  }
+  return results;
+}
+
+// Whether a title reads as a remix — same signal searchRemixes already uses
+// to gate its own results, exposed here so playlistGenerator.ts can decide
+// which fallback sub-tier applies (search for remixes vs. search for the
+// original).
+export function isRemixTitle(title: string): boolean {
+  return /remix/i.test(title);
+}
+
+// Strips a "(X Remix)"/"[X Remix]"/"- X Remix"-style qualifier off a title,
+// recovering a searchable query for the original version. Deliberately only
+// targets "remix" (matching isRemixTitle above), not the broader family of
+// mix/edit/bootleg wording — those are treated as legitimate track
+// information elsewhere in the app (see musicbrainz.ts), not something to
+// strip.
+export function stripRemixQualifier(title: string): string {
+  return title
+    .replace(/\s*[([][^)\]]*remix[^)\]]*[)\]]/gi, '')
+    .replace(/\s*[-–—]\s*[^-–—()[\]]*\bremix\b.*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export interface YoutubeMatch {

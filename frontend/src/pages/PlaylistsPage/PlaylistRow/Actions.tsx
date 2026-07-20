@@ -3,6 +3,7 @@ import { Box, IconButton, Tooltip, CircularProgress, Menu, MenuItem, ListItemIco
 import {
   Sync as SyncIcon, DeleteOutline as DeleteIcon, Edit as EditIcon, Replay as ReplayIcon,
   PauseCircleOutline as PauseIcon, PlayCircleOutline as ResumeIcon, MoreVert as MoreVertIcon,
+  AutoAwesome as GenerateSimilarIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
@@ -13,23 +14,32 @@ interface ActionsProps {
   isBusy: boolean;
   isPausing: boolean;
   online: boolean;
+  canGenerateSimilar: boolean;
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
   onDelete: (playlist: Playlist) => void;
+  onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;
 }
 
 export function Actions({
-  playlist, isBusy, isPausing, online, onRename, onSync, onRetryFailed, onTogglePause, onDelete,
+  playlist, isBusy, isPausing, online, canGenerateSimilar,
+  onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
 }: ActionsProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
-  const showSync = !playlist.syncPaused;
+  const isGenerated = Boolean(playlist.sourcePlaylistId);
+  const showSync = !isGenerated && !playlist.syncPaused;
   const showRetry = !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
-  const showPauseToggle = isBusy || playlist.syncPaused;
+  const showPauseToggle = !isGenerated && (isBusy || playlist.syncPaused);
+  // "Synced" here mirrors PlaylistRow/index.tsx's isSynced — only offer this
+  // on a playlist that's actually finished downloading something, not one
+  // still mid-first-sync or a generated playlist itself.
+  const isFullySynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
+  const showGenerateSimilar = !isGenerated && isFullySynced && canGenerateSimilar;
 
   if (isMobile) {
     const closeMenu = () => setMenuAnchor(null);
@@ -59,6 +69,12 @@ export function Actions({
             <MenuItem disabled={isPausing || !online} onClick={e => { closeMenu(); onTogglePause(e, playlist); }}>
               <ListItemIcon>{playlist.syncPaused ? <ResumeIcon fontSize="small" /> : <PauseIcon fontSize="small" />}</ListItemIcon>
               <ListItemText>{playlist.syncPaused ? t('playlists.resumeSync') : t('playlists.pauseSync')}</ListItemText>
+            </MenuItem>
+          )}
+          {showGenerateSimilar && (
+            <MenuItem onClick={e => { closeMenu(); onGenerateSimilar(e, playlist); }}>
+              <ListItemIcon><GenerateSimilarIcon fontSize="small" /></ListItemIcon>
+              <ListItemText>{t('playlists.generateSimilar')}</ListItemText>
             </MenuItem>
           )}
           <MenuItem disabled={isPausing || isBusy} onClick={() => { closeMenu(); onDelete(playlist); }} sx={{ color: 'error.main' }}>
@@ -105,6 +121,13 @@ export function Actions({
               {playlist.syncPaused ? <ResumeIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
             </IconButton>
           </span>
+        </Tooltip>
+      )}
+      {showGenerateSimilar && (
+        <Tooltip title={t('playlists.generateSimilar')}>
+          <IconButton size="small" onClick={e => onGenerateSimilar(e, playlist)}>
+            <GenerateSimilarIcon fontSize="small" />
+          </IconButton>
         </Tooltip>
       )}
       <Tooltip title={isBusy ? t('playlists.unavailableWhileSyncing') : t('playlists.remove')}>

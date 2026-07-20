@@ -92,6 +92,13 @@ export async function refreshPlaylistFromYoutube(playlistId: string): Promise<vo
     where: { id: playlistId },
     select: { id: true, youtubeId: true },
   });
+  if (!playlist.youtubeId) {
+    // Generated playlists have no real YouTube counterpart to refresh from —
+    // this should never actually be reachable for one (see syncAllPlaylists'
+    // filter and Actions.tsx hiding Sync), but fail loudly rather than
+    // silently building a broken fetch URL if it ever is.
+    throw new Error(`Playlist ${playlistId} has no youtubeId — cannot sync a generated playlist`);
+  }
 
   // ── 1. Fetch current video list ────────────────────────────────────────────
   const info = await fetchPlaylist(
@@ -148,7 +155,11 @@ export async function refreshPlaylistFromYoutube(playlistId: string): Promise<vo
   });
 }
 
-async function _downloadPending(playlistId: string): Promise<void> {
+// Exported (not just used internally) so the admin soft-reimport and
+// playlist-generation flows can await the same download-then-metadata pass
+// directly, instead of going through the fire-and-forget
+// startBackgroundDownload wrapper meant for HTTP handlers that can't block.
+export async function downloadPendingVideos(playlistId: string): Promise<void> {
   try {
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -213,7 +224,7 @@ async function _downloadPending(playlistId: string): Promise<void> {
 export function startBackgroundDownload(playlistId: string): void {
   if (activeSyncs.has(playlistId)) return;
   activeSyncs.add(playlistId);
-  _downloadPending(playlistId).finally(() => activeSyncs.delete(playlistId));
+  downloadPendingVideos(playlistId).finally(() => activeSyncs.delete(playlistId));
 }
 
 export async function syncPlaylist(playlistId: string): Promise<void> {
@@ -239,8 +250,8 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
 
   try {
     await refreshPlaylistFromYoutube(playlistId);
-    await _downloadPending(playlistId);
-    // _downloadPending sets syncStatus → idle / error
+    await downloadPendingVideos(playlistId);
+    // downloadPendingVideos sets syncStatus → idle / error
 
   } catch (err) {
     console.error(`[sync] Error syncing playlist ${playlistId}:`, err);
@@ -266,8 +277,8 @@ export function retryFailedVideos(playlistId: string): void {
         where: { playlistId, downloadStatus: 'failed', isAvailable: true },
         data: { downloadStatus: 'pending', downloadError: null },
       });
-      await _downloadPending(playlistId);
-      // _downloadPending sets syncStatus → idle / error
+      await downloadPendingVideos(playlistId);
+      // downloadPendingVideos sets syncStatus → idle / error
     } catch (err) {
       console.error(`[sync] Error retrying failed videos for playlist ${playlistId}:`, err);
       await prisma.playlist
@@ -282,7 +293,9 @@ export function retryFailedVideos(playlistId: string): void {
 export async function syncAllPlaylists(): Promise<void> {
   const playlists = await prisma.playlist.findMany({
     select: { id: true },
-    where: { syncStatus: { not: 'syncing' }, syncPaused: false },
+    // Generated playlists (youtubeId null) have no real playlist to sync
+    // against — syncPlaylist would just error out on them.
+    where: { syncStatus: { not: 'syncing' }, syncPaused: false, youtubeId: { not: null } },
   });
   console.log(`[scheduler] Syncing ${playlists.length} playlist(s)`);
   for (const { id } of playlists) {
@@ -304,6 +317,22 @@ export async function setSyncPaused(playlistId: string, paused: boolean) {
 export async function cleanupMediaFiles(mediaFileIds: string[]): Promise<void> {
   for (const id of mediaFileIds) {
     await tryDeleteMediaFile(id);
+  }
+}
+
+// Used by the audio-analysis dedup check for generated playlists (see
+// audioAnalysisWorker.ts) — a candidate turned out, after analysis, to be an
+// audio duplicate of something already in the source or generated playlist,
+// so it's dropped outright rather than kept as a "removed" row, since it was
+// never a real entry from the user's perspective.
+export async function removeDuplicateVideo(playlistVideoId: string, mediaFileId: string | null): Promise<void> {
+  const video = await prisma.playlistVideo.delete({ where: { id: playlistVideoId } });
+  await prisma.playlist.update({
+    where: { id: video.playlistId },
+    data: { videoCount: { decrement: 1 } },
+  });
+  if (mediaFileId) {
+    await tryDeleteMediaFile(mediaFileId);
   }
 }
 

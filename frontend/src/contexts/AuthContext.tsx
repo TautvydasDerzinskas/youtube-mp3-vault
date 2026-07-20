@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   lastfmScrobblingAvailable: boolean;
+  lastfmDiscoverAvailable: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<RegisterResponse>;
   verifyEmail: (token: string) => Promise<void>;
@@ -36,12 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastfmScrobblingAvailable, setLastfmScrobblingAvailable] = useState(false);
+  const [lastfmDiscoverAvailable, setLastfmDiscoverAvailable] = useState(false);
 
   const refreshUser = useCallback(async () => {
     try {
-      const { user, lastfmScrobblingAvailable } = await authApi.me();
+      const { user, lastfmScrobblingAvailable, lastfmDiscoverAvailable } = await authApi.me();
       setUser(applyUser(user));
       setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
+      setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
     } catch {
       setUser(null);
     }
@@ -101,8 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user, loading, lastfmScrobblingAvailable, login, register, verifyEmail, resendVerification,
-        logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
+        user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, login, register, verifyEmail,
+        resendVerification, logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
       }}
     >
       {children}

@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../services/prisma';
 import { sendVerificationEmail } from '../services/mailer';
-import { isSmtpConfigured, isLastfmScrobblingConfigured } from '../services/settings';
+import { isSmtpConfigured, isLastfmScrobblingConfigured, isLastfmDiscoverEnabled } from '../services/settings';
 import { getAuthUrl, getSession } from '../services/lastfm';
 import { isOnline } from '../services/connectivity';
 import { config } from '../config';
@@ -269,7 +269,11 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    res.json({ user: toSafeUser(user), lastfmScrobblingAvailable: isLastfmScrobblingConfigured() });
+    res.json({
+      user: toSafeUser(user),
+      lastfmScrobblingAvailable: isLastfmScrobblingConfigured(),
+      lastfmDiscoverAvailable: isLastfmDiscoverEnabled(),
+    });
   } catch (err) {
     next(err);
   }

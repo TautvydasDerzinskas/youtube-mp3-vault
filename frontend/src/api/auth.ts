@@ -18,6 +18,10 @@ interface AuthResponse {
 interface MeResponse {
   user: User;
   lastfmScrobblingAvailable: boolean;
+  // Just the app-level Last.fm API key being configured — no per-user login
+  // needed. Gates the read-only Discover feature and "Generate similar
+  // playlist", as distinct from lastfmScrobblingAvailable above.
+  lastfmDiscoverAvailable: boolean;
 }
 
 export type RegisterResponse =

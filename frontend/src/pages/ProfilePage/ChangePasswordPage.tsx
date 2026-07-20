@@ -40,21 +40,23 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 480 }}>
+    <Box sx={{ p: 3 }}>
       <ProfileHeader title={t('profile.changePassword')} onBack={() => navigate('/profile')} />
 
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField label={t('profile.currentPassword')} type="password" value={currentPassword}
-          onChange={e => setCurrentPassword(e.target.value)} required fullWidth />
-        <TextField label={t('profile.newPassword')} type="password" value={newPassword}
-          onChange={e => setNewPassword(e.target.value)} required fullWidth helperText={t('auth.passwordHelper')} />
-        <TextField label={t('profile.confirmNewPassword')} type="password" value={confirmNewPassword}
-          onChange={e => setConfirmNewPassword(e.target.value)} required fullWidth />
-        {error && <Alert severity="error">{error}</Alert>}
-        {success && <Alert severity="success">{t('profile.passwordUpdated')}</Alert>}
-        <Button type="submit" variant="contained" disabled={loading} sx={{ alignSelf: 'flex-start' }}>
-          {t('profile.savePassword')}
-        </Button>
+      <Box sx={{ maxWidth: 480 }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField label={t('profile.currentPassword')} type="password" value={currentPassword}
+            onChange={e => setCurrentPassword(e.target.value)} required fullWidth />
+          <TextField label={t('profile.newPassword')} type="password" value={newPassword}
+            onChange={e => setNewPassword(e.target.value)} required fullWidth helperText={t('auth.passwordHelper')} />
+          <TextField label={t('profile.confirmNewPassword')} type="password" value={confirmNewPassword}
+            onChange={e => setConfirmNewPassword(e.target.value)} required fullWidth />
+          {error && <Alert severity="error">{error}</Alert>}
+          {success && <Alert severity="success">{t('profile.passwordUpdated')}</Alert>}
+          <Button type="submit" variant="contained" disabled={loading} sx={{ alignSelf: 'flex-start' }}>
+            {t('profile.savePassword')}
+          </Button>
+        </Box>
       </Box>
     </Box>
   );

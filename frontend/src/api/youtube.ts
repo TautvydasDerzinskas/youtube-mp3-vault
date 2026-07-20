@@ -2,7 +2,8 @@ import client from './client';
 
 export interface Playlist {
   id: string;
-  youtubeId: string;
+  // Null only for a generated ("similar playlist") entry — see sourcePlaylistId.
+  youtubeId: string | null;
   title: string;
   customName: string | null;
   thumbnailUrl: string | null;
@@ -10,11 +11,16 @@ export interface Playlist {
   downloadedCount: number;
   failedCount: number;
   totalSize: number;
-  syncStatus: 'idle' | 'syncing' | 'error';
+  syncStatus: 'idle' | 'syncing' | 'generating' | 'error';
   syncPaused: boolean;
   lastSyncedAt: string | null;
   createdAt: string;
   currentVideo: { title: string; position: number } | null;
+  // Set only on a generated playlist — the source it was generated from
+  // (sourcePlaylistName is a snapshot, so it survives the source being
+  // renamed or deleted later).
+  sourcePlaylistId: string | null;
+  sourcePlaylistName: string | null;
 }
 
 export interface PlaylistVideo {
@@ -162,5 +168,10 @@ export const playlistsApi = {
 
   remove: async (id: string): Promise<void> => {
     await client.delete(`/playlists/${id}`);
+  },
+
+  generateSimilar: async (id: string): Promise<{ playlist: Playlist }> => {
+    const { data } = await client.post<{ playlist: Playlist }>(`/playlists/${id}/generate-similar`);
+    return data;
   },
 };

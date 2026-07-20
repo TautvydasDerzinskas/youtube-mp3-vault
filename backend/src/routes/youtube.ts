@@ -18,6 +18,7 @@ import {
   mediaFilesUsedBy,
   cleanupMediaFiles,
 } from '../services/syncService';
+import { startGeneratePlaylist } from '../services/playlistGenerator';
 
 const router = Router();
 
@@ -365,7 +366,7 @@ router.get('/:id/videos/:videoId/remixes', requireAuth, async (req: AuthRequest,
 
     const { artist, title } = parseArtistAndTitle(video.title, video.channelName);
     const query = [video.artist ?? artist, title].filter(Boolean).join(' ');
-    const remixes = await searchRemixes(query, video.youtubeId);
+    const remixes = await searchRemixes(query, new Set([video.youtubeId]));
 
     res.json({ remixes });
   } catch (err) {
@@ -571,6 +572,26 @@ router.post('/:id/resume', requireAuth, async (req: AuthRequest, res, next) => {
     res.json({ playlist: enriched });
 
     if (shouldResume) startBackgroundDownload(playlist.id);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/playlists/:id/generate-similar ─────────────────────────────────
+// Generates a new playlist of similar/alternative tracks from this one (see
+// services/playlistGenerator.ts) — no real YouTube playlist behind it.
+
+router.post('/:id/generate-similar', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const result = await startGeneratePlaylist(req.params.id, req.userId!);
+    if (!result.started) {
+      res.status(409).json({ error: result.error });
+      return;
+    }
+
+    const newPlaylist = await prisma.playlist.findUniqueOrThrow({ where: { id: result.playlistId } });
+    const [enriched] = await withDownloadStats([newPlaylist]);
+    res.status(201).json({ playlist: enriched });
   } catch (err) {
     next(err);
   }

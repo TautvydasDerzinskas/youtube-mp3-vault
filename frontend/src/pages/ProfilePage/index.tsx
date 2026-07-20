@@ -23,22 +23,24 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <Box sx={{ p: 3, maxWidth: 480 }}>
+    <Box sx={{ p: 3 }}>
       <ProfileHeader title={t('profile.title')} onBack={() => navigate('/playlists')} />
 
-      {showLastfmTab ? (
-        <>
-          <Tabs value={tab} onChange={(_, v: number) => setTab(v)} variant="fullWidth" sx={{ mb: 3 }}>
-            <Tab label={t('profile.tabProfile')} />
-            <Tab label={t('profile.tabLastfm')} />
-          </Tabs>
+      <Box sx={{ maxWidth: 480 }}>
+        {showLastfmTab ? (
+          <>
+            <Tabs value={tab} onChange={(_, v: number) => setTab(v)} variant="fullWidth" sx={{ mb: 3 }}>
+              <Tab label={t('profile.tabProfile')} />
+              <Tab label={t('profile.tabLastfm')} />
+            </Tabs>
 
-          {tab === 0 && <ProfileTab />}
-          {tab === 1 && <LastfmTab result={lastfmResult} />}
-        </>
-      ) : (
-        <ProfileTab />
-      )}
+            {tab === 0 && <ProfileTab />}
+            {tab === 1 && <LastfmTab result={lastfmResult} />}
+          </>
+        ) : (
+          <ProfileTab />
+        )}
+      </Box>
     </Box>
   );
 }

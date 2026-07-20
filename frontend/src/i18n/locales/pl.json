@@ -82,6 +82,11 @@
     "unavailableWhileSyncing": "Niedostępne podczas synchronizacji",
     "openPlaylist": "Otwórz playlistę",
     "moreActions": "Więcej opcji",
+    "generateSimilar": "Wygeneruj podobną playlistę",
+    "generateSimilarError": "Nie udało się rozpocząć generowania podobnej playlisty.",
+    "generatingChip": "Generowanie…",
+    "generatedBadge": "Wygenerowana",
+    "generatedFrom": "Na podstawie {{name}}",
     "addDialog": {
       "title": "Dodaj playlistę",
       "urlLabel": "Link do playlisty YouTube",
@@ -117,6 +122,10 @@
     "deleteConfirm": {
       "title": "Usunąć playlistę?",
       "message": "Spowoduje to trwałe usunięcie „{{name}}” i wszystkich pobranych plików. Tej operacji nie można cofnąć."
+    },
+    "generateSimilarConfirm": {
+      "title": "Wygenerować podobną playlistę?",
+      "message": "Dla każdego utworu w „{{name}}” zostanie wyszukana alternatywa lub podobny utwór (przez Last.fm, a w razie braku wyników — remiksy/oryginały na YouTube) i z wyników zostanie zbudowana nowa playlista. Dla dużych playlist może to potrwać długo, a wynik zwykle jest mniejszy niż źródło, ponieważ nie każdy utwór ma dobry odpowiednik."
     },
     "status": {
       "pending": "oczekuje",

@@ -81,6 +81,11 @@
     "unavailableWhileSyncing": "Negalima sinchronizavimo metu",
     "openPlaylist": "Atidaryti grojaraštį",
     "moreActions": "Daugiau veiksmų",
+    "generateSimilar": "Generuoti panašų grojaraštį",
+    "generateSimilarError": "Nepavyko pradėti generuoti panašaus grojaraščio.",
+    "generatingChip": "Generuojama…",
+    "generatedBadge": "Sugeneruotas",
+    "generatedFrom": "Sukurta pagal {{name}}",
     "addDialog": {
       "title": "Pridėti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",
@@ -116,6 +121,10 @@
     "deleteConfirm": {
       "title": "Pašalinti grojaraštį?",
       "message": "Tai visam laikui ištrins „{{name}}“ ir visus jo atsisiųstus failus. Šio veiksmo atšaukti negalėsite."
+    },
+    "generateSimilarConfirm": {
+      "title": "Generuoti panašų grojaraštį?",
+      "message": "Kiekvienai „{{name}}“ dainai bus ieškoma alternatyvos ar panašaus takelio (per Last.fm, o jei nepavyks — remiksų/originalų iš YouTube) ir iš rezultatų sukuriamas naujas grojaraštis. Dideliems grojaraščiams tai gali užtrukti ilgai, o rezultatas paprastai būna mažesnis už originalą, nes ne kiekvienai dainai atsiranda geras atitikmuo."
     },
     "status": {
       "pending": "laukiama",

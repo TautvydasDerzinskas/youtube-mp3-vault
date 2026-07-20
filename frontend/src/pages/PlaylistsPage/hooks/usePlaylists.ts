@@ -30,7 +30,7 @@ export function usePlaylists() {
   // Poll while any playlist is syncing
   const schedulePoll = useCallback((list: Playlist[]) => {
     if (pollRef.current) clearTimeout(pollRef.current);
-    const hasSyncing = list.some(p => p.syncStatus === 'syncing');
+    const hasSyncing = list.some(p => p.syncStatus === 'syncing' || p.syncStatus === 'generating');
     if (!hasSyncing) return;
     pollRef.current = setTimeout(async () => {
       const fresh = await loadPlaylists();
@@ -98,10 +98,19 @@ export function usePlaylists() {
     if (expanded === playlist.id) setExpanded(false);
   };
 
+  // Throws on failure (e.g. one's already been generated for this source) —
+  // the caller shows the error, since unlike the actions above this creates
+  // a whole new playlist rather than updating an existing one.
+  const handleGenerateSimilar = async (id: string): Promise<void> => {
+    const { playlist } = await playlistsApi.generateSimilar(id);
+    handleAdded(playlist);
+  };
+
   return {
     playlists, loading, error, syncing,
     videoCache, setVideoCache,
     expanded, setExpanded,
     updatePlaylist, handleAdded, handleSync, handleRetryFailed, handleTogglePause, handleDelete,
+    handleGenerateSimilar,
   };
 }

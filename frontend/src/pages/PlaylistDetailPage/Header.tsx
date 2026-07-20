@@ -49,6 +49,11 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
           <Typography variant="h5" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
             {displayName(playlist)}
           </Typography>
+          {playlist.sourcePlaylistName && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+              {t('playlists.generatedFrom', { name: playlist.sourcePlaylistName })}
+            </Typography>
+          )}
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 0.5 }}>
             <Chip size="small" variant="outlined"
               label={t('playlists.detail.trackCount', { count: playlist.videoCount })} />

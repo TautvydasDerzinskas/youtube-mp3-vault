@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { Logout as LogoutIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useGravatarUrl } from '../../hooks/useGravatarUrl';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { SidebarAudioGlow } from './SidebarAudioGlow';
@@ -22,6 +23,7 @@ interface SidebarProps {
 export default function Sidebar({ width }: SidebarProps) {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const avatarUrl = useGravatarUrl(user?.email, 128);
   const navigate = useNavigate();
   const navItems = useNavItems();
 
@@ -71,6 +73,7 @@ export default function Sidebar({ width }: SidebarProps) {
       >
         <Avatar
           alt={user?.displayName}
+          src={avatarUrl}
           sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: 14 }}
         >
           {user?.displayName?.[0]?.toUpperCase()}
