@@ -248,3 +248,31 @@ export async function searchRemixes(query: string, excludeYoutubeId: string, lim
   }
   return results;
 }
+
+export interface YoutubeMatch {
+  id: string;
+  thumbnailUrl: string | null;
+  duration: number | null;
+}
+
+/**
+ * Resolves a plain "artist title" query (e.g. from an external recommendation
+ * source that has no YouTube ID of its own — see lastfm.ts) to a single best-
+ * guess playable YouTube video, the same yt-dlp-search-no-API-key mechanism
+ * searchRemixes uses. Best-effort: null on no match, yt-dlp down, or the only
+ * hit being the track we're already looking at recommendations for.
+ */
+export async function resolveTopMatch(query: string, excludeYoutubeId?: string): Promise<YoutubeMatch | null> {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) return null;
+
+  const [entry] = await runYtDlpSearch(`ytsearch1:${trimmedQuery}`);
+  const id = entry?.id as string | undefined;
+  if (!id || id === excludeYoutubeId) return null;
+
+  return {
+    id,
+    thumbnailUrl: pickThumbnail(entry.thumbnails) ?? (entry.thumbnail as string | null) ?? null,
+    duration: typeof entry.duration === 'number' ? entry.duration : null,
+  };
+}

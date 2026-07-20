@@ -137,6 +137,10 @@
       "recommendedTitle": "Similar songs",
       "recommendedEmpty": "No recommendations yet — this track hasn't been analyzed, or nothing similar has been found in your library.",
       "recommendedFailed": "Failed to load recommendations.",
+      "discoverTitle": "Discover",
+      "discoverEmpty": "No similar tracks found.",
+      "discoverFailed": "Failed to load discover results.",
+      "openInSpotify": "Search on Spotify",
       "remixesTitle": "Remixes on YouTube",
       "remixesEmpty": "No remixes found.",
       "remixesFailed": "Failed to search for remixes."

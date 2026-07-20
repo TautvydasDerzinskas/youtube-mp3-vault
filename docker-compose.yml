@@ -52,6 +52,7 @@ services:
       MUSIC_DIR: /data
       SLSKD_URL: http://slskd:5030
       AUDIO_ANALYSIS_URL: http://audio-analysis:8000
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}

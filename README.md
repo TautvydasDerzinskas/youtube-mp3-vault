@@ -273,6 +273,7 @@ The app embeds its own build's short commit SHA at build time (`EXPO_PUBLIC_BUIL
 | `SMTP_SECURE` | No | `false` | Use implicit TLS (`true` for port 465) |
 | `SMTP_USER` / `SMTP_PASS` | No | — | SMTP auth credentials, if your server requires them |
 | `SMTP_FROM` | No | `YoutubeVault <no-reply@localhost>` | `From` address on verification emails |
+| `LASTFM_API_KEY` | No | — | Free key from [last.fm/api/account/create](https://www.last.fm/api/account/create); powers the track page's "Discover" section (external similar-track suggestions). Unset just means that section is empty |
 | `GHCR_NAMESPACE` | `docker-compose.prod.yml` only | — | `owner/repo` (lowercase) of this repo on GitHub, used to resolve the published image names |
 | `IMAGE_TAG` | No (`docker-compose.prod.yml` only) | `latest` | Which published image tag to run — `latest` or a specific commit SHA |
 
@@ -355,6 +356,7 @@ The app embeds its own build's short commit SHA at build time (`EXPO_PUBLIC_BUIL
 | `GET` | `/api/playlists/:id/videos/:videoId/stream` | ✓ | Stream a downloaded video's MP3 for in-browser playback |
 | `GET` | `/api/playlists/:id/videos/:videoId/download` | ✓ | Download a video's MP3 file |
 | `GET` | `/api/playlists/:id/videos/:videoId/recommendations` | ✓ | "Similar songs" — audio-embedding similarity, boosted by same-artist/same-genre |
+| `GET` | `/api/playlists/:id/videos/:videoId/discover` | ✓ | "Discover" — external similar tracks via Last.fm, each resolved to a best-guess YouTube link plus a Spotify search link |
 | `GET` | `/api/playlists/:id/videos/:videoId/remixes` | ✓ | Best-effort YouTube search for remixes of this track |
 | `GET` | `/api/admin/users` | Admin | List every account (verification/ban status, playlist count) |
 | `GET` | `/api/admin/users/:id` | Admin | Full account detail + their playlists |

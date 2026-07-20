@@ -16,6 +16,11 @@ export const config = {
   // Local Essentia audio-analysis service (see /audio-analysis) — genre
   // classification, works fully offline, no isOnline() gating needed.
   audioAnalysisUrl: process.env.AUDIO_ANALYSIS_URL || 'http://localhost:8000',
+  // Free key from https://www.last.fm/api/account/create — powers the
+  // "discover" section (see services/lastfm.ts). Optional: unset just means
+  // that section returns empty, same degrade-gracefully treatment as
+  // AUDIO_ANALYSIS_URL being unreachable.
+  lastfmApiKey: process.env.LASTFM_API_KEY || '',
   // Whichever email registers with this address is marked admin at creation time.
   adminEmail: (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
   smtp: {

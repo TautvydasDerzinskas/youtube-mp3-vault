@@ -68,6 +68,21 @@ export interface RemixResult {
   duration: number | null;
 }
 
+// "You might also like", sourced from Last.fm (outside the local library —
+// see /recommendations for the in-library equivalent). youtubeId is a
+// best-guess match resolved server-side and may be null if nothing was
+// found; spotifySearchUrl is always present since it's just a constructed
+// deep link, no API/auth needed to build it.
+export interface DiscoverResult {
+  artist: string;
+  title: string;
+  matchScore: number;
+  youtubeId: string | null;
+  thumbnailUrl: string | null;
+  duration: number | null;
+  spotifySearchUrl: string;
+}
+
 export const playlistsApi = {
   getAll: async (): Promise<{ playlists: Playlist[] }> => {
     const { data } = await client.get<{ playlists: Playlist[] }>('/playlists');
@@ -113,6 +128,11 @@ export const playlistsApi = {
 
   getRemixes: async (playlistId: string, videoId: string): Promise<{ remixes: RemixResult[] }> => {
     const { data } = await client.get<{ remixes: RemixResult[] }>(`/playlists/${playlistId}/videos/${videoId}/remixes`);
+    return data;
+  },
+
+  getDiscover: async (playlistId: string, videoId: string): Promise<{ discover: DiscoverResult[] }> => {
+    const { data } = await client.get<{ discover: DiscoverResult[] }>(`/playlists/${playlistId}/videos/${videoId}/discover`);
     return data;
   },
 

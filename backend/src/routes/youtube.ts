@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/prisma';
-import { normalizePlaylistUrl, fetchPlaylist, searchRemixes } from '../services/youtube';
+import { normalizePlaylistUrl, fetchPlaylist, searchRemixes, resolveTopMatch } from '../services/youtube';
 import { parseArtistAndTitle } from '../services/musicbrainz';
+import { getSimilarTracks } from '../services/lastfm';
 import { getSharedFilePath, sanitizeFilename } from '../services/downloader';
 import { withDownloadStats } from '../services/playlistStats';
 import { bufferToFloat32Array, cosineSimilarity } from '../services/embeddings';
@@ -398,6 +399,60 @@ router.get('/:id/videos/:videoId/remixes', requireAuth, async (req: AuthRequest,
     const remixes = await searchRemixes(query, video.youtubeId);
 
     res.json({ remixes });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/playlists/:id/videos/:videoId/discover ──────────────────────────
+// External "you might also like" — Last.fm's track.getsimilar (see
+// services/lastfm.ts), each candidate then resolved to a playable YouTube
+// video via the same no-API-key yt-dlp search searchRemixes uses, run
+// concurrently (one yt-dlp process per candidate sequentially would be too
+// slow for a page load). Never errors out to the client — empty just means
+// no LASTFM_API_KEY configured, offline, or no similar tracks found.
+
+const DISCOVER_LIMIT = 8;
+
+router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+      select: { youtubeId: true, title: true, artist: true, channelName: true },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+
+    const { artist: parsedArtist, title } = parseArtistAndTitle(video.title, video.channelName);
+    const artist = video.artist ?? parsedArtist ?? '';
+
+    const similar = await getSimilarTracks(artist, title, DISCOVER_LIMIT);
+
+    const discover = await Promise.all(
+      similar.map(async (s) => {
+        const match = await resolveTopMatch(`${s.artist} ${s.title}`, video.youtubeId);
+        return {
+          artist: s.artist,
+          title: s.title,
+          matchScore: s.matchScore,
+          youtubeId: match?.id ?? null,
+          thumbnailUrl: match?.thumbnailUrl ?? null,
+          duration: match?.duration ?? null,
+          spotifySearchUrl: `https://open.spotify.com/search/${encodeURIComponent(`${s.artist} ${s.title}`)}`,
+        };
+      }),
+    );
+
+    res.json({ discover });
   } catch (err) {
     next(err);
   }
