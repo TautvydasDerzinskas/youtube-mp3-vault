@@ -37,6 +37,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "playlists": "Playlists",
+    "genres": "Genres",
     "administration": "Administration",
     "users": "Users",
     "triggers": "Triggers",
@@ -160,12 +161,10 @@
       "failedToLoad": "Failed to load this playlist.",
       "trackCount": "{{count}} tracks",
       "syncedCount": "{{count}} synced",
-      "filterByGenre": "Filter by genre:",
+      "filterByGenre": "Filter by genre",
       "clearGenreFilter": "Clear genre filter",
       "noGenre": "No genre ({{count}})",
-      "noTracks": "No tracks match the selected genres.",
-      "showMoreGenres": "Show {{count}} more",
-      "showFewerGenres": "Show fewer"
+      "noTracks": "No tracks match the selected genres."
     },
     "trackDetail": {
       "backToPlaylist": "Back to playlist",
@@ -357,6 +356,15 @@
     "topArtists": {
       "title": "Top Artists",
       "empty": "No artists yet — import a playlist to see your top artists here."
+    },
+    "topGenres": {
+      "title": "Top Genres",
+      "empty": "No genres yet — genres appear here once your songs are analyzed."
     }
+  },
+  "genres": {
+    "title": "Genres",
+    "empty": "No genres yet — genres appear here once your songs are analyzed.",
+    "failedToLoad": "Failed to load genres."
   }
 }

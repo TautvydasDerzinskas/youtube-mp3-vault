@@ -2,6 +2,7 @@ import { ReactElement } from 'react';
 import {
   Dashboard as DashboardIcon,
   QueueMusic as PlaylistsIcon,
+  LocalOffer as GenresIcon,
   Group as UsersIcon,
   Android as DownloadsIcon,
   AdminPanelSettings as AdministrationIcon,
@@ -29,6 +30,7 @@ export function useNavItems(): NavItem[] {
   return [
     { label: t('nav.dashboard'), path: '/dashboard', icon: <DashboardIcon /> },
     { label: t('nav.playlists'), path: '/playlists', icon: <PlaylistsIcon /> },
+    { label: t('nav.genres'), path: '/genres', icon: <GenresIcon /> },
     { label: t('nav.downloads'), path: '/downloads', icon: <DownloadsIcon /> },
     // Kept last, set apart by its own divider — an admin-only section, not
     // part of the everyday nav items above it.

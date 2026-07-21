@@ -16,16 +16,19 @@ function AppLayoutContent() {
     setIsAudioPlaying, handleTrackEnded, playNext, playPrevious, toggleRepeat, toggleShuffle, handleClosePlayer,
   } = usePlayer();
 
-  // Acts like the playlist's own "back" button, and tells PlaylistDetailPage
-  // to scroll the now-playing track into view once it loads (clearing any
-  // active genre filter that's hiding it first) — see that page's
-  // scrollToNowPlaying handling. When already on that playlist's page, this
-  // replaces the history entry instead of pushing a new one, so it doesn't
-  // leave a dead "back" stop — PlaylistDetailPage still picks up the fresh
-  // state and scrolls, since location.key changes either way.
+  // Goes back to wherever playback was actually started from (a specific
+  // playlist, or "All Tracks") — not necessarily the track's own owning
+  // playlist, which is all nowPlaying.playlistId would tell you. Also tells
+  // that page to scroll the now-playing track into view once it loads
+  // (clearing any active genre filter that's hiding it first) — see
+  // PlaylistDetailPage/AllTracksPage's scrollToNowPlaying handling. When
+  // already on that page, this replaces the history entry instead of
+  // pushing a new one, so it doesn't leave a dead "back" stop — the page
+  // still picks up the fresh state and scrolls, since location.key changes
+  // either way.
   const handleTitleClick = () => {
     if (!nowPlaying) return;
-    const targetPath = `/playlists/${nowPlaying.playlistId}`;
+    const targetPath = nowPlaying.originPath;
     navigate(targetPath, {
       state: { scrollToNowPlaying: true },
       replace: location.pathname === targetPath,

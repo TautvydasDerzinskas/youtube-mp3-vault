@@ -37,6 +37,7 @@
   "nav": {
     "dashboard": "Prietaisų skydelis",
     "playlists": "Grojaraščiai",
+    "genres": "Žanrai",
     "administration": "Administravimas",
     "users": "Naudotojai",
     "triggers": "Trigeriai",
@@ -164,12 +165,10 @@
       "failedToLoad": "Nepavyko įkelti šio grojaraščio.",
       "trackCount": "{{count}} dainų",
       "syncedCount": "{{count}} sinchronizuota",
-      "filterByGenre": "Filtruoti pagal žanrą:",
+      "filterByGenre": "Filtruoti pagal žanrą",
       "clearGenreFilter": "Išvalyti žanrų filtrą",
       "noGenre": "Be žanro ({{count}})",
-      "noTracks": "Nėra dainų, atitinkančių pasirinktus žanrus.",
-      "showMoreGenres": "Rodyti dar {{count}}",
-      "showFewerGenres": "Rodyti mažiau"
+      "noTracks": "Nėra dainų, atitinkančių pasirinktus žanrus."
     },
     "trackDetail": {
       "backToPlaylist": "Grįžti į grojaraštį",
@@ -365,6 +364,15 @@
     "topArtists": {
       "title": "Populiariausi atlikėjai",
       "empty": "Atlikėjų dar nėra — importuokite grojaraštį, kad pamatytumėte savo populiariausius atlikėjus."
+    },
+    "topGenres": {
+      "title": "Populiariausi žanrai",
+      "empty": "Žanrų dar nėra — jie atsiras, kai jūsų dainos bus išanalizuotos."
     }
+  },
+  "genres": {
+    "title": "Žanrai",
+    "empty": "Žanrų dar nėra — jie atsiras, kai jūsų dainos bus išanalizuotos.",
+    "failedToLoad": "Nepavyko įkelti žanrų."
   }
 }

@@ -73,8 +73,12 @@ export function MiniPlayer({
     </Tooltip>
   );
   const closeButton = (
+    // ml: 'auto' — on desktop the <audio> element caps out at maxWidth: 500,
+    // so on a wide window there's leftover flex space past it that nothing
+    // else absorbs; without this, close just sits right after shuffle
+    // instead of at the container's actual right edge.
     <Tooltip title={t('playlists.miniPlayer.close')}>
-      <IconButton size="small" onClick={onClose} sx={{ flexShrink: 0 }}>
+      <IconButton size="small" onClick={onClose} sx={{ flexShrink: 0, ml: 'auto' }}>
         <CloseIcon sx={{ fontSize: 18 }} />
       </IconButton>
     </Tooltip>

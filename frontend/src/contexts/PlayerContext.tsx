@@ -1,6 +1,7 @@
 import {
   createContext, useContext, useEffect, useCallback, useRef, useState, ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
 import { NowPlaying } from '../pages/PlaylistsPage/types';
 
@@ -36,7 +37,7 @@ interface PlayerContextType {
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
-  const [current, setCurrent] = useState<{ playlistId: string; video: PlaylistVideo } | null>(null);
+  const [current, setCurrent] = useState<{ playlistId: string; video: PlaylistVideo; originPath: string } | null>(null);
   const [queue, setQueue] = useState<QueueTrack[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
@@ -51,6 +52,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // call, so reading historyRef.current directly at render time (for
   // hasPrevious below) is always up to date by the time that render happens.
   const historyRef = useRef<QueueTrack[]>([]);
+  // Captures the page a new playback session started from (e.g. a specific
+  // playlist vs. "All Tracks"), read at the exact moment handleTogglePlay
+  // runs — i.e. while the user is still on that page — rather than at
+  // provider-render time, since AppLayout (and this provider with it) stays
+  // mounted across every route change.
+  const locationRef = useRef('/playlists');
+  locationRef.current = useLocation().pathname;
 
   useEffect(() => {
     if (!current || !audioRef.current) return;
@@ -101,7 +109,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // carrying over "previous" history from whatever was playing before
     // wouldn't mean anything here.
     historyRef.current = [];
-    setCurrent({ playlistId, video });
+    setCurrent({ playlistId, video, originPath: locationRef.current });
     if (queueOverride) {
       setQueue(queueOverride);
     } else {
@@ -137,7 +145,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const next = pickNextTrack(prev.video);
       if (!next) return prev;
       historyRef.current = [...historyRef.current, { ...prev.video, playlistId: prev.playlistId }].slice(-MAX_HISTORY);
-      return { playlistId: next.playlistId ?? prev.playlistId, video: next };
+      return { playlistId: next.playlistId ?? prev.playlistId, video: next, originPath: prev.originPath };
     });
   }, [pickNextTrack]);
 
@@ -149,11 +157,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         if (history.length === 0) return prev;
         const previous = history[history.length - 1];
         historyRef.current = history.slice(0, -1);
-        return { playlistId: previous.playlistId ?? prev.playlistId, video: previous };
+        return { playlistId: previous.playlistId ?? prev.playlistId, video: previous, originPath: prev.originPath };
       }
       const idx = queue.findIndex(v => v.id === prev.video.id);
       const previous = idx > 0 ? queue[idx - 1] : undefined;
-      return previous ? { playlistId: previous.playlistId ?? prev.playlistId, video: previous } : prev;
+      return previous ? { playlistId: previous.playlistId ?? prev.playlistId, video: previous, originPath: prev.originPath } : prev;
     });
   }, [queue, isShuffle]);
 
@@ -178,7 +186,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const next = pickNextTrack(prevState.video);
       if (!next) return null;
       historyRef.current = [...historyRef.current, { ...prevState.video, playlistId: prevState.playlistId }].slice(-MAX_HISTORY);
-      return { playlistId: next.playlistId ?? prevState.playlistId, video: next };
+      return { playlistId: next.playlistId ?? prevState.playlistId, video: next, originPath: prevState.originPath };
     });
   }, [isRepeat, pickNextTrack]);
 
@@ -195,7 +203,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value: PlayerContextType = {
-    nowPlaying: current ? { playlistId: current.playlistId, videoId: current.video.id } : null,
+    nowPlaying: current ? { playlistId: current.playlistId, videoId: current.video.id, originPath: current.originPath } : null,
     nowPlayingVideo: current?.video,
     isAudioPlaying, setIsAudioPlaying, audioRef, analyserNode,
     hasNext, hasPrevious, isRepeat, isShuffle, toggleRepeat, toggleShuffle,

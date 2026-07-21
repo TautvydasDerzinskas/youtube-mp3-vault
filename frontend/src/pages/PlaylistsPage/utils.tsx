@@ -29,6 +29,12 @@ export function youtubePlaylistUrl(youtubeId: string): string {
   return `https://www.youtube.com/playlist?list=${youtubeId}`;
 }
 
+// Links a genre through to All Tracks pre-filtered to just that one — used
+// by the dashboard's genre card/modal and the standalone Genres page alike.
+export function allTracksGenreUrl(genreKey: string): string {
+  return `/all-tracks?genres=${encodeURIComponent(genreKey)}`;
+}
+
 export function normalizeGenreKey(genre: string): string {
   return genre.trim().toLowerCase();
 }

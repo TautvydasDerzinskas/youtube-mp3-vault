@@ -16,11 +16,20 @@ export interface DashboardArtist {
   songCount: number;
 }
 
+export interface DashboardGenre {
+  // Normalized (lowercased/trimmed) — use this for the ?genres= URL param,
+  // not `genre`, which is just the display label.
+  key: string;
+  genre: string;
+  count: number;
+}
+
 export interface DashboardSummary {
   playlistCount: number;
   totalSongCount: number;
   topSongs: DashboardSong[];
   topArtists: DashboardArtist[];
+  topGenres: DashboardGenre[];
 }
 
 export const dashboardApi = {
@@ -37,5 +46,10 @@ export const dashboardApi = {
   getAllArtists: async (): Promise<DashboardArtist[]> => {
     const { data } = await client.get<{ artists: DashboardArtist[] }>('/dashboard/artists');
     return data.artists;
+  },
+
+  getAllGenres: async (): Promise<DashboardGenre[]> => {
+    const { data } = await client.get<{ genres: DashboardGenre[] }>('/dashboard/genres');
+    return data.genres;
   },
 };

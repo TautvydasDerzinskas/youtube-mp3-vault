@@ -1,12 +1,10 @@
-import { useState } from 'react';
-import { Box, Typography, Chip, Stack, IconButton, Tooltip } from '@mui/material';
+import {
+  Box, FormControl, InputLabel, Select, OutlinedInput, MenuItem, Checkbox, ListItemText,
+  IconButton, Tooltip, SelectChangeEvent,
+} from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { GenreCount, NO_GENRE_KEY } from './hooks/genreFilter';
-import { useIsMobile } from '../../hooks/useIsMobile';
-
-const VISIBLE_GENRES_LIMIT_DESKTOP = 20;
-const VISIBLE_GENRES_LIMIT_MOBILE = 5;
 
 interface GenreFilterBarProps {
   genreCounts: GenreCount[];
@@ -17,58 +15,63 @@ interface GenreFilterBarProps {
 
 // Shared by PlaylistDetailPage and AllTracksPage — both filter a track list
 // by genre the same way, just sourced from a different set of tracks.
+//
+// A multi-select dropdown rather than an inline chip cloud: a library with a
+// lot of genres (an "All Tracks" aggregate especially) could previously push
+// the track list itself off-screen once "show more" revealed everything.
+// The dropdown's menu scrolls internally instead, so the header stays a
+// fixed height no matter how many genres exist.
 export function GenreFilterBar({ genreCounts, selectedGenres, onToggleGenre, onClearGenres }: GenreFilterBarProps) {
   const { t } = useTranslation();
-  const isMobile = useIsMobile();
-  const [showAllGenres, setShowAllGenres] = useState(false);
 
   if (genreCounts.length === 0) return null;
 
-  const visibleGenresLimit = isMobile ? VISIBLE_GENRES_LIMIT_MOBILE : VISIBLE_GENRES_LIMIT_DESKTOP;
-  const hasMoreGenres = genreCounts.length > visibleGenresLimit;
-  const visibleGenres = showAllGenres
-    ? genreCounts
-    : genreCounts.filter((g, i) => i < visibleGenresLimit || selectedGenres.has(g.key));
+  const genreLabel = (key: string, label: string, count: number) =>
+    key === NO_GENRE_KEY ? t('playlists.detail.noGenre', { count }) : `${label} (${count})`;
+
+  // The Select gives us the whole new selection at once; onToggleGenre only
+  // knows how to flip one key, so reconcile by toggling whatever changed.
+  const handleChange = (event: SelectChangeEvent<string[]>) => {
+    const { value } = event.target;
+    const next = new Set(typeof value === 'string' ? value.split(',') : value);
+    for (const { key } of genreCounts) {
+      if (selectedGenres.has(key) !== next.has(key)) onToggleGenre(key);
+    }
+  };
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-        <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
-          {t('playlists.detail.filterByGenre')}
-        </Typography>
-        {visibleGenres.map(({ key, label, count }) => {
-          const selected = selectedGenres.has(key);
-          const isNoGenre = key === NO_GENRE_KEY;
-          const chipLabel = isNoGenre ? t('playlists.detail.noGenre', { count }) : `${label} (${count})`;
-          return (
-            <Chip
-              key={key}
-              label={chipLabel}
-              size="small"
-              onClick={() => onToggleGenre(key)}
-              color={selected ? 'primary' : 'default'}
-              variant={selected ? 'filled' : 'outlined'}
-              sx={isNoGenre ? { fontStyle: 'italic' } : undefined}
-            />
-          );
-        })}
-        {hasMoreGenres && (
-          <Chip
-            size="small"
-            variant="outlined"
-            label={showAllGenres ? t('playlists.detail.showFewerGenres') : t('playlists.detail.showMoreGenres', { count: genreCounts.length - visibleGenresLimit })}
-            onClick={() => setShowAllGenres(v => !v)}
-            sx={{ borderStyle: 'dashed' }}
-          />
-        )}
-        {selectedGenres.size > 0 && (
-          <Tooltip title={t('playlists.detail.clearGenreFilter')}>
-            <IconButton size="small" onClick={onClearGenres}>
-              <CloseIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
-        )}
-      </Stack>
+    <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+      <FormControl size="small" sx={{ minWidth: 220, maxWidth: 420 }}>
+        <InputLabel id="genre-filter-label">{t('playlists.detail.filterByGenre')}</InputLabel>
+        <Select
+          labelId="genre-filter-label"
+          multiple
+          value={[...selectedGenres]}
+          onChange={handleChange}
+          input={<OutlinedInput label={t('playlists.detail.filterByGenre')} />}
+          renderValue={(selected) => (selected as string[])
+            .map(key => genreCounts.find(g => g.key === key))
+            .filter((g): g is GenreCount => Boolean(g))
+            .map(g => (g.key === NO_GENRE_KEY ? t('playlists.detail.noGenre', { count: g.count }) : g.label))
+            .join(', ')}
+          MenuProps={{ PaperProps: { sx: { maxHeight: 360 } } }}
+        >
+          {genreCounts.map(({ key, label, count }) => (
+            <MenuItem key={key} value={key} sx={key === NO_GENRE_KEY ? { fontStyle: 'italic' } : undefined}>
+              <Checkbox size="small" checked={selectedGenres.has(key)} />
+              <ListItemText primary={genreLabel(key, label, count)} />
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {selectedGenres.size > 0 && (
+        <Tooltip title={t('playlists.detail.clearGenreFilter')}>
+          <IconButton size="small" onClick={onClearGenres}>
+            <CloseIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
+      )}
     </Box>
   );
 }

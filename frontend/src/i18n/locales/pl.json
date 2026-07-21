@@ -37,6 +37,7 @@
   "nav": {
     "dashboard": "Panel",
     "playlists": "Playlisty",
+    "genres": "Gatunki",
     "administration": "Administracja",
     "users": "Użytkownicy",
     "triggers": "Wyzwalacze",
@@ -168,12 +169,10 @@
       "failedToLoad": "Nie udało się załadować tej playlisty.",
       "trackCount": "{{count}} utworów",
       "syncedCount": "{{count}} zsynchronizowanych",
-      "filterByGenre": "Filtruj wg gatunku:",
+      "filterByGenre": "Filtruj wg gatunku",
       "clearGenreFilter": "Wyczyść filtr gatunków",
       "noGenre": "Bez gatunku ({{count}})",
-      "noTracks": "Żaden utwór nie pasuje do wybranych gatunków.",
-      "showMoreGenres": "Pokaż {{count}} więcej",
-      "showFewerGenres": "Pokaż mniej"
+      "noTracks": "Żaden utwór nie pasuje do wybranych gatunków."
     },
     "trackDetail": {
       "backToPlaylist": "Wróć do playlisty",
@@ -373,6 +372,15 @@
     "topArtists": {
       "title": "Najpopularniejsi wykonawcy",
       "empty": "Brak wykonawców — zaimportuj playlistę, aby zobaczyć tutaj swoich najpopularniejszych wykonawców."
+    },
+    "topGenres": {
+      "title": "Najpopularniejsze gatunki",
+      "empty": "Brak gatunków — pojawią się tutaj, gdy Twoje utwory zostaną przeanalizowane."
     }
+  },
+  "genres": {
+    "title": "Gatunki",
+    "empty": "Brak gatunków — pojawią się tutaj, gdy Twoje utwory zostaną przeanalizowane.",
+    "failedToLoad": "Nie udało się załadować gatunków."
   }
 }
