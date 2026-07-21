@@ -244,6 +244,8 @@
     "verifiedNo": "Niezweryfikowany",
     "admin": "Administrator",
     "adminYes": "Administrator",
+    "scrobbling": "Scrobblowanie",
+    "scrobblingYes": "Scrobblowanie",
     "status": "Status",
     "active": "Aktywny",
     "banned": "Zbanowany",
@@ -332,6 +334,12 @@
       "label_few": "playlisty",
       "label_many": "playlist",
       "label_other": "playlist"
+    },
+    "totalSongCount": {
+      "label_one": "utwór",
+      "label_few": "utwory",
+      "label_many": "utworów",
+      "label_other": "utworów"
     },
     "songsOnRepeat": {
       "title": "Utwory na powtórce",

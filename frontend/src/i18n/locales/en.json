@@ -242,6 +242,8 @@
     "verifiedNo": "Unverified",
     "admin": "Admin",
     "adminYes": "Admin",
+    "scrobbling": "Scrobbling",
+    "scrobblingYes": "Scrobbling",
     "status": "Status",
     "active": "Active",
     "banned": "Banned",
@@ -324,6 +326,10 @@
     "playlistCount": {
       "label_one": "playlist",
       "label_other": "playlists"
+    },
+    "totalSongCount": {
+      "label_one": "song",
+      "label_other": "songs"
     },
     "songsOnRepeat": {
       "title": "Songs on Repeat",

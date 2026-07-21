@@ -21,6 +21,7 @@ const USER_LIST_SELECT = {
   emailVerified: true,
   isAdmin: true,
   isBanned: true,
+  scrobblingEnabled: true,
   createdAt: true,
 } as const;
 

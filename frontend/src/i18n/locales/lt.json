@@ -243,6 +243,8 @@
     "verifiedNo": "Nepatvirtinta",
     "admin": "Administratorius",
     "adminYes": "Administratorius",
+    "scrobbling": "Scrobbinimas",
+    "scrobblingYes": "Scrobbinimas",
     "status": "Būsena",
     "active": "Aktyvus",
     "banned": "Užblokuotas",
@@ -328,6 +330,11 @@
       "label_one": "grojaraštis",
       "label_few": "grojaraščiai",
       "label_other": "grojaraščių"
+    },
+    "totalSongCount": {
+      "label_one": "daina",
+      "label_few": "dainos",
+      "label_other": "dainų"
     },
     "songsOnRepeat": {
       "title": "Dažniausiai klausomos dainos",

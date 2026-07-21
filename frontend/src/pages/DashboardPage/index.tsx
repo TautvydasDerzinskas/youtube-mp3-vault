@@ -3,6 +3,7 @@ import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { dashboardApi, DashboardSummary } from '../../api/dashboard';
 import { PlaylistCountCard } from './PlaylistCountCard';
+import { TotalSongsCard } from './TotalSongsCard';
 import { SongsOnRepeatCard } from './SongsOnRepeatCard';
 import { TopArtistsCard } from './TopArtistsCard';
 import { AllSongsDialog } from './AllSongsDialog';
@@ -29,23 +30,29 @@ export default function DashboardPage() {
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" fontWeight={700} mb={3}>{t('dashboard.title')}</Typography>
 
-      {/* Bento/puzzle layout: the count tile only occupies row 1, while the
-          songs/artists cards span both rows, so the count tile visibly reads
-          as the smaller piece next to two taller ones. Collapses to a single
-          stacked column on mobile. */}
+      {/* Bento/puzzle layout: count + totalSongs stack in column 1, while the
+          songs/artists cards span both rows in columns 2-3, so the two small
+          tiles visibly read as smaller pieces next to two taller ones.
+          alignItems: 'start' keeps each card sized to its own content —
+          without it, a spanning grid item stretches to fill its full row
+          span by default, which was leaving dead space below "See more" on
+          whichever of songs/artists had the shorter list. Collapses to a
+          single stacked column on mobile. */}
       <Box
         sx={{
           display: 'grid',
           gap: 2,
+          alignItems: 'start',
           gridTemplateColumns: { xs: '1fr', md: '1fr 1.4fr 1.4fr' },
-          gridTemplateRows: { xs: 'auto', md: 'auto 1fr' },
+          gridTemplateRows: { xs: 'auto', md: 'auto auto' },
           gridTemplateAreas: {
-            xs: '"count" "songs" "artists"',
-            md: '"count songs artists" ". songs artists"',
+            xs: '"count" "totalSongs" "songs" "artists"',
+            md: '"count songs artists" "totalSongs songs artists"',
           },
         }}
       >
         <PlaylistCountCard count={summary.playlistCount} />
+        <TotalSongsCard count={summary.totalSongCount} />
         <SongsOnRepeatCard songs={summary.topSongs} onSeeMore={() => setShowAllSongs(true)} />
         <TopArtistsCard artists={summary.topArtists} onSeeMore={() => setShowAllArtists(true)} />
       </Box>

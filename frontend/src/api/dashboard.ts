@@ -18,6 +18,7 @@ export interface DashboardArtist {
 
 export interface DashboardSummary {
   playlistCount: number;
+  totalSongCount: number;
   topSongs: DashboardSong[];
   topArtists: DashboardArtist[];
 }

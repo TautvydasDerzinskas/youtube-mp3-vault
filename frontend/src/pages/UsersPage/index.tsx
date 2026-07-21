@@ -70,6 +70,7 @@ export default function UsersPage() {
               <TableCell>{t('users.displayName')}</TableCell>
               <TableCell>{t('users.verified')}</TableCell>
               <TableCell>{t('users.admin')}</TableCell>
+              <TableCell>{t('users.scrobbling')}</TableCell>
               <TableCell>{t('users.status')}</TableCell>
               <TableCell align="right">{t('users.playlists')}</TableCell>
               <TableCell>{t('users.created')}</TableCell>
@@ -88,6 +89,9 @@ export default function UsersPage() {
                 </TableCell>
                 <TableCell>
                   {user.isAdmin && <Chip label={t('users.adminYes')} size="small" color="primary" />}
+                </TableCell>
+                <TableCell>
+                  {user.scrobblingEnabled && <Chip label={t('users.scrobblingYes')} size="small" color="success" />}
                 </TableCell>
                 <TableCell>
                   {user.isBanned

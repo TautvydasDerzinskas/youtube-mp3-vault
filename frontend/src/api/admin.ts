@@ -9,6 +9,7 @@ export interface AdminUser {
   emailVerified: boolean;
   isAdmin: boolean;
   isBanned: boolean;
+  scrobblingEnabled: boolean;
   createdAt: string;
   playlistCount: number;
 }

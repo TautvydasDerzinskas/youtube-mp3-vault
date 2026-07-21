@@ -44,8 +44,11 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
   try {
     const userId = req.userId!;
 
-    const [playlistCount, topSongs, topArtists] = await Promise.all([
+    const [playlistCount, totalSongCount, topSongs, topArtists] = await Promise.all([
       prisma.playlist.count({ where: { userId } }),
+      prisma.playlistVideo.count({
+        where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
+      }),
       prisma.playlistVideo.findMany({
         where: {
           playlist: { userId },
@@ -60,7 +63,7 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
       topArtistsByTrackCount(userId, TOP_ARTISTS_PREVIEW),
     ]);
 
-    res.json({ playlistCount, topSongs, topArtists });
+    res.json({ playlistCount, totalSongCount, topSongs, topArtists });
   } catch (err) {
     next(err);
   }
