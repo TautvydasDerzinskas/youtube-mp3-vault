@@ -11,7 +11,7 @@ export interface Playlist {
   downloadedCount: number;
   failedCount: number;
   totalSize: number;
-  syncStatus: 'idle' | 'syncing' | 'generating' | 'error';
+  syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'error';
   syncPaused: boolean;
   lastSyncedAt: string | null;
   createdAt: string;

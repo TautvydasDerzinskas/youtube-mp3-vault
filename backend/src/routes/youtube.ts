@@ -566,8 +566,9 @@ router.post('/:id/retry-failed', requireAuth, async (req: AuthRequest, res, next
       return;
     }
 
-    // Return immediately with syncing status — actual work is async
-    const [syncing] = await withDownloadStats([{ ...playlist, syncStatus: 'syncing' }]);
+    // Return immediately with 'retrying' status (distinct from a regular
+    // 'syncing' pass — see retryFailedVideos) — actual work is async
+    const [syncing] = await withDownloadStats([{ ...playlist, syncStatus: 'retrying' }]);
     res.json({ playlist: syncing });
 
     retryFailedVideos(playlist.id);
@@ -585,6 +586,13 @@ router.post('/:id/pause', requireAuth, async (req: AuthRequest, res, next) => {
     });
     if (!playlist) {
       res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    // Retrying failed videos never re-fetches from YouTube — pausing and
+    // resuming it would resume as a bare "drain pending videos" pass with no
+    // record that a retry was ever in progress. So it's never pausable.
+    if (playlist.syncStatus === 'retrying') {
+      res.status(409).json({ error: 'Cannot pause while retrying failed videos' });
       return;
     }
     const updated = await setSyncPaused(playlist.id, true);

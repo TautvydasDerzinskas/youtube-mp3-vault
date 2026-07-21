@@ -67,7 +67,7 @@ export function releaseSyncClaim(playlistId: string): void {
 export async function resetStuckSyncs(): Promise<void> {
   const [playlists, videos] = await Promise.all([
     prisma.playlist.updateMany({
-      where: { syncStatus: 'syncing' },
+      where: { syncStatus: { in: ['syncing', 'retrying'] } },
       data: { syncStatus: 'idle' },
     }),
     prisma.playlistVideo.updateMany({
@@ -314,6 +314,13 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
   }
 }
 
+// Uses the distinct 'retrying' syncStatus (rather than 'syncing') so the
+// frontend can tell this apart from a regular sync — retrying failed videos
+// only drains what's already pending, it never re-fetches from YouTube, so
+// unlike a regular sync it must never be pausable/resumable (see the /pause
+// route guard in routes/youtube.ts): pausing mid-retry and then resuming
+// would resume as a bare download-pending-videos pass, silently dropping the
+// "retry" intent with no way to tell from the UI that it happened.
 export function retryFailedVideos(playlistId: string): void {
   if (activeSyncs.has(playlistId)) return;
   activeSyncs.add(playlistId);
@@ -322,7 +329,7 @@ export function retryFailedVideos(playlistId: string): void {
     try {
       await prisma.playlist.update({
         where: { id: playlistId },
-        data: { syncStatus: 'syncing' },
+        data: { syncStatus: 'retrying' },
       });
       await prisma.playlistVideo.updateMany({
         where: { playlistId, downloadStatus: 'failed', isAvailable: true },
@@ -346,7 +353,7 @@ export async function syncAllPlaylists(): Promise<void> {
     select: { id: true },
     // Generated playlists (youtubeId null) have no real playlist to sync
     // against — syncPlaylist would just error out on them.
-    where: { syncStatus: { not: 'syncing' }, syncPaused: false, youtubeId: { not: null } },
+    where: { syncStatus: { notIn: ['syncing', 'retrying'] }, syncPaused: false, youtubeId: { not: null } },
   });
   console.log(`[scheduler] Syncing ${playlists.length} playlist(s)`);
   for (const { id } of playlists) {

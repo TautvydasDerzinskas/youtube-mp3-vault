@@ -27,7 +27,7 @@ export default function PlaylistsPage() {
   const canGenerateSimilar = online && lastfmDiscoverAvailable;
 
   const {
-    playlists, loading, error, syncing, videoCache, setVideoCache,
+    playlists, loading, error, syncing, retrying, videoCache, setVideoCache,
     expanded, setExpanded, updatePlaylist, handleAdded, handleSync,
     handleRetryFailed, handleTogglePause, handleDelete: rawHandleDelete,
     handleGenerateSimilar,
@@ -122,6 +122,7 @@ export default function PlaylistsPage() {
           expanded={expanded === playlist.id}
           onToggleExpand={open => setExpanded(open ? playlist.id : false)}
           isSyncingLocally={syncing.has(playlist.id)}
+          isRetryingLocally={retrying.has(playlist.id)}
           online={online}
           canGenerateSimilar={canGenerateSimilar}
           hasGeneratedPlaylist={generatedSourceIds.has(playlist.id)}

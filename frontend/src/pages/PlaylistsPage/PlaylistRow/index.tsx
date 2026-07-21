@@ -14,6 +14,7 @@ interface PlaylistRowProps {
   expanded: boolean;
   onToggleExpand: (open: boolean) => void;
   isSyncingLocally: boolean;
+  isRetryingLocally: boolean;
   online: boolean;
   canGenerateSimilar: boolean;
   hasGeneratedPlaylist: boolean;
@@ -32,14 +33,15 @@ interface PlaylistRowProps {
 }
 
 export function PlaylistRow({
-  playlist, expanded, onToggleExpand, isSyncingLocally, online, canGenerateSimilar,
+  playlist, expanded, onToggleExpand, isSyncingLocally, isRetryingLocally, online, canGenerateSimilar,
   hasGeneratedPlaylist, isLockedBySource,
   videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay,
   onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
 }: PlaylistRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isSyncingLocally;
+  const isRetrying = playlist.syncStatus === 'retrying' || isRetryingLocally;
+  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isRetrying || isSyncingLocally;
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
   const isSynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
   // No PlaylistVideo rows exist yet during this phase (they're only created
@@ -60,6 +62,7 @@ export function PlaylistRow({
           playlist={playlist}
           isBusy={isBusy}
           isPausing={isPausing}
+          isRetrying={isRetrying}
           online={online}
           canGenerateSimilar={canGenerateSimilar}
           hasGeneratedPlaylist={hasGeneratedPlaylist}
@@ -101,6 +104,7 @@ export function PlaylistRow({
           playlist={playlist}
           isBusy={isBusy}
           isPausing={isPausing}
+          isRetrying={isRetrying}
           online={online}
           canGenerateSimilar={canGenerateSimilar}
           hasGeneratedPlaylist={hasGeneratedPlaylist}

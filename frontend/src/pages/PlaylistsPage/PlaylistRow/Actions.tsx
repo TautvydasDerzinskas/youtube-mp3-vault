@@ -13,6 +13,11 @@ interface ActionsProps {
   playlist: Playlist;
   isBusy: boolean;
   isPausing: boolean;
+  // True while a retry-failed pass is running (or about to start) — retrying
+  // never re-fetches from YouTube, only drains already-pending videos, so
+  // it's never pausable (backend enforces this too, see /pause in
+  // routes/youtube.ts — this just keeps the button from appearing at all).
+  isRetrying: boolean;
   online: boolean;
   canGenerateSimilar: boolean;
   // True once a similar playlist has already been generated from this one —
@@ -33,7 +38,7 @@ interface ActionsProps {
 }
 
 export function Actions({
-  playlist, isBusy, isPausing, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
+  playlist, isBusy, isPausing, isRetrying, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
   onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
 }: ActionsProps) {
   const { t } = useTranslation();
@@ -43,7 +48,7 @@ export function Actions({
   const isGenerated = Boolean(playlist.sourcePlaylistId);
   const showSync = !isGenerated && !playlist.syncPaused;
   const showRetry = !isGenerated && !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
-  const showPauseToggle = !isGenerated && (isBusy || playlist.syncPaused);
+  const showPauseToggle = !isGenerated && !isRetrying && (isBusy || playlist.syncPaused);
   // "Synced" here mirrors PlaylistRow/index.tsx's isSynced — only offer this
   // on a playlist that's actually finished downloading something, not one
   // still mid-first-sync or a generated playlist itself.
