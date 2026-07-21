@@ -86,8 +86,17 @@ export async function resetStuckSyncs(): Promise<void> {
 // DB: marks videos no longer in the playlist as removed, inserts brand-new
 // ones as `pending`, and refreshes the playlist's own title/thumbnail/count.
 // Shared by the regular sync flow and the admin-triggered soft reimport —
-// both need identical reconciliation, just followed by different next steps.
-export async function refreshPlaylistFromYoutube(playlistId: string): Promise<void> {
+// but NOT identical reconciliation: `skipRemoval` (used by soft reimport,
+// see reimport.ts) skips the "mark missing videos removed" step, which is
+// the one destructive part of this function — it clears mediaFileId and
+// GC-deletes the shared file. Soft reimport's whole premise is "existing
+// files are reused as-is," so it must never reach that step; adding
+// newly-appeared videos and refreshing playlist metadata are both
+// non-destructive and stay unconditional either way.
+export async function refreshPlaylistFromYoutube(
+  playlistId: string,
+  options: { skipRemoval?: boolean } = {}
+): Promise<void> {
   const playlist = await prisma.playlist.findUniqueOrThrow({
     where: { id: playlistId },
     select: { id: true, youtubeId: true },
@@ -113,31 +122,39 @@ export async function refreshPlaylistFromYoutube(playlistId: string): Promise<vo
   });
   const dbIds = new Set(dbVideos.map((v) => v.youtubeId));
 
-  // Safety net beyond fetchPlaylist's own exit-code check — a yt-dlp/YouTube
-  // hiccup could still return a truncated-but-successful (0 exit code)
-  // listing. A real playlist losing more than half its videos in one sync is
-  // implausible; a partial fetch is far more likely. Refuse to touch
-  // anything rather than risk deleting downloaded files for videos that are
-  // still actually in the playlist.
-  const droppedCount = dbVideos.filter((v) => !freshIds.has(v.youtubeId)).length;
-  if (dbVideos.length >= 20 && droppedCount > dbVideos.length * 0.5) {
-    throw new Error(
-      `Refusing to sync playlist ${playlistId}: fetch returned ${info.videos.length} videos vs ${dbVideos.length} ` +
-      `already known (would remove ${droppedCount}) — this looks like a partial/failed fetch, not a real change.`
-    );
-  }
+  if (!options.skipRemoval) {
+    // Safety net beyond fetchPlaylist's own playlist_count cross-check —
+    // that one can only catch a truncated fetch if yt-dlp's output actually
+    // carries playlist_count; this one catches it either way, by comparing
+    // against what we already had. Was a 50%-of-playlist threshold until a
+    // real incident: a large playlist's fetch got quietly truncated (bot-
+    // protection or some other partial failure) by an amount under 50% but
+    // still in the hundreds of videos, so this passed it as "plausible" —
+    // wrongly marking hundreds of already-downloaded videos removed
+    // (clearing mediaFileId and GC-deleting their files) for videos that
+    // were never actually removed from the real YouTube playlist, forcing a
+    // full redownload. 10% mirrors fetchPlaylist's own threshold so both
+    // layers agree on what's plausible.
+    const droppedCount = dbVideos.filter((v) => !freshIds.has(v.youtubeId)).length;
+    if (dbVideos.length >= 20 && droppedCount > Math.max(5, dbVideos.length * 0.1)) {
+      throw new Error(
+        `Refusing to sync playlist ${playlistId}: fetch returned ${info.videos.length} videos vs ${dbVideos.length} ` +
+        `already known (would remove ${droppedCount}) — this looks like a partial/failed fetch, not a real change.`
+      );
+    }
 
-  // ── 3. Remove videos no longer in the playlist ────────────────────────────
-  for (const dbVideo of dbVideos) {
-    if (!freshIds.has(dbVideo.youtubeId)) {
-      await prisma.playlistVideo.update({
-        where: { id: dbVideo.id },
-        data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null },
-      });
-      // Break this row's reference before trying to GC the shared file —
-      // it only actually deletes once no other playlist_video points at it.
-      if (dbVideo.mediaFileId) {
-        await tryDeleteMediaFile(dbVideo.mediaFileId);
+    // ── 3. Remove videos no longer in the playlist ──────────────────────────
+    for (const dbVideo of dbVideos) {
+      if (!freshIds.has(dbVideo.youtubeId)) {
+        await prisma.playlistVideo.update({
+          where: { id: dbVideo.id },
+          data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null },
+        });
+        // Break this row's reference before trying to GC the shared file —
+        // it only actually deletes once no other playlist_video points at it.
+        if (dbVideo.mediaFileId) {
+          await tryDeleteMediaFile(dbVideo.mediaFileId);
+        }
       }
     }
   }

@@ -15,6 +15,10 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
   const { t } = useTranslation();
   const progress = playlist.videoCount > 0
     ? Math.round(((playlist.downloadedCount + playlist.failedCount) / playlist.videoCount) * 100) : 0;
+  // A generated playlist has no YouTube playlist behind it (see
+  // Playlist.youtubeId in api/youtube.ts) — it's never "synced" in the
+  // normal sense, so a sync-time label doesn't apply to it at all.
+  const isGenerated = Boolean(playlist.sourcePlaylistId);
 
   return (
     <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
@@ -56,7 +60,7 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
         {playlist.totalSize > 0 && (
           <Chip label={formatBytes(playlist.totalSize)} size="small" variant="outlined" sx={{ fontSize: 11 }} />
         )}
-        {!isBusy && (
+        {!isBusy && !isGenerated && (
           playlist.lastSyncedAt ? (
             <Typography variant="caption" color="text.secondary">
               {t('playlists.syncedAgo', { time: timeAgo(playlist.lastSyncedAt, t) })}

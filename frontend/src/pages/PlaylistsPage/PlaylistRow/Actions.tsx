@@ -42,7 +42,7 @@ export function Actions({
 
   const isGenerated = Boolean(playlist.sourcePlaylistId);
   const showSync = !isGenerated && !playlist.syncPaused;
-  const showRetry = !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
+  const showRetry = !isGenerated && !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
   const showPauseToggle = !isGenerated && (isBusy || playlist.syncPaused);
   // "Synced" here mirrors PlaylistRow/index.tsx's isSynced — only offer this
   // on a playlist that's actually finished downloading something, not one

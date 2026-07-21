@@ -2,13 +2,14 @@ import { prisma } from './prisma';
 import { refreshPlaylistFromYoutube, tryClaimSync, releaseSyncClaim } from './syncService';
 import { resolvePlaylistMetadata } from './metadataWorker';
 
-// Admin-triggered "soft reimport" — re-runs everything a first sync would do
-// EXCEPT downloading mp3s; existing files are reused as-is. This is a
-// deliberately separate flow from syncPlaylist/_downloadPending rather than
-// a flag threaded through them: it reuses their reconciliation step
-// (refreshPlaylistFromYoutube) and the metadata pipeline (in force mode),
-// but the download loop itself simply isn't part of this code path, so
-// there's no risk of a stray condition ever triggering a download here.
+// Admin-triggered "soft reimport" — re-syncs metadata, re-triggers audio
+// analysis (genres included, since those come from that pass), and picks up
+// any brand-new videos, but never downloads, deletes, or replaces an mp3:
+// existing files are reused as-is, always. Two things make that guarantee
+// hold: the download loop (_downloadPending) simply isn't part of this code
+// path at all, and refreshPlaylistFromYoutube is called with skipRemoval so
+// its "mark missing videos removed" step — the one that clears mediaFileId
+// and GC-deletes the shared file — never runs either.
 //
 // Returns false without doing anything if the playlist is already busy
 // (a regular sync, a retry, or another reimport already in progress).
@@ -31,14 +32,18 @@ async function softReimportPlaylist(playlistId: string): Promise<void> {
       data: { syncStatus: 'syncing' },
     });
 
-    // 1. Reconcile against YouTube — identical to a regular sync's first
-    // step. Any brand-new videos are inserted as `pending`, but since this
-    // flow never calls _downloadPending, they're left for the next real
-    // sync (cron or manual) to actually download. Skipped for a generated
+    // 1. Reconcile against YouTube — but with skipRemoval, unlike a regular
+    // sync's first step: this action's whole premise is "existing files are
+    // reused as-is," so it must never mark a video removed or GC-delete its
+    // file, even if that video genuinely isn't in the source playlist
+    // anymore. Any brand-new videos are still inserted as `pending` (that
+    // part's non-destructive), but since this flow never calls
+    // _downloadPending, they're left for the next real sync (cron or
+    // manual) to actually download. Skipped entirely for a generated
     // playlist — it has no real YouTube playlist to reconcile against, so
     // this just re-runs the metadata/audio-analysis passes on what's there.
     if (!playlist.sourcePlaylistId) {
-      await refreshPlaylistFromYoutube(playlistId);
+      await refreshPlaylistFromYoutube(playlistId, { skipRemoval: true });
     }
 
     // 2. Re-run metadata resolution for every video in the playlist,
