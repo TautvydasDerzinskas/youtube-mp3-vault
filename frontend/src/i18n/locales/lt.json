@@ -35,6 +35,7 @@
     "verifyEmailFailed": "Ši patvirtinimo nuoroda negalioja arba nebegalioja."
   },
   "nav": {
+    "dashboard": "Prietaisų skydelis",
     "playlists": "Grojaraščiai",
     "administration": "Administravimas",
     "users": "Naudotojai",
@@ -311,6 +312,30 @@
       "generatedCreated": "Sugeneruota „{{name}}“ iš „{{sourceName}}“ ({{songCount}} dainų, {{failedCount}} nepavyko)",
       "loggedIn": "Prisijungė kaip {{email}}",
       "loggedOut": "Atsijungė"
+    }
+  },
+  "dashboard": {
+    "title": "Prietaisų skydelis",
+    "loadError": "Nepavyko įkelti prietaisų skydelio.",
+    "seeMore": "Rodyti daugiau",
+    "playCount_one": "Grota {{count}} kartą",
+    "playCount_few": "Grota {{count}} kartus",
+    "playCount_other": "Grota {{count}} kartų",
+    "songCount_one": "{{count}} daina",
+    "songCount_few": "{{count}} dainos",
+    "songCount_other": "{{count}} dainų",
+    "playlistCount": {
+      "label_one": "grojaraštis",
+      "label_few": "grojaraščiai",
+      "label_other": "grojaraščių"
+    },
+    "songsOnRepeat": {
+      "title": "Dažniausiai klausomos dainos",
+      "empty": "Dar niekas negrota — dainos, kurias klausysite, atsiras čia."
+    },
+    "topArtists": {
+      "title": "Populiariausi atlikėjai",
+      "empty": "Atlikėjų dar nėra — importuokite grojaraštį, kad pamatytumėte savo populiariausius atlikėjus."
     }
   }
 }

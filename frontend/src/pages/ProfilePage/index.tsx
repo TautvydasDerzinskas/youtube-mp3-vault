@@ -24,7 +24,7 @@ export default function ProfilePage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <ProfileHeader title={t('profile.title')} onBack={() => navigate('/playlists')} />
+      <ProfileHeader title={t('profile.title')} onBack={() => navigate('/dashboard')} />
 
       <Box sx={{ maxWidth: 480 }}>
         {showLastfmTab ? (

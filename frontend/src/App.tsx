@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import AppLayout from './components/Layout/AppLayout';
+import DashboardPage from './pages/DashboardPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import TrackDetailPage from './pages/TrackDetailPage';
@@ -41,14 +42,14 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  return !user ? <>{children}</> : <Navigate to="/playlists" replace />;
+  return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
 // Nested inside the already-authenticated "/" PrivateRoute subtree, so it only
 // needs to gate on the admin flag, not re-check login state.
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  return user?.isAdmin ? <>{children}</> : <Navigate to="/playlists" replace />;
+  return user?.isAdmin ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
 export default function App() {
@@ -72,7 +73,8 @@ export default function App() {
             </PrivateRoute>
           }
         >
-          <Route index element={<Navigate to="/playlists" replace />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="playlists" element={<PlaylistsPage />} />
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />
           <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />

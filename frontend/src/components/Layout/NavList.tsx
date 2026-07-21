@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, List, ListItemButton, ListItemIcon, ListItemText, Collapse } from '@mui/material';
+import { Box, List, ListItemButton, ListItemIcon, ListItemText, Collapse, Divider } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { NavItem } from './useNavItems';
@@ -44,6 +44,7 @@ export function NavList({ items, onNavigate }: NavListProps) {
 
     return (
       <Box key={item.path}>
+        {item.dividerBefore && <Divider sx={{ my: 1, borderColor: '#2a2a2a' }} />}
         <ListItemButton
           selected={active}
           onClick={() => (hasChildren ? toggle(item.path) : go(item.path))}

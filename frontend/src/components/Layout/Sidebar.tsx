@@ -48,7 +48,11 @@ export default function Sidebar({ width }: SidebarProps) {
       }}
     >
       {/* Logo */}
-      <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1, position: 'relative', overflow: 'hidden' }}>
+      <Box
+        onClick={() => navigate('/dashboard')}
+        sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1, position: 'relative', overflow: 'hidden',
+          cursor: 'pointer' }}
+      >
         <SidebarAudioGlow />
         <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 28, position: 'relative' }} />
         <Typography variant="h6" fontWeight={700} color="primary.main" sx={{ position: 'relative' }}>

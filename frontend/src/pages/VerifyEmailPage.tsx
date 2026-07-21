@@ -18,7 +18,7 @@ export default function VerifyEmailPage() {
       return;
     }
     verifyEmail(token)
-      .then(() => navigate('/playlists', { replace: true }))
+      .then(() => navigate('/dashboard', { replace: true }))
       .catch((err: unknown) => {
         setError((err as any)?.response?.data?.error ?? t('auth.verifyEmailFailed'));
       });

@@ -1,5 +1,6 @@
 import { ReactElement } from 'react';
 import {
+  Dashboard as DashboardIcon,
   QueueMusic as PlaylistsIcon,
   Group as UsersIcon,
   Android as DownloadsIcon,
@@ -16,6 +17,9 @@ export interface NavItem {
   path: string;
   icon: ReactElement;
   children?: NavItem[];
+  // Renders a divider above this item — used to set the Administration
+  // group apart from the regular nav items above it.
+  dividerBefore?: boolean;
 }
 
 export function useNavItems(): NavItem[] {
@@ -23,11 +27,16 @@ export function useNavItems(): NavItem[] {
   const { user } = useAuth();
 
   return [
+    { label: t('nav.dashboard'), path: '/dashboard', icon: <DashboardIcon /> },
     { label: t('nav.playlists'), path: '/playlists', icon: <PlaylistsIcon /> },
+    { label: t('nav.downloads'), path: '/downloads', icon: <DownloadsIcon /> },
+    // Kept last, set apart by its own divider — an admin-only section, not
+    // part of the everyday nav items above it.
     ...(user?.isAdmin ? [{
       label: t('nav.administration'),
       path: '/admin',
       icon: <AdministrationIcon />,
+      dividerBefore: true,
       children: [
         { label: t('nav.users'), path: '/admin/users', icon: <UsersIcon /> },
         { label: t('nav.triggers'), path: '/admin/triggers', icon: <TriggersIcon /> },
@@ -35,6 +44,5 @@ export function useNavItems(): NavItem[] {
         { label: t('nav.settings'), path: '/admin/settings', icon: <SettingsIcon /> },
       ],
     }] : []),
-    { label: t('nav.downloads'), path: '/downloads', icon: <DownloadsIcon /> },
   ];
 }

@@ -38,7 +38,7 @@ export function useLoginState() {
     setLoading(true);
     try {
       await login(loginEmail, loginPassword);
-      navigate('/playlists');
+      navigate('/dashboard');
     } catch (err: unknown) {
       const data = (err as any)?.response?.data;
       setError(data?.error ?? t('auth.signInFailed'));
@@ -61,7 +61,7 @@ export function useLoginState() {
       if (result.verificationRequired) {
         setCheckEmailAddress(result.email);
       } else {
-        navigate('/playlists');
+        navigate('/dashboard');
       }
     } catch (err: unknown) {
       setError((err as any)?.response?.data?.error ?? t('auth.registrationFailed'));

@@ -35,6 +35,7 @@
     "verifyEmailFailed": "Ten link potwierdzający jest nieprawidłowy lub wygasł."
   },
   "nav": {
+    "dashboard": "Panel",
     "playlists": "Playlisty",
     "administration": "Administracja",
     "users": "Użytkownicy",
@@ -312,6 +313,33 @@
       "generatedCreated": "Wygenerowano „{{name}}” na podstawie „{{sourceName}}” ({{songCount}} utworów, {{failedCount}} nieudanych)",
       "loggedIn": "Zalogowano się jako {{email}}",
       "loggedOut": "Wylogowano się"
+    }
+  },
+  "dashboard": {
+    "title": "Panel",
+    "loadError": "Nie udało się załadować panelu.",
+    "seeMore": "Zobacz więcej",
+    "playCount_one": "Odtworzono {{count}} raz",
+    "playCount_few": "Odtworzono {{count}} razy",
+    "playCount_many": "Odtworzono {{count}} razy",
+    "playCount_other": "Odtworzono {{count}} razy",
+    "songCount_one": "{{count}} utwór",
+    "songCount_few": "{{count}} utwory",
+    "songCount_many": "{{count}} utworów",
+    "songCount_other": "{{count}} utworów",
+    "playlistCount": {
+      "label_one": "playlista",
+      "label_few": "playlisty",
+      "label_many": "playlist",
+      "label_other": "playlist"
+    },
+    "songsOnRepeat": {
+      "title": "Utwory na powtórce",
+      "empty": "Nic jeszcze nie odtworzono — utwory, których słuchasz, pojawią się tutaj."
+    },
+    "topArtists": {
+      "title": "Najpopularniejsi wykonawcy",
+      "empty": "Brak wykonawców — zaimportuj playlistę, aby zobaczyć tutaj swoich najpopularniejszych wykonawców."
     }
   }
 }

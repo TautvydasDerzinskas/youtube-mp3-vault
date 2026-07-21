@@ -35,6 +35,7 @@
     "verifyEmailFailed": "This verification link is invalid or has expired."
   },
   "nav": {
+    "dashboard": "Dashboard",
     "playlists": "Playlists",
     "administration": "Administration",
     "users": "Users",
@@ -310,6 +311,27 @@
       "generatedCreated": "Generated \"{{name}}\" from \"{{sourceName}}\" ({{songCount}} songs, {{failedCount}} failed)",
       "loggedIn": "Logged in as {{email}}",
       "loggedOut": "Logged out"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "loadError": "Failed to load your dashboard.",
+    "seeMore": "See more",
+    "playCount_one": "Played {{count}} time",
+    "playCount_other": "Played {{count}} times",
+    "songCount_one": "{{count}} song",
+    "songCount_other": "{{count}} songs",
+    "playlistCount": {
+      "label_one": "playlist",
+      "label_other": "playlists"
+    },
+    "songsOnRepeat": {
+      "title": "Songs on Repeat",
+      "empty": "Nothing played yet — songs you listen to will show up here."
+    },
+    "topArtists": {
+      "title": "Top Artists",
+      "empty": "No artists yet — import a playlist to see your top artists here."
     }
   }
 }

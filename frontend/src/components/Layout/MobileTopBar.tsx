@@ -55,10 +55,15 @@ export default function MobileTopBar() {
         >
           {open ? <CloseIcon /> : <MenuIcon />}
         </IconButton>
-        <MusicNoteIcon sx={{ color: 'primary.main' }} />
-        <Typography variant="h6" fontWeight={700} color="primary.main" sx={{ flexGrow: 1 }}>
-          {t('auth.appName')}
-        </Typography>
+        <Box
+          onClick={() => handleNavigate('/dashboard')}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1, cursor: 'pointer' }}
+        >
+          <MusicNoteIcon sx={{ color: 'primary.main' }} />
+          <Typography variant="h6" fontWeight={700} color="primary.main">
+            {t('auth.appName')}
+          </Typography>
+        </Box>
         <Avatar
           alt={user?.displayName}
           onClick={() => handleNavigate('/profile')}

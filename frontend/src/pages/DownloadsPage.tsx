@@ -12,7 +12,7 @@ export default function DownloadsPage() {
     <Box sx={{ p: 3, maxWidth: 480 }}>
       <Stack direction="row" alignItems="center" gap={1} mb={3}>
         <Tooltip title={t('downloads.back')}>
-          <IconButton onClick={() => navigate('/playlists')}>
+          <IconButton onClick={() => navigate('/dashboard')}>
             <ArrowBackIcon />
           </IconButton>
         </Tooltip>
