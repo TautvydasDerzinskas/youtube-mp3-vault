@@ -28,6 +28,13 @@ export default function PlaylistDetailPage() {
     if (!location.state?.scrollToNowPlaying) return;
     if (scrolledForKeyRef.current === location.key) return;
     if (!nowPlaying || nowPlaying.playlistId !== playlistId) return;
+    // playlist and videos come from two independent requests that can
+    // resolve in different renders — TrackList (and listRef) only mounts
+    // once both are ready. Bail without marking this attempt "done" until
+    // then, otherwise a scroll landing in the gap between the two silently
+    // no-ops (listRef.current is still null) and never gets retried, since
+    // neither of these is otherwise a dependency of this effect.
+    if (playlist === 'loading' || videos === 'loading' || !listRef.current) return;
 
     const index = filteredTracks.findIndex(v => v.id === nowPlaying.videoId);
     if (index < 0) {
@@ -39,9 +46,9 @@ export default function PlaylistDetailPage() {
       return;
     }
 
-    listRef.current?.scrollToRow({ index, align: 'center', behavior: 'smooth' });
+    listRef.current.scrollToRow({ index, align: 'center', behavior: 'smooth' });
     scrolledForKeyRef.current = location.key;
-  }, [location, nowPlaying, filteredTracks, playlistId, listRef, selectedGenres, clearGenres]);
+  }, [location, nowPlaying, filteredTracks, playlistId, listRef, selectedGenres, clearGenres, playlist, videos]);
 
   if (!playlistId) return <Navigate to="/playlists" replace />;
 
