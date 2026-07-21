@@ -6,6 +6,12 @@ import { NowPlaying } from '../pages/PlaylistsPage/types';
 
 export type QueueTrack = PlaylistVideo & { playlistId?: string };
 
+// Caps how many previously-played tracks are remembered for shuffle's
+// "Previous" button — only relevant in shuffle mode (sequential mode always
+// derives "previous" from position in `queue` directly), bounded so a very
+// long listening session doesn't grow this unboundedly.
+const MAX_HISTORY = 50;
+
 interface PlayerContextType {
   nowPlaying: NowPlaying | null;
   nowPlayingVideo: PlaylistVideo | undefined;
@@ -15,6 +21,10 @@ interface PlayerContextType {
   analyserNode: AnalyserNode | null;
   hasNext: boolean;
   hasPrevious: boolean;
+  isRepeat: boolean;
+  isShuffle: boolean;
+  toggleRepeat: () => void;
+  toggleShuffle: () => void;
   handleTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: QueueTrack[]) => void;
   playNext: () => void;
   playPrevious: () => void;
@@ -30,10 +40,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<QueueTrack[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
+  const [isRepeat, setIsRepeat] = useState(false);
+  const [isShuffle, setIsShuffle] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentRef = useRef(current);
   currentRef.current = current;
   const audioGraphRef = useRef<{ el: HTMLAudioElement; ctx: AudioContext; analyser: AnalyserNode } | null>(null);
+  // Tracks played so far this session, oldest first — only consulted by
+  // playPrevious in shuffle mode. Mutated exactly alongside a setCurrent
+  // call, so reading historyRef.current directly at render time (for
+  // hasPrevious below) is always up to date by the time that render happens.
+  const historyRef = useRef<QueueTrack[]>([]);
 
   useEffect(() => {
     if (!current || !audioRef.current) return;
@@ -80,6 +97,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // A deliberate pick of a specific track starts a fresh session —
+    // carrying over "previous" history from whatever was playing before
+    // wouldn't mean anything here.
+    historyRef.current = [];
     setCurrent({ playlistId, video });
     if (queueOverride) {
       setQueue(queueOverride);
@@ -91,38 +112,78 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const currentIndex = current ? queue.findIndex(v => v.id === current.video.id) : -1;
-  const hasNext = currentIndex >= 0 && currentIndex < queue.length - 1;
-  const hasPrevious = currentIndex > 0;
+  // Shuffle can always jump to *some* other track as long as one exists;
+  // "previous" instead depends on whether there's any session history to
+  // step back through, since shuffle order isn't just position ± 1.
+  const hasNext = isShuffle ? queue.length > 1 : (currentIndex >= 0 && currentIndex < queue.length - 1);
+  const hasPrevious = isShuffle ? historyRef.current.length > 0 : currentIndex > 0;
+
+  // Shared by playNext and handleTrackEnded — sequential mode is just
+  // idx+1; shuffle mode picks uniformly at random from every other track in
+  // the queue.
+  const pickNextTrack = useCallback((fromVideo: PlaylistVideo): QueueTrack | undefined => {
+    if (isShuffle) {
+      const candidates = queue.filter(v => v.id !== fromVideo.id);
+      if (candidates.length === 0) return undefined;
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+    const idx = queue.findIndex(v => v.id === fromVideo.id);
+    return idx >= 0 ? queue[idx + 1] : undefined;
+  }, [queue, isShuffle]);
 
   const playNext = useCallback(() => {
     setCurrent(prev => {
       if (!prev) return null;
-      const idx = queue.findIndex(v => v.id === prev.video.id);
-      const next = idx >= 0 ? queue[idx + 1] : undefined;
-      return next ? { playlistId: next.playlistId ?? prev.playlistId, video: next } : prev;
+      const next = pickNextTrack(prev.video);
+      if (!next) return prev;
+      historyRef.current = [...historyRef.current, { ...prev.video, playlistId: prev.playlistId }].slice(-MAX_HISTORY);
+      return { playlistId: next.playlistId ?? prev.playlistId, video: next };
     });
-  }, [queue]);
+  }, [pickNextTrack]);
 
   const playPrevious = useCallback(() => {
     setCurrent(prev => {
       if (!prev) return null;
+      if (isShuffle) {
+        const history = historyRef.current;
+        if (history.length === 0) return prev;
+        const previous = history[history.length - 1];
+        historyRef.current = history.slice(0, -1);
+        return { playlistId: previous.playlistId ?? prev.playlistId, video: previous };
+      }
       const idx = queue.findIndex(v => v.id === prev.video.id);
       const previous = idx > 0 ? queue[idx - 1] : undefined;
       return previous ? { playlistId: previous.playlistId ?? prev.playlistId, video: previous } : prev;
     });
-  }, [queue]);
+  }, [queue, isShuffle]);
 
   const handleTrackEnded = useCallback(() => {
     const prev = currentRef.current;
     if (prev) playlistsApi.markPlayed(prev.playlistId, prev.video.id).catch(() => {});
 
-    setCurrent(prev => {
-      if (!prev) return null;
-      const idx = queue.findIndex(v => v.id === prev.video.id);
-      const next = idx >= 0 ? queue[idx + 1] : undefined;
-      return next ? { playlistId: next.playlistId ?? prev.playlistId, video: next } : null;
+    // Repeat loops the same track — restart it directly rather than
+    // advancing `current` (which isn't changing, so the src-setting effect
+    // above wouldn't fire again on its own).
+    if (isRepeat) {
+      const audioEl = audioRef.current;
+      if (audioEl) {
+        audioEl.currentTime = 0;
+        audioEl.play().catch(() => {});
+      }
+      return;
+    }
+
+    setCurrent(prevState => {
+      if (!prevState) return null;
+      const next = pickNextTrack(prevState.video);
+      if (!next) return null;
+      historyRef.current = [...historyRef.current, { ...prevState.video, playlistId: prevState.playlistId }].slice(-MAX_HISTORY);
+      return { playlistId: next.playlistId ?? prevState.playlistId, video: next };
     });
-  }, [queue]);
+  }, [isRepeat, pickNextTrack]);
+
+  const toggleRepeat = useCallback(() => setIsRepeat(v => !v), []);
+  const toggleShuffle = useCallback(() => setIsShuffle(v => !v), []);
 
   const stopIfPlaylist = useCallback((playlistId: string) => {
     setCurrent(prev => (prev?.playlistId === playlistId ? null : prev));
@@ -137,7 +198,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     nowPlaying: current ? { playlistId: current.playlistId, videoId: current.video.id } : null,
     nowPlayingVideo: current?.video,
     isAudioPlaying, setIsAudioPlaying, audioRef, analyserNode,
-    hasNext, hasPrevious,
+    hasNext, hasPrevious, isRepeat, isShuffle, toggleRepeat, toggleShuffle,
     handleTogglePlay, playNext, playPrevious, handleTrackEnded, stopIfPlaylist, handleClosePlayer,
   };
 

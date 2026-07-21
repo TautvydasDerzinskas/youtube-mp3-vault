@@ -12,8 +12,8 @@ function AppLayoutContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-    nowPlaying, nowPlayingVideo, audioRef, hasNext, hasPrevious,
-    setIsAudioPlaying, handleTrackEnded, playNext, playPrevious, handleClosePlayer,
+    nowPlaying, nowPlayingVideo, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
+    setIsAudioPlaying, handleTrackEnded, playNext, playPrevious, toggleRepeat, toggleShuffle, handleClosePlayer,
   } = usePlayer();
 
   // Acts like the playlist's own "back" button, and tells PlaylistDetailPage
@@ -57,11 +57,15 @@ function AppLayoutContent() {
           audioRef={audioRef}
           hasNext={hasNext}
           hasPrevious={hasPrevious}
+          isRepeat={isRepeat}
+          isShuffle={isShuffle}
           onPlay={() => setIsAudioPlaying(true)}
           onPause={() => setIsAudioPlaying(false)}
           onEnded={handleTrackEnded}
           onNext={playNext}
           onPrevious={playPrevious}
+          onToggleRepeat={toggleRepeat}
+          onToggleShuffle={toggleShuffle}
           onClose={handleClosePlayer}
           onTitleClick={handleTitleClick}
         />

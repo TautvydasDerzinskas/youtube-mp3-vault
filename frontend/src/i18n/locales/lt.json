@@ -136,6 +136,8 @@
       "close": "Uždaryti grotuvą",
       "previous": "Ankstesnis",
       "next": "Kitas",
+      "repeat": "Kartoti dabartinę dainą",
+      "shuffle": "Maišyti",
       "backToPlaylist": "Grįžti į grojaraštį"
     },
     "deleteConfirm": {

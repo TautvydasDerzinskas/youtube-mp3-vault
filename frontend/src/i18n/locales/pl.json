@@ -140,6 +140,8 @@
       "close": "Zamknij odtwarzacz",
       "previous": "Poprzedni",
       "next": "Następny",
+      "repeat": "Powtarzaj bieżący utwór",
+      "shuffle": "Losowa kolejność",
       "backToPlaylist": "Wróć do playlisty"
     },
     "deleteConfirm": {

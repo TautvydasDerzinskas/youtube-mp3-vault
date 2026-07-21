@@ -2,6 +2,7 @@ import { Box, Typography, IconButton, Tooltip, Avatar } from '@mui/material';
 import {
   MusicNote as MusicNoteIcon, Close as CloseIcon,
   SkipPrevious as SkipPreviousIcon, SkipNext as SkipNextIcon,
+  Repeat as RepeatIcon, Shuffle as ShuffleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { SIDEBAR_WIDTH } from './constants';
@@ -14,11 +15,15 @@ interface MiniPlayerProps {
   audioRef: React.RefObject<HTMLAudioElement>;
   hasNext: boolean;
   hasPrevious: boolean;
+  isRepeat: boolean;
+  isShuffle: boolean;
   onPlay: () => void;
   onPause: () => void;
   onEnded: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  onToggleRepeat: () => void;
+  onToggleShuffle: () => void;
   onClose: () => void;
   // Always defined whenever MiniPlayer itself is rendered — it's only ever
   // mounted (see AppLayout) once nowPlaying/nowPlayingVideo are set, and
@@ -27,8 +32,8 @@ interface MiniPlayerProps {
 }
 
 export function MiniPlayer({
-  title, artist, thumbnailUrl, audioRef, hasNext, hasPrevious,
-  onPlay, onPause, onEnded, onNext, onPrevious, onClose, onTitleClick,
+  title, artist, thumbnailUrl, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
+  onPlay, onPause, onEnded, onNext, onPrevious, onToggleRepeat, onToggleShuffle, onClose, onTitleClick,
 }: MiniPlayerProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -50,6 +55,20 @@ export function MiniPlayer({
     <Tooltip title={t('playlists.miniPlayer.next')}>
       <IconButton size="small" onClick={onNext} sx={{ flexShrink: 0 }}>
         <SkipNextIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+  const repeatButton = (
+    <Tooltip title={t('playlists.miniPlayer.repeat')}>
+      <IconButton size="small" onClick={onToggleRepeat} sx={{ flexShrink: 0, color: isRepeat ? 'error.main' : undefined }}>
+        <RepeatIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+  const shuffleButton = (
+    <Tooltip title={t('playlists.miniPlayer.shuffle')}>
+      <IconButton size="small" onClick={onToggleShuffle} sx={{ flexShrink: 0, color: isShuffle ? 'error.main' : undefined }}>
+        <ShuffleIcon fontSize="small" />
       </IconButton>
     </Tooltip>
   );
@@ -96,6 +115,8 @@ export function MiniPlayer({
           />
         </Box>
         {nextButton}
+        {repeatButton}
+        {shuffleButton}
         {closeButton}
       </Box>
     );
@@ -118,6 +139,8 @@ export function MiniPlayer({
         onEnded={onEnded}
       />
       {nextButton}
+      {repeatButton}
+      {shuffleButton}
       {closeButton}
     </Box>
   );

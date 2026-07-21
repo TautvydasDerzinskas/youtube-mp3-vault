@@ -132,6 +132,8 @@
       "close": "Close player",
       "previous": "Previous",
       "next": "Next",
+      "repeat": "Repeat current song",
+      "shuffle": "Shuffle",
       "backToPlaylist": "Back to playlist"
     },
     "deleteConfirm": {
