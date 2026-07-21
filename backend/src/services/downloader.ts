@@ -57,6 +57,25 @@ export function isPermanentlyUnavailable(message: string): boolean {
   return PERMANENT_UNAVAILABILITY_PATTERNS.some((re) => re.test(message));
 }
 
+// Unambiguous signs that a failure is YouTube throttling/blocking us, rather
+// than an ordinary transient error — a TLS handshake that never completes is
+// a connection being throttled/dropped outright (a blunter response than a
+// clean HTTP rejection), and the other two are YouTube's well-known explicit
+// bot-check responses. Any one of these on its own is reason enough to back
+// off hard immediately, rather than waiting for a streak of failures to
+// accumulate first — see downloadPendingVideos in syncService.ts.
+const RATE_LIMIT_PATTERNS = [
+  /handshake operation timed out/i,
+  /\b429\b/,
+  /too many requests/i,
+  /confirm you'?re not a bot/i,
+  /sign in to confirm/i,
+];
+
+export function isLikelyRateLimited(message: string): boolean {
+  return RATE_LIMIT_PATTERNS.some((re) => re.test(message));
+}
+
 // 10 minutes — generous ceiling for a single track even on a slow
 // connection; yt-dlp's own --retries/--fragment-retries already absorb
 // transient stalls within that window. Without this, a genuine network

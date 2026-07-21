@@ -1,8 +1,34 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { fetchPlaylist } from './youtube';
-import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable } from './downloader';
+import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited } from './downloader';
 import { resolvePlaylistMetadata } from './metadataWorker';
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Adaptive pacing between downloads — see downloadPendingVideos. A large
+// playlist gets a small proactive floor even with zero failures (cheap
+// insurance against tripping a volume-based throttle in the first place);
+// beyond that, pacing only escalates in response to actual trouble.
+const LARGE_PLAYLIST_THRESHOLD = 300;
+const LARGE_PLAYLIST_BASELINE_DELAY_MS = 3_000;
+
+// Escalation ladder above the baseline. A trigger jumps straight to the
+// first tier; if failures keep happening even at that pace, it escalates
+// once more rather than retrying forever at a pace that's clearly not
+// enough. Capped at 5 minutes — long enough to matter, short enough that a
+// user who pauses mid-backoff isn't left waiting on an unreasonable delay.
+const PACING_ESCALATION_MS = [3 * 60_000, 5 * 60_000];
+
+// A single one of these (see isLikelyRateLimited) is reason enough to
+// escalate immediately; anything else needs a streak this long first, since
+// an occasional ordinary failure (a flaky request, a genuinely broken video)
+// isn't evidence of IP-level trouble on its own.
+const FAILURE_STREAK_TO_ESCALATE = 5;
+// Consecutive successes at the current pace before easing back down one tier.
+const SUCCESS_STREAK_TO_STEP_DOWN = 5;
 
 /** True for a Prisma unique-constraint violation (P2002) — i.e. we lost a create race. */
 function isUniqueConstraintViolation(err: unknown): boolean {
@@ -212,6 +238,22 @@ export async function refreshPlaylistFromYoutube(
 // startBackgroundDownload wrapper meant for HTTP handlers that can't block.
 export async function downloadPendingVideos(playlistId: string): Promise<void> {
   try {
+    const playlistMeta = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      select: { videoCount: true },
+    });
+    const baselineDelayMs = (playlistMeta?.videoCount ?? 0) > LARGE_PLAYLIST_THRESHOLD
+      ? LARGE_PLAYLIST_BASELINE_DELAY_MS
+      : 0;
+
+    // Pacing state — local to this one sync pass, not persisted across
+    // separate sync/retry runs. tierIndex 0 is the baseline above; 1 and 2
+    // index into PACING_ESCALATION_MS.
+    let tierIndex = 0;
+    let consecutiveFailures = 0;
+    let consecutiveSuccesses = 0;
+    const delayForCurrentTier = () => (tierIndex === 0 ? baselineDelayMs : PACING_ESCALATION_MS[tierIndex - 1]);
+
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const current = await prisma.playlist.findUnique({
@@ -225,6 +267,25 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
         orderBy: { position: 'asc' },
       });
       if (!video) break;
+
+      // Only pace actual network fetches — a video whose file is already in
+      // the shared store (deduped by youtubeId across every playlist/user)
+      // resolves from disk with no request to YouTube at all, so there's
+      // nothing to protect against here and no reason to sit through a
+      // multi-minute backoff for it.
+      const alreadyCached = await prisma.mediaFile.findUnique({ where: { youtubeId: video.youtubeId } });
+      if (!alreadyCached && delayForCurrentTier() > 0) {
+        await sleep(delayForCurrentTier());
+
+        // Re-check pause after the wait — otherwise a pause clicked mid-sleep
+        // would still be followed by one more full download attempt, on top
+        // of whatever pacing delay it just sat through.
+        const afterSleep = await prisma.playlist.findUnique({
+          where: { id: playlistId },
+          select: { syncPaused: true },
+        });
+        if (!afterSleep || afterSleep.syncPaused) break;
+      }
 
       await prisma.playlistVideo.update({
         where: { id: video.id },
@@ -244,6 +305,14 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
           },
         });
         console.log(`[sync] ✓ ${video.youtubeId} — ${video.title.slice(0, 60)}`);
+
+        consecutiveFailures = 0;
+        consecutiveSuccesses++;
+        if (consecutiveSuccesses >= SUCCESS_STREAK_TO_STEP_DOWN && tierIndex > 0) {
+          tierIndex--;
+          consecutiveSuccesses = 0;
+          console.log(`[sync] Pacing eased to tier ${tierIndex} (${delayForCurrentTier() / 1000}s between downloads) for playlist ${playlistId}`);
+        }
       } catch (err) {
         const message = (err as Error).message;
         console.error(`[sync] ✗ ${video.youtubeId}:`, message);
@@ -253,6 +322,20 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
             ? { downloadStatus: 'failed', downloadError: message.slice(0, 500), isAvailable: false }
             : { downloadStatus: 'failed', downloadError: message.slice(0, 500) },
         });
+
+        consecutiveSuccesses = 0;
+        // A permanently-unavailable video (deleted/private) is routine and
+        // unrelated to IP health — it shouldn't count towards a "we're being
+        // throttled" streak at all.
+        if (!isPermanentlyUnavailable(message)) {
+          consecutiveFailures++;
+          const shouldEscalate = isLikelyRateLimited(message) || consecutiveFailures >= FAILURE_STREAK_TO_ESCALATE;
+          if (shouldEscalate && tierIndex < PACING_ESCALATION_MS.length) {
+            tierIndex++;
+            consecutiveFailures = 0;
+            console.log(`[sync] Pacing escalated to tier ${tierIndex} (${delayForCurrentTier() / 1000}s between downloads) for playlist ${playlistId}`);
+          }
+        }
       }
     }
 
