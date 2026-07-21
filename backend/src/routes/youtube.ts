@@ -597,6 +597,16 @@ router.post('/:id/retry-failed', requireAuth, async (req: AuthRequest, res, next
       return;
     }
 
+    // Without this check, retryFailedVideos would still reset failed videos
+    // to pending, but downloadPendingVideos's first loop check would see
+    // syncPaused still true and break immediately — silently reverting
+    // straight back to 'idle' without downloading anything, discarding the
+    // retry with no error surfaced anywhere.
+    if (playlist.syncPaused) {
+      res.status(409).json({ error: 'Cannot retry while paused — resume automatic sync first' });
+      return;
+    }
+
     const [enriched] = await withDownloadStats([playlist]);
     if (enriched.failedCount === 0) {
       res.status(400).json({ error: 'No failed videos to retry' });

@@ -3,6 +3,11 @@ import { isOnline } from './connectivity';
 import { getLastfmSettings } from './settings';
 
 const LASTFM_BASE = 'https://ws.audioscrobbler.com/2.0/';
+// Small JSON API call, not a file transfer — a stalled request would
+// otherwise hang the calling pass (sync's metadata step, playlist
+// generation, scrobbling) forever. An abort here is already handled the
+// same as any other failure below (falls through to the existing catch).
+const LASTFM_FETCH_TIMEOUT_MS = 15_000;
 
 export interface SimilarTrack {
   artist: string;
@@ -26,7 +31,7 @@ export async function getSimilarTracks(artist: string, title: string, limit = 8)
   });
 
   try {
-    const res = await fetch(`${LASTFM_BASE}?${params.toString()}`);
+    const res = await fetch(`${LASTFM_BASE}?${params.toString()}`, { signal: AbortSignal.timeout(LASTFM_FETCH_TIMEOUT_MS) });
     if (!res.ok) return [];
     const data: any = await res.json();
     const tracks: any[] = data?.similartracks?.track ?? [];
@@ -66,7 +71,7 @@ export async function getTrackCorrection(artist: string, title: string): Promise
   });
 
   try {
-    const res = await fetch(`${LASTFM_BASE}?${params.toString()}`);
+    const res = await fetch(`${LASTFM_BASE}?${params.toString()}`, { signal: AbortSignal.timeout(LASTFM_FETCH_TIMEOUT_MS) });
     if (!res.ok) return null;
     const data: any = await res.json();
     const correction = data?.corrections?.correction;
@@ -102,7 +107,7 @@ export async function getSession(token: string): Promise<{ sessionKey: string; u
   const qs = new URLSearchParams({ ...params, api_sig: sign(params, apiSecret), format: 'json' });
 
   try {
-    const res = await fetch(`${LASTFM_BASE}?${qs.toString()}`);
+    const res = await fetch(`${LASTFM_BASE}?${qs.toString()}`, { signal: AbortSignal.timeout(LASTFM_FETCH_TIMEOUT_MS) });
     if (!res.ok) return null;
     const data: any = await res.json();
     const sessionKey = data?.session?.key;
@@ -134,7 +139,7 @@ export async function scrobble(params: {
   const body = new URLSearchParams({ ...signedParams, api_sig: sign(signedParams, apiSecret), format: 'json' });
 
   try {
-    const res = await fetch(LASTFM_BASE, { method: 'POST', body });
+    const res = await fetch(LASTFM_BASE, { method: 'POST', body, signal: AbortSignal.timeout(LASTFM_FETCH_TIMEOUT_MS) });
     return res.ok;
   } catch {
     return false;

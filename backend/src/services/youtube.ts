@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { runYtDlp } from './ytdlpProcess';
 
 export interface VideoEntry {
   id: string;
@@ -62,116 +62,102 @@ function pickThumbnail(thumbnails: unknown): string | null {
   return (sorted[0]?.url as string) ?? null;
 }
 
+// 5 minutes — just a metadata listing (not a file download), but a very
+// large playlist can paginate through YouTube's internal API for a while.
+const PLAYLIST_FETCH_TIMEOUT_MS = 5 * 60 * 1000;
+
 export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> {
-  return new Promise((resolve, reject) => {
-    const args = [
-      '--flat-playlist',
-      '--dump-json',
-      '--no-warnings',
-      '--ignore-errors',
-      // Large playlists paginate through YouTube's internal API as they're
-      // enumerated, and the default "web" client can get 403'd by PO-token
-      // checks partway through (see downloader.ts's downloadVideo, which
-      // hit the same thing) — the android client avoids that requirement.
-      '--extractor-args', 'youtube:player_client=default,android,-tv',
-      playlistUrl,
-    ];
+  const args = [
+    '--flat-playlist',
+    '--dump-json',
+    '--no-warnings',
+    '--ignore-errors',
+    // Large playlists paginate through YouTube's internal API as they're
+    // enumerated, and the default "web" client can get 403'd by PO-token
+    // checks partway through (see downloader.ts's downloadVideo, which
+    // hit the same thing) — the android client avoids that requirement.
+    '--extractor-args', 'youtube:player_client=default,android,-tv',
+    playlistUrl,
+  ];
 
-    const proc = spawn('yt-dlp', args);
-    let raw = '';
-    let stderr = '';
+  const { code, stdout: raw, stderr } = await runYtDlp(args, PLAYLIST_FETCH_TIMEOUT_MS);
 
-    proc.stdout.on('data', (chunk: Buffer) => { raw += chunk.toString(); });
-    proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+  // A non-zero exit means yt-dlp didn't finish listing the playlist — e.g. a
+  // dropped connection partway through a large playlist. Without this check,
+  // whatever partial output it managed to write before dying would be
+  // trusted as "the complete current playlist," and refreshPlaylistFromYoutube
+  // would treat every video that didn't make it into that partial list as
+  // removed from the playlist — deleting their downloaded files.
+  // --ignore-errors already lets individual unavailable videos through with
+  // a 0 exit code, so a non-zero code here specifically means the whole
+  // fetch was interrupted.
+  if (code !== 0) {
+    const e = new Error(`yt-dlp exited with code ${code} while listing the playlist: ${stderr.slice(0, 300) || '(no stderr output)'}`);
+    (e as any).code = 'FETCH_FAILED';
+    throw e;
+  }
 
-    proc.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'ENOENT') {
-        const e = new Error('yt-dlp is not installed or not in PATH');
-        (e as any).code = 'YTDLP_NOT_FOUND';
-        return reject(e);
-      }
-      reject(err);
-    });
+  const entries = raw
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+    .filter(Boolean);
 
-    proc.on('close', (code) => {
-      // A non-zero exit means yt-dlp didn't finish listing the playlist —
-      // e.g. a dropped connection partway through a large playlist. Without
-      // this check, whatever partial output it managed to write before
-      // dying would be trusted as "the complete current playlist," and
-      // refreshPlaylistFromYoutube would treat every video that didn't make
-      // it into that partial list as removed from the playlist — deleting
-      // their downloaded files. --ignore-errors already lets individual
-      // unavailable videos through with a 0 exit code, so a non-zero code
-      // here specifically means the whole fetch was interrupted.
-      if (code !== 0) {
-        const e = new Error(`yt-dlp exited with code ${code} while listing the playlist: ${stderr.slice(0, 300) || '(no stderr output)'}`);
-        (e as any).code = 'FETCH_FAILED';
-        return reject(e);
-      }
+  if (entries.length === 0) {
+    const e = new Error(
+      stderr.includes('does not exist') || stderr.includes('unavailable')
+        ? 'Playlist is unavailable or does not exist'
+        : 'Playlist appears to be empty or private'
+    );
+    (e as any).code = 'FETCH_FAILED';
+    throw e;
+  }
 
-      const entries = raw
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .map((l) => { try { return JSON.parse(l); } catch { return null; } })
-        .filter(Boolean);
+  // Independent cross-check: each entry also carries playlist_count, taken
+  // from YouTube's own page metadata (available up front, not derived from
+  // how many entries yt-dlp itself managed to enumerate). If it disagrees
+  // sharply with what we actually got, the enumeration was cut short even
+  // though the process still exited 0 — e.g. yt-dlp gave up partway through
+  // pagination without treating it as a hard error. A small gap is normal (a
+  // few genuinely unavailable videos filtered by --ignore-errors), so only
+  // reject on a substantial one.
+  const declaredCount = entries
+    .map((e) => (e as Record<string, unknown>).playlist_count)
+    .find((n): n is number => typeof n === 'number');
+  if (declaredCount != null) {
+    const missing = declaredCount - entries.length;
+    if (missing > Math.max(5, declaredCount * 0.1)) {
+      const e = new Error(
+        `yt-dlp only listed ${entries.length} of the ${declaredCount} videos the playlist reports having — treating as an incomplete fetch.`
+      );
+      (e as any).code = 'FETCH_FAILED';
+      throw e;
+    }
+  }
 
-      if (entries.length === 0) {
-        const e = new Error(
-          stderr.includes('does not exist') || stderr.includes('unavailable')
-            ? 'Playlist is unavailable or does not exist'
-            : 'Playlist appears to be empty or private'
-        );
-        (e as any).code = 'FETCH_FAILED';
-        return reject(e);
-      }
+  const first = entries[0] as Record<string, unknown>;
+  const playlistTitle = (first.playlist_title ?? first.playlist ?? 'Unknown Playlist') as string;
+  const playlistId = (first.playlist_id ?? '') as string;
 
-      // Independent cross-check: each entry also carries playlist_count,
-      // taken from YouTube's own page metadata (available up front, not
-      // derived from how many entries yt-dlp itself managed to enumerate).
-      // If it disagrees sharply with what we actually got, the enumeration
-      // was cut short even though the process still exited 0 — e.g. yt-dlp
-      // gave up partway through pagination without treating it as a hard
-      // error. A small gap is normal (a few genuinely unavailable videos
-      // filtered by --ignore-errors), so only reject on a substantial one.
-      const declaredCount = entries
-        .map((e) => (e as Record<string, unknown>).playlist_count)
-        .find((n): n is number => typeof n === 'number');
-      if (declaredCount != null) {
-        const missing = declaredCount - entries.length;
-        if (missing > Math.max(5, declaredCount * 0.1)) {
-          const e = new Error(
-            `yt-dlp only listed ${entries.length} of the ${declaredCount} videos the playlist reports having — treating as an incomplete fetch.`
-          );
-          (e as any).code = 'FETCH_FAILED';
-          return reject(e);
-        }
-      }
+  const videos: VideoEntry[] = entries
+    .map((e: Record<string, unknown>, idx: number) => ({
+      id: e.id as string,
+      title: (e.title as string | undefined) ?? '[Unavailable]',
+      duration: typeof e.duration === 'number' ? e.duration : null,
+      thumbnailUrl: pickThumbnail(e.thumbnails) ?? (e.thumbnail as string | null) ?? null,
+      position: typeof e.playlist_index === 'number' ? (e.playlist_index as number) : idx + 1,
+      isAvailable: typeof e.id === 'string' && e.id.length > 0 && !isPlaceholderTitle(e.title as string | undefined),
+      channelName: (e.channel as string | undefined) || (e.uploader as string | undefined) || null,
+    }))
+    .filter((v) => v.isAvailable);
 
-      const first = entries[0] as Record<string, unknown>;
-      const playlistTitle = (first.playlist_title ?? first.playlist ?? 'Unknown Playlist') as string;
-      const playlistId = (first.playlist_id ?? '') as string;
-
-      const videos: VideoEntry[] = entries
-        .map((e: Record<string, unknown>, idx: number) => ({
-          id: e.id as string,
-          title: (e.title as string | undefined) ?? '[Unavailable]',
-          duration: typeof e.duration === 'number' ? e.duration : null,
-          thumbnailUrl: pickThumbnail(e.thumbnails) ?? (e.thumbnail as string | null) ?? null,
-          position: typeof e.playlist_index === 'number' ? (e.playlist_index as number) : idx + 1,
-          isAvailable: typeof e.id === 'string' && e.id.length > 0 && !isPlaceholderTitle(e.title as string | undefined),
-          channelName: (e.channel as string | undefined) || (e.uploader as string | undefined) || null,
-        }))
-        .filter((v) => v.isAvailable);
-
-      resolve({
-        id: playlistId,
-        title: playlistTitle,
-        thumbnailUrl: videos[0]?.thumbnailUrl ?? null,
-        videos,
-      });
-    });
-  });
+  return {
+    id: playlistId,
+    title: playlistTitle,
+    thumbnailUrl: videos[0]?.thumbnailUrl ?? null,
+    videos,
+  };
 }
 
 export interface RemixResult {
@@ -182,25 +168,28 @@ export interface RemixResult {
   duration: number | null;
 }
 
-function runYtDlpSearch(searchQuery: string): Promise<Record<string, unknown>[]> {
-  return new Promise((resolve) => {
-    const proc = spawn('yt-dlp', ['--flat-playlist', '--dump-json', '--no-warnings', '--ignore-errors', searchQuery]);
-    let raw = '';
+// 2 minutes — a search should be fast; generous ceiling for a slow connection.
+const SEARCH_TIMEOUT_MS = 2 * 60 * 1000;
 
-    proc.stdout.on('data', (chunk: Buffer) => { raw += chunk.toString(); });
-    proc.stderr.on('data', () => {});
-    proc.on('error', () => resolve([]));
-
-    proc.on('close', () => {
-      const entries = raw
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .map((l) => { try { return JSON.parse(l); } catch { return null; } })
-        .filter((e): e is Record<string, unknown> => e !== null);
-      resolve(entries);
-    });
-  });
+async function runYtDlpSearch(searchQuery: string): Promise<Record<string, unknown>[]> {
+  try {
+    // Exit code is deliberately ignored here (unlike fetchPlaylist) — this is
+    // a best-effort discovery search (remixes/alternates), not the
+    // authoritative playlist contents, so partial/incomplete output is still
+    // useful rather than something to reject.
+    const { stdout: raw } = await runYtDlp(
+      ['--flat-playlist', '--dump-json', '--no-warnings', '--ignore-errors', searchQuery],
+      SEARCH_TIMEOUT_MS,
+    );
+    return raw
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter((e): e is Record<string, unknown> => e !== null);
+  } catch {
+    return [];
+  }
 }
 
 const REMIX_KEY_PATTERNS: RegExp[] = [

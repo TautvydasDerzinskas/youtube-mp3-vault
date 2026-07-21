@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
-import { spawn } from 'child_process';
 import { mkdir, unlink, rename, stat } from 'fs/promises';
 import { join } from 'path';
 import { config } from '../config';
+import { runYtDlp } from './ytdlpProcess';
 
 /** Cross-platform safe filename — works on Windows, macOS, Android. */
 export function sanitizeFilename(raw: string): string {
@@ -57,6 +57,15 @@ export function isPermanentlyUnavailable(message: string): boolean {
   return PERMANENT_UNAVAILABILITY_PATTERNS.some((re) => re.test(message));
 }
 
+// 10 minutes — generous ceiling for a single track even on a slow
+// connection; yt-dlp's own --retries/--fragment-retries already absorb
+// transient stalls within that window. Without this, a genuine network
+// stall or bot-protection standoff would hang the calling sync/retry pass
+// forever (see runYtDlp) — the per-video try/catch in
+// syncService.ts's downloadPendingVideos then just marks this one video
+// failed and moves on, same as any other download error.
+const DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+
 export async function downloadVideo(
   videoId: string
 ): Promise<{ tempFilePath: string; fileSize: number; sourceBitrateKbps: number | null }> {
@@ -66,51 +75,32 @@ export async function downloadVideo(
   const outputTemplate = join(tmpDir, `${attemptId}.%(ext)s`);
   const tempFilePath = join(tmpDir, `${attemptId}.mp3`);
 
-  return new Promise<{ tempFilePath: string; fileSize: number; sourceBitrateKbps: number | null }>((resolve, reject) => {
-    const args = [
-      '-x',
-      '--audio-format', 'mp3',
-      '--audio-quality', '0',      // VBR ~245kbps — best quality
-      '--no-playlist',
-      '--no-warnings',
-      '--embed-thumbnail',
-      '--add-metadata',
-      '--extractor-args', 'youtube:player_client=default,android,-tv',
-      '--http-chunk-size', '10M',
-      '--retries', '20',
-      '--fragment-retries', '20',
-      '--concurrent-fragments', '4',
-      '--print', 'after_move:%(abr)s',
-      '-o', outputTemplate,
-      `https://www.youtube.com/watch?v=${videoId}`,
-    ];
+  const args = [
+    '-x',
+    '--audio-format', 'mp3',
+    '--audio-quality', '0',      // VBR ~245kbps — best quality
+    '--no-playlist',
+    '--no-warnings',
+    '--embed-thumbnail',
+    '--add-metadata',
+    '--extractor-args', 'youtube:player_client=default,android,-tv',
+    '--http-chunk-size', '10M',
+    '--retries', '20',
+    '--fragment-retries', '20',
+    '--concurrent-fragments', '4',
+    '--print', 'after_move:%(abr)s',
+    '-o', outputTemplate,
+    `https://www.youtube.com/watch?v=${videoId}`,
+  ];
 
-    const proc = spawn('yt-dlp', args);
-    let stderr = '';
-    let stdout = '';
-
-    proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-    proc.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
-
-    proc.on('error', (err: NodeJS.ErrnoException) => {
-      reject(
-        err.code === 'ENOENT'
-          ? Object.assign(new Error('yt-dlp not found'), { code: 'YTDLP_NOT_FOUND' })
-          : err
-      );
-    });
-
-    proc.on('close', (code) => {
-      if (code !== 0) {
-        return reject(new Error(`yt-dlp exited ${code}: ${stderr.slice(0, 300)}`));
-      }
-      const printedAbr = stdout.trim().split('\n').pop() ?? '';
-      const sourceBitrateKbps = /^[\d.]+$/.test(printedAbr) ? Math.round(parseFloat(printedAbr)) : null;
-      stat(tempFilePath)
-        .then((s) => resolve({ tempFilePath, fileSize: s.size, sourceBitrateKbps }))
-        .catch(reject);
-    });
-  });
+  const { code, stdout, stderr } = await runYtDlp(args, DOWNLOAD_TIMEOUT_MS);
+  if (code !== 0) {
+    throw new Error(`yt-dlp exited ${code}: ${stderr.slice(0, 300)}`);
+  }
+  const printedAbr = stdout.trim().split('\n').pop() ?? '';
+  const sourceBitrateKbps = /^[\d.]+$/.test(printedAbr) ? Math.round(parseFloat(printedAbr)) : null;
+  const s = await stat(tempFilePath);
+  return { tempFilePath, fileSize: s.size, sourceBitrateKbps };
 }
 
 export async function publishToSharedStore(tempFilePath: string, filename: string): Promise<void> {

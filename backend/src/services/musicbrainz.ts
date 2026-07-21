@@ -7,6 +7,11 @@ const MB_BASE = 'https://musicbrainz.org/ws/2';
 // send an identifying User-Agent — https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
 const MIN_INTERVAL_MS = 1100;
 const USER_AGENT = `YoutubeVault/1.0 ( ${config.frontendUrl} )`;
+// Small JSON API call, not a file transfer — a stalled request would
+// otherwise hang the calling sync/retry pass's metadata step forever (see
+// resolvePlaylistMetadata in metadataWorker.ts). An abort here is already
+// handled the same as any other failure below (falls through to `null`).
+const MB_FETCH_TIMEOUT_MS = 15_000;
 
 export interface TrackMetadata {
   artist: string | null;
@@ -33,6 +38,7 @@ async function mbFetch(path: string): Promise<any | null> {
   try {
     const res = await fetch(`${MB_BASE}${path}`, {
       headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
+      signal: AbortSignal.timeout(MB_FETCH_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     return await res.json();
