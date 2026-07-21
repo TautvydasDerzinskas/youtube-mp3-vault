@@ -1,8 +1,8 @@
-import { Box, Typography, Chip, Stack, Tooltip, LinearProgress } from '@mui/material';
+import { Box, Typography, Chip, Stack, Tooltip, LinearProgress, Link } from '@mui/material';
 import { ErrorOutline } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
-import { displayName, formatBytes, timeAgo } from '../utils';
+import { displayName, formatBytes, formatPlaybackTime, timeAgo, youtubePlaylistUrl } from '../utils';
 
 interface InfoProps {
   playlist: Playlist;
@@ -15,10 +15,12 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
   const { t } = useTranslation();
   const progress = playlist.videoCount > 0
     ? Math.round(((playlist.downloadedCount + playlist.failedCount) / playlist.videoCount) * 100) : 0;
-  // A generated playlist has no YouTube playlist behind it (see
-  // Playlist.youtubeId in api/youtube.ts) — it's never "synced" in the
-  // normal sense, so a sync-time label doesn't apply to it at all.
-  const isGenerated = Boolean(playlist.sourcePlaylistId);
+  // A generated playlist has no YouTube playlist behind it — that's the one
+  // authoritative signal (unlike sourcePlaylistId, which goes null if the
+  // source is later deleted, even though this is still very much a
+  // generated playlist with nothing to sync from).
+  const isGenerated = playlist.youtubeId === null;
+  const fullySynced = !isGenerated && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
 
   return (
     <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
@@ -33,28 +35,53 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
               sx={{ fontSize: 10, height: 18 }} />
           </Tooltip>
         )}
-        {playlist.sourcePlaylistName && (
-          <Tooltip title={t('playlists.generatedFrom', { name: playlist.sourcePlaylistName })}>
-            <Chip label={t('playlists.generatedBadge')} size="small" variant="outlined" color="secondary"
-              sx={{ fontSize: 10, height: 18 }} />
-          </Tooltip>
-        )}
       </Stack>
 
-      <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+      {playlist.totalDurationSec > 0 && (
+        <Typography variant="caption" color="text.secondary" noWrap component="div">
+          {formatPlaybackTime(playlist.totalDurationSec, t)}
+          {isGenerated && playlist.sourcePlaylistName && (
+            <> · {t('playlists.generatedFrom', { name: playlist.sourcePlaylistName })}</>
+          )}
+          {!isGenerated && playlist.youtubeId && (
+            <>
+              {' · '}{t('playlists.importedFromPrefix')}{' '}
+              <Link
+                href={youtubePlaylistUrl(playlist.youtubeId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                color="inherit"
+              >
+                {t('playlists.importedFromLinkText')}
+              </Link>
+            </>
+          )}
+        </Typography>
+      )}
+
+      <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ mt: 0.5 }}>
         {playlist.syncStatus === 'generating' ? (
           <Chip label={t('playlists.generatingChip')} size="small" color="info" sx={{ fontSize: 11 }} />
         ) : isBusy ? (
           <Chip label={t('playlists.syncing')} size="small" color="info" sx={{ fontSize: 11 }} />
         ) : (
-          <Chip label={t('playlists.downloadedCount', { count: playlist.downloadedCount, total: playlist.videoCount })}
-            size="small" color={playlist.downloadedCount === playlist.videoCount && playlist.videoCount > 0 ? 'success' : 'default'}
-            sx={{ fontSize: 11 }} />
+          <>
+            {isGenerated ? (
+              <Chip label={t('playlists.generatedBadge')} size="small" variant="outlined" color="secondary" sx={{ fontSize: 11 }} />
+            ) : fullySynced ? (
+              <Chip label={t('playlists.allSynced')} size="small" color="success" sx={{ fontSize: 11 }} />
+            ) : (
+              <Chip label={t('playlists.downloadedCount', { count: playlist.downloadedCount, total: playlist.videoCount })}
+                size="small" sx={{ fontSize: 11 }} />
+            )}
+            <Chip label={t('playlists.detail.trackCount', { count: playlist.videoCount })} size="small" variant="outlined" sx={{ fontSize: 11 }} />
+          </>
         )}
         {/* Generated playlists auto-drop failed/unusable candidates on their
             own (see audioAnalysisWorker.ts/playlistGenerator.ts) — there's
             never anything for the user to act on, so don't show this. */}
-        {playlist.failedCount > 0 && !playlist.sourcePlaylistId && (
+        {playlist.failedCount > 0 && !isGenerated && (
           <Chip label={t('playlists.failedCount', { count: playlist.failedCount })} size="small" color="error" sx={{ fontSize: 11 }} />
         )}
         {playlist.totalSize > 0 && (

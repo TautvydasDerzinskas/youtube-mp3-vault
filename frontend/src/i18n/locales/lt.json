@@ -54,6 +54,7 @@
     "offlineBanner": "Šiuo metu paslauga neturi interneto ryšio, todėl sinchronizavimas negalimas. Jau atsisiųstų dainų grojimas veikia įprastai.",
     "emptyState": "Grojaraščių dar nėra. Spustelėkite „Pridėti grojaraštį“ ir įklijuokite YouTube grojaraščio nuorodą.",
     "downloadedCount": "Atsisiųsta: {{count}}/{{total}}",
+    "allSynced": "Visos dainos sinchronizuotos",
     "failedCount": "Nepavyko: {{count}}",
     "syncing": "Sinchronizuojama…",
     "syncedAgo": "Sinchronizuota {{time}}",
@@ -89,6 +90,20 @@
     "generatingChip": "Generuojama…",
     "generatedBadge": "Sugeneruotas",
     "generatedFrom": "Sukurta pagal {{name}}",
+    "importedFromPrefix": "Importuota iš",
+    "importedFromLinkText": "YouTube",
+    "playbackTime": {
+      "days_one": "{{count}} diena",
+      "days_few": "{{count}} dienos",
+      "days_other": "{{count}} dienų",
+      "hours_one": "{{count}} valanda",
+      "hours_few": "{{count}} valandos",
+      "hours_other": "{{count}} valandų",
+      "mins_one": "{{count}} minutė",
+      "mins_few": "{{count}} minutės",
+      "mins_other": "{{count}} minučių",
+      "label": "Grojimo laikas: {{time}}"
+    },
     "addDialog": {
       "title": "Pridėti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",

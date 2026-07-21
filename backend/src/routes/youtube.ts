@@ -139,7 +139,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
     });
 
     // Return immediately — downloads happen in background
-    res.status(201).json({ playlist: { ...playlist, downloadedCount: 0, failedCount: 0, totalSize: 0, currentVideo: null } });
+    res.status(201).json({ playlist: { ...playlist, downloadedCount: 0, failedCount: 0, totalSize: 0, totalDurationSec: 0, currentVideo: null } });
     startBackgroundDownload(playlist.id);
 
     void createLog({

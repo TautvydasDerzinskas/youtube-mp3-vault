@@ -1,9 +1,11 @@
 import { prisma } from './prisma';
 
-/** Attach download stats (counts, total size, in-flight video) to playlist rows. */
+/** Attach download stats (counts, total size, total playback duration, in-flight video) to playlist rows. */
 export async function withDownloadStats<T extends { id: string; videoCount: number }>(playlists: T[]) {
   if (playlists.length === 0) {
-    return playlists.map((p) => ({ ...p, downloadedCount: 0, failedCount: 0, totalSize: 0, currentVideo: null }));
+    return playlists.map((p) => (
+      { ...p, downloadedCount: 0, failedCount: 0, totalSize: 0, totalDurationSec: 0, currentVideo: null }
+    ));
   }
 
   const [stats, downloading] = await Promise.all([
@@ -11,7 +13,7 @@ export async function withDownloadStats<T extends { id: string; videoCount: numb
       by: ['playlistId', 'downloadStatus', 'isAvailable'],
       where: { playlistId: { in: playlists.map((p) => p.id) } },
       _count: { id: true },
-      _sum: { fileSize: true },
+      _sum: { fileSize: true, duration: true },
     }),
     prisma.playlistVideo.findMany({
       where: { playlistId: { in: playlists.map((p) => p.id) }, downloadStatus: 'downloading' },
@@ -21,6 +23,10 @@ export async function withDownloadStats<T extends { id: string; videoCount: numb
 
   const map = new Map<string, { done: number; failed: number; unavailable: number }>();
   const sizeMap = new Map<string, number>();
+  // Only counts actually-downloaded videos, same as totalSize above — this
+  // is "how much can you actually listen to right now," not the nominal
+  // length of everything nominally in the playlist.
+  const durationMap = new Map<string, number>();
   for (const s of stats) {
     const entry = map.get(s.playlistId) ?? { done: 0, failed: 0, unavailable: 0 };
     if (!s.isAvailable) {
@@ -28,6 +34,7 @@ export async function withDownloadStats<T extends { id: string; videoCount: numb
     } else if (s.downloadStatus === 'done') {
       entry.done += s._count.id;
       sizeMap.set(s.playlistId, (sizeMap.get(s.playlistId) ?? 0) + (s._sum.fileSize ?? 0));
+      durationMap.set(s.playlistId, (durationMap.get(s.playlistId) ?? 0) + (s._sum.duration ?? 0));
     } else if (s.downloadStatus === 'failed') {
       entry.failed += s._count.id;
     }
@@ -47,6 +54,7 @@ export async function withDownloadStats<T extends { id: string; videoCount: numb
       downloadedCount: s.done,
       failedCount: s.failed,
       totalSize: sizeMap.get(p.id) ?? 0,
+      totalDurationSec: durationMap.get(p.id) ?? 0,
       currentVideo: currentVideoMap.get(p.id) ?? null,
     };
   });

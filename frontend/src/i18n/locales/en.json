@@ -54,6 +54,7 @@
     "offlineBanner": "This service can't reach the internet right now, so syncing is unavailable. Playback of already-downloaded songs still works fine.",
     "emptyState": "No playlists yet. Click \"Add Playlist\" and paste a YouTube playlist URL.",
     "downloadedCount": "{{count}}/{{total}} downloaded",
+    "allSynced": "All songs synced",
     "failedCount": "{{count}} failed",
     "syncing": "Syncing…",
     "syncedAgo": "Synced {{time}}",
@@ -88,6 +89,17 @@
     "generatingChip": "Generating…",
     "generatedBadge": "Generated",
     "generatedFrom": "Based on {{name}}",
+    "importedFromPrefix": "Imported from",
+    "importedFromLinkText": "YouTube",
+    "playbackTime": {
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "mins_one": "{{count}} min",
+      "mins_other": "{{count}} mins",
+      "label": "{{time}} of playback"
+    },
     "addDialog": {
       "title": "Add Playlist",
       "urlLabel": "YouTube Playlist URL",

@@ -11,6 +11,10 @@ export interface Playlist {
   downloadedCount: number;
   failedCount: number;
   totalSize: number;
+  // Sum of `duration` across downloaded videos only — how much you can
+  // actually listen to right now, not the nominal length of everything
+  // nominally in the playlist.
+  totalDurationSec: number;
   syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'error';
   syncPaused: boolean;
   lastSyncedAt: string | null;

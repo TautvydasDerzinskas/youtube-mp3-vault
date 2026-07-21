@@ -25,6 +25,10 @@ export function youtubeWatchUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
+export function youtubePlaylistUrl(youtubeId: string): string {
+  return `https://www.youtube.com/playlist?list=${youtubeId}`;
+}
+
 export function normalizeGenreKey(genre: string): string {
   return genre.trim().toLowerCase();
 }
@@ -49,6 +53,22 @@ export function timeAgo(d: string | null, t: TFunction): string {
   if (min < 60) return t('playlists.minutesAgo', { count: min });
   const h = Math.floor(min / 60);
   return h < 24 ? t('playlists.hoursAgo', { count: h }) : t('playlists.daysAgo', { count: Math.floor(h / 24) });
+}
+
+// e.g. "3 days 6 hours 34 mins of playback" — omits any leading zero-valued
+// unit (a sub-hour playlist doesn't show "0 days"), but always shows at
+// least the minutes, even at 0, so the label never comes out empty.
+export function formatPlaybackTime(totalSeconds: number, t: TFunction): string {
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(t('playlists.playbackTime.days', { count: days }));
+  if (hours > 0) parts.push(t('playlists.playbackTime.hours', { count: hours }));
+  if (mins > 0 || parts.length === 0) parts.push(t('playlists.playbackTime.mins', { count: mins }));
+
+  return t('playlists.playbackTime.label', { time: parts.join(' ') });
 }
 
 export const STATUS_ICON: Record<string, JSX.Element> = {
