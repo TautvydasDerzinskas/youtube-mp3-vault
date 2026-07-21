@@ -39,6 +39,7 @@
     "administration": "Administravimas",
     "users": "Naudotojai",
     "triggers": "Trigeriai",
+    "logs": "Žurnalas",
     "settings": "Nustatymai",
     "downloads": "Atsisiuntimai",
     "logout": "Atsijungti",
@@ -272,6 +273,44 @@
       "trigger": "Švelnus pakartotinis importas",
       "started": "Pakartotinis importas pradėtas. Eigą matysite grojaraščio puslapyje.",
       "genericError": "Nepavyko pradėti pakartotinio importo. Grojaraštis gali jau būti sinchronizuojamas."
+    }
+  },
+  "logs": {
+    "title": "Žurnalas",
+    "selectUser": "Naudotojas",
+    "allUsers": "Visi naudotojai",
+    "from": "Nuo",
+    "to": "Iki",
+    "date": "Data",
+    "user": "Naudotojas",
+    "action": "Veiksmas",
+    "details": "Informacija",
+    "empty": "Pagal šį filtrą įrašų nerasta.",
+    "loadUsersError": "Nepavyko įkelti naudotojų.",
+    "loadLogsError": "Nepavyko įkelti žurnalo įrašų.",
+    "actions": {
+      "playlist_imported": "Importuota",
+      "playlist_renamed": "Pervadinta",
+      "playlist_deleted": "Ištrinta",
+      "playlist_synced": "Sinchronizuota",
+      "playlist_sync_paused": "Sinchronizacija pristabdyta",
+      "generated_playlist_created": "Sugeneruotas grojaraštis sukurtas",
+      "generated_playlist_renamed": "Sugeneruotas grojaraštis pervadintas",
+      "generated_playlist_deleted": "Sugeneruotas grojaraštis ištrintas",
+      "user_logged_in_web": "Prisijungė (Web)",
+      "user_logged_in_mobile": "Prisijungė (Mobili app.)",
+      "user_logged_out_web": "Atsijungė (Web)",
+      "user_logged_out_mobile": "Atsijungė (Mobili app.)"
+    },
+    "detailText": {
+      "playlistImported": "Importuota „{{name}}“ ({{songCount}} dainų)",
+      "renamed": "Pervadinta „{{oldName}}“ → „{{newName}}“",
+      "deleted": "Ištrinta „{{name}}“ ({{songCount}} dainų, {{downloadedCount}} atsisiųsta, {{failedCount}} nepavyko)",
+      "synced": "Sinchronizuota „{{name}}“ ({{downloadedCount}}/{{songCount}} atsisiųsta, {{failedCount}} nepavyko)",
+      "syncPaused": "Pristabdyta automatinė sinchronizacija „{{name}}“",
+      "generatedCreated": "Sugeneruota „{{name}}“ iš „{{sourceName}}“ ({{songCount}} dainų, {{failedCount}} nepavyko)",
+      "loggedIn": "Prisijungė kaip {{email}}",
+      "loggedOut": "Atsijungė"
     }
   }
 }

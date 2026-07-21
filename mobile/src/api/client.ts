@@ -3,7 +3,9 @@ import { tokenStorage } from '../auth/tokenStorage';
 import { showToast } from '../utils/toast';
 
 const client = axios.create({
-  headers: { 'Content-Type': 'application/json' },
+  // Lets the backend attribute login/logout audit log entries to the mobile
+  // client — see backend/src/services/auditLog.ts's getClientPlatform.
+  headers: { 'Content-Type': 'application/json', 'X-Client-Platform': 'mobile' },
 });
 
 client.interceptors.request.use(async (config) => {

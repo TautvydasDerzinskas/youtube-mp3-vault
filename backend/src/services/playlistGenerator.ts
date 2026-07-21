@@ -5,6 +5,7 @@ import { getSimilarTracks } from './lastfm';
 import { searchTopMatches, searchRemixes, isRemixTitle, stripRemixQualifier, RemixResult } from './youtube';
 import { parseArtistAndTitle } from './musicbrainz';
 import { tryClaimSync, releaseSyncClaim, downloadPendingVideos, removePlaylistVideo } from './syncService';
+import { createLog } from './auditLog';
 
 const CANDIDATES_PER_TIER = 10;
 const CONCURRENCY = 4;
@@ -199,6 +200,27 @@ export async function startGeneratePlaylist(sourcePlaylistId: string, userId: st
   return { started: true, playlistId: newPlaylist.id };
 }
 
+async function logGenerationResult(newPlaylistId: string, failedCount: number): Promise<void> {
+  try {
+    const playlist = await prisma.playlist.findUnique({ where: { id: newPlaylistId } });
+    if (!playlist) return;
+    await createLog({
+      userId: playlist.userId,
+      action: 'generated_playlist_created',
+      playlistId: playlist.id,
+      details: {
+        name: playlist.customName ?? playlist.title,
+        sourceName: playlist.sourcePlaylistName,
+        songCount: playlist.videoCount,
+        failedCount,
+        status: playlist.syncStatus,
+      },
+    });
+  } catch (err) {
+    console.error(`[generate] Failed to log generation result for ${newPlaylistId}:`, err);
+  }
+}
+
 async function runGeneration(newPlaylistId: string, sourcePlaylistId: string): Promise<void> {
   try {
     const candidates = await discoverCandidates(sourcePlaylistId);
@@ -227,6 +249,7 @@ async function runGeneration(newPlaylistId: string, sourcePlaylistId: string): P
     });
 
     if (!tryClaimSync(newPlaylistId)) return; // shouldn't happen — defensive only
+    let failedCount = 0;
     try {
       await downloadPendingVideos(newPlaylistId);
       // downloadPendingVideos resolves metadata and sets syncStatus → idle/error
@@ -239,14 +262,17 @@ async function runGeneration(newPlaylistId: string, sourcePlaylistId: string): P
         where: { playlistId: newPlaylistId, downloadStatus: 'failed' },
         select: { id: true, mediaFileId: true },
       });
+      failedCount = failedVideos.length;
       for (const video of failedVideos) {
         await removePlaylistVideo(video.id, video.mediaFileId);
       }
     } finally {
       releaseSyncClaim(newPlaylistId);
     }
+    await logGenerationResult(newPlaylistId, failedCount);
   } catch (err) {
     console.error(`[generate] Error generating playlist ${newPlaylistId}:`, err);
     await prisma.playlist.update({ where: { id: newPlaylistId }, data: { syncStatus: 'error' } }).catch(() => {});
+    await logGenerationResult(newPlaylistId, 0);
   }
 }

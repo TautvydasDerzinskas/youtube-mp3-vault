@@ -11,10 +11,12 @@ import { isOnline } from '../services/connectivity';
 import { config } from '../config';
 import {
   requireAuth,
+  optionalAuth,
   generateToken,
   setAuthCookie,
   AuthRequest,
 } from '../middleware/auth';
+import { createLog, getClientPlatform } from '../services/auditLog';
 
 const router = Router();
 
@@ -154,6 +156,12 @@ router.post('/login', authLimiter, (req, res, next) => {
       const token = generateToken(user.id);
       setAuthCookie(res, token);
       res.json({ user: toSafeUser(user), token });
+
+      void createLog({
+        userId: user.id,
+        action: getClientPlatform(req) === 'mobile' ? 'user_logged_in_mobile' : 'user_logged_in_web',
+        details: { email: user.email },
+      });
     }
   )(req, res, next);
 });
@@ -250,9 +258,20 @@ router.post('/resend-verification', authLimiter, async (req, res, next) => {
 });
 
 // POST /api/auth/logout
-router.post('/logout', (_req, res) => {
+// optionalAuth (not requireAuth) — logout must still succeed (clearing the
+// cookie client-side) even if the token is missing/expired; it only
+// identifies who to log the event for when a valid session was present.
+router.post('/logout', optionalAuth, (req: AuthRequest, res) => {
   res.clearCookie('auth_token');
   res.json({ message: 'Logged out successfully' });
+
+  if (req.userId) {
+    void createLog({
+      userId: req.userId,
+      action: getClientPlatform(req) === 'mobile' ? 'user_logged_out_mobile' : 'user_logged_out_web',
+      details: {},
+    });
+  }
 });
 
 // GET /api/auth/me

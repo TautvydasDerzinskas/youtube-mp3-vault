@@ -6,6 +6,7 @@ import {
   AdminPanelSettings as AdministrationIcon,
   Settings as SettingsIcon,
   Bolt as TriggersIcon,
+  History as LogsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,6 +31,7 @@ export function useNavItems(): NavItem[] {
       children: [
         { label: t('nav.users'), path: '/admin/users', icon: <UsersIcon /> },
         { label: t('nav.triggers'), path: '/admin/triggers', icon: <TriggersIcon /> },
+        { label: t('nav.logs'), path: '/admin/logs', icon: <LogsIcon /> },
         { label: t('nav.settings'), path: '/admin/settings', icon: <SettingsIcon /> },
       ],
     }] : []),

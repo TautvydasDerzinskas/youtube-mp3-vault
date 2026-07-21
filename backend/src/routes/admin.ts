@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Prisma } from '@prisma/client';
 import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import { prisma, switchDatabase, buildDatabaseUrl } from '../services/prisma';
 import { withDownloadStats } from '../services/playlistStats';
@@ -129,6 +130,53 @@ router.post('/playlists/:id/soft-reimport', async (req, res, next) => {
     }
 
     res.json({ started: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/logs?userId=&from=&to=
+router.get('/logs', async (req, res, next) => {
+  try {
+    const { userId, from, to } = req.query as Record<string, string | undefined>;
+
+    const where: Prisma.LogWhereInput = {};
+    if (userId) where.userId = userId;
+
+    if (from || to) {
+      const createdAt: Prisma.DateTimeFilter = {};
+      if (from) {
+        const fromDate = new Date(from);
+        if (Number.isNaN(fromDate.getTime())) {
+          res.status(400).json({ error: 'Invalid "from" date' });
+          return;
+        }
+        createdAt.gte = fromDate;
+      }
+      if (to) {
+        const toDate = new Date(to);
+        if (Number.isNaN(toDate.getTime())) {
+          res.status(400).json({ error: 'Invalid "to" date' });
+          return;
+        }
+        createdAt.lte = toDate;
+      }
+      where.createdAt = createdAt;
+    }
+
+    const logs = await prisma.log.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { displayName: true, email: true } } },
+    });
+
+    res.json({
+      logs: logs.map(({ user, ...log }) => ({
+        ...log,
+        userDisplayName: user.displayName,
+        userEmail: user.email,
+      })),
+    });
   } catch (err) {
     next(err);
   }

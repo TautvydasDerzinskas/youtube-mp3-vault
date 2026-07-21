@@ -39,6 +39,7 @@
     "administration": "Administration",
     "users": "Users",
     "triggers": "Triggers",
+    "logs": "Logs",
     "settings": "Settings",
     "downloads": "Downloads",
     "logout": "Logout",
@@ -271,6 +272,44 @@
       "trigger": "Soft Reimport",
       "started": "Soft reimport started. Progress will show on the playlist's own page.",
       "genericError": "Failed to start soft reimport. The playlist may already be syncing."
+    }
+  },
+  "logs": {
+    "title": "Logs",
+    "selectUser": "User",
+    "allUsers": "All users",
+    "from": "From",
+    "to": "To",
+    "date": "Date",
+    "user": "User",
+    "action": "Action",
+    "details": "Details",
+    "empty": "No logs found for this filter.",
+    "loadUsersError": "Failed to load users.",
+    "loadLogsError": "Failed to load logs.",
+    "actions": {
+      "playlist_imported": "Imported",
+      "playlist_renamed": "Renamed",
+      "playlist_deleted": "Deleted",
+      "playlist_synced": "Synced",
+      "playlist_sync_paused": "Sync paused",
+      "generated_playlist_created": "Generated playlist created",
+      "generated_playlist_renamed": "Generated playlist renamed",
+      "generated_playlist_deleted": "Generated playlist deleted",
+      "user_logged_in_web": "Logged in (Web)",
+      "user_logged_in_mobile": "Logged in (Mobile)",
+      "user_logged_out_web": "Logged out (Web)",
+      "user_logged_out_mobile": "Logged out (Mobile)"
+    },
+    "detailText": {
+      "playlistImported": "Imported \"{{name}}\" ({{songCount}} songs)",
+      "renamed": "Renamed \"{{oldName}}\" → \"{{newName}}\"",
+      "deleted": "Deleted \"{{name}}\" ({{songCount}} songs, {{downloadedCount}} downloaded, {{failedCount}} failed)",
+      "synced": "Synced \"{{name}}\" ({{downloadedCount}}/{{songCount}} downloaded, {{failedCount}} failed)",
+      "syncPaused": "Paused automatic sync for \"{{name}}\"",
+      "generatedCreated": "Generated \"{{name}}\" from \"{{sourceName}}\" ({{songCount}} songs, {{failedCount}} failed)",
+      "loggedIn": "Logged in as {{email}}",
+      "loggedOut": "Logged out"
     }
   }
 }

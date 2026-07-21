@@ -31,6 +31,7 @@ model User {
   createdAt                DateTime   @default(now())
   updatedAt                DateTime   @updatedAt
   playlists                Playlist[]
+  logs                     Log[]
 
   @@map("users")
 }
@@ -191,6 +192,26 @@ model AppSettings {
   updatedAt DateTime @updatedAt
 
   @@map("app_settings")
+}
+
+/// Audit trail of user-initiated playlist actions, surfaced on the admin
+/// Logs page. Not pruned yet — see backend/src/services/auditLog.ts.
+/// playlistId is a plain (non-FK) reference — deliberately, so a log entry
+/// survives the playlist it refers to being deleted; `details` always
+/// snapshots the playlist's name at action time so the log stays readable
+/// even after that.
+model Log {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String
+  playlistId String?
+  details    Json
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("logs")
 }
 
 /// Single shared, content-addressed copy of a downloaded YouTube video's MP3,

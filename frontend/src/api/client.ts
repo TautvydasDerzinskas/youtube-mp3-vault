@@ -3,7 +3,9 @@ import axios from 'axios';
 const client = axios.create({
   baseURL: '/api',
   withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
+  // Lets the backend attribute login/logout audit log entries to the web
+  // client — see backend/src/services/auditLog.ts's getClientPlatform.
+  headers: { 'Content-Type': 'application/json', 'X-Client-Platform': 'web' },
 });
 
 client.interceptors.response.use(

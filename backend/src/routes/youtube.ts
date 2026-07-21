@@ -19,6 +19,7 @@ import {
   cleanupMediaFiles,
 } from '../services/syncService';
 import { startGeneratePlaylist } from '../services/playlistGenerator';
+import { createLog } from '../services/auditLog';
 
 const router = Router();
 
@@ -140,6 +141,13 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
     // Return immediately — downloads happen in background
     res.status(201).json({ playlist: { ...playlist, downloadedCount: 0, failedCount: 0, totalSize: 0, currentVideo: null } });
     startBackgroundDownload(playlist.id);
+
+    void createLog({
+      userId: req.userId!,
+      action: 'playlist_imported',
+      playlistId: playlist.id,
+      details: { name: displayName ?? info.title, songCount: info.videos.length },
+    });
   } catch (err) {
     next(err);
   }
@@ -178,6 +186,16 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res, next) => {
 
     const [enriched] = await withDownloadStats([updated]);
     res.json({ playlist: enriched });
+
+    void createLog({
+      userId: req.userId!,
+      action: playlist.sourcePlaylistId ? 'generated_playlist_renamed' : 'playlist_renamed',
+      playlistId: playlist.id,
+      details: {
+        oldName: playlist.customName ?? playlist.title,
+        newName: updated.customName ?? updated.title,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -535,8 +553,27 @@ router.post('/:id/sync', requireAuth, async (req: AuthRequest, res, next) => {
     const [enriched] = await withDownloadStats([{ ...playlist, syncStatus: 'syncing' }]);
     res.json({ playlist: enriched });
 
-    // Full sync in background
-    void syncPlaylist(playlist.id);
+    // Full sync in background — logged on completion (not by the cron-driven
+    // syncAllPlaylists path, which never calls this route) so the counts
+    // reflect the finished pass, not the moment it was kicked off.
+    const userId = req.userId!;
+    void syncPlaylist(playlist.id).then(async () => {
+      const final = await prisma.playlist.findUnique({ where: { id: playlist.id } });
+      if (!final) return;
+      const [finalEnriched] = await withDownloadStats([final]);
+      await createLog({
+        userId,
+        action: 'playlist_synced',
+        playlistId: playlist.id,
+        details: {
+          name: final.customName ?? final.title,
+          songCount: finalEnriched.videoCount,
+          downloadedCount: finalEnriched.downloadedCount,
+          failedCount: finalEnriched.failedCount,
+          status: final.syncStatus,
+        },
+      });
+    });
   } catch (err) {
     next(err);
   }
@@ -598,6 +635,13 @@ router.post('/:id/pause', requireAuth, async (req: AuthRequest, res, next) => {
     const updated = await setSyncPaused(playlist.id, true);
     const [enriched] = await withDownloadStats([updated]);
     res.json({ playlist: enriched });
+
+    void createLog({
+      userId: req.userId!,
+      action: 'playlist_sync_paused',
+      playlistId: playlist.id,
+      details: { name: playlist.customName ?? playlist.title },
+    });
   } catch (err) {
     next(err);
   }
@@ -721,6 +765,7 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res, next) => {
       res.status(404).json({ error: 'Playlist not found' });
       return;
     }
+    const [enriched] = await withDownloadStats([playlist]);
     const mediaFileIds = await mediaFilesUsedBy(playlist.id);
     await prisma.playlist.delete({ where: { id: playlist.id } });
     // GC shared files no longer referenced by any playlist — asynchronously, don't fail the request
@@ -728,6 +773,18 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res, next) => {
       console.error('[delete] Failed to clean up media files:', err)
     );
     res.status(204).send();
+
+    void createLog({
+      userId: req.userId!,
+      action: playlist.sourcePlaylistId ? 'generated_playlist_deleted' : 'playlist_deleted',
+      playlistId: playlist.id,
+      details: {
+        name: playlist.customName ?? playlist.title,
+        songCount: enriched.videoCount,
+        downloadedCount: enriched.downloadedCount,
+        failedCount: enriched.failedCount,
+      },
+    });
   } catch (err) {
     next(err);
   }

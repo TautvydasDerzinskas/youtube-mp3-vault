@@ -13,6 +13,31 @@ export interface AdminUser {
   playlistCount: number;
 }
 
+export type LogAction =
+  | 'playlist_imported'
+  | 'playlist_renamed'
+  | 'playlist_deleted'
+  | 'playlist_synced'
+  | 'playlist_sync_paused'
+  | 'generated_playlist_created'
+  | 'generated_playlist_renamed'
+  | 'generated_playlist_deleted'
+  | 'user_logged_in_web'
+  | 'user_logged_in_mobile'
+  | 'user_logged_out_web'
+  | 'user_logged_out_mobile';
+
+export interface LogEntry {
+  id: string;
+  userId: string;
+  userDisplayName: string;
+  userEmail: string;
+  action: LogAction;
+  playlistId: string | null;
+  details: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface SmtpSettings {
   host: string | null;
   port: number;
@@ -78,5 +103,10 @@ export const adminApi = {
 
   triggerSoftReimport: async (playlistId: string): Promise<void> => {
     await client.post(`/admin/playlists/${playlistId}/soft-reimport`);
+  },
+
+  listLogs: async (params: { userId?: string; from?: string; to?: string }): Promise<LogEntry[]> => {
+    const { data } = await client.get<{ logs: LogEntry[] }>('/admin/logs', { params });
+    return data.logs;
   },
 };

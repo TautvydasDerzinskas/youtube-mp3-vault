@@ -41,7 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     // The JWT isn't server-revocable (see backend/src/middleware/auth.ts) —
-    // logging out just means forgetting it locally.
+    // logging out just means forgetting it locally. The server call is only
+    // to record the audit log entry, so it must not block local logout if
+    // it fails (e.g. offline) — and it has to run before tokenStorage.clear()
+    // below, since it needs the still-valid token for the Authorization header.
+    try {
+      await authApi.logout();
+    } catch {
+      // Best-effort — see above.
+    }
     await tokenStorage.clear();
     setUser(null);
   }, []);

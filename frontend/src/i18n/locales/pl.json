@@ -39,6 +39,7 @@
     "administration": "Administracja",
     "users": "Użytkownicy",
     "triggers": "Wyzwalacze",
+    "logs": "Dziennik",
     "settings": "Ustawienia",
     "downloads": "Pobieranie",
     "logout": "Wyloguj się",
@@ -273,6 +274,44 @@
       "trigger": "Miękki reimport",
       "started": "Miękki reimport rozpoczęty. Postęp będzie widoczny na stronie playlisty.",
       "genericError": "Nie udało się rozpocząć miękkiego reimportu. Playlista może już być synchronizowana."
+    }
+  },
+  "logs": {
+    "title": "Dziennik",
+    "selectUser": "Użytkownik",
+    "allUsers": "Wszyscy użytkownicy",
+    "from": "Od",
+    "to": "Do",
+    "date": "Data",
+    "user": "Użytkownik",
+    "action": "Akcja",
+    "details": "Szczegóły",
+    "empty": "Nie znaleziono wpisów dla tego filtra.",
+    "loadUsersError": "Nie udało się załadować użytkowników.",
+    "loadLogsError": "Nie udało się załadować dziennika.",
+    "actions": {
+      "playlist_imported": "Zaimportowano",
+      "playlist_renamed": "Zmieniono nazwę",
+      "playlist_deleted": "Usunięto",
+      "playlist_synced": "Zsynchronizowano",
+      "playlist_sync_paused": "Wstrzymano synchronizację",
+      "generated_playlist_created": "Utworzono wygenerowaną playlistę",
+      "generated_playlist_renamed": "Zmieniono nazwę wygenerowanej playlisty",
+      "generated_playlist_deleted": "Usunięto wygenerowaną playlistę",
+      "user_logged_in_web": "Zalogowano się (Web)",
+      "user_logged_in_mobile": "Zalogowano się (Mobile)",
+      "user_logged_out_web": "Wylogowano się (Web)",
+      "user_logged_out_mobile": "Wylogowano się (Mobile)"
+    },
+    "detailText": {
+      "playlistImported": "Zaimportowano „{{name}}” ({{songCount}} utworów)",
+      "renamed": "Zmieniono nazwę „{{oldName}}” → „{{newName}}”",
+      "deleted": "Usunięto „{{name}}” ({{songCount}} utworów, {{downloadedCount}} pobranych, {{failedCount}} nieudanych)",
+      "synced": "Zsynchronizowano „{{name}}” ({{downloadedCount}}/{{songCount}} pobranych, {{failedCount}} nieudanych)",
+      "syncPaused": "Wstrzymano automatyczną synchronizację „{{name}}”",
+      "generatedCreated": "Wygenerowano „{{name}}” na podstawie „{{sourceName}}” ({{songCount}} utworów, {{failedCount}} nieudanych)",
+      "loggedIn": "Zalogowano się jako {{email}}",
+      "loggedOut": "Wylogowano się"
     }
   }
 }

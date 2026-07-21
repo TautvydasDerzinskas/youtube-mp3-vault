@@ -13,6 +13,7 @@ import ChangePasswordPage from './pages/ProfilePage/ChangePasswordPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
 import TriggersPage from './pages/TriggersPage';
+import LogsPage from './pages/LogsPage';
 import DownloadsPage from './pages/DownloadsPage';
 
 function LoadingScreen() {
@@ -83,6 +84,7 @@ export default function App() {
             <Route index element={<Navigate to="/admin/users" replace />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="triggers" element={<TriggersPage />} />
+            <Route path="logs" element={<LogsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
