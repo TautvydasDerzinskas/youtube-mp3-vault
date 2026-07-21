@@ -25,23 +25,39 @@ function capitalizeFirst(s: string): string {
   return s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
-// Only meaningful for a generated ("similar playlist") video — checks its
-// freshly-computed embedding against the source playlist's tracks and
-// whatever's already been analyzed in this same generated playlist. Both
-// sides are already-downloaded, already-analyzed tracks, so this costs
-// nothing extra beyond the analysis that just ran anyway (no new downloads).
-async function isAudioDuplicate(video: { id: string; playlistId: string }, embedding: Float32Array): Promise<boolean> {
+// Null when this video's playlist isn't a generated one — both of the
+// checks below (Non-Music, audio duplicate) only ever apply to generated
+// playlists, per source's own comment.
+async function getGeneratedPlaylistSourceId(playlistId: string): Promise<string | null> {
   const playlist = await prisma.playlist.findUnique({
-    where: { id: video.playlistId },
+    where: { id: playlistId },
     select: { sourcePlaylistId: true },
   });
-  if (!playlist?.sourcePlaylistId) return false;
+  return playlist?.sourcePlaylistId ?? null;
+}
 
+// The genre classifier can, correctly, decide a candidate isn't music at all
+// (spoken word, ASMR, sound effects, a podcast clip that matched a search
+// query, …) — real audio-content analysis is a much stronger signal for
+// this than anything in the title/metadata pipeline, so for a generated
+// playlist specifically we trust it outright.
+function isNonMusic(genres: string[]): boolean {
+  // Case-insensitive — the exact label casing comes from a model file
+  // fetched from essentia.upf.edu at Docker build time (not vendored/pinned
+  // in this repo), so don't rely on it matching a hardcoded casing exactly.
+  return genres.some((g) => g.toLowerCase() === 'non-music');
+}
+
+// Checks a freshly-computed embedding against the source playlist's tracks
+// and whatever's already been analyzed in this same generated playlist.
+// Both sides are already-downloaded, already-analyzed tracks, so this costs
+// nothing extra beyond the analysis that just ran anyway (no new downloads).
+async function isAudioDuplicate(video: { id: string; playlistId: string }, sourcePlaylistId: string, embedding: Float32Array): Promise<boolean> {
   const others = await prisma.playlistVideo.findMany({
     where: {
       audioEmbedding: { not: null },
       OR: [
-        { playlistId: playlist.sourcePlaylistId },
+        { playlistId: sourcePlaylistId },
         { playlistId: video.playlistId, id: { not: video.id } },
       ],
     },
@@ -99,9 +115,18 @@ async function loop(): Promise<void> {
       if (result) {
         console.log(`[audio-analysis] ✓ ${video.youtubeId} — ${genres.join(', ')} (${video.title.slice(0, 60)})`);
 
-        if (embeddingBuffer && await isAudioDuplicate(video, bufferToFloat32Array(embeddingBuffer))) {
-          console.log(`[audio-analysis] Dropping ${video.youtubeId} — audio duplicate of an existing track (${video.title.slice(0, 60)})`);
-          await removePlaylistVideo(video.id, video.mediaFileId).catch(() => {});
+        const sourcePlaylistId = await getGeneratedPlaylistSourceId(video.playlistId);
+        if (sourcePlaylistId) {
+          let dropReason: string | null = null;
+          if (isNonMusic(genres)) {
+            dropReason = 'tagged Non-Music';
+          } else if (embeddingBuffer && await isAudioDuplicate(video, sourcePlaylistId, bufferToFloat32Array(embeddingBuffer))) {
+            dropReason = 'audio duplicate of an existing track';
+          }
+          if (dropReason) {
+            console.log(`[audio-analysis] Dropping ${video.youtubeId} — ${dropReason} (${video.title.slice(0, 60)})`);
+            await removePlaylistVideo(video.id, video.mediaFileId).catch(() => {});
+          }
         }
       } else {
         console.error(`[audio-analysis] ✗ ${video.youtubeId} — analysis failed (${video.title.slice(0, 60)})`);

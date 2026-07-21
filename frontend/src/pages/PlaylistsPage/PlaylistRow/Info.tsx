@@ -47,7 +47,10 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
             size="small" color={playlist.downloadedCount === playlist.videoCount && playlist.videoCount > 0 ? 'success' : 'default'}
             sx={{ fontSize: 11 }} />
         )}
-        {playlist.failedCount > 0 && (
+        {/* Generated playlists auto-drop failed/unusable candidates on their
+            own (see audioAnalysisWorker.ts/playlistGenerator.ts) — there's
+            never anything for the user to act on, so don't show this. */}
+        {playlist.failedCount > 0 && !playlist.sourcePlaylistId && (
           <Chip label={t('playlists.failedCount', { count: playlist.failedCount })} size="small" color="error" sx={{ fontSize: 11 }} />
         )}
         {playlist.totalSize > 0 && (

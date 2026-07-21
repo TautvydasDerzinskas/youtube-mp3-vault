@@ -72,7 +72,7 @@ export function UserDetailDialog({ userId, onClose }: UserDetailDialogProps) {
                         <>
                           {t('playlists.downloadedCount', { count: p.downloadedCount, total: p.videoCount })}
                           {p.totalSize > 0 ? ` · ${formatBytes(p.totalSize)}` : ''}
-                          {p.failedCount > 0 ? ` · ${t('playlists.failedCount', { count: p.failedCount })}` : ''}
+                          {p.failedCount > 0 && !p.sourcePlaylistId ? ` · ${t('playlists.failedCount', { count: p.failedCount })}` : ''}
                           {` · ${t('playlists.syncedAgo', { time: timeAgo(p.lastSyncedAt, t) })}`}
                         </>
                       }
