@@ -69,6 +69,11 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
       '--dump-json',
       '--no-warnings',
       '--ignore-errors',
+      // Large playlists paginate through YouTube's internal API as they're
+      // enumerated, and the default "web" client can get 403'd by PO-token
+      // checks partway through (see downloader.ts's downloadVideo, which
+      // hit the same thing) — the android client avoids that requirement.
+      '--extractor-args', 'youtube:player_client=default,android,-tv',
       playlistUrl,
     ];
 
@@ -119,6 +124,28 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
         );
         (e as any).code = 'FETCH_FAILED';
         return reject(e);
+      }
+
+      // Independent cross-check: each entry also carries playlist_count,
+      // taken from YouTube's own page metadata (available up front, not
+      // derived from how many entries yt-dlp itself managed to enumerate).
+      // If it disagrees sharply with what we actually got, the enumeration
+      // was cut short even though the process still exited 0 — e.g. yt-dlp
+      // gave up partway through pagination without treating it as a hard
+      // error. A small gap is normal (a few genuinely unavailable videos
+      // filtered by --ignore-errors), so only reject on a substantial one.
+      const declaredCount = entries
+        .map((e) => (e as Record<string, unknown>).playlist_count)
+        .find((n): n is number => typeof n === 'number');
+      if (declaredCount != null) {
+        const missing = declaredCount - entries.length;
+        if (missing > Math.max(5, declaredCount * 0.1)) {
+          const e = new Error(
+            `yt-dlp only listed ${entries.length} of the ${declaredCount} videos the playlist reports having — treating as an incomplete fetch.`
+          );
+          (e as any).code = 'FETCH_FAILED';
+          return reject(e);
+        }
       }
 
       const first = entries[0] as Record<string, unknown>;
