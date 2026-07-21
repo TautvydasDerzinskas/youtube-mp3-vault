@@ -113,6 +113,20 @@ export async function refreshPlaylistFromYoutube(playlistId: string): Promise<vo
   });
   const dbIds = new Set(dbVideos.map((v) => v.youtubeId));
 
+  // Safety net beyond fetchPlaylist's own exit-code check — a yt-dlp/YouTube
+  // hiccup could still return a truncated-but-successful (0 exit code)
+  // listing. A real playlist losing more than half its videos in one sync is
+  // implausible; a partial fetch is far more likely. Refuse to touch
+  // anything rather than risk deleting downloaded files for videos that are
+  // still actually in the playlist.
+  const droppedCount = dbVideos.filter((v) => !freshIds.has(v.youtubeId)).length;
+  if (dbVideos.length >= 20 && droppedCount > dbVideos.length * 0.5) {
+    throw new Error(
+      `Refusing to sync playlist ${playlistId}: fetch returned ${info.videos.length} videos vs ${dbVideos.length} ` +
+      `already known (would remove ${droppedCount}) — this looks like a partial/failed fetch, not a real change.`
+    );
+  }
+
   // ── 3. Remove videos no longer in the playlist ────────────────────────────
   for (const dbVideo of dbVideos) {
     if (!freshIds.has(dbVideo.youtubeId)) {
@@ -126,6 +140,26 @@ export async function refreshPlaylistFromYoutube(playlistId: string): Promise<vo
         await tryDeleteMediaFile(dbVideo.mediaFileId);
       }
     }
+  }
+
+  // ── 3b. Restore any previously-removed video that's reappeared ───────────
+  // A video wrongly marked removed by a past bad sync (or genuinely re-added
+  // to the YouTube playlist) would otherwise stay stuck as "removed"
+  // forever — the queries above only ever look at non-removed rows, and
+  // step 4's createMany silently no-ops on it below (a row with this
+  // playlistId+youtubeId already exists). Its media file is already gone by
+  // this point, so this just clears the way for a fresh download.
+  const removedVideos = await prisma.playlistVideo.findMany({
+    where: { playlistId, downloadStatus: 'removed' },
+    select: { id: true, youtubeId: true },
+  });
+  for (const removedVideo of removedVideos) {
+    const fresh = info.videos.find((v) => v.id === removedVideo.youtubeId);
+    if (!fresh) continue;
+    await prisma.playlistVideo.update({
+      where: { id: removedVideo.id },
+      data: { downloadStatus: 'pending', downloadError: null, position: fresh.position, isAvailable: true },
+    });
   }
 
   // ── 4. Add new videos ─────────────────────────────────────────────────────

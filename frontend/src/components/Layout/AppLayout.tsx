@@ -1,5 +1,5 @@
 import { Box } from '@mui/material';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import MobileTopBar from './MobileTopBar';
 import { SIDEBAR_WIDTH, MOBILE_TOPBAR_HEIGHT } from './constants';
@@ -10,17 +10,27 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 function AppLayoutContent() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     nowPlaying, nowPlayingVideo, audioRef, hasNext, hasPrevious,
     setIsAudioPlaying, handleTrackEnded, playNext, playPrevious, handleClosePlayer,
   } = usePlayer();
 
-  // Acts like the playlist's own "back" button, but also tells
-  // PlaylistDetailPage to scroll the now-playing track into view once it
-  // loads — see that page's scrollToNowPlaying handling.
-  const handleTitleClick = nowPlaying
-    ? () => navigate(`/playlists/${nowPlaying.playlistId}`, { state: { scrollToNowPlaying: true } })
-    : undefined;
+  // Acts like the playlist's own "back" button, and tells PlaylistDetailPage
+  // to scroll the now-playing track into view once it loads (clearing any
+  // active genre filter that's hiding it first) — see that page's
+  // scrollToNowPlaying handling. When already on that playlist's page, this
+  // replaces the history entry instead of pushing a new one, so it doesn't
+  // leave a dead "back" stop — PlaylistDetailPage still picks up the fresh
+  // state and scrolls, since location.key changes either way.
+  const handleTitleClick = () => {
+    if (!nowPlaying) return;
+    const targetPath = `/playlists/${nowPlaying.playlistId}`;
+    navigate(targetPath, {
+      state: { scrollToNowPlaying: true },
+      replace: location.pathname === targetPath,
+    });
+  };
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>

@@ -88,7 +88,22 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
       reject(err);
     });
 
-    proc.on('close', () => {
+    proc.on('close', (code) => {
+      // A non-zero exit means yt-dlp didn't finish listing the playlist —
+      // e.g. a dropped connection partway through a large playlist. Without
+      // this check, whatever partial output it managed to write before
+      // dying would be trusted as "the complete current playlist," and
+      // refreshPlaylistFromYoutube would treat every video that didn't make
+      // it into that partial list as removed from the playlist — deleting
+      // their downloaded files. --ignore-errors already lets individual
+      // unavailable videos through with a 0 exit code, so a non-zero code
+      // here specifically means the whole fetch was interrupted.
+      if (code !== 0) {
+        const e = new Error(`yt-dlp exited with code ${code} while listing the playlist: ${stderr.slice(0, 300) || '(no stderr output)'}`);
+        (e as any).code = 'FETCH_FAILED';
+        return reject(e);
+      }
+
       const entries = raw
         .split('\n')
         .map((l) => l.trim())

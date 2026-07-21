@@ -20,8 +20,10 @@ interface MiniPlayerProps {
   onNext: () => void;
   onPrevious: () => void;
   onClose: () => void;
-  // Undefined when there's nowhere sensible to navigate to yet (e.g. still loading).
-  onTitleClick: (() => void) | undefined;
+  // Always defined whenever MiniPlayer itself is rendered — it's only ever
+  // mounted (see AppLayout) once nowPlaying/nowPlayingVideo are set, and
+  // those two always carry a playlistId together.
+  onTitleClick: () => void;
 }
 
 export function MiniPlayer({
@@ -62,11 +64,8 @@ export function MiniPlayer({
   // Acts like "back to playlist" + auto-scroll to the playing track there —
   // see PlaylistDetailPage's scrollToNowPlaying handling.
   const titleBlock = (
-    <Tooltip title={onTitleClick ? t('playlists.miniPlayer.backToPlaylist') : ''}>
-      <Box
-        onClick={onTitleClick}
-        sx={{ minWidth: 0, cursor: onTitleClick ? 'pointer' : 'default' }}
-      >
+    <Tooltip title={t('playlists.miniPlayer.backToPlaylist')}>
+      <Box onClick={onTitleClick} sx={{ minWidth: 0, cursor: 'pointer' }}>
         <Typography variant="body2" noWrap>
           {title ?? t('common.loading')}
         </Typography>

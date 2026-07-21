@@ -30,11 +30,18 @@ export default function PlaylistDetailPage() {
     if (!nowPlaying || nowPlaying.playlistId !== playlistId) return;
 
     const index = filteredTracks.findIndex(v => v.id === nowPlaying.videoId);
-    if (index < 0) return; // e.g. filtered out by the active genre filter
+    if (index < 0) {
+      // Likely just hidden by an active genre filter — clear it and let this
+      // effect re-run once filteredTracks reflects the full list again. If
+      // the track genuinely isn't in the playlist, selectedGenres is empty
+      // on the next pass and this becomes a harmless no-op.
+      if (selectedGenres.size > 0) clearGenres();
+      return;
+    }
 
     listRef.current?.scrollToRow({ index, align: 'center', behavior: 'smooth' });
     scrolledForKeyRef.current = location.key;
-  }, [location, nowPlaying, filteredTracks, playlistId, listRef]);
+  }, [location, nowPlaying, filteredTracks, playlistId, listRef, selectedGenres, clearGenres]);
 
   if (!playlistId) return <Navigate to="/playlists" replace />;
 
