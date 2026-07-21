@@ -72,6 +72,7 @@
     "pausingMessage": "Stabdoma… laukiama, kol baigsis „{{title}}“ sinchronizavimas",
     "pausingMessageGeneric": "Stabdoma… laukiama, kol baigsis dabartinės dainos sinchronizavimas",
     "syncingMessage": "Sinchronizuojama #{{position}}/{{total}} — {{title}}",
+    "pacingMessage": "Lėtinama…",
     "rename": "Pervadinti",
     "syncNow": "Sinchronizuoti dabar",
     "offlineUnavailable": "Negalima — paslauga neprisijungusi prie interneto",

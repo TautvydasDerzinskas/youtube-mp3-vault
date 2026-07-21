@@ -72,6 +72,7 @@
     "pausingMessage": "Pausing… waiting for \"{{title}}\" to finish syncing",
     "pausingMessageGeneric": "Pausing… waiting for the current song to finish syncing",
     "syncingMessage": "Syncing #{{position}}/{{total}} — {{title}}",
+    "pacingMessage": "Pacing…",
     "rename": "Rename",
     "syncNow": "Sync now",
     "offlineUnavailable": "Unavailable — service is offline",

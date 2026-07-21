@@ -72,6 +72,7 @@
     "pausingMessage": "Wstrzymywanie… oczekiwanie na zakończenie synchronizacji „{{title}}”",
     "pausingMessageGeneric": "Wstrzymywanie… oczekiwanie na zakończenie synchronizacji bieżącego utworu",
     "syncingMessage": "Synchronizowanie #{{position}}/{{total}} — {{title}}",
+    "pacingMessage": "Zwalnianie tempa…",
     "rename": "Zmień nazwę",
     "syncNow": "Synchronizuj teraz",
     "offlineUnavailable": "Niedostępne — usługa jest offline",

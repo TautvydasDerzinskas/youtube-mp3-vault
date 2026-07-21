@@ -104,6 +104,13 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
             ? t('playlists.pausingMessage', { title: playlist.currentVideo.title })
             : t('playlists.pausingMessageGeneric')}
         </Typography>
+      ) : playlist.isPacing && !expanded ? (
+        // Between downloads, nothing has downloadStatus 'downloading' — this
+        // fills the same slot the syncing message occupies the rest of the
+        // time, so the row's height doesn't shift every time pacing kicks in.
+        <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ mt: 0.25 }}>
+          {t('playlists.pacingMessage')}
+        </Typography>
       ) : (
         isBusy && !expanded && playlist.currentVideo && (
           <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ mt: 0.25 }}>

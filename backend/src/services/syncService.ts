@@ -76,6 +76,17 @@ export function isSyncing(playlistId: string): boolean {
   return activeSyncs.has(playlistId);
 }
 
+// Set only while actually sitting in a pacing delay between downloads (see
+// downloadPendingVideos) — surfaced to the frontend so it can show a
+// "Pacing…" message in the same slot the "Syncing #x/y" message otherwise
+// occupies, rather than that line just disappearing (and the row's height
+// along with it) for however long the gap lasts.
+const pacingPlaylists = new Set<string>();
+
+export function isPacing(playlistId: string): boolean {
+  return pacingPlaylists.has(playlistId);
+}
+
 // Claims the same busy-slot regular syncing uses, for callers outside this
 // file (see reimport.ts) that need to touch a playlist's videos without
 // racing a real sync — or another such caller — on the same playlist.
@@ -275,7 +286,9 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
       // multi-minute backoff for it.
       const alreadyCached = await prisma.mediaFile.findUnique({ where: { youtubeId: video.youtubeId } });
       if (!alreadyCached && delayForCurrentTier() > 0) {
+        pacingPlaylists.add(playlistId);
         await sleep(delayForCurrentTier());
+        pacingPlaylists.delete(playlistId);
 
         // Re-check pause after the wait — otherwise a pause clicked mid-sleep
         // would still be followed by one more full download attempt, on top
@@ -352,6 +365,11 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
     await prisma.playlist
       .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
       .catch(() => {});
+  } finally {
+    // Defensive — the flag is already cleared right after every sleep, but
+    // this guarantees it never gets stuck on if some future change throws
+    // between the two.
+    pacingPlaylists.delete(playlistId);
   }
 }
 

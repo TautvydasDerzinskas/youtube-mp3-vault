@@ -20,6 +20,11 @@ export interface Playlist {
   lastSyncedAt: string | null;
   createdAt: string;
   currentVideo: { title: string; position: number } | null;
+  // True while the backend is deliberately sitting in a pacing delay between
+  // downloads (see downloadPendingVideos in syncService.ts) — during this
+  // window currentVideo is null (nothing is actually downloading), so this
+  // is what backs the "Pacing…" message shown in that same slot.
+  isPacing: boolean;
   // Set only on a generated playlist — the source it was generated from
   // (sourcePlaylistName is a snapshot, so it survives the source being
   // renamed or deleted later).

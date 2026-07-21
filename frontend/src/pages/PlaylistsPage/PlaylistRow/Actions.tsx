@@ -45,14 +45,19 @@ export function Actions({
   const isMobile = useIsMobile();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
-  const isGenerated = Boolean(playlist.sourcePlaylistId);
+  // A generated playlist has no YouTube playlist behind it — that's the one
+  // authoritative signal (unlike sourcePlaylistId, which goes null if the
+  // source is later deleted, even though this is still very much a
+  // generated playlist).
+  const isGenerated = playlist.youtubeId === null;
   const showSync = !isGenerated && !playlist.syncPaused;
   const showRetry = !isGenerated && !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
   const showPauseToggle = !isGenerated && !isRetrying && (isBusy || playlist.syncPaused);
-  // "Synced" here mirrors PlaylistRow/index.tsx's isSynced — only offer this
-  // on a playlist that's actually finished downloading something, not one
-  // still mid-first-sync or a generated playlist itself.
-  const isFullySynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
+  // Generating a similar playlist reads this playlist's full video list, so
+  // it's only offered once every song has actually downloaded — not just
+  // "at least one has" — otherwise a similar playlist could get built from a
+  // small, still-growing fraction of the real one.
+  const isFullySynced = !isBusy && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
   const showGenerateSimilar = !isGenerated && isFullySynced && canGenerateSimilar && !hasGeneratedPlaylist;
   const renameDisabled = isPausing || isBusy || isLockedBySource;
   const syncDisabled = isBusy || !online || isLockedBySource;
