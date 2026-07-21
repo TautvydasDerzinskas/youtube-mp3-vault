@@ -1,15 +1,11 @@
-import { useState } from 'react';
 import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip } from '@mui/material';
-import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon, Close as CloseIcon } from '@mui/icons-material';
+import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
-import { GenreCount, NO_GENRE_KEY } from './hooks/usePlaylistDetail';
-import { useIsMobile } from '../../hooks/useIsMobile';
-
-const VISIBLE_GENRES_LIMIT_DESKTOP = 20;
-const VISIBLE_GENRES_LIMIT_MOBILE = 5;
+import { GenreCount } from './hooks/genreFilter';
+import { GenreFilterBar } from './GenreFilterBar';
 
 interface HeaderProps {
   playlist: Playlist;
@@ -22,14 +18,6 @@ interface HeaderProps {
 export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, onClearGenres }: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const [showAllGenres, setShowAllGenres] = useState(false);
-
-  const visibleGenresLimit = isMobile ? VISIBLE_GENRES_LIMIT_MOBILE : VISIBLE_GENRES_LIMIT_DESKTOP;
-  const hasMoreGenres = genreCounts.length > visibleGenresLimit;
-  const visibleGenres = showAllGenres
-    ? genreCounts
-    : genreCounts.filter((g, i) => i < visibleGenresLimit || selectedGenres.has(g.key));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>
@@ -66,47 +54,12 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
         </Box>
       </Box>
 
-      {genreCounts.length > 0 && (
-        <Box sx={{ mt: 2 }}>
-          <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-            <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
-              {t('playlists.detail.filterByGenre')}
-            </Typography>
-            {visibleGenres.map(({ key, label, count }) => {
-              const selected = selectedGenres.has(key);
-              const isNoGenre = key === NO_GENRE_KEY;
-              const chipLabel = isNoGenre ? t('playlists.detail.noGenre', { count }) : `${label} (${count})`;
-              return (
-                <Chip
-                  key={key}
-                  label={chipLabel}
-                  size="small"
-                  onClick={() => onToggleGenre(key)}
-                  color={selected ? 'primary' : 'default'}
-                  variant={selected ? 'filled' : 'outlined'}
-                  sx={isNoGenre ? { fontStyle: 'italic' } : undefined}
-                />
-              );
-            })}
-            {hasMoreGenres && (
-              <Chip
-                size="small"
-                variant="outlined"
-                label={showAllGenres ? t('playlists.detail.showFewerGenres') : t('playlists.detail.showMoreGenres', { count: genreCounts.length - visibleGenresLimit })}
-                onClick={() => setShowAllGenres(v => !v)}
-                sx={{ borderStyle: 'dashed' }}
-              />
-            )}
-            {selectedGenres.size > 0 && (
-              <Tooltip title={t('playlists.detail.clearGenreFilter')}>
-                <IconButton size="small" onClick={onClearGenres}>
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Stack>
-        </Box>
-      )}
+      <GenreFilterBar
+        genreCounts={genreCounts}
+        selectedGenres={selectedGenres}
+        onToggleGenre={onToggleGenre}
+        onClearGenres={onClearGenres}
+      />
     </Box>
   );
 }

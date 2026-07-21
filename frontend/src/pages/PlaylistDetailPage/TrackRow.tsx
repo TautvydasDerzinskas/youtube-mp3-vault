@@ -13,7 +13,11 @@ import { formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON } from '../Pl
 
 export interface TrackRowProps {
   tracks: PlaylistVideo[];
-  playlistId: string;
+  // Fallback only — used when a row's own video doesn't carry a playlistId
+  // (the normal single-playlist case). A cross-playlist list (e.g. "All
+  // Tracks") sets it per-video instead, since rows there don't all belong to
+  // the same playlist.
+  playlistId?: string;
   playableTracks: PlaylistVideo[];
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
@@ -26,10 +30,11 @@ export function TrackRow({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const v = tracks[index];
-  const isCurrentTrack = nowPlaying?.playlistId === playlistId && nowPlaying?.videoId === v.id;
+  const trackPlaylistId = v.playlistId ?? playlistId ?? '';
+  const isCurrentTrack = nowPlaying?.playlistId === trackPlaylistId && nowPlaying?.videoId === v.id;
 
   return (
-    <Box style={style} onClick={() => navigate(`/playlists/${playlistId}/${v.id}`)} sx={{
+    <Box style={style} onClick={() => navigate(`/playlists/${trackPlaylistId}/${v.id}`)} sx={{
       display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5,
       borderBottom: '1px solid #2a2a2a', cursor: 'pointer',
       bgcolor: isCurrentTrack ? 'action.selected' : 'transparent',
@@ -83,7 +88,7 @@ export function TrackRow({
         )}
         {v.downloadStatus === 'done' && (
           <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onTogglePlay(playlistId, v, playableTracks); }} sx={{ color: 'primary.main' }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onTogglePlay(trackPlaylistId, v, playableTracks); }} sx={{ color: 'primary.main' }}>
               {isCurrentTrack && isAudioPlaying
                 ? <PauseTrackIcon sx={{ fontSize: 18 }} />
                 : <PlayArrowIcon sx={{ fontSize: 18 }} />}
@@ -98,7 +103,7 @@ export function TrackRow({
         </Tooltip>
         {v.downloadStatus === 'done' && (
           <Tooltip title={t('playlists.videoList.downloadMp3')}>
-            <IconButton size="small" component="a" href={playlistsApi.downloadUrl(playlistId, v.id)} download
+            <IconButton size="small" component="a" href={playlistsApi.downloadUrl(trackPlaylistId, v.id)} download
               onClick={(e) => e.stopPropagation()}>
               <DownloadIcon sx={{ fontSize: 16 }} />
             </IconButton>

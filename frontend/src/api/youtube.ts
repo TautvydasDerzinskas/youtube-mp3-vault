@@ -53,6 +53,10 @@ export interface PlaylistVideo {
   metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
   playCount: number;
   lastPlayedAt: string | null;
+  // Only populated by cross-playlist endpoints (e.g. getAllTracks) — a
+  // single-playlist fetch (getVideos) omits it since the page already knows
+  // which playlist every row belongs to.
+  playlistId?: string;
 }
 
 export interface RecommendedTrack {
@@ -101,6 +105,22 @@ export const playlistsApi = {
 
   getOne: async (id: string): Promise<{ playlist: Playlist }> => {
     const { data } = await client.get<{ playlist: Playlist }>(`/playlists/${id}`);
+    return data;
+  },
+
+  // Every song across every playlist the user has — each row carries its
+  // own playlistId, since (unlike getVideos) this doesn't belong to just one.
+  getAllTracks: async (): Promise<{ videos: PlaylistVideo[]; songCount: number; totalDurationSec: number }> => {
+    const { data } = await client.get<{ videos: PlaylistVideo[]; songCount: number; totalDurationSec: number }>(
+      '/playlists/all-tracks'
+    );
+    return data;
+  },
+
+  // Just the two numbers the "All Tracks" row in the playlists list needs —
+  // avoids pulling every video's full metadata just to render that summary.
+  getAllTracksSummary: async (): Promise<{ songCount: number; totalDurationSec: number }> => {
+    const { data } = await client.get<{ songCount: number; totalDurationSec: number }>('/playlists/all-tracks/summary');
     return data;
   },
 

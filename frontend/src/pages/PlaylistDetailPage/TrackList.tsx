@@ -9,7 +9,9 @@ import { TrackRow, TrackRowProps } from './TrackRow';
 interface TrackListProps {
   tracks: PlaylistVideo[];
   playableTracks: PlaylistVideo[];
-  playlistId: string;
+  // Fallback only — see TrackRowProps. Omitted entirely when every track
+  // already carries its own playlistId (e.g. "All Tracks").
+  playlistId?: string;
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: PlaylistVideo[]) => void;

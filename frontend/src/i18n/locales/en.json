@@ -101,6 +101,10 @@
       "mins_other": "{{count}} mins",
       "label": "{{time}} of playback"
     },
+    "allTracks": {
+      "title": "All Tracks",
+      "sourcedFromYoutube": "Sourced from YouTube"
+    },
     "addDialog": {
       "title": "Add Playlist",
       "urlLabel": "YouTube Playlist URL",

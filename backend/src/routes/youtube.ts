@@ -49,6 +49,51 @@ router.get('/', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
+// ─── GET /api/playlists/all-tracks — every song across every playlist ─────────
+// Declared before /:id so Express doesn't match "all-tracks" as an :id param.
+
+router.get('/all-tracks', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const videos = await prisma.playlistVideo.findMany({
+      where: {
+        playlist: { userId: req.userId },
+        isAvailable: true,
+        downloadStatus: { not: 'removed' },
+      },
+      orderBy: { addedAt: 'desc' },
+      select: VIDEO_SELECT_WITHOUT_EMBEDDING,
+    });
+    const songCount = videos.length;
+    const totalDurationSec = videos
+      .filter((v) => v.downloadStatus === 'done')
+      .reduce((sum, v) => sum + (v.duration ?? 0), 0);
+    res.json({ videos, songCount, totalDurationSec });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Lightweight counterpart for the "All Tracks" row shown in the playlists
+// list itself — just the two numbers that row needs, so rendering it doesn't
+// require pulling every video's full metadata up front.
+router.get('/all-tracks/summary', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.userId!;
+    const [songCount, durationResult] = await Promise.all([
+      prisma.playlistVideo.count({
+        where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
+      }),
+      prisma.playlistVideo.aggregate({
+        where: { playlist: { userId }, isAvailable: true, downloadStatus: 'done' },
+        _sum: { duration: true },
+      }),
+    ]);
+    res.json({ songCount, totalDurationSec: durationResult._sum.duration ?? 0 });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── GET /api/playlists/:id — single playlist ─────────────────────────────────
 
 router.get('/:id', requireAuth, async (req: AuthRequest, res, next) => {

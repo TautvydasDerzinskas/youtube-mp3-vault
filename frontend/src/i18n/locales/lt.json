@@ -105,6 +105,10 @@
       "mins_other": "{{count}} minučių",
       "label": "Grojimo laikas: {{time}}"
     },
+    "allTracks": {
+      "title": "Visos dainos",
+      "sourcedFromYoutube": "Šaltinis: YouTube"
+    },
     "addDialog": {
       "title": "Pridėti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Box, Typography, Button, Alert, CircularProgress, Stack } from '@mui/material';
+import { Box, Typography, Button, Alert, CircularProgress, Stack, Divider } from '@mui/material';
 import { Add as AddIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../api/youtube';
@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AddPlaylistDialog } from './AddPlaylistDialog';
 import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
+import { AllTracksListItem } from './AllTracksListItem';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { displayName } from './utils';
 
@@ -140,6 +141,9 @@ export default function PlaylistsPage() {
           onGenerateSimilar={(e, playlist) => { e.stopPropagation(); setGenerateError(null); setGenerating(playlist); }}
         />
       ))}
+
+      <Divider sx={{ my: 2, borderColor: '#2a2a2a' }} />
+      <AllTracksListItem refreshOn={playlists} />
 
       <AddPlaylistDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={handleAdded} />
       {renaming && (

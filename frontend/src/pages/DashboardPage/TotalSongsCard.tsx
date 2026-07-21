@@ -1,14 +1,15 @@
 import { Paper, Typography } from '@mui/material';
 import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-// Not clickable — unlike PlaylistCountCard, there's no single "all songs
-// across every playlist" route in this app to navigate to.
 export function TotalSongsCard({ count }: { count: number }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <Paper
+      onClick={() => navigate('/all-tracks')}
       elevation={0}
       sx={{
         gridArea: 'totalSongs',
@@ -18,10 +19,12 @@ export function TotalSongsCard({ count }: { count: number }) {
         alignItems: 'flex-start',
         justifyContent: 'center',
         gap: 1,
+        cursor: 'pointer',
         border: '1px solid',
         borderColor: '#2a2a2a',
         borderRadius: '8px',
         minHeight: 140,
+        '&:hover': { borderColor: 'primary.dark' },
       }}
     >
       <MusicNoteIcon sx={{ fontSize: 32, color: 'primary.main' }} />

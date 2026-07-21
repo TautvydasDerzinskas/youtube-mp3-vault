@@ -7,6 +7,7 @@ import AppLayout from './components/Layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
+import AllTracksPage from './pages/AllTracksPage';
 import TrackDetailPage from './pages/TrackDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import ChangeEmailPage from './pages/ProfilePage/ChangeEmailPage';
@@ -76,6 +77,7 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="playlists" element={<PlaylistsPage />} />
+          <Route path="all-tracks" element={<AllTracksPage />} />
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />
           <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />

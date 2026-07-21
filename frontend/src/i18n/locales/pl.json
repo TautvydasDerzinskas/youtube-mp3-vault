@@ -109,6 +109,10 @@
       "mins_other": "{{count}} minut",
       "label": "Czas odtwarzania: {{time}}"
     },
+    "allTracks": {
+      "title": "Wszystkie utwory",
+      "sourcedFromYoutube": "Źródło: YouTube"
+    },
     "addDialog": {
       "title": "Dodaj playlistę",
       "urlLabel": "Link do playlisty YouTube",
