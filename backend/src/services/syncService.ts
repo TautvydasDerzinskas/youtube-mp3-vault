@@ -237,9 +237,19 @@ export async function refreshPlaylistFromYoutube(
   }
 
   // ── 5. Update playlist metadata ───────────────────────────────────────────
+  // videoCount is recomputed from actual rows rather than trusted directly
+  // from info.videos.length — this is the only place that ever writes it, so
+  // a partial createMany failure above (e.g. a race between two overlapping
+  // sync attempts, such as an old process not fully shut down yet during a
+  // redeploy racing the freshly-started one) would otherwise leave it
+  // permanently drifted from what's actually in the database, with nothing
+  // to ever correct it.
+  const actualVideoCount = await prisma.playlistVideo.count({
+    where: { playlistId, downloadStatus: { not: 'removed' } },
+  });
   await prisma.playlist.update({
     where: { id: playlistId },
-    data: { title: info.title, thumbnailUrl: info.thumbnailUrl, videoCount: info.videos.length },
+    data: { title: info.title, thumbnailUrl: info.thumbnailUrl, videoCount: actualVideoCount },
   });
 }
 

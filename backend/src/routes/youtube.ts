@@ -163,24 +163,32 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
           syncStatus: 'syncing',
         },
       });
-      if (info.videos.length > 0) {
-        await tx.playlistVideo.createMany({
-          data: info.videos.map((v) => ({
-            playlistId: created.id,
-            youtubeId: v.id,
-            title: v.title,
-            originalTitle: v.title,
-            duration: v.duration,
-            thumbnailUrl: v.thumbnailUrl,
-            position: v.position,
-            isAvailable: v.isAvailable,
-            channelName: v.channelName,
-            downloadStatus: 'pending',
-          })),
-          skipDuplicates: true,
-        });
-      }
-      return created;
+      if (info.videos.length === 0) return created;
+
+      await tx.playlistVideo.createMany({
+        data: info.videos.map((v) => ({
+          playlistId: created.id,
+          youtubeId: v.id,
+          title: v.title,
+          originalTitle: v.title,
+          duration: v.duration,
+          thumbnailUrl: v.thumbnailUrl,
+          position: v.position,
+          isAvailable: v.isAvailable,
+          channelName: v.channelName,
+          downloadStatus: 'pending',
+        })),
+        skipDuplicates: true,
+      });
+
+      // Guards against the source listing containing the same video twice,
+      // which would make createMany (via skipDuplicates) create fewer rows
+      // than info.videos.length — same principle as refreshPlaylistFromYoutube's
+      // own videoCount fix, applied here so it's correct from the very start.
+      const actualCount = await tx.playlistVideo.count({ where: { playlistId: created.id } });
+      return actualCount === info.videos.length
+        ? created
+        : tx.playlist.update({ where: { id: created.id }, data: { videoCount: actualCount } });
     });
 
     // Return immediately — downloads happen in background
