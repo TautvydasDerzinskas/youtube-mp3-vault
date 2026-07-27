@@ -93,6 +93,12 @@ model PlaylistVideo {
   channelName            String?
   downloadStatus         String     @default("pending")
   downloadError          String?
+  // Counts every download attempt (initial sync and each explicit retry
+  // alike) that ended in a non-permanent failure — see downloadPendingVideos
+  // in syncService.ts. Once this reaches MAX_DOWNLOAD_ATTEMPTS, the video is
+  // removed from the playlist outright instead of being marked failed again,
+  // so a persistently-broken video can't be retried forever.
+  downloadAttempts       Int        @default(0)
   mediaFileId            String?
   mediaFile              MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: Restrict)
   fileSize               Int?

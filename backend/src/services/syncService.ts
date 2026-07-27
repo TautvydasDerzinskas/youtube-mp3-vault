@@ -9,11 +9,14 @@ function sleep(ms: number): Promise<void> {
 }
 
 // Adaptive pacing between downloads — see downloadPendingVideos. A large
-// playlist gets a small proactive floor even with zero failures (cheap
-// insurance against tripping a volume-based throttle in the first place);
-// beyond that, pacing only escalates in response to actual trouble.
-const LARGE_PLAYLIST_THRESHOLD = 300;
-const LARGE_PLAYLIST_BASELINE_DELAY_MS = 3_000;
+// *batch* (however many videos this particular pass is actually about to
+// attempt — pending count, not total playlist size; a retry-failed pass on
+// a huge playlist might only be retrying a handful) gets a small proactive
+// floor even with zero failures (cheap insurance against tripping a
+// volume-based throttle in the first place); beyond that, pacing only
+// escalates in response to actual trouble.
+const LARGE_BATCH_THRESHOLD = 300;
+const LARGE_BATCH_BASELINE_DELAY_MS = 3_000;
 
 // Escalation ladder above the baseline. A trigger jumps straight to the
 // first tier; if failures keep happening even at that pace, it escalates
@@ -29,6 +32,15 @@ const PACING_ESCALATION_MS = [3 * 60_000, 5 * 60_000];
 const FAILURE_STREAK_TO_ESCALATE = 5;
 // Consecutive successes at the current pace before easing back down one tier.
 const SUCCESS_STREAK_TO_STEP_DOWN = 5;
+
+// A video that fails this many times total (initial sync + retries alike,
+// excluding permanently-unavailable ones which are never retried at all) is
+// removed from the playlist outright rather than marked failed again — some
+// failures aren't rate-limiting or bad luck, they're a video that will never
+// succeed for reasons that don't match isPermanentlyUnavailable's known
+// patterns, and retrying it forever every time "Retry failed" is clicked
+// otherwise never actually converges.
+const MAX_DOWNLOAD_ATTEMPTS = 3;
 
 /** True for a Prisma unique-constraint violation (P2002) — i.e. we lost a create race. */
 function isUniqueConstraintViolation(err: unknown): boolean {
@@ -259,12 +271,15 @@ export async function refreshPlaylistFromYoutube(
 // startBackgroundDownload wrapper meant for HTTP handlers that can't block.
 export async function downloadPendingVideos(playlistId: string): Promise<void> {
   try {
-    const playlistMeta = await prisma.playlist.findUnique({
-      where: { id: playlistId },
-      select: { videoCount: true },
+    // Based on how many videos this pass is actually about to attempt, not
+    // the playlist's total size — a retry-failed pass on a huge playlist
+    // might only be retrying a handful of videos, which shouldn't trigger
+    // "large batch" pacing just because the playlist itself is large.
+    const pendingCount = await prisma.playlistVideo.count({
+      where: { playlistId, downloadStatus: 'pending', isAvailable: true },
     });
-    const baselineDelayMs = (playlistMeta?.videoCount ?? 0) > LARGE_PLAYLIST_THRESHOLD
-      ? LARGE_PLAYLIST_BASELINE_DELAY_MS
+    const baselineDelayMs = pendingCount > LARGE_BATCH_THRESHOLD
+      ? LARGE_BATCH_BASELINE_DELAY_MS
       : 0;
 
     // Pacing state — local to this one sync pass, not persisted across
@@ -339,18 +354,31 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
       } catch (err) {
         const message = (err as Error).message;
         console.error(`[sync] ✗ ${video.youtubeId}:`, message);
-        await prisma.playlistVideo.update({
-          where: { id: video.id },
-          data: isPermanentlyUnavailable(message)
-            ? { downloadStatus: 'failed', downloadError: message.slice(0, 500), isAvailable: false }
-            : { downloadStatus: 'failed', downloadError: message.slice(0, 500) },
-        });
+        const permanentlyUnavailable = isPermanentlyUnavailable(message);
+
+        if (permanentlyUnavailable) {
+          await prisma.playlistVideo.update({
+            where: { id: video.id },
+            data: { downloadStatus: 'failed', downloadError: message.slice(0, 500), isAvailable: false },
+          });
+        } else {
+          const attempts = video.downloadAttempts + 1;
+          if (attempts >= MAX_DOWNLOAD_ATTEMPTS) {
+            console.error(`[sync] Giving up on ${video.youtubeId} after ${attempts} failed attempts — removing from playlist ${playlistId}`);
+            await removePlaylistVideo(video.id, video.mediaFileId);
+          } else {
+            await prisma.playlistVideo.update({
+              where: { id: video.id },
+              data: { downloadStatus: 'failed', downloadError: message.slice(0, 500), downloadAttempts: attempts },
+            });
+          }
+        }
 
         consecutiveSuccesses = 0;
         // A permanently-unavailable video (deleted/private) is routine and
         // unrelated to IP health — it shouldn't count towards a "we're being
         // throttled" streak at all.
-        if (!isPermanentlyUnavailable(message)) {
+        if (!permanentlyUnavailable) {
           consecutiveFailures++;
           const shouldEscalate = isLikelyRateLimited(message) || consecutiveFailures >= FAILURE_STREAK_TO_ESCALATE;
           if (shouldEscalate && tierIndex < PACING_ESCALATION_MS.length) {
@@ -491,12 +519,13 @@ export async function cleanupMediaFiles(mediaFileIds: string[]): Promise<void> {
 
 // Deletes a single playlist_video row outright (not the soft "removed"
 // status a real resync uses), keeping playlist.videoCount and the shared
-// media file store consistent. Used for two cases where the row was never a
-// deliberate addition from the user's perspective: the audio-analysis dedup
-// check for generated playlists (see audioAnalysisWorker.ts), and dropping a
-// generated playlist's failed downloads after its initial build (see
-// playlistGenerator.ts) — a generated playlist never gets a normal resync to
-// retry/clean those up otherwise.
+// media file store consistent. Used for cases where the row isn't worth
+// keeping around anymore: the audio-analysis dedup check for generated
+// playlists (see audioAnalysisWorker.ts), a generated playlist's failed
+// downloads after its initial build (see playlistGenerator.ts — a generated
+// playlist never gets a normal resync to retry/clean those up otherwise),
+// and a regular playlist's video that's exhausted MAX_DOWNLOAD_ATTEMPTS in
+// downloadPendingVideos above.
 export async function removePlaylistVideo(playlistVideoId: string, mediaFileId: string | null): Promise<void> {
   const video = await prisma.playlistVideo.delete({ where: { id: playlistVideoId } });
   await prisma.playlist.update({

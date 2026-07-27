@@ -53,12 +53,15 @@ export function Actions({
   const showSync = !isGenerated && !playlist.syncPaused;
   const showRetry = !isGenerated && !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
   const showPauseToggle = !isGenerated && !isRetrying && (isBusy || playlist.syncPaused);
-  // Generating a similar playlist reads this playlist's full video list, so
-  // it's only offered once every song has actually downloaded — not just
-  // "at least one has" — otherwise a similar playlist could get built from a
-  // small, still-growing fraction of the real one.
-  const isFullySynced = !isBusy && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
-  const showGenerateSimilar = !isGenerated && isFullySynced && canGenerateSimilar && !hasGeneratedPlaylist;
+  // Generating a similar playlist reads this playlist's video list, so it
+  // only needs to have actually finished a sync pass at least once — not
+  // 100% success. Requiring downloadedCount === videoCount meant a single
+  // failed video (routine in a large library) hid this forever, since a
+  // playlist with any failures never reaches that exact equality again on
+  // its own. lastSyncedAt is only ever null for a playlist that's never
+  // completed a sync at all — see downloadPendingVideos.
+  const hasCompletedSync = !isBusy && playlist.lastSyncedAt !== null;
+  const showGenerateSimilar = !isGenerated && hasCompletedSync && canGenerateSimilar && !hasGeneratedPlaylist;
   const renameDisabled = isPausing || isBusy || isLockedBySource;
   const syncDisabled = isBusy || !online || isLockedBySource;
   const deleteDisabled = isPausing || isBusy || isLockedBySource;
