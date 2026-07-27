@@ -37,6 +37,7 @@
   "nav": {
     "dashboard": "Panel",
     "playlists": "Playlisty",
+    "artists": "Artyści",
     "genres": "Gatunki",
     "administration": "Administracja",
     "users": "Użytkownicy",
@@ -382,5 +383,24 @@
     "title": "Gatunki",
     "empty": "Brak gatunków — pojawią się tutaj, gdy Twoje utwory zostaną przeanalizowane.",
     "failedToLoad": "Nie udało się załadować gatunków."
+  },
+  "artists": {
+    "title": "Artyści",
+    "searchPlaceholder": "Szukaj artystów lub utworów…",
+    "empty": "Brak artystów — zaimportuj playlistę, aby ich tu zobaczyć.",
+    "noResults": "Brak artystów pasujących do wyszukiwania.",
+    "failedToLoad": "Nie udało się załadować artystów.",
+    "detail": {
+      "songCount_one": "{{count}} utwór",
+      "songCount_few": "{{count}} utwory",
+      "songCount_many": "{{count}} utworów",
+      "songCount_other": "{{count}} utworów",
+      "totalPlayCount_one": "{{count}} odtworzenie",
+      "totalPlayCount_few": "{{count}} odtworzenia",
+      "totalPlayCount_many": "{{count}} odtworzeń",
+      "totalPlayCount_other": "{{count}} odtworzeń",
+      "appearsIn": "Występuje w playlistach",
+      "failedToLoad": "Nie udało się załadować artysty."
+    }
   }
 }

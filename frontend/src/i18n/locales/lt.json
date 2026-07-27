@@ -37,6 +37,7 @@
   "nav": {
     "dashboard": "Prietaisų skydelis",
     "playlists": "Grojaraščiai",
+    "artists": "Atlikėjai",
     "genres": "Žanrai",
     "administration": "Administravimas",
     "users": "Naudotojai",
@@ -374,5 +375,22 @@
     "title": "Žanrai",
     "empty": "Žanrų dar nėra — jie atsiras, kai jūsų dainos bus išanalizuotos.",
     "failedToLoad": "Nepavyko įkelti žanrų."
+  },
+  "artists": {
+    "title": "Atlikėjai",
+    "searchPlaceholder": "Ieškoti atlikėjų ar dainų…",
+    "empty": "Atlikėjų dar nėra — importuokite grojaraštį, kad juos pamatytumėte.",
+    "noResults": "Pagal paiešką atlikėjų nerasta.",
+    "failedToLoad": "Nepavyko įkelti atlikėjų.",
+    "detail": {
+      "songCount_one": "{{count}} daina",
+      "songCount_few": "{{count}} dainos",
+      "songCount_other": "{{count}} dainų",
+      "totalPlayCount_one": "{{count}} peržiūra",
+      "totalPlayCount_few": "{{count}} peržiūros",
+      "totalPlayCount_other": "{{count}} peržiūrų",
+      "appearsIn": "Yra grojaraščiuose",
+      "failedToLoad": "Nepavyko įkelti atlikėjo."
+    }
   }
 }

@@ -87,6 +87,56 @@ export async function getTrackCorrection(artist: string, title: string): Promise
   }
 }
 
+export interface ArtistInfo {
+  bio: string | null;
+  thumbnailUrl: string | null;
+}
+
+// Last.fm has stopped returning real photos for most artists (licensing) —
+// these are the placeholder "grey silhouette" image hashes it fills in
+// instead, filtered out so we fall back to a track thumbnail rather than
+// showing that placeholder as if it were real artwork.
+const LASTFM_PLACEHOLDER_IMAGE_HASHES = ['2a96cbd8b46e442fc41c2b86b821562f', 'c6f59c1e5e7240a4c0d427abd71f3dbb'];
+
+export async function getArtistInfo(artist: string): Promise<ArtistInfo | null> {
+  const { apiKey } = getLastfmSettings();
+  if (!apiKey || !isOnline()) return null;
+  if (!artist.trim()) return null;
+
+  const params = new URLSearchParams({
+    method: 'artist.getinfo',
+    artist,
+    api_key: apiKey,
+    autocorrect: '1',
+    format: 'json',
+  });
+
+  try {
+    const res = await fetch(`${LASTFM_BASE}?${params.toString()}`, { signal: AbortSignal.timeout(LASTFM_FETCH_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    const artistData = data?.artist;
+    if (!artistData) return null;
+
+    const bioRaw: string | undefined = artistData?.bio?.summary;
+    // Last.fm bios end with a "Read more on Last.fm" link wrapped in an <a> tag.
+    const bio = bioRaw ? bioRaw.replace(/<a[^>]*>.*?<\/a>/gi, '').trim() || null : null;
+
+    const images: any[] = artistData?.image ?? [];
+    const bestImage = [...images].reverse().find((img) => {
+      const url = img?.['#text'];
+      if (!url) return false;
+      return !LASTFM_PLACEHOLDER_IMAGE_HASHES.some((hash) => url.includes(hash));
+    });
+    const thumbnailUrl = bestImage?.['#text'] || null;
+
+    if (!bio && !thumbnailUrl) return null;
+    return { bio, thumbnailUrl };
+  } catch {
+    return null;
+  }
+}
+
 function sign(params: Record<string, string>, secret: string): string {
   const base = Object.keys(params).sort().map((k) => `${k}${params[k]}`).join('');
   return createHash('md5').update(base + secret, 'utf8').digest('hex');

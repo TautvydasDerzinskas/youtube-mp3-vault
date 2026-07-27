@@ -8,6 +8,8 @@ import DashboardPage from './pages/DashboardPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import AllTracksPage from './pages/AllTracksPage';
+import ArtistsPage from './pages/ArtistsPage';
+import ArtistDetailPage from './pages/ArtistDetailPage';
 import GenresPage from './pages/GenresPage';
 import TrackDetailPage from './pages/TrackDetailPage';
 import ProfilePage from './pages/ProfilePage';
@@ -78,6 +80,8 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="playlists" element={<PlaylistsPage />} />
+          <Route path="artists" element={<ArtistsPage />} />
+          <Route path="artists/:key" element={<ArtistDetailPage />} />
           <Route path="genres" element={<GenresPage />} />
           <Route path="all-tracks" element={<AllTracksPage />} />
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />

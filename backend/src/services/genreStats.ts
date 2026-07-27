@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { normalizeKey, preferLabel } from './textNormalization';
 
 export interface GenreCount {
   key: string;
@@ -6,10 +7,10 @@ export interface GenreCount {
   count: number;
 }
 
-function normalizeGenreKey(raw: string): string {
-  return raw.trim().toLowerCase();
-}
-
+// Display label: always capitalized regardless of how it's actually stored,
+// so the UI never shows a lowercase genre even before that data is cleaned
+// up — unlike artist names (see artistStats.ts), genre tags are simple
+// common nouns where forced title-casing is expected.
 function formatGenreLabel(raw: string): string {
   const trimmed = raw.trim();
   return trimmed.length > 0 ? trimmed.charAt(0).toUpperCase() + trimmed.slice(1) : trimmed;
@@ -36,12 +37,9 @@ export async function topGenresByTrackCount(userId: string, limit: number): Prom
     for (const raw of v.genres) {
       const trimmed = raw.trim();
       if (!trimmed) continue;
-      const key = normalizeGenreKey(trimmed);
+      const key = normalizeKey(trimmed);
       counts.set(key, (counts.get(key) ?? 0) + 1);
-      const existingLabel = labels.get(key);
-      if (!existingLabel || (!/^[A-Z]/.test(existingLabel) && /^[A-Z]/.test(trimmed))) {
-        labels.set(key, trimmed);
-      }
+      labels.set(key, preferLabel(labels.get(key), trimmed));
     }
   }
 

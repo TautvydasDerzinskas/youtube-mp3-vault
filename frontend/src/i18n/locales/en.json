@@ -37,6 +37,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "playlists": "Playlists",
+    "artists": "Artists",
     "genres": "Genres",
     "administration": "Administration",
     "users": "Users",
@@ -366,5 +367,20 @@
     "title": "Genres",
     "empty": "No genres yet — genres appear here once your songs are analyzed.",
     "failedToLoad": "Failed to load genres."
+  },
+  "artists": {
+    "title": "Artists",
+    "searchPlaceholder": "Search artists or songs…",
+    "empty": "No artists yet — import a playlist to see them here.",
+    "noResults": "No artists match your search.",
+    "failedToLoad": "Failed to load artists.",
+    "detail": {
+      "songCount_one": "{{count}} song",
+      "songCount_other": "{{count}} songs",
+      "totalPlayCount_one": "{{count}} play",
+      "totalPlayCount_other": "{{count}} plays",
+      "appearsIn": "Appears in",
+      "failedToLoad": "Failed to load artist."
+    }
   }
 }

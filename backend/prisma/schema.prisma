@@ -236,3 +236,24 @@ model MediaFile {
 
   @@map("media_files")
 }
+
+/// Cached third-party artist metadata (bio + photo), fetched lazily the first
+/// time an Artist page is visited — see services/artistInfo.ts. Global, not
+/// per-user, like MediaFile: an artist's bio isn't user-specific, so there's
+/// no reason to fetch it again for a second user with the same artist in
+/// their library. normalizedName is the lookup key (same trim+lowercase
+/// convention as genre keys); fetchedAt stays null until the first fetch
+/// attempt actually completes (success or a confirmed "nothing found") so a
+/// later visit doesn't just keep retrying it — see getOrFetchArtistInfo.
+model ArtistInfo {
+  id             String    @id @default(uuid())
+  normalizedName String    @unique
+  name           String
+  bio            String?
+  thumbnailUrl   String?
+  fetchedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("artist_info")
+}
