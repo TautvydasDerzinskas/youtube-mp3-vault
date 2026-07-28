@@ -35,6 +35,8 @@ function toQueueTrack(rec: RecommendedTrack): QueueTrack {
     metadataStatus: 'pending',
     playCount: 0,
     lastPlayedAt: null,
+    betterQualityExists: false,
+    hqFileDownloaded: false,
   };
 }
 
