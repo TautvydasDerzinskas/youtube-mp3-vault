@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useTrackDetail } from './hooks/useTrackDetail';
 import { Header } from './Header';
-import { UsedInPlaylists } from './UsedInPlaylists';
 import { RecommendedTracks } from './RecommendedTracks';
 import { DiscoverTracks } from './DiscoverTracks';
 import { RemixLinks } from './RemixLinks';
@@ -32,8 +31,8 @@ export default function TrackDetailPage() {
         video={video}
         isPlayingThis={isPlayingThis}
         onTogglePlay={() => handleTogglePlay(playlistId, video)}
+        usedIn={usedIn}
       />
-      <UsedInPlaylists state={usedIn} />
       <RecommendedTracks state={recommendations} nowPlaying={nowPlaying} isAudioPlaying={isAudioPlaying} onTogglePlay={handleTogglePlay} />
       <DiscoverTracks state={discover} />
       <RemixLinks state={remixes} />

@@ -125,6 +125,7 @@
     "videoList": {
       "failedToLoad": "Failed to load videos.",
       "empty": "No videos found.",
+      "retryingHint": "Showing only videos being retried — already-downloaded tracks are hidden.",
       "unavailable": "Unavailable",
       "play": "Play",
       "pause": "Pause",

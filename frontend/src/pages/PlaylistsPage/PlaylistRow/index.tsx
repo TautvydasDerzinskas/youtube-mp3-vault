@@ -121,7 +121,8 @@ export function PlaylistRow({
       <AccordionDetails sx={{ px: 2, pt: 0, pb: 2, maxHeight: 420, overflowY: 'auto' }}>
         {expanded && (
           <VideoList playlistId={playlist.id} cache={videoCache} setCache={setVideoCache}
-            nowPlaying={nowPlaying} isAudioPlaying={isAudioPlaying} onTogglePlay={onTogglePlay} />
+            nowPlaying={nowPlaying} isAudioPlaying={isAudioPlaying} onTogglePlay={onTogglePlay}
+            retrying={isRetrying} />
         )}
       </AccordionDetails>
     </Accordion>

@@ -133,6 +133,7 @@
     "videoList": {
       "failedToLoad": "Nie udało się załadować filmów.",
       "empty": "Nie znaleziono żadnych filmów.",
+      "retryingHint": "Wyświetlane są tylko ponawiane filmy — pobrane już utwory są ukryte.",
       "unavailable": "Niedostępny",
       "play": "Odtwórz",
       "pause": "Wstrzymaj",

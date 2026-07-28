@@ -12,7 +12,6 @@ export function PlaylistCountCard({ count }: { count: number }) {
       onClick={() => navigate('/playlists')}
       elevation={0}
       sx={{
-        gridArea: 'count',
         p: 3,
         display: 'flex',
         flexDirection: 'column',

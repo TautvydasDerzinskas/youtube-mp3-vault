@@ -19,9 +19,10 @@ interface VideoListProps {
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo) => void;
+  retrying?: boolean;
 }
 
-export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlaying, onTogglePlay }: VideoListProps) {
+export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlaying, onTogglePlay, retrying }: VideoListProps) {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -44,9 +45,23 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
     return <Typography color="text.secondary">{t('playlists.videoList.empty')}</Typography>;
   }
 
+  // A retry only resets previously-failed rows to pending — already-`done`
+  // videos are untouched — so while retrying, everything still worth
+  // showing is simply "not done" yet.
+  const visible = retrying ? state.filter(v => v.downloadStatus !== 'done') : state;
+
+  if (visible.length === 0) {
+    return <Typography color="text.secondary">{t('playlists.videoList.empty')}</Typography>;
+  }
+
   return (
     <List dense disablePadding>
-      {state.map(v => {
+      {retrying && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+          {t('playlists.videoList.retryingHint')}
+        </Typography>
+      )}
+      {visible.map(v => {
         const isCurrentTrack = nowPlaying?.playlistId === playlistId && nowPlaying?.videoId === v.id;
         return (
           <ListItem key={v.id} disableGutters

@@ -12,7 +12,6 @@ export function ArtistCountCard({ count }: { count: number }) {
       onClick={() => navigate('/artists')}
       elevation={0}
       sx={{
-        gridArea: 'artistCount',
         p: 3,
         display: 'flex',
         flexDirection: 'column',

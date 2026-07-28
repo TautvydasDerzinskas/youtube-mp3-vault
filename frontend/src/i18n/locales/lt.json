@@ -129,6 +129,7 @@
     "videoList": {
       "failedToLoad": "Nepavyko įkelti vaizdo įrašų.",
       "empty": "Vaizdo įrašų nerasta.",
+      "retryingHint": "Rodomi tik iš naujo bandomi vaizdo įrašai — jau atsisiųsti kūriniai paslėpti.",
       "unavailable": "Nepasiekiamas",
       "play": "Groti",
       "pause": "Pristabdyti",

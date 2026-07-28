@@ -34,36 +34,26 @@ export default function DashboardPage() {
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" fontWeight={700} mb={3}>{t('dashboard.title')}</Typography>
 
-      {/* Bento/puzzle layout: count + totalSongs stack in column 1, songs
-          spans both rows in column 2, and artists/genres stack in column 3
-          (genres only needs ~5 rows vs artists' ~10, so it naturally reads
-          as the smaller of the two). artistCount is a 4th column, row-1-only
-          small stat panel — same size class as count/totalSongs, just not
-          stacked with a second card underneath it (row 2 there is empty via
-          the "." filler). alignItems: 'start' keeps each card sized to its
-          own content — without it, a spanning grid item stretches to fill
-          its full row span by default, which was leaving dead space below
-          "See more" on whichever card had the shorter list. Collapses to a
-          single stacked column on mobile. */}
       <Box
         sx={{
-          display: 'grid',
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
           gap: 2,
-          alignItems: 'start',
-          gridTemplateColumns: { xs: '1fr', md: '1fr 1.4fr 1.4fr 1fr' },
-          gridTemplateRows: { xs: 'auto', md: 'auto auto' },
-          gridTemplateAreas: {
-            xs: '"count" "totalSongs" "artistCount" "songs" "artists" "genres"',
-            md: '"count songs artists artistCount" "totalSongs songs genres ."',
-          },
+          alignItems: 'flex-start',
         }}
       >
-        <PlaylistCountCard count={summary.playlistCount} />
-        <TotalSongsCard count={summary.totalSongCount} />
-        <ArtistCountCard count={summary.totalArtistCount} />
-        <SongsOnRepeatCard songs={summary.topSongs} onSeeMore={() => setShowAllSongs(true)} />
-        <TopArtistsCard artists={summary.topArtists} onSeeMore={() => setShowAllArtists(true)} />
-        <TopGenresCard genres={summary.topGenres} onSeeMore={() => setShowAllGenres(true)} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: { xs: '100%', md: 0 }, flex: { md: 1 } }}>
+          <PlaylistCountCard count={summary.playlistCount} />
+          <TotalSongsCard count={summary.totalSongCount} />
+          <ArtistCountCard count={summary.totalArtistCount} />
+        </Box>
+        <Box sx={{ width: { xs: '100%', md: 0 }, flex: { md: 1.4 } }}>
+          <SongsOnRepeatCard songs={summary.topSongs} onSeeMore={() => setShowAllSongs(true)} />
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: { xs: '100%', md: 0 }, flex: { md: 1.4 } }}>
+          <TopArtistsCard artists={summary.topArtists} onSeeMore={() => setShowAllArtists(true)} />
+          <TopGenresCard genres={summary.topGenres} onSeeMore={() => setShowAllGenres(true)} />
+        </Box>
       </Box>
 
       {showAllSongs && <AllSongsDialog onClose={() => setShowAllSongs(false)} />}

@@ -49,12 +49,28 @@ const PERMANENT_UNAVAILABILITY_PATTERNS = [
   /private video/i,
   /video has been removed/i,
   /account associated with this video has been terminated/i,
-  /not available in your country/i,
+  // yt-dlp's actual wording is "has not made this video available in your
+  // country" — "not" and "available" aren't adjacent, so this can't anchor
+  // on the literal "not available" phrase.
+  /available in your country/i,
   /blocked (it|this video) (on|in|for) copyright/i,
 ];
 
 export function isPermanentlyUnavailable(message: string): boolean {
   return PERMANENT_UNAVAILABILITY_PATTERNS.some((re) => re.test(message));
+}
+
+// yt-dlp's age-gate response ("Sign in to confirm your age..."). This is a
+// per-video restriction, not IP throttling — we don't have a signed-in
+// account's cookies configured, so it can never succeed. Kept distinct from
+// RATE_LIMIT_PATTERNS below (whose "confirm you're not a bot" wording is
+// superficially similar) so it doesn't trigger pacing escalation, and from
+// PERMANENT_UNAVAILABILITY_PATTERNS so callers can drop the video outright
+// instead of keeping it around hidden as isAvailable: false.
+const AGE_RESTRICTED_PATTERN = /sign in to confirm your age/i;
+
+export function isAgeRestricted(message: string): boolean {
+  return AGE_RESTRICTED_PATTERN.test(message);
 }
 
 // Unambiguous signs that a failure is YouTube throttling/blocking us, rather
@@ -69,7 +85,6 @@ const RATE_LIMIT_PATTERNS = [
   /\b429\b/,
   /too many requests/i,
   /confirm you'?re not a bot/i,
-  /sign in to confirm/i,
 ];
 
 export function isLikelyRateLimited(message: string): boolean {

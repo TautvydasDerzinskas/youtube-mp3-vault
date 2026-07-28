@@ -115,7 +115,13 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
         isBusy && !expanded && playlist.currentVideo && (
           <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ mt: 0.25 }}>
             {t('playlists.syncingMessage', {
-              position: playlist.currentVideo.position, total: playlist.videoCount, title: playlist.currentVideo.title,
+              // Not playlist.currentVideo.position — that's the video's raw
+              // index in the *original* YouTube playlist (gaps and all, from
+              // videos never even fetched), which can exceed videoCount and
+              // reads as nonsensical ("#1456/1116"). This is its rank among
+              // this playlist's tracked rows instead, always in [1, videoCount].
+              position: playlist.downloadedCount + playlist.failedCount + 1,
+              total: playlist.videoCount, title: playlist.currentVideo.title,
             })}
           </Typography>
         )

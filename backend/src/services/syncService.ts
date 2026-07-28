@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { fetchPlaylist } from './youtube';
-import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited } from './downloader';
+import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited, isAgeRestricted } from './downloader';
 import { resolvePlaylistMetadata } from './metadataWorker';
 import { resolvePlaylistQuality } from './slskdQualityWorker';
 
@@ -355,9 +355,18 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
       } catch (err) {
         const message = (err as Error).message;
         console.error(`[sync] ✗ ${video.youtubeId}:`, message);
-        const permanentlyUnavailable = isPermanentlyUnavailable(message);
+        const ageRestricted = isAgeRestricted(message);
+        const permanentlyUnavailable = ageRestricted || isPermanentlyUnavailable(message);
 
         if (permanentlyUnavailable) {
+          // isAvailable: false (never removePlaylistVideo) — the video is
+          // still physically present in the real YouTube playlist, just
+          // permanently undownloadable, so a hard delete would only get
+          // resurrected as "new" by the next refreshPlaylistFromYoutube
+          // pass (see that function's step 4), retried, and fail again:
+          // an infinite loop across sync passes rather than a one-time
+          // failure. isAvailable: false is the stable, resync-proof way to
+          // give up on a video that isn't actually gone from the source.
           await prisma.playlistVideo.update({
             where: { id: video.id },
             data: { downloadStatus: 'failed', downloadError: message.slice(0, 500), isAvailable: false },
@@ -365,8 +374,14 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
         } else {
           const attempts = video.downloadAttempts + 1;
           if (attempts >= MAX_DOWNLOAD_ATTEMPTS) {
-            console.error(`[sync] Giving up on ${video.youtubeId} after ${attempts} failed attempts — removing from playlist ${playlistId}`);
-            await removePlaylistVideo(video.id, video.mediaFileId);
+            // Same resurrection risk as above applies here — this failure
+            // mode isn't recognized as permanent, but 3 failed attempts is
+            // itself evidence it'll never succeed, so give up the same way.
+            console.error(`[sync] Giving up on ${video.youtubeId} after ${attempts} failed attempts — hiding from playlist ${playlistId}`);
+            await prisma.playlistVideo.update({
+              where: { id: video.id },
+              data: { downloadStatus: 'failed', downloadError: message.slice(0, 500), downloadAttempts: attempts, isAvailable: false },
+            });
           } else {
             await prisma.playlistVideo.update({
               where: { id: video.id },
@@ -376,9 +391,9 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
         }
 
         consecutiveSuccesses = 0;
-        // A permanently-unavailable video (deleted/private) is routine and
-        // unrelated to IP health — it shouldn't count towards a "we're being
-        // throttled" streak at all.
+        // Age-restriction and permanent-unavailability are routine,
+        // video-specific failures unrelated to IP health — neither should
+        // count towards a "we're being throttled" streak at all.
         if (!permanentlyUnavailable) {
           consecutiveFailures++;
           const shouldEscalate = isLikelyRateLimited(message) || consecutiveFailures >= FAILURE_STREAK_TO_ESCALATE;

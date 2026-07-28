@@ -12,7 +12,6 @@ export function TotalSongsCard({ count }: { count: number }) {
       onClick={() => navigate('/all-tracks')}
       elevation={0}
       sx={{
-        gridArea: 'totalSongs',
         p: 3,
         display: 'flex',
         flexDirection: 'column',
