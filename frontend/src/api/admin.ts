@@ -61,6 +61,10 @@ export interface LastfmSettings {
   apiSecret: string | null;
 }
 
+export interface HqSettings {
+  autoDownloadEnabled: boolean;
+}
+
 export const adminApi = {
   listUsers: async (): Promise<AdminUser[]> => {
     const { data } = await client.get<{ users: AdminUser[] }>('/admin/users');
@@ -82,8 +86,8 @@ export const adminApi = {
     return data.user;
   },
 
-  getSettings: async (): Promise<{ smtp: SmtpSettings; postgres: PostgresSettings; lastfm: LastfmSettings }> => {
-    const { data } = await client.get<{ smtp: SmtpSettings; postgres: PostgresSettings; lastfm: LastfmSettings }>('/admin/settings');
+  getSettings: async (): Promise<{ smtp: SmtpSettings; postgres: PostgresSettings; lastfm: LastfmSettings; hq: HqSettings }> => {
+    const { data } = await client.get<{ smtp: SmtpSettings; postgres: PostgresSettings; lastfm: LastfmSettings; hq: HqSettings }>('/admin/settings');
     return data;
   },
 
@@ -100,6 +104,11 @@ export const adminApi = {
   updateLastfmSettings: async (settings: LastfmSettings): Promise<LastfmSettings> => {
     const { data } = await client.patch<{ lastfm: LastfmSettings }>('/admin/settings/lastfm', settings);
     return data.lastfm;
+  },
+
+  updateHqSettings: async (settings: HqSettings): Promise<HqSettings> => {
+    const { data } = await client.patch<{ hq: HqSettings }>('/admin/settings/hq', settings);
+    return data.hq;
   },
 
   triggerSoftReimport: async (playlistId: string): Promise<void> => {

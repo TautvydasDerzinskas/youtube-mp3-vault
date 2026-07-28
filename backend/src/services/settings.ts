@@ -21,10 +21,15 @@ export interface LastfmSettings {
   apiSecret: string | null;
 }
 
+export interface HqSettings {
+  autoDownloadEnabled: boolean;
+}
+
 interface SettingsCache {
   smtp: SmtpSettings;
   postgres: PostgresSettings;
   lastfm: LastfmSettings;
+  hq: HqSettings;
 }
 
 let cache: SettingsCache | null = null;
@@ -58,6 +63,7 @@ function toCache(row: Awaited<ReturnType<typeof ensureRow>>): SettingsCache {
     },
     postgres: { database: row.postgresDb, user: row.postgresUser, password: row.postgresPassword },
     lastfm: { apiKey: row.lastfmApiKey, apiSecret: row.lastfmApiSecret },
+    hq: { autoDownloadEnabled: row.hqAutoDownloadEnabled },
   };
 }
 
@@ -95,6 +101,14 @@ export function isLastfmDiscoverEnabled(): boolean {
 export function isLastfmScrobblingConfigured(): boolean {
   const { apiKey, apiSecret } = requireCache().lastfm;
   return apiKey !== null && apiSecret !== null;
+}
+
+export function getHqSettings(): HqSettings {
+  return requireCache().hq;
+}
+
+export function isHqAutoDownloadEnabled(): boolean {
+  return requireCache().hq.autoDownloadEnabled;
 }
 
 export async function updateSmtpSettings(input: SmtpSettings): Promise<SmtpSettings> {
@@ -141,4 +155,15 @@ export async function updateLastfmSettings(input: LastfmSettings): Promise<Lastf
   });
   cache = toCache(row);
   return cache.lastfm;
+}
+
+export async function updateHqSettings(input: HqSettings): Promise<HqSettings> {
+  const row = await prisma.appSettings.update({
+    where: { id: 1 },
+    data: {
+      hqAutoDownloadEnabled: input.autoDownloadEnabled,
+    },
+  });
+  cache = toCache(row);
+  return cache.hq;
 }

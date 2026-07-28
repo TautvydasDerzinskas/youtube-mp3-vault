@@ -132,7 +132,9 @@
       "downloadMp3": "Download MP3",
       "lowQuality": "Low source quality (~{{bitrate}}kbps)",
       "mbVerified": "MusicBrainz match",
-      "mbError": "MusicBrainz lookup failed — will retry automatically"
+      "mbError": "MusicBrainz lookup failed — will retry automatically",
+      "hqAvailable": "A higher-quality version of this file is available",
+      "hqDownloaded": "Upgraded to a higher-quality file"
     },
     "miniPlayer": {
       "close": "Close player",
@@ -249,6 +251,11 @@
       "description": "From the same free registration at last.fm/api/account/create. The API key alone powers the track page's \"Discover\" section; both key and secret are needed before users can connect their account and scrobble.",
       "apiKey": "API key",
       "apiSecret": "Shared secret"
+    },
+    "hq": {
+      "title": "HQ Downloads",
+      "description": "Requires a modified slskd-compatible image (see docker-compose.yml's SLSKD_IMAGE) with purchaser-IP verification built in — has no effect against a plain slskd instance.",
+      "autoDownloadEnabled": "Automatically download and replace files with higher-quality versions when found"
     }
   },
   "users": {

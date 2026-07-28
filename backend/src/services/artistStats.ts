@@ -15,7 +15,7 @@ const ARTIST_VIDEO_SELECT = {
   thumbnailUrl: true, position: true, isAvailable: true, downloadStatus: true,
   downloadError: true, fileSize: true, bitrate: true, addedAt: true, artist: true,
   album: true, trackNumber: true, genres: true, releaseYear: true, metadataStatus: true,
-  playCount: true, lastPlayedAt: true,
+  playCount: true, lastPlayedAt: true, betterQualityExists: true, hqFileDownloaded: true,
 } as const;
 
 const BASE_WHERE = {

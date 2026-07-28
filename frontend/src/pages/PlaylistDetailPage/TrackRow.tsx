@@ -2,7 +2,7 @@ import { Box, Typography, Avatar, IconButton, Tooltip } from '@mui/material';
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, Verified as VerifiedIcon,
-  SyncProblem as SyncProblemIcon,
+  SyncProblem as SyncProblemIcon, HighQuality as HqIcon,
 } from '@mui/icons-material';
 import { RowComponentProps } from 'react-window';
 import { useTranslation } from 'react-i18next';
@@ -71,6 +71,16 @@ export function TrackRow({
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+        {v.hqFileDownloaded && (
+          <Tooltip title={t('playlists.videoList.hqDownloaded')}>
+            <HqIcon sx={{ fontSize: 18, color: 'success.main' }} />
+          </Tooltip>
+        )}
+        {!v.hqFileDownloaded && v.betterQualityExists && (
+          <Tooltip title={t('playlists.videoList.hqAvailable')}>
+            <HqIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+          </Tooltip>
+        )}
         {v.metadataStatus === 'found' && (
           <Tooltip title={t('playlists.videoList.mbVerified')}>
             <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />

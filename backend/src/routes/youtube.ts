@@ -30,7 +30,7 @@ const VIDEO_SELECT_WITHOUT_EMBEDDING = {
   bitrate: true, addedAt: true, artist: true, album: true, trackNumber: true,
   genres: true, releaseYear: true, mbRecordingId: true, metadataStatus: true,
   metadataFetchedAt: true, audioAnalysisStatus: true, audioAnalysisFetchedAt: true,
-  playCount: true, lastPlayedAt: true,
+  playCount: true, lastPlayedAt: true, betterQualityExists: true, hqFileDownloaded: true,
   createdAt: true, updatedAt: true,
 } as const;
 

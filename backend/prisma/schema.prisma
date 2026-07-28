@@ -144,6 +144,18 @@ model PlaylistVideo {
   // gated on any minimum-listened threshold: "finished" already implies that.
   playCount              Int        @default(0)
   lastPlayedAt           DateTime?
+  // Set once a slskd (Soulseek daemon) search turns up an mp3 result with a
+  // higher bitrate than what we actually downloaded — see
+  // services/slskd.ts/slskdQualityWorker.ts. Checked once per video, like
+  // metadataStatus below, not re-checked on every subsequent sync.
+  betterQualityExists    Boolean    @default(false)
+  qualityCheckStatus     String     @default("pending") // pending | checked | error
+  qualityCheckedAt       DateTime?
+  // True only once the commercial HQ service's file was actually downloaded
+  // and used to replace the shared mp3 in place (see services/hqReplace.ts)
+  // — never set by the free self-hosted slskd path, which only ever flags
+  // betterQualityExists above without touching the file.
+  hqFileDownloaded       Boolean    @default(false)
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 
@@ -194,6 +206,8 @@ model AppSettings {
   // auth.getSession/track.scrobble requires it — see services/lastfm.ts.
   lastfmApiKey    String?
   lastfmApiSecret String?
+
+  hqAutoDownloadEnabled Boolean @default(false)
 
   updatedAt DateTime @updatedAt
 

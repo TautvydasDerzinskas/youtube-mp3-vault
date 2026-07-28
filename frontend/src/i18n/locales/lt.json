@@ -136,7 +136,9 @@
       "downloadMp3": "Atsisiųsti MP3",
       "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)",
       "mbVerified": "Rasta MusicBrainz atitiktis",
-      "mbError": "Nepavyko gauti MusicBrainz duomenų — bus bandoma vėl automatiškai"
+      "mbError": "Nepavyko gauti MusicBrainz duomenų — bus bandoma vėl automatiškai",
+      "hqAvailable": "Yra prieinama aukštesnės kokybės šio failo versija",
+      "hqDownloaded": "Atnaujinta į aukštesnės kokybės failą"
     },
     "miniPlayer": {
       "close": "Uždaryti grotuvą",
@@ -253,6 +255,11 @@
       "description": "Iš tos pačios nemokamos registracijos last.fm/api/account/create. Vien API raktas įjungia takelio puslapio „Atraskite“ skiltį; norint, kad naudotojai galėtų prijungti savo paskyrą ir fiksuoti klausymus, reikia ir rakto, ir slapto rakto.",
       "apiKey": "API raktas",
       "apiSecret": "Slaptas raktas"
+    },
+    "hq": {
+      "title": "HQ atsisiuntimai",
+      "description": "Reikalauja modifikuoto, su slskd suderinamo atvaizdo (žr. docker-compose.yml SLSKD_IMAGE) su integruotu pirkėjo IP tikrinimu — su įprastu slskd šis nustatymas neturi jokio poveikio.",
+      "autoDownloadEnabled": "Automatiškai atsisiųsti ir pakeisti failus aukštesnės kokybės versijomis, kai jos randamos"
     }
   },
   "users": {

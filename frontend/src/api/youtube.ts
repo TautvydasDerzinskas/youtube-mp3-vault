@@ -53,6 +53,14 @@ export interface PlaylistVideo {
   metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
   playCount: number;
   lastPlayedAt: string | null;
+  // A better-quality mp3 was found via slskd (or a configured commercial
+  // HQ service) but not (yet) automatically downloaded — see
+  // services/slskdQualityWorker.ts. Never true at the same time as
+  // hqFileDownloaded below.
+  betterQualityExists: boolean;
+  // The HQ service actually downloaded and replaced the local file with a
+  // higher-bitrate exact match — see services/hqReplace.ts.
+  hqFileDownloaded: boolean;
   // Only populated by cross-playlist endpoints (e.g. getAllTracks) — a
   // single-playlist fetch (getVideos) omits it since the page already knows
   // which playlist every row belongs to.

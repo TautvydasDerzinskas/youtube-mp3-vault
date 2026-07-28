@@ -30,6 +30,15 @@ export const config = {
   audioAnalysisUrl: process.env.AUDIO_ANALYSIS_URL || 'http://localhost:8000',
   lastfmApiKey: process.env.LASTFM_API_KEY || '',
   lastfmApiSecret: process.env.LASTFM_API_SECRET || '',
+  // Optional slskd (Soulseek daemon) instance — see services/slskd.ts. Empty
+  // api key means the better-quality check is silently skipped, same as an
+  // unconfigured Last.fm key disables Discover. The URL default assumes a
+  // bare local dev run against a docker-compose-run slskd (published on
+  // localhost:5030) — docker-compose itself overrides this to the
+  // container's internal hostname (http://slskd:5030) for the backend
+  // container, same pattern as audioAnalysisUrl below.
+  slskdUrl: process.env.SLSKD_URL || 'http://localhost:5030',
+  slskdApiKey: process.env.SLSKD_API_KEY || '',
   // Whichever email registers with this address is marked admin at creation time.
   adminEmail: (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
   smtp: {

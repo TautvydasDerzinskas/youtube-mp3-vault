@@ -3,6 +3,7 @@ import { prisma } from './prisma';
 import { fetchPlaylist } from './youtube';
 import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited } from './downloader';
 import { resolvePlaylistMetadata } from './metadataWorker';
+import { resolvePlaylistQuality } from './slskdQualityWorker';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -391,8 +392,10 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
     }
 
     // Downloads are done — resolve metadata for whatever's still pending in
-    // this playlist as the last step of the same sync pass.
+    // this playlist as the last step of the same sync pass, then (now that
+    // artists are resolved) check slskd for a better-quality mp3 of each.
     await resolvePlaylistMetadata(playlistId);
+    await resolvePlaylistQuality(playlistId);
 
     await prisma.playlist.update({
       where: { id: playlistId },

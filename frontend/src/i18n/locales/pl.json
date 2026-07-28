@@ -140,7 +140,9 @@
       "lowQuality": "Niska jakość źródła (~{{bitrate}}kbps)",
       "downloadMp3": "Pobierz MP3",
       "mbVerified": "Dopasowano w MusicBrainz",
-      "mbError": "Nie udało się pobrać danych z MusicBrainz — spróbujemy ponownie automatycznie"
+      "mbError": "Nie udało się pobrać danych z MusicBrainz — spróbujemy ponownie automatycznie",
+      "hqAvailable": "Dostępna jest wersja tego pliku w wyższej jakości",
+      "hqDownloaded": "Zaktualizowano do pliku w wyższej jakości"
     },
     "miniPlayer": {
       "close": "Zamknij odtwarzacz",
@@ -257,6 +259,11 @@
       "description": "Z tej samej darmowej rejestracji na last.fm/api/account/create. Sam klucz API włącza sekcję „Odkrywaj” na stronie utworu; do połączenia konta i scrobblowania przez użytkowników potrzebne są zarówno klucz, jak i sekret.",
       "apiKey": "Klucz API",
       "apiSecret": "Sekret współdzielony"
+    },
+    "hq": {
+      "title": "Pobieranie HQ",
+      "description": "Wymaga zmodyfikowanego obrazu kompatybilnego ze slskd (zobacz SLSKD_IMAGE w docker-compose.yml) z wbudowaną weryfikacją IP kupującego — nie ma żadnego efektu przy zwykłym slskd.",
+      "autoDownloadEnabled": "Automatycznie pobieraj i zastępuj pliki wersjami w wyższej jakości, gdy zostaną znalezione"
     }
   },
   "users": {

@@ -7,6 +7,7 @@ import { startSoftReimport } from '../services/reimport';
 import {
   getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
   getLastfmSettings, updateLastfmSettings,
+  getHqSettings, updateHqSettings,
 } from '../services/settings';
 
 const router = Router();
@@ -185,7 +186,10 @@ router.get('/logs', async (req, res, next) => {
 
 router.get('/settings', async (_req, res, next) => {
   try {
-    res.json({ smtp: getSmtpSettings(), postgres: getPostgresSettings(), lastfm: getLastfmSettings() });
+    res.json({
+      smtp: getSmtpSettings(), postgres: getPostgresSettings(), lastfm: getLastfmSettings(),
+      hq: getHqSettings(),
+    });
   } catch (err) {
     next(err);
   }
@@ -254,6 +258,18 @@ router.patch('/settings/lastfm', async (req, res, next) => {
       apiSecret: typeof apiSecret === 'string' && apiSecret.trim() ? apiSecret.trim() : null,
     });
     res.json({ lastfm: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/settings/hq', async (req, res, next) => {
+  try {
+    const { autoDownloadEnabled } = req.body as Record<string, unknown>;
+    const updated = await updateHqSettings({
+      autoDownloadEnabled: autoDownloadEnabled === true,
+    });
+    res.json({ hq: updated });
   } catch (err) {
     next(err);
   }

@@ -4,11 +4,12 @@ import {
   Switch, FormControlLabel, CircularProgress,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { adminApi, SmtpSettings, PostgresSettings, LastfmSettings } from '../../api/admin';
+import { adminApi, SmtpSettings, PostgresSettings, LastfmSettings, HqSettings } from '../../api/admin';
 
 const EMPTY_SMTP: SmtpSettings = { host: null, port: 587, secure: false, user: null, pass: null, from: '' };
 const EMPTY_POSTGRES: PostgresSettings = { database: '', user: '', password: '' };
 const EMPTY_LASTFM: LastfmSettings = { apiKey: null, apiSecret: null };
+const EMPTY_HQ: HqSettings = { autoDownloadEnabled: false };
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -30,9 +31,16 @@ export default function SettingsPage() {
   const [lastfmError, setLastfmError] = useState<string | null>(null);
   const [lastfmSaved, setLastfmSaved] = useState(false);
 
+  const [hq, setHq] = useState<HqSettings>(EMPTY_HQ);
+  const [hqSaving, setHqSaving] = useState(false);
+  const [hqError, setHqError] = useState<string | null>(null);
+  const [hqSaved, setHqSaved] = useState(false);
+
   useEffect(() => {
     adminApi.getSettings()
-      .then(({ smtp, postgres, lastfm }) => { setSmtp(smtp); setPostgres(postgres); setLastfm(lastfm); })
+      .then(({ smtp, postgres, lastfm, hq }) => {
+        setSmtp(smtp); setPostgres(postgres); setLastfm(lastfm); setHq(hq);
+      })
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, []);
@@ -83,6 +91,21 @@ export default function SettingsPage() {
       setLastfmError(err.response?.data?.error ?? t('settings.genericError'));
     } finally {
       setLastfmSaving(false);
+    }
+  };
+
+  const handleSaveHq = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHqError(null);
+    setHqSaved(false);
+    setHqSaving(true);
+    try {
+      setHq(await adminApi.updateHqSettings(hq));
+      setHqSaved(true);
+    } catch (err: any) {
+      setHqError(err.response?.data?.error ?? t('settings.genericError'));
+    } finally {
+      setHqSaving(false);
     }
   };
 
@@ -152,6 +175,22 @@ export default function SettingsPage() {
         {lastfmError && <Alert severity="error">{lastfmError}</Alert>}
         {lastfmSaved && <Alert severity="success">{t('settings.saved')}</Alert>}
         <Button type="submit" variant="contained" disabled={lastfmSaving} sx={{ alignSelf: 'flex-start' }}>
+          {t('settings.save')}
+        </Button>
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
+      <Typography variant="subtitle1" fontWeight={600} mb={1}>{t('settings.hq.title')}</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>{t('settings.hq.description')}</Typography>
+      <Box component="form" onSubmit={handleSaveHq} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+        <FormControlLabel
+          control={<Switch checked={hq.autoDownloadEnabled} onChange={(e) => setHq({ ...hq, autoDownloadEnabled: e.target.checked })} />}
+          label={t('settings.hq.autoDownloadEnabled')}
+        />
+        {hqError && <Alert severity="error">{hqError}</Alert>}
+        {hqSaved && <Alert severity="success">{t('settings.saved')}</Alert>}
+        <Button type="submit" variant="contained" disabled={hqSaving} sx={{ alignSelf: 'flex-start' }}>
           {t('settings.save')}
         </Button>
       </Box>
