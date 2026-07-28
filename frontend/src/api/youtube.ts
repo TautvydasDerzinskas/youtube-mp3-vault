@@ -76,6 +76,7 @@ export interface RecommendedTrack {
   genres: string[];
   thumbnailUrl: string | null;
   duration: number | null;
+  playCount: number;
   similarity: number;
 }
 

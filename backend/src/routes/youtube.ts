@@ -433,7 +433,7 @@ router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: Auth
       },
       select: {
         id: true, playlistId: true, youtubeId: true, title: true, artist: true,
-        genres: true, thumbnailUrl: true, duration: true, audioEmbedding: true,
+        genres: true, thumbnailUrl: true, duration: true, playCount: true, audioEmbedding: true,
       },
     });
 

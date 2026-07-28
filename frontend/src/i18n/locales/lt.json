@@ -135,8 +135,6 @@
       "watchOnYouTube": "Žiūrėti YouTube",
       "downloadMp3": "Atsisiųsti MP3",
       "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)",
-      "mbVerified": "Rasta MusicBrainz atitiktis",
-      "mbError": "Nepavyko gauti MusicBrainz duomenų — bus bandoma vėl automatiškai",
       "hqAvailable": "Yra prieinama aukštesnės kokybės šio failo versija",
       "hqDownloaded": "Atnaujinta į aukštesnės kokybės failą"
     },
@@ -176,7 +174,6 @@
     "trackDetail": {
       "backToPlaylist": "Grįžti į grojaraštį",
       "failedToLoad": "Nepavyko įkelti šios dainos.",
-      "usedInTitle": "Naudojama grojaraščiuose",
       "recommendedTitle": "Panašios dainos",
       "discoverTitle": "Atraskite",
       "openInSpotify": "Ieškoti Spotify",
@@ -365,6 +362,11 @@
       "label_few": "dainos",
       "label_other": "dainų"
     },
+    "artistCount": {
+      "label_one": "atlikėjas",
+      "label_few": "atlikėjai",
+      "label_other": "atlikėjų"
+    },
     "songsOnRepeat": {
       "title": "Dažniausiai klausomos dainos",
       "empty": "Dar niekas negrota — dainos, kurias klausysite, atsiras čia."
@@ -389,6 +391,13 @@
     "empty": "Atlikėjų dar nėra — importuokite grojaraštį, kad juos pamatytumėte.",
     "noResults": "Pagal paiešką atlikėjų nerasta.",
     "failedToLoad": "Nepavyko įkelti atlikėjų.",
+    "sortBy": "Rikiuoti pagal",
+    "sortNameAsc": "Pavadinimą (A-Ž)",
+    "sortNameDesc": "Pavadinimą (Ž-A)",
+    "sortSongCountDesc": "Dainų skaičių (nuo didž. iki maž.)",
+    "sortSongCountAsc": "Dainų skaičių (nuo maž. iki didž.)",
+    "sortPlaysDesc": "Peržiūras (nuo didž. iki maž.)",
+    "sortPlaysAsc": "Peržiūras (nuo maž. iki didž.)",
     "detail": {
       "songCount_one": "{{count}} daina",
       "songCount_few": "{{count}} dainos",

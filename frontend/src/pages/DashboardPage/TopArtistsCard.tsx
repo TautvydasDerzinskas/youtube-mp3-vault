@@ -1,6 +1,7 @@
-import { Paper, Typography, Box, List, ListItem, ListItemText, Button } from '@mui/material';
+import { Paper, Typography, Box, List, ListItemButton, ListItemText, Button } from '@mui/material';
 import { Star as ArtistIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { DashboardArtist } from '../../api/dashboard';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 
 export function TopArtistsCard({ artists, onSeeMore }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <Paper elevation={0} sx={{
@@ -26,15 +28,13 @@ export function TopArtistsCard({ artists, onSeeMore }: Props) {
       ) : (
         <List dense disablePadding>
           {artists.map((a, idx) => (
-            // Not individually clickable — there's no per-artist detail page
-            // in this app to navigate to, unlike the songs card above it.
-            <ListItem key={a.artist} sx={{ px: 1 }}>
+            <ListItemButton key={a.key} onClick={() => navigate(`/artists/${encodeURIComponent(a.key)}`)} sx={{ borderRadius: 1, px: 1 }}>
               <Typography sx={{ width: 24, flexShrink: 0, color: 'text.secondary', fontWeight: 600 }}>{idx + 1}</Typography>
               <ListItemText primary={a.artist} primaryTypographyProps={{ noWrap: true }} />
               <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, pl: 1 }}>
                 {t('dashboard.songCount', { count: a.songCount })}
               </Typography>
-            </ListItem>
+            </ListItemButton>
           ))}
         </List>
       )}

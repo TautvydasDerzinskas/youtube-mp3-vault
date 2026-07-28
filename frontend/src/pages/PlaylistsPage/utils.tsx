@@ -35,6 +35,13 @@ export function allTracksGenreUrl(genreKey: string): string {
   return `/all-tracks?genres=${encodeURIComponent(genreKey)}`;
 }
 
+// Links an artist name through to their detail page. Normalized (trim +
+// lowercase) to match the backend's normalizeKey, since a track only carries
+// the artist's raw display name, not its precomputed key.
+export function artistUrl(artist: string): string {
+  return `/artists/${encodeURIComponent(artist.trim().toLowerCase())}`;
+}
+
 export function normalizeGenreKey(genre: string): string {
   return genre.trim().toLowerCase();
 }

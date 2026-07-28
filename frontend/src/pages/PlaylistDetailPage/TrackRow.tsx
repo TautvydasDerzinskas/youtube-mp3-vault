@@ -1,8 +1,7 @@
 import { Box, Typography, Avatar, IconButton, Tooltip } from '@mui/material';
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
-  PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, Verified as VerifiedIcon,
-  SyncProblem as SyncProblemIcon, HighQuality as HqIcon,
+  PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, HighQuality as HqIcon,
 } from '@mui/icons-material';
 import { RowComponentProps } from 'react-window';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +39,18 @@ export function TrackRow({
       bgcolor: isCurrentTrack ? 'action.selected' : 'transparent',
       '&:hover': { bgcolor: isCurrentTrack ? 'action.selected' : 'action.hover' },
     }}>
+      <Box sx={{ width: 40, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+        {v.downloadStatus === 'done' && (
+          <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
+            <IconButton onClick={(e) => { e.stopPropagation(); onTogglePlay(trackPlaylistId, v, playableTracks); }} sx={{ color: 'primary.main' }}>
+              {isCurrentTrack && isAudioPlaying
+                ? <PauseTrackIcon sx={{ fontSize: 28 }} />
+                : <PlayArrowIcon sx={{ fontSize: 28 }} />}
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
+
       <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1, flexShrink: 0 }}>
         <MusicNoteIcon sx={{ fontSize: 16 }} />
       </Avatar>
@@ -71,6 +82,11 @@ export function TrackRow({
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+        {v.playCount > 0 && (
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ mr: 0.5, display: { xs: 'none', sm: 'block' } }}>
+            {t('artists.detail.totalPlayCount', { count: v.playCount })}
+          </Typography>
+        )}
         {v.hqFileDownloaded && (
           <Tooltip title={t('playlists.videoList.hqDownloaded')}>
             <HqIcon sx={{ fontSize: 18, color: 'success.main' }} />
@@ -81,28 +97,9 @@ export function TrackRow({
             <HqIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
           </Tooltip>
         )}
-        {v.metadataStatus === 'found' && (
-          <Tooltip title={t('playlists.videoList.mbVerified')}>
-            <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />
-          </Tooltip>
-        )}
-        {v.metadataStatus === 'error' && (
-          <Tooltip title={t('playlists.videoList.mbError')}>
-            <SyncProblemIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-          </Tooltip>
-        )}
         {v.downloadStatus !== 'done' && (
           <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
             <Box sx={{ display: 'flex' }}>{STATUS_ICON[v.downloadStatus] ?? null}</Box>
-          </Tooltip>
-        )}
-        {v.downloadStatus === 'done' && (
-          <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onTogglePlay(trackPlaylistId, v, playableTracks); }} sx={{ color: 'primary.main' }}>
-              {isCurrentTrack && isAudioPlaying
-                ? <PauseTrackIcon sx={{ fontSize: 18 }} />
-                : <PlayArrowIcon sx={{ fontSize: 18 }} />}
-            </IconButton>
           </Tooltip>
         )}
         <Tooltip title={t('playlists.videoList.watchOnYouTube')}>

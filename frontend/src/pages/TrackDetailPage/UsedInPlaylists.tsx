@@ -26,7 +26,7 @@ export function UsedInPlaylists({ state }: UsedInPlaylistsProps) {
   return (
     <Box sx={{ mb: 4 }}>
       <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
-        {t('playlists.trackDetail.usedInTitle')}
+        {t('artists.detail.appearsIn')}
       </Typography>
 
       <Stack direction="row" gap={1} flexWrap="wrap">

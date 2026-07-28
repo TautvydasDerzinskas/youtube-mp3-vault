@@ -7,6 +7,7 @@ export interface ArtistSummary {
   key: string;
   name: string;
   songCount: number;
+  totalPlayCount: number;
   thumbnailUrl: string | null;
 }
 
@@ -44,23 +45,24 @@ export async function listArtists(userId: string, search?: string): Promise<Arti
   const videos = await prisma.playlistVideo.findMany({
     where: { playlist: { userId }, ...BASE_WHERE, ...searchFilter },
     orderBy: { addedAt: 'asc' },
-    select: { artist: true, thumbnailUrl: true },
+    select: { artist: true, thumbnailUrl: true, playCount: true },
   });
 
-  const groups = new Map<string, { label: string; count: number; thumbnailUrl: string | null }>();
+  const groups = new Map<string, { label: string; count: number; playCount: number; thumbnailUrl: string | null }>();
   for (const v of videos) {
     const raw = v.artist!.trim();
     if (!raw) continue;
     const key = normalizeKey(raw);
-    const g = groups.get(key) ?? { label: raw, count: 0, thumbnailUrl: null };
+    const g = groups.get(key) ?? { label: raw, count: 0, playCount: 0, thumbnailUrl: null };
     g.count += 1;
+    g.playCount += v.playCount;
     g.label = preferLabel(g.label, raw);
     if (!g.thumbnailUrl && v.thumbnailUrl) g.thumbnailUrl = v.thumbnailUrl;
     groups.set(key, g);
   }
 
   return [...groups.entries()]
-    .map(([key, g]) => ({ key, name: g.label, songCount: g.count, thumbnailUrl: g.thumbnailUrl }))
+    .map(([key, g]) => ({ key, name: g.label, songCount: g.count, totalPlayCount: g.playCount, thumbnailUrl: g.thumbnailUrl }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 

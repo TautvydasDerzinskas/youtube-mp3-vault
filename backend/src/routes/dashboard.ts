@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/prisma';
 import { topGenresByTrackCount } from '../services/genreStats';
+import { normalizeKey } from '../services/textNormalization';
 
 const router = Router();
 
@@ -39,9 +40,28 @@ async function topArtistsByTrackCount(userId: string, limit: number) {
   });
 
   return groups
-    .map((g) => ({ artist: g.artist as string, songCount: g._count.id }))
+    // key mirrors artistStats.ts's normalizeKey so this links to the same
+    // /artists/:key the Artists page and ArtistDetailPage resolve by.
+    .map((g) => ({ key: normalizeKey(g.artist as string), artist: g.artist as string, songCount: g._count.id }))
     .sort((a, b) => b.songCount - a.songCount)
     .slice(0, limit);
+}
+
+// Distinct artist count for the dashboard's small stat panel — deduped by
+// normalizeKey the same way the Artists page groups artists, so this lines
+// up with what that page actually shows rather than raw-string variants.
+async function countDistinctArtists(userId: string): Promise<number> {
+  const groups = await prisma.playlistVideo.groupBy({
+    by: ['artist'],
+    where: {
+      playlist: { userId },
+      artist: { not: null },
+      isAvailable: true,
+      downloadStatus: { not: 'removed' },
+    },
+  });
+
+  return new Set(groups.map((g) => normalizeKey(g.artist as string))).size;
 }
 
 // GET /api/dashboard/summary — one call powers the whole dashboard page.
@@ -49,11 +69,12 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
   try {
     const userId = req.userId!;
 
-    const [playlistCount, totalSongCount, topSongs, topArtists, topGenres] = await Promise.all([
+    const [playlistCount, totalSongCount, totalArtistCount, topSongs, topArtists, topGenres] = await Promise.all([
       prisma.playlist.count({ where: { userId } }),
       prisma.playlistVideo.count({
         where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
       }),
+      countDistinctArtists(userId),
       prisma.playlistVideo.findMany({
         where: {
           playlist: { userId },
@@ -69,7 +90,7 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
       topGenresByTrackCount(userId, TOP_GENRES_PREVIEW),
     ]);
 
-    res.json({ playlistCount, totalSongCount, topSongs, topArtists, topGenres });
+    res.json({ playlistCount, totalSongCount, totalArtistCount, topSongs, topArtists, topGenres });
   } catch (err) {
     next(err);
   }

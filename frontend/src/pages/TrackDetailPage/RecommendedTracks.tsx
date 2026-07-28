@@ -33,7 +33,7 @@ function toQueueTrack(rec: RecommendedTrack): QueueTrack {
     genres: rec.genres,
     releaseYear: null,
     metadataStatus: 'pending',
-    playCount: 0,
+    playCount: rec.playCount,
     lastPlayedAt: null,
     betterQualityExists: false,
     hqFileDownloaded: false,
@@ -79,6 +79,13 @@ export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onToggleP
             <ListItemButton key={rec.id} onClick={() => navigate(`/playlists/${rec.playlistId}/${rec.id}`)}
               selected={isCurrentTrack}
               sx={{ borderBottom: '1px solid #2a2a2a', '&:last-of-type': { borderBottom: 'none' } }}>
+              <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
+                <IconButton onClick={(e) => { e.stopPropagation(); onTogglePlay(rec.playlistId, queue[index], queue); }} sx={{ color: 'primary.main', flexShrink: 0, mr: 0.5 }}>
+                  {isCurrentTrack && isAudioPlaying
+                    ? <PauseTrackIcon sx={{ fontSize: 28 }} />
+                    : <PlayArrowIcon sx={{ fontSize: 28 }} />}
+                </IconButton>
+              </Tooltip>
               <ListItemAvatar sx={{ minWidth: 52 }}>
                 <Avatar src={rec.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1 }}>
                   <MusicNoteIcon sx={{ fontSize: 16 }} />
@@ -90,18 +97,16 @@ export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onToggleP
                 primaryTypographyProps={{ variant: 'body2', noWrap: true, fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' }}
                 secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
               />
+              {rec.playCount > 0 && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ flexShrink: 0, ml: 1, display: { xs: 'none', sm: 'block' } }}>
+                  {t('artists.detail.totalPlayCount', { count: rec.playCount })}
+                </Typography>
+              )}
               {rec.duration != null && (
                 <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, ml: 1, mr: 1 }}>
                   {formatDuration(rec.duration)}
                 </Typography>
               )}
-              <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-                <IconButton size="small" onClick={(e) => { e.stopPropagation(); onTogglePlay(rec.playlistId, queue[index], queue); }} sx={{ color: 'primary.main', flexShrink: 0 }}>
-                  {isCurrentTrack && isAudioPlaying
-                    ? <PauseTrackIcon sx={{ fontSize: 18 }} />
-                    : <PlayArrowIcon sx={{ fontSize: 18 }} />}
-                </IconButton>
-              </Tooltip>
             </ListItemButton>
           );
         })}

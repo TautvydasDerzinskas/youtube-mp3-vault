@@ -6,7 +6,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PlaylistVideo } from '../../api/youtube';
-import { formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON } from '../PlaylistsPage/utils';
+import { formatDuration, formatGenre, normalizeGenreKey, youtubeWatchUrl, allTracksGenreUrl, artistUrl, STATUS_ICON } from '../PlaylistsPage/utils';
 
 interface HeaderProps {
   playlistId: string;
@@ -36,11 +36,24 @@ export function Header({ playlistId, video, isPlayingThis, onTogglePlay }: Heade
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
           <Typography variant="h4" fontWeight={700} sx={{ wordBreak: 'break-word' }}>{video.title}</Typography>
           {video.artist && (
-            <Typography variant="h6" color="text.secondary" sx={{ wordBreak: 'break-word' }}>{video.artist}</Typography>
+            <Typography
+              variant="h6"
+              color="text.secondary"
+              onClick={() => navigate(artistUrl(video.artist!))}
+              sx={{
+                wordBreak: 'break-word', cursor: 'pointer', width: 'fit-content',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              {video.artist}
+            </Typography>
           )}
 
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1.5 }}>
-            {video.genres.map((g) => <Chip key={g} size="small" label={formatGenre(g)} />)}
+            <Chip size="small" variant="outlined" label={t('artists.detail.totalPlayCount', { count: video.playCount })} />
+            {video.genres.map((g) => (
+              <Chip key={g} size="small" clickable label={formatGenre(g)} onClick={() => navigate(allTracksGenreUrl(normalizeGenreKey(g)))} />
+            ))}
             {video.releaseYear && <Chip size="small" variant="outlined" label={video.releaseYear} />}
             {video.duration && <Chip size="small" variant="outlined" label={formatDuration(video.duration)} />}
           </Stack>

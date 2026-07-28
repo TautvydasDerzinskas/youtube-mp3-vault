@@ -131,8 +131,6 @@
       "watchOnYouTube": "Watch on YouTube",
       "downloadMp3": "Download MP3",
       "lowQuality": "Low source quality (~{{bitrate}}kbps)",
-      "mbVerified": "MusicBrainz match",
-      "mbError": "MusicBrainz lookup failed — will retry automatically",
       "hqAvailable": "A higher-quality version of this file is available",
       "hqDownloaded": "Upgraded to a higher-quality file"
     },
@@ -172,7 +170,6 @@
     "trackDetail": {
       "backToPlaylist": "Back to playlist",
       "failedToLoad": "Failed to load this track.",
-      "usedInTitle": "Used in playlists",
       "recommendedTitle": "Similar songs",
       "discoverTitle": "Discover",
       "openInSpotify": "Search on Spotify",
@@ -357,6 +354,10 @@
       "label_one": "song",
       "label_other": "songs"
     },
+    "artistCount": {
+      "label_one": "artist",
+      "label_other": "artists"
+    },
     "songsOnRepeat": {
       "title": "Songs on Repeat",
       "empty": "Nothing played yet — songs you listen to will show up here."
@@ -381,6 +382,13 @@
     "empty": "No artists yet — import a playlist to see them here.",
     "noResults": "No artists match your search.",
     "failedToLoad": "Failed to load artists.",
+    "sortBy": "Sort by",
+    "sortNameAsc": "Name (A-Z)",
+    "sortNameDesc": "Name (Z-A)",
+    "sortSongCountDesc": "Song count (High-Low)",
+    "sortSongCountAsc": "Song count (Low-High)",
+    "sortPlaysDesc": "Plays (High-Low)",
+    "sortPlaysAsc": "Plays (Low-High)",
     "detail": {
       "songCount_one": "{{count}} song",
       "songCount_other": "{{count}} songs",

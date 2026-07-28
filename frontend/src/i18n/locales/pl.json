@@ -139,8 +139,6 @@
       "watchOnYouTube": "Obejrzyj na YouTube",
       "lowQuality": "Niska jakość źródła (~{{bitrate}}kbps)",
       "downloadMp3": "Pobierz MP3",
-      "mbVerified": "Dopasowano w MusicBrainz",
-      "mbError": "Nie udało się pobrać danych z MusicBrainz — spróbujemy ponownie automatycznie",
       "hqAvailable": "Dostępna jest wersja tego pliku w wyższej jakości",
       "hqDownloaded": "Zaktualizowano do pliku w wyższej jakości"
     },
@@ -180,7 +178,6 @@
     "trackDetail": {
       "backToPlaylist": "Wróć do playlisty",
       "failedToLoad": "Nie udało się załadować tego utworu.",
-      "usedInTitle": "Używany w playlistach",
       "recommendedTitle": "Podobne utwory",
       "discoverTitle": "Odkrywaj",
       "openInSpotify": "Szukaj na Spotify",
@@ -373,6 +370,12 @@
       "label_many": "utworów",
       "label_other": "utworów"
     },
+    "artistCount": {
+      "label_one": "artysta",
+      "label_few": "artystów",
+      "label_many": "artystów",
+      "label_other": "artystów"
+    },
     "songsOnRepeat": {
       "title": "Utwory na powtórce",
       "empty": "Nic jeszcze nie odtworzono — utwory, których słuchasz, pojawią się tutaj."
@@ -397,6 +400,13 @@
     "empty": "Brak artystów — zaimportuj playlistę, aby ich tu zobaczyć.",
     "noResults": "Brak artystów pasujących do wyszukiwania.",
     "failedToLoad": "Nie udało się załadować artystów.",
+    "sortBy": "Sortuj według",
+    "sortNameAsc": "Nazwy (A-Z)",
+    "sortNameDesc": "Nazwy (Z-A)",
+    "sortSongCountDesc": "Liczby utworów (malejąco)",
+    "sortSongCountAsc": "Liczby utworów (rosnąco)",
+    "sortPlaysDesc": "Odtworzeń (malejąco)",
+    "sortPlaysAsc": "Odtworzeń (rosnąco)",
     "detail": {
       "songCount_one": "{{count}} utwór",
       "songCount_few": "{{count}} utwory",

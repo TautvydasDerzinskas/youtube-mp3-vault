@@ -6,7 +6,6 @@ import {
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, WarningAmber as WarningAmberIcon,
-  Verified as VerifiedIcon, SyncProblem as SyncProblemIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../../api/youtube';
@@ -20,11 +19,6 @@ interface VideoListProps {
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo) => void;
-}
-
-function mbVerifiedTooltip(v: PlaylistVideo, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const details = [v.artist, v.album, v.genres.length > 0 ? v.genres.map(formatGenre).join(', ') : null].filter(Boolean).join(' · ');
-  return details ? `${t('playlists.videoList.mbVerified')}: ${details}` : t('playlists.videoList.mbVerified');
 }
 
 export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlaying, onTogglePlay }: VideoListProps) {
@@ -58,6 +52,17 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
           <ListItem key={v.id} disableGutters
             sx={{ py: 0.4, opacity: v.downloadStatus === 'removed' ? 0.35 : 1,
               bgcolor: isCurrentTrack ? 'action.selected' : 'transparent', borderRadius: 1 }}>
+            <Box sx={{ width: 44, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+              {v.downloadStatus === 'done' && (
+                <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
+                  <IconButton onClick={() => onTogglePlay(playlistId, v)} sx={{ color: 'primary.main' }}>
+                    {isCurrentTrack && isAudioPlaying
+                      ? <PauseTrackIcon sx={{ fontSize: 26 }} />
+                      : <PlayArrowIcon sx={{ fontSize: 26 }} />}
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
             <ListItemAvatar sx={{ minWidth: 48 }}>
               <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 38, height: 26, borderRadius: 1 }}>
                 <MusicNoteIcon sx={{ fontSize: 14 }} />
@@ -70,7 +75,7 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
                   fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' } }}
               secondary={
                 <Typography variant="caption" color="text.secondary">
-                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genres.length > 0 ? ` · ${v.genres.map(formatGenre).join(', ')}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
+                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genres.length > 0 ? ` · ${v.genres.map(formatGenre).join(', ')}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}{v.playCount > 0 ? ` · ${t('artists.detail.totalPlayCount', { count: v.playCount })}` : ''}
                 </Typography>
               }
             />
@@ -78,16 +83,6 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
               <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
                 <Box sx={{ display: 'flex' }}>{STATUS_ICON[v.downloadStatus] ?? null}</Box>
               </Tooltip>
-              {v.metadataStatus === 'found' && (
-                <Tooltip title={mbVerifiedTooltip(v, t)}>
-                  <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                </Tooltip>
-              )}
-              {v.metadataStatus === 'error' && (
-                <Tooltip title={t('playlists.videoList.mbError')}>
-                  <SyncProblemIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                </Tooltip>
-              )}
               {v.downloadStatus === 'done' && isLowBitrate(v.bitrate) && (
                 <Tooltip title={t('playlists.videoList.lowQuality', { bitrate: v.bitrate })}>
                   <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
@@ -95,15 +90,6 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
               )}
               {v.duration && (
                 <Typography variant="caption" color="text.secondary">{formatDuration(v.duration)}</Typography>
-              )}
-              {v.downloadStatus === 'done' && (
-                <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-                  <IconButton size="small" onClick={() => onTogglePlay(playlistId, v)} sx={{ color: 'primary.main' }}>
-                    {isCurrentTrack && isAudioPlaying
-                      ? <PauseTrackIcon sx={{ fontSize: 18 }} />
-                      : <PlayArrowIcon sx={{ fontSize: 18 }} />}
-                  </IconButton>
-                </Tooltip>
               )}
               <Tooltip title={t('playlists.videoList.watchOnYouTube')}>
                 <IconButton size="small" component="a" href={youtubeWatchUrl(v.youtubeId)}

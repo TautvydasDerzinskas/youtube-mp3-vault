@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, CircularProgress, Alert,
-  List, ListItem, ListItemText,
+  List, ListItemButton, ListItemText,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { dashboardApi, DashboardArtist } from '../../api/dashboard';
 
 export function AllArtistsDialog({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [artists, setArtists] = useState<DashboardArtist[] | 'loading' | 'error'>('loading');
 
   useEffect(() => {
@@ -28,13 +30,17 @@ export function AllArtistsDialog({ onClose }: { onClose: () => void }) {
         {Array.isArray(artists) && artists.length > 0 && (
           <List dense disablePadding>
             {artists.map((a, idx) => (
-              <ListItem key={a.artist} sx={{ px: 1 }}>
+              <ListItemButton
+                key={a.key}
+                onClick={() => { onClose(); navigate(`/artists/${encodeURIComponent(a.key)}`); }}
+                sx={{ borderRadius: 1, px: 1 }}
+              >
                 <Typography sx={{ width: 28, flexShrink: 0, color: 'text.secondary', fontWeight: 600 }}>{idx + 1}</Typography>
                 <ListItemText primary={a.artist} primaryTypographyProps={{ noWrap: true }} />
                 <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, pl: 1 }}>
                   {t('dashboard.songCount', { count: a.songCount })}
                 </Typography>
-              </ListItem>
+              </ListItemButton>
             ))}
           </List>
         )}

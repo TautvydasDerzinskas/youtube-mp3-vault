@@ -14,6 +14,7 @@ export interface ArtistSummary {
   key: string;
   name: string;
   songCount: number;
+  totalPlayCount: number;
   thumbnailUrl: string | null;
 }
 
