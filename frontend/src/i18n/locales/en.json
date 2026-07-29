@@ -218,7 +218,7 @@
     "settings": {
       "autoDeleteNonMusic": {
         "label": "Auto-delete non-music tracks",
-        "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music (e.g. spoken word, ASMR, sound effects). Turning this on removes any non-music tracks already in your library."
+        "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music, an audiobook, or noise. Turning this on removes any tracks like these already in your library."
       }
     },
     "lastfm": {

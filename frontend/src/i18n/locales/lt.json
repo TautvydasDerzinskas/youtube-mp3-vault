@@ -222,7 +222,7 @@
     "settings": {
       "autoDeleteNonMusic": {
         "label": "Automatiškai šalinti ne muzikos įrašus",
-        "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai (pvz., kalba, ASMR, garso efektai). Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
+        "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai, garso knygai arba triukšmui. Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
       }
     },
     "lastfm": {

@@ -4,7 +4,7 @@ import { fetchPlaylist } from './youtube';
 import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited, isAgeRestricted, isSignInRequired } from './downloader';
 import { resolvePlaylistMetadata } from './metadataWorker';
 import { resolvePlaylistQuality } from './slskdQualityWorker';
-import { normalizeKey } from './textNormalization';
+import { matchingAutoDeleteGenre } from './autoDeleteGenres';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -654,12 +654,11 @@ export async function markVideoRemoved(playlistVideoId: string, playlistId: stri
 
 // One-time sweep run when a user flips "auto-delete non-music" from off to
 // on (see PATCH /api/auth/settings/auto-delete-non-music) — without this,
-// tracks already tagged Non-Music before the toggle was enabled would sit
-// in the library forever, since the per-track check in
+// tracks already tagged with an auto-delete genre before the toggle was
+// enabled would sit in the library forever, since the per-track check in
 // audioAnalysisWorker.ts only ever fires once, at analysis time. Same
-// genre-matching (trim+lowercase via normalizeKey) as the /all-tracks
-// genre filter, so this matches exactly what a user filtering by
-// genres=non-music would see.
+// genre set/matching as that check, so this matches exactly what a user
+// filtering by genres=non-music,audiobook,noise would see.
 export async function removeExistingNonMusicVideos(userId: string): Promise<void> {
   const videos = await prisma.playlistVideo.findMany({
     where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
@@ -667,7 +666,7 @@ export async function removeExistingNonMusicVideos(userId: string): Promise<void
   });
 
   for (const video of videos) {
-    if (video.genres.some((g) => normalizeKey(g) === 'non-music')) {
+    if (matchingAutoDeleteGenre(video.genres)) {
       await markVideoRemoved(video.id, video.playlistId, video.mediaFileId);
     }
   }

@@ -29,11 +29,11 @@ model User {
   lastfmUsername            String?
   scrobblingEnabled         Boolean    @default(false)
   // Default true: a track the local Essentia audio analysis classifies as
-  // "Non-Music" (spoken word, ASMR, sound effects, ...) is one nobody wants
-  // sitting in their music library, so opt-out rather than opt-in. See
-  // audioAnalysisWorker.ts for where this is checked per-track and
-  // syncService.ts's removeExistingNonMusicVideos for the one-time sweep run
-  // when this flips from off to on (routes/auth.ts).
+  // Non-Music, Audiobook, or Noise (see services/autoDeleteGenres.ts for the
+  // exact genre set) is one nobody wants sitting in their music library, so
+  // opt-out rather than opt-in. See audioAnalysisWorker.ts for where this is
+  // checked per-track and syncService.ts's removeExistingNonMusicVideos for
+  // the one-time sweep run when this flips from off to on (routes/auth.ts).
   autoDeleteNonMusicEnabled Boolean    @default(true)
   createdAt                 DateTime   @default(now())
   updatedAt                 DateTime   @updatedAt

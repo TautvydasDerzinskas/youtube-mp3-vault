@@ -4,7 +4,7 @@ import { analyzeAudio } from './audioAnalysis';
 import { getSharedFilePath } from './downloader';
 import { removePlaylistVideo, markVideoRemoved } from './syncService';
 import { bufferToFloat32Array, cosineSimilarity } from './embeddings';
-import { normalizeKey } from './textNormalization';
+import { matchingAutoDeleteGenre } from './autoDeleteGenres';
 
 const IDLE_POLL_MS = 60_000; // nothing pending, or the analysis service is unreachable
 
@@ -39,20 +39,6 @@ async function getPlaylistDropContext(playlistId: string): Promise<{ sourcePlayl
     sourcePlaylistId: playlist?.sourcePlaylistId ?? null,
     autoDeleteNonMusicEnabled: playlist?.user.autoDeleteNonMusicEnabled ?? false,
   };
-}
-
-// The genre classifier can, correctly, decide a candidate isn't music at all
-// (spoken word, ASMR, sound effects, a podcast clip that matched a search
-// query, …) — real audio-content analysis is a much stronger signal for
-// this than anything in the title/metadata pipeline, so it's trusted
-// outright wherever it applies (see call sites below). Same trim+lowercase
-// normalization as the /all-tracks genres=non-music filter, so this lines
-// up with what a user filtering by that genre would see — the exact label
-// casing itself comes from a model file fetched from essentia.upf.edu at
-// Docker build time (not vendored/pinned in this repo), so it can't be
-// relied on to match a hardcoded casing exactly.
-function isNonMusic(genres: string[]): boolean {
-  return genres.some((g) => normalizeKey(g) === 'non-music');
 }
 
 // Checks a freshly-computed embedding against the source playlist's tracks
@@ -122,15 +108,21 @@ async function loop(): Promise<void> {
       if (result) {
         console.log(`[audio-analysis] ✓ ${video.youtubeId} — ${genres.join(', ')} (${video.title.slice(0, 60)})`);
 
+        // The genre classifier can, correctly, decide a candidate isn't real
+        // music at all (spoken word, ASMR, sound effects, an audiobook or
+        // pure noise/ambience track, …) — real audio-content analysis is a
+        // much stronger signal for this than anything in the title/metadata
+        // pipeline, so it's trusted outright wherever it applies below.
+        const autoDeleteMatch = matchingAutoDeleteGenre(genres);
         const { sourcePlaylistId, autoDeleteNonMusicEnabled } = await getPlaylistDropContext(video.playlistId);
         if (sourcePlaylistId) {
-          // Generated playlist — Non-Music and duplicate tracks are always
-          // dropped outright regardless of the user's auto-delete
+          // Generated playlist — auto-delete-genre and duplicate tracks are
+          // always dropped outright regardless of the user's auto-delete
           // preference, since a generated playlist is a one-shot quality
           // filter, not a track the user actively added themselves.
           let dropReason: string | null = null;
-          if (isNonMusic(genres)) {
-            dropReason = 'tagged Non-Music';
+          if (autoDeleteMatch) {
+            dropReason = `tagged ${autoDeleteMatch}`;
           } else if (embeddingBuffer && await isAudioDuplicate(video, sourcePlaylistId, bufferToFloat32Array(embeddingBuffer))) {
             dropReason = 'audio duplicate of an existing track';
           }
@@ -138,8 +130,8 @@ async function loop(): Promise<void> {
             console.log(`[audio-analysis] Dropping ${video.youtubeId} — ${dropReason} (${video.title.slice(0, 60)})`);
             await removePlaylistVideo(video.id, video.mediaFileId).catch(() => {});
           }
-        } else if (isNonMusic(genres) && autoDeleteNonMusicEnabled) {
-          console.log(`[audio-analysis] Auto-removing ${video.youtubeId} — tagged Non-Music (${video.title.slice(0, 60)})`);
+        } else if (autoDeleteMatch && autoDeleteNonMusicEnabled) {
+          console.log(`[audio-analysis] Auto-removing ${video.youtubeId} — tagged ${autoDeleteMatch} (${video.title.slice(0, 60)})`);
           await markVideoRemoved(video.id, video.playlistId, video.mediaFileId).catch(() => {});
         }
       } else {
