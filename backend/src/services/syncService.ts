@@ -100,6 +100,29 @@ export function isPacing(playlistId: string): boolean {
   return pacingPlaylists.has(playlistId);
 }
 
+export interface SyncPhase {
+  phase: 'metadata' | 'quality';
+  current: number;
+  total: number;
+  title: string;
+}
+
+// Once every video is downloaded, downloadPendingVideos still has metadata
+// resolution and (optionally slow, since it involves real network searches
+// and — with the HQ auto-download toggle on — real file transfers) HQ
+// quality-checking left to do per video before syncStatus finally goes back
+// to idle. Both used to be silent from the frontend's perspective — the
+// progress bar was already at 100% and stayed there with nothing to
+// distinguish "still genuinely working" from "stuck" — so
+// resolvePlaylistMetadata/resolvePlaylistQuality report their per-video
+// progress here, the same in-memory-only, no-DB-write pattern as
+// pacingPlaylists above.
+const syncPhases = new Map<string, SyncPhase>();
+
+export function getSyncPhase(playlistId: string): SyncPhase | null {
+  return syncPhases.get(playlistId) ?? null;
+}
+
 // Claims the same busy-slot regular syncing uses, for callers outside this
 // file (see reimport.ts) that need to touch a playlist's videos without
 // racing a real sync — or another such caller — on the same playlist.
@@ -409,8 +432,18 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
     // Downloads are done — resolve metadata for whatever's still pending in
     // this playlist as the last step of the same sync pass, then (now that
     // artists are resolved) check slskd for a better-quality mp3 of each.
-    await resolvePlaylistMetadata(playlistId);
-    await resolvePlaylistQuality(playlistId);
+    // Both phases report per-video progress via syncPhases (see SyncPhase
+    // above) — otherwise the frontend's progress bar just sits at 100% with
+    // no way to tell "still genuinely working through metadata/HQ checks"
+    // from "stuck", for however long these take (an HQ check with the
+    // auto-download toggle on does real slskd searches and file transfers,
+    // which visibly can take a while).
+    await resolvePlaylistMetadata(playlistId, {
+      onProgress: (current, total, title) => syncPhases.set(playlistId, { phase: 'metadata', current, total, title }),
+    });
+    await resolvePlaylistQuality(playlistId, {
+      onProgress: (current, total, title) => syncPhases.set(playlistId, { phase: 'quality', current, total, title }),
+    });
 
     await prisma.playlist.update({
       where: { id: playlistId },
@@ -426,6 +459,7 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
     // this guarantees it never gets stuck on if some future change throws
     // between the two.
     pacingPlaylists.delete(playlistId);
+    syncPhases.delete(playlistId);
   }
 }
 
@@ -496,6 +530,45 @@ export function retryFailedVideos(playlistId: string): void {
       // downloadPendingVideos sets syncStatus → idle / error
     } catch (err) {
       console.error(`[sync] Error retrying failed videos for playlist ${playlistId}:`, err);
+      await prisma.playlist
+        .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
+        .catch(() => {});
+    } finally {
+      activeSyncs.delete(playlistId);
+    }
+  })();
+}
+
+// Re-runs metadata resolution + HQ quality-checking for whatever's already
+// downloaded, without touching YouTube at all — goes straight to
+// downloadPendingVideos rather than through refreshPlaylistFromYoutube.
+// This is the only way to retry a failed/skipped HQ download for a
+// generated playlist: it has no youtubeId for refreshPlaylistFromYoutube to
+// fetch from, and generated playlists are deliberately excluded from both
+// the Sync button and the weekly cron (see syncAllPlaylists below) — so
+// without this, a video whose HQ download failed once (qualityCheckStatus
+// stays 'pending' on failure — see resolvePlaylistQuality) would stay stuck
+// that way forever. Works the same for a regular playlist too, as a
+// lighter-weight alternative to a full Sync when all you want is to
+// recheck slskd for upgrades. Uses the regular 'syncing' status (not a
+// distinct one) since it's still a genuine download-pending-videos pass,
+// just one that happens to find nothing pending to download most of the
+// time — the frontend's syncPhase reporting already makes the
+// metadata/quality-check work visible regardless.
+export function scanForHqUpgrades(playlistId: string): void {
+  if (activeSyncs.has(playlistId)) return;
+  activeSyncs.add(playlistId);
+
+  (async () => {
+    try {
+      await prisma.playlist.update({
+        where: { id: playlistId },
+        data: { syncStatus: 'syncing' },
+      });
+      await downloadPendingVideos(playlistId);
+      // downloadPendingVideos sets syncStatus → idle / error
+    } catch (err) {
+      console.error(`[sync] Error scanning for HQ upgrades for playlist ${playlistId}:`, err);
       await prisma.playlist
         .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
         .catch(() => {});

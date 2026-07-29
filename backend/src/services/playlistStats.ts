@@ -1,11 +1,11 @@
 import { prisma } from './prisma';
-import { isPacing } from './syncService';
+import { isPacing, getSyncPhase } from './syncService';
 
 /** Attach download stats (counts, total size, total playback duration, in-flight video) to playlist rows. */
 export async function withDownloadStats<T extends { id: string; videoCount: number }>(playlists: T[]) {
   if (playlists.length === 0) {
     return playlists.map((p) => (
-      { ...p, downloadedCount: 0, failedCount: 0, totalSize: 0, totalDurationSec: 0, currentVideo: null, isPacing: false }
+      { ...p, downloadedCount: 0, failedCount: 0, totalSize: 0, totalDurationSec: 0, currentVideo: null, isPacing: false, syncPhase: null }
     ));
   }
 
@@ -58,6 +58,7 @@ export async function withDownloadStats<T extends { id: string; videoCount: numb
       totalDurationSec: durationMap.get(p.id) ?? 0,
       currentVideo: currentVideoMap.get(p.id) ?? null,
       isPacing: isPacing(p.id),
+      syncPhase: getSyncPhase(p.id),
     };
   });
 }

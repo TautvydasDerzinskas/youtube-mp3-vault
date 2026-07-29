@@ -3,7 +3,7 @@ import { Box, IconButton, Tooltip, CircularProgress, Menu, MenuItem, ListItemIco
 import {
   Sync as SyncIcon, DeleteOutline as DeleteIcon, Edit as EditIcon, Replay as ReplayIcon,
   PauseCircleOutline as PauseIcon, PlayCircleOutline as ResumeIcon, MoreVert as MoreVertIcon,
-  AutoAwesome as GenerateSimilarIcon, Launch as OpenIcon,
+  AutoAwesome as GenerateSimilarIcon, Launch as OpenIcon, HighQuality as ScanHqIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
@@ -35,6 +35,7 @@ interface ActionsProps {
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
+  onScanHq: (e: React.MouseEvent, id: string) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
   onDelete: (playlist: Playlist) => void;
   onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;
@@ -45,7 +46,7 @@ interface ActionsProps {
 // trailing "more actions" menu, kept as the very last item in the row.
 export function Actions({
   playlist, isBusy, isPausing, isRetrying, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
-  onOpen, onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
+  onOpen, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete, onGenerateSimilar,
 }: ActionsProps) {
   const { t } = useTranslation();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
@@ -70,6 +71,11 @@ export function Actions({
   const renameDisabled = isPausing || isBusy || isLockedBySource;
   const syncDisabled = isBusy || !online || isLockedBySource;
   const deleteDisabled = isPausing || isBusy || isLockedBySource;
+  // Unlike Sync/Retry Failed, this never touches YouTube and isn't blocked
+  // by syncPaused (downloadPendingVideos's metadata/quality-check phases run
+  // unconditionally, regardless of pause state) — the only real
+  // precondition is not already being busy.
+  const scanHqDisabled = isBusy || !online || isLockedBySource;
 
   const closeMenu = () => setMenuAnchor(null);
 
@@ -112,6 +118,10 @@ export function Actions({
             <ListItemText>{t('playlists.retryFailed', { count: playlist.failedCount })}</ListItemText>
           </MenuItem>
         )}
+        <MenuItem disabled={scanHqDisabled} onClick={e => { closeMenu(); onScanHq(e, playlist.id); }}>
+          <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('playlists.scanHq')}</ListItemText>
+        </MenuItem>
         {showPauseToggle && (
           <MenuItem disabled={isPausing || !online} onClick={e => { closeMenu(); onTogglePause(e, playlist); }}>
             <ListItemIcon>{playlist.syncPaused ? <ResumeIcon fontSize="small" /> : <PauseIcon fontSize="small" />}</ListItemIcon>

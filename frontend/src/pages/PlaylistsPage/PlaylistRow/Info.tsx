@@ -105,6 +105,19 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
             ? t('playlists.pausingMessage', { title: playlist.currentVideo.title })
             : t('playlists.pausingMessageGeneric')}
         </Typography>
+      ) : playlist.syncPhase && !expanded ? (
+        // Every video is downloaded by this point — metadata resolution and
+        // (potentially slow, real slskd searches/transfers) HQ quality
+        // checking are all that's left, so this is a distinct message + a
+        // progress bar that restarts from 0 (see below), rather than the
+        // download progress bar just sitting at 100% indistinguishable from
+        // stuck for however long these take.
+        <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ mt: 0.25 }}>
+          {t(
+            playlist.syncPhase.phase === 'metadata' ? 'playlists.metadataPhaseMessage' : 'playlists.qualityPhaseMessage',
+            { current: playlist.syncPhase.current, total: playlist.syncPhase.total, title: playlist.syncPhase.title }
+          )}
+        </Typography>
       ) : playlist.isPacing && !expanded ? (
         // Between downloads, nothing has downloadStatus 'downloading' — this
         // fills the same slot the syncing message occupies the rest of the
@@ -129,7 +142,14 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
       )}
 
       {isBusy && (
-        playlist.videoCount > 0
+        playlist.syncPhase
+          // Distinct color + restarts from 0 for its own total — a visibly
+          // different bar from the download one above, so it reads as "a
+          // new phase started," not "the same bar stuck at 100%."
+          ? <LinearProgress variant="determinate" color="secondary"
+              value={Math.round((playlist.syncPhase.current / playlist.syncPhase.total) * 100)}
+              sx={{ mt: 0.5, height: 3, borderRadius: 2 }} />
+          : playlist.videoCount > 0
           ? <LinearProgress variant="determinate" value={progress} sx={{ mt: 0.5, height: 3, borderRadius: 2 }} />
           // No real denominator yet (e.g. a generated playlist still
           // discovering candidates) — an indeterminate bar just signals

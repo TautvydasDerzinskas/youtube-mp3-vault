@@ -30,8 +30,17 @@ async function resolveFallbackMetadata(title: string, channelName: string | null
 // reimport flow — see reimport.ts) to instead reprocess every video in the
 // playlist regardless of its current status, e.g. to pick up improvements to
 // the parsing/matching logic itself.
-export async function resolvePlaylistMetadata(playlistId: string, options: { force?: boolean } = {}): Promise<void> {
-  const { force = false } = options;
+//
+// onProgress (optional — only syncService.ts's downloadPendingVideos passes
+// one) reports this video's 1-indexed position and the running total before
+// each one is processed, so the caller can surface live per-video progress
+// without this module needing to know anything about how/where that's
+// displayed.
+export async function resolvePlaylistMetadata(
+  playlistId: string,
+  options: { force?: boolean; onProgress?: (current: number, total: number, title: string) => void } = {}
+): Promise<void> {
+  const { force = false, onProgress } = options;
 
   const videos = await prisma.playlistVideo.findMany({
     where: force
@@ -40,8 +49,9 @@ export async function resolvePlaylistMetadata(playlistId: string, options: { for
     orderBy: { position: 'asc' },
   });
 
-  for (const video of videos) {
+  for (const [index, video] of videos.entries()) {
     if (!isOnline()) return;
+    onProgress?.(index + 1, videos.length, video.title);
 
     // Prefer the untouched original YouTube title as the search input — once
     // a video's `title` has been cleaned by an earlier pass (artist/junk

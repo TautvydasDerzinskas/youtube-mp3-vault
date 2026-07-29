@@ -14,6 +14,7 @@ import {
   startBackgroundDownload,
   syncPlaylist,
   retryFailedVideos,
+  scanForHqUpgrades,
   setSyncPaused,
   mediaFilesUsedBy,
   cleanupMediaFiles,
@@ -676,6 +677,35 @@ router.post('/:id/retry-failed', requireAuth, async (req: AuthRequest, res, next
     res.json({ playlist: syncing });
 
     retryFailedVideos(playlist.id);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Re-checks metadata + HQ quality for already-downloaded videos only —
+// never touches YouTube — see scanForHqUpgrades in syncService.ts. This is
+// the only retry path that works for a generated playlist at all.
+router.post('/:id/scan-hq', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+
+    if (isSyncing(playlist.id)) {
+      const [enriched] = await withDownloadStats([playlist]);
+      res.status(409).json({ error: 'Playlist is already syncing', playlist: enriched });
+      return;
+    }
+
+    // Return immediately with 'syncing' status — actual work is async
+    const [syncing] = await withDownloadStats([{ ...playlist, syncStatus: 'syncing' }]);
+    res.json({ playlist: syncing });
+
+    scanForHqUpgrades(playlist.id);
   } catch (err) {
     next(err);
   }

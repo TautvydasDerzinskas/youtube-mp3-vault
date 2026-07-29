@@ -16,15 +16,25 @@ import { findExactMatchCandidate, downloadAndReplace } from './hqReplace';
 // services/hqReplace.ts — meant to pair with a modified, purchaser-IP-gated
 // slskd image), this does more than the plain search-only path: an exact
 // artist+title match gets downloaded and used to replace the local file
-// outright, not just flagged as available.
-export async function resolvePlaylistQuality(playlistId: string): Promise<void> {
+// outright, not just flagged as available. That path in particular can take
+// a while per video (a real slskd search plus, when a match is found, an
+// actual file transfer) — onProgress (only syncService.ts's
+// downloadPendingVideos passes one) reports this video's 1-indexed position
+// and running total before each one is processed, so the caller can surface
+// live progress instead of this looking indistinguishable from stuck.
+export async function resolvePlaylistQuality(
+  playlistId: string,
+  options: { onProgress?: (current: number, total: number, title: string) => void } = {}
+): Promise<void> {
+  const { onProgress } = options;
   const videos = await prisma.playlistVideo.findMany({
     where: { playlistId, downloadStatus: 'done', qualityCheckStatus: 'pending' },
     orderBy: { position: 'asc' },
   });
 
-  for (const video of videos) {
+  for (const [index, video] of videos.entries()) {
     if (!isOnline()) return;
+    onProgress?.(index + 1, videos.length, video.artist ? `${video.artist} - ${video.title}` : video.title);
 
     if (!video.artist) {
       // metadataStatus 'pending' means a future sync's metadata pass might

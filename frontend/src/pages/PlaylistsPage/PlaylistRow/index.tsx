@@ -28,6 +28,7 @@ interface PlaylistRowProps {
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
+  onScanHq: (e: React.MouseEvent, id: string) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
   onDelete: (playlist: Playlist) => void;
   onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;
@@ -37,7 +38,7 @@ export function PlaylistRow({
   playlist, expanded, onToggleExpand, isSyncingLocally, isRetryingLocally, online, canGenerateSimilar,
   hasGeneratedPlaylist, isLockedBySource,
   videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay, onPlayFirst,
-  onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
+  onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete, onGenerateSimilar,
 }: PlaylistRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -84,6 +85,7 @@ export function PlaylistRow({
           onRename={onRename}
           onSync={onSync}
           onRetryFailed={onRetryFailed}
+          onScanHq={onScanHq}
           onTogglePause={onTogglePause}
           onDelete={onDelete}
           onGenerateSimilar={onGenerateSimilar}
@@ -123,6 +125,7 @@ export function PlaylistRow({
           onRename={onRename}
           onSync={onSync}
           onRetryFailed={onRetryFailed}
+          onScanHq={onScanHq}
           onTogglePause={onTogglePause}
           onDelete={onDelete}
           onGenerateSimilar={onGenerateSimilar}

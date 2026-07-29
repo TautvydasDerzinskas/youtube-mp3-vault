@@ -25,6 +25,13 @@ export interface Playlist {
   // window currentVideo is null (nothing is actually downloading), so this
   // is what backs the "Pacing…" message shown in that same slot.
   isPacing: boolean;
+  // Set once every video is downloaded but the sync pass is still working
+  // through metadata resolution / HQ quality-checking — both can take a
+  // while (real network searches, and with the HQ auto-download toggle on,
+  // real file transfers), so this is what backs a distinct "still working"
+  // message and progress bar instead of the download progress bar just
+  // sitting at 100% with nothing to distinguish "working" from "stuck".
+  syncPhase: { phase: 'metadata' | 'quality'; current: number; total: number; title: string } | null;
   // Set only on a generated playlist — the source it was generated from
   // (sourcePlaylistName is a snapshot, so it survives the source being
   // renamed or deleted later).
@@ -196,6 +203,14 @@ export const playlistsApi = {
 
   retryFailed: async (id: string): Promise<{ playlist: Playlist }> => {
     const { data } = await client.post<{ playlist: Playlist }>(`/playlists/${id}/retry-failed`);
+    return data;
+  },
+
+  // Re-checks metadata + HQ quality for already-downloaded videos only,
+  // without touching YouTube — the only retry path that works for a
+  // generated playlist at all (see scanForHqUpgrades in syncService.ts).
+  scanHq: async (id: string): Promise<{ playlist: Playlist }> => {
+    const { data } = await client.post<{ playlist: Playlist }>(`/playlists/${id}/scan-hq`);
     return data;
   },
 

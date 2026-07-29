@@ -6,6 +6,7 @@ import {
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, WarningAmber as WarningAmberIcon,
+  HighQuality as HqIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../../api/youtube';
@@ -101,6 +102,16 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
               {v.downloadStatus === 'done' && isLowBitrate(v.bitrate) && (
                 <Tooltip title={t('playlists.videoList.lowQuality', { bitrate: v.bitrate })}>
                   <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                </Tooltip>
+              )}
+              {v.hqFileDownloaded && (
+                <Tooltip title={t('playlists.videoList.hqDownloaded')}>
+                  <HqIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                </Tooltip>
+              )}
+              {!v.hqFileDownloaded && v.betterQualityExists && (
+                <Tooltip title={t('playlists.videoList.hqAvailable')}>
+                  <HqIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
                 </Tooltip>
               )}
               {v.duration && (

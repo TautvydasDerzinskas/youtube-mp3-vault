@@ -32,7 +32,7 @@ export default function PlaylistsPage() {
   const {
     playlists, loading, error, syncing, retrying, videoCache, setVideoCache,
     expanded, setExpanded, updatePlaylist, handleAdded, handleSync,
-    handleRetryFailed, handleTogglePause, handleDelete: rawHandleDelete,
+    handleRetryFailed, handleScanHq, handleTogglePause, handleDelete: rawHandleDelete,
     handleGenerateSimilar,
   } = usePlaylists();
 
@@ -156,6 +156,7 @@ export default function PlaylistsPage() {
           onRename={setRenaming}
           onSync={handleSync}
           onRetryFailed={handleRetryFailed}
+          onScanHq={handleScanHq}
           onTogglePause={handleTogglePause}
           onDelete={setDeleting}
           onGenerateSimilar={(e, playlist) => { e.stopPropagation(); setGenerateError(null); setGenerating(playlist); }}

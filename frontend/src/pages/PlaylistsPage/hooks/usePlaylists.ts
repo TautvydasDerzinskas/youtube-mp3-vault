@@ -90,6 +90,17 @@ export function usePlaylists() {
     }
   };
 
+  const handleScanHq = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setSyncing(prev => new Set(prev).add(id));
+    try {
+      const { playlist } = await playlistsApi.scanHq(id);
+      updatePlaylist(playlist);
+    } finally {
+      setSyncing(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  };
+
   const handleTogglePause = async (e: React.MouseEvent, playlist: Playlist) => {
     e.stopPropagation();
     const { playlist: updated } = playlist.syncPaused
@@ -116,7 +127,7 @@ export function usePlaylists() {
     playlists, loading, error, syncing, retrying,
     videoCache, setVideoCache,
     expanded, setExpanded,
-    updatePlaylist, handleAdded, handleSync, handleRetryFailed, handleTogglePause, handleDelete,
+    updatePlaylist, handleAdded, handleSync, handleRetryFailed, handleScanHq, handleTogglePause, handleDelete,
     handleGenerateSimilar,
   };
 }
