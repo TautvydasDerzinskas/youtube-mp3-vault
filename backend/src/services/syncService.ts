@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { fetchPlaylist } from './youtube';
-import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited, isAgeRestricted } from './downloader';
+import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited, isAgeRestricted, isSignInRequired } from './downloader';
 import { resolvePlaylistMetadata } from './metadataWorker';
 import { resolvePlaylistQuality } from './slskdQualityWorker';
 
@@ -378,8 +378,7 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
       } catch (err) {
         const message = (err as Error).message;
         console.error(`[sync] ✗ ${video.youtubeId}:`, message);
-        const ageRestricted = isAgeRestricted(message);
-        const permanentlyUnavailable = ageRestricted || isPermanentlyUnavailable(message);
+        const permanentlyUnavailable = isAgeRestricted(message) || isSignInRequired(message) || isPermanentlyUnavailable(message);
 
         if (permanentlyUnavailable) {
           // isAvailable: false (never removePlaylistVideo) — the video is
@@ -414,9 +413,10 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
         }
 
         consecutiveSuccesses = 0;
-        // Age-restriction and permanent-unavailability are routine,
-        // video-specific failures unrelated to IP health — neither should
-        // count towards a "we're being throttled" streak at all.
+        // Age-restriction, sign-in-required, and permanent-unavailability
+        // are routine, video-specific failures unrelated to IP health —
+        // none of them should count towards a "we're being throttled"
+        // streak at all.
         if (!permanentlyUnavailable) {
           consecutiveFailures++;
           const shouldEscalate = isLikelyRateLimited(message) || consecutiveFailures >= FAILURE_STREAK_TO_ESCALATE;

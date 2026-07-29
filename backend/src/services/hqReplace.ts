@@ -25,6 +25,81 @@ function normalizeForMatch(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+// Folds away diacritics and punctuation on top of normalizeForMatch's
+// case/whitespace normalization — lets "Café" match "Cafe" and "Don't Stop"
+// match "Dont Stop" (common transliteration/typing differences between how a
+// track is tagged locally vs. by whichever peer uploaded it) without opening
+// the door to genuinely different titles.
+function foldForMatch(s: string): string {
+  return normalizeForMatch(s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function titleTokens(s: string): Set<string> {
+  return new Set(foldForMatch(s).split(' ').filter(Boolean));
+}
+
+// Jaccard similarity over word sets — tolerant of reordering, a dropped/added
+// filler word ("The", "feat"), or minor spelling variation, without being so
+// loose that two titles sharing only a couple of common words would pass.
+function titleSimilarity(a: string, b: string): number {
+  const ta = titleTokens(a);
+  const tb = titleTokens(b);
+  if (ta.size === 0 || tb.size === 0) return 0;
+  let intersection = 0;
+  for (const token of ta) if (tb.has(token)) intersection++;
+  const union = ta.size + tb.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+// One side containing the other (after folding) tolerates a candidate
+// filename carrying extra featured-artist credits ("Artist ft. Other") that
+// our own stored artist doesn't, or vice versa, without accepting an
+// unrelated artist that merely shares a short substring.
+function artistIsSupersetMatch(a: string, b: string): boolean {
+  const fa = foldForMatch(a);
+  const fb = foldForMatch(b);
+  if (!fa || !fb) return false;
+  return fa === fb || fa.includes(fb) || fb.includes(fa);
+}
+
+const FUZZY_TITLE_SIMILARITY_THRESHOLD = 0.82;
+
+// How close a candidate's reported length has to be to our stored video
+// duration to corroborate a match, in seconds. YouTube video duration can
+// legitimately diverge a bit from a track's canonical length (intros,
+// trimmed uploads, extended edits), so this is a proximity window, not
+// equality — and it's deliberately narrower the looser a tier's text
+// comparison already is: an exact artist+title match barely needs duration
+// to confirm anything (it's a sanity backstop against, say, a same-titled
+// but different recording), whereas the fuzzy-title tier leans on duration
+// as real corroborating evidence, not just a backstop.
+function durationToleranceSeconds(videoDurationSec: number, strictness: 'sanity' | 'moderate' | 'tight'): number {
+  switch (strictness) {
+    case 'sanity': return Math.max(20, videoDurationSec * 0.15);
+    case 'moderate': return Math.max(12, videoDurationSec * 0.10);
+    case 'tight': return Math.max(8, videoDurationSec * 0.07);
+  }
+}
+
+// requireKnown=false treats "one or both durations unknown" as non-disqualifying
+// (many Soulseek peers don't report file length, and our own video.duration can
+// be null for older rows) — only the fuzzy-title tier, which needs duration to
+// carry real weight rather than just sanity-check an already-confident match,
+// requires both sides to actually be known.
+function isDurationPlausible(
+  candidateSec: number | null,
+  videoDurationSec: number | null,
+  strictness: 'sanity' | 'moderate' | 'tight',
+  requireKnown: boolean,
+): boolean {
+  if (candidateSec === null || videoDurationSec === null) return !requireKnown;
+  return Math.abs(candidateSec - videoDurationSec) <= durationToleranceSeconds(videoDurationSec, strictness);
+}
+
 // Soulseek filenames often carry a full path from the peer's own filesystem
 // (Windows-style, sometimes forward slashes) — take just the last segment
 // and strip the extension before parsing it as "Artist - Title".
@@ -33,18 +108,61 @@ function baseNameFromSlskdPath(filename: string): string {
   return lastSegment.replace(/\.[a-z0-9]{2,4}$/i, '');
 }
 
-// Stricter than the free path's "plausible" match: this is about to trigger
-// an automatic download that REPLACES the local file, so the candidate's own
-// filename must parse into the *exact* same artist and title we already have
-// (case/whitespace aside) — deliberately not stripped of remix/version/edit
-// wording (parseArtistAndTitle already treats that as real track information,
-// not junk), so a different mix of the same song never passes as a match.
-export function isExactTrackMatch(candidateFilename: string, artist: string, title: string): boolean {
-  const parsed = parseArtistAndTitle(baseNameFromSlskdPath(candidateFilename), null);
-  if (!parsed.artist) return false;
-  return normalizeForMatch(parsed.artist) === normalizeForMatch(artist)
-    && normalizeForMatch(parsed.title) === normalizeForMatch(title);
+interface MatchTier {
+  textMatch: (parsedArtist: string, parsedTitle: string, artist: string, title: string) => boolean;
+  durationStrictness: 'sanity' | 'moderate' | 'tight';
+  requireKnownDuration: boolean;
+  // Minimum bitrate improvement (beyond just "any improvement") required for
+  // a candidate at this tier — the looser the text match, the more the
+  // eventual replacement needs to be worth the small residual risk of it
+  // being a slightly different recording of the same song.
+  minBitrateImprovementKbps: number;
 }
+
+// Tried in order — the first tier to produce any surviving candidate wins,
+// looser tiers are never even evaluated. Deliberately kept as separate
+// sequential passes rather than one flattened scoring function, so each
+// tier's own bar (text confidence + matching duration tolerance + minimum
+// bitrate margin) stays easy to reason about independently.
+const MATCH_TIERS: MatchTier[] = [
+  {
+    // Exact, case/whitespace-insensitive artist+title match — deliberately
+    // not stripped of remix/version/edit wording (parseArtistAndTitle
+    // already treats that as real track information, not junk), so a
+    // different mix of the same song never passes as a match.
+    textMatch: (pa, pt, a, t) => normalizeForMatch(pa) === normalizeForMatch(a) && normalizeForMatch(pt) === normalizeForMatch(t),
+    durationStrictness: 'sanity',
+    requireKnownDuration: false,
+    minBitrateImprovementKbps: 0,
+  },
+  {
+    // Same, but diacritic/punctuation-folded — catches "Café" vs "Cafe",
+    // "Don't" vs "Dont", smart quotes vs straight quotes, etc.
+    textMatch: (pa, pt, a, t) => foldForMatch(pa) === foldForMatch(a) && foldForMatch(pt) === foldForMatch(t),
+    durationStrictness: 'sanity',
+    requireKnownDuration: false,
+    minBitrateImprovementKbps: 0,
+  },
+  {
+    // Title still has to match exactly (folded); artist is now allowed to be
+    // a superset/subset of ours, tolerating extra featured-artist credits on
+    // either side.
+    textMatch: (pa, pt, a, t) => artistIsSupersetMatch(pa, a) && foldForMatch(pt) === foldForMatch(t),
+    durationStrictness: 'moderate',
+    requireKnownDuration: false,
+    minBitrateImprovementKbps: 32,
+  },
+  {
+    // Loosest tier: fuzzy token-overlap title similarity plus artist
+    // superset tolerance. This is the only tier where duration is required
+    // (not just checked when available), since text confidence alone isn't
+    // enough to trust an automatic file replacement here.
+    textMatch: (pa, pt, a, t) => artistIsSupersetMatch(pa, a) && titleSimilarity(pt, t) >= FUZZY_TITLE_SIMILARITY_THRESHOLD,
+    durationStrictness: 'tight',
+    requireKnownDuration: true,
+    minBitrateImprovementKbps: 32,
+  },
+];
 
 export interface HqCandidate {
   username: string;
@@ -54,13 +172,16 @@ export interface HqCandidate {
 }
 
 // Searches our slskd instance for this track and returns the best mp3
-// candidate that both beats currentBitrate and is an exact artist+title
-// match. Returns null if slskd isn't configured, we're offline, or nothing
-// eligible turned up — callers should treat that the same as "no upgrade found".
+// candidate that beats currentBitrate and matches per MATCH_TIERS above,
+// trying the strictest tier first and only falling through to a looser one
+// if nothing at all qualified. Returns null if slskd isn't configured, we're
+// offline, or nothing eligible turned up at any tier — callers should treat
+// that the same as "no upgrade found".
 export async function findExactMatchCandidate(
   artist: string,
   title: string,
   currentBitrate: number | null,
+  videoDurationSec: number | null,
 ): Promise<HqCandidate | null> {
   if (!isOnline() || !isSlskdConfigured()) return null;
 
@@ -70,20 +191,30 @@ export async function findExactMatchCandidate(
   const result = await slskdClient.search(searchText);
   if (!result) return null;
 
-  let best: HqCandidate | null = null;
-  for (const response of result.responses) {
-    for (const file of response.files ?? []) {
-      const filename = file?.filename ?? '';
-      if (!filename.toLowerCase().endsWith('.mp3')) continue;
-      const bitrate = Number(file?.bitRate ?? 0);
-      if (!Number.isFinite(bitrate) || bitrate <= 0 || bitrate > MAX_PLAUSIBLE_MP3_BITRATE_KBPS) continue;
-      if (currentBitrate !== null && bitrate <= currentBitrate) continue;
-      if (best && bitrate <= best.bitrate) continue;
-      if (!isExactTrackMatch(filename, artist, title)) continue;
-      best = { username: response.username, filename, size: file.size, bitrate };
+  for (const tier of MATCH_TIERS) {
+    let best: HqCandidate | null = null;
+    for (const response of result.responses) {
+      for (const file of response.files ?? []) {
+        const filename = file?.filename ?? '';
+        if (!filename.toLowerCase().endsWith('.mp3')) continue;
+        const bitrate = Number(file?.bitRate ?? 0);
+        if (!Number.isFinite(bitrate) || bitrate <= 0 || bitrate > MAX_PLAUSIBLE_MP3_BITRATE_KBPS) continue;
+        if (currentBitrate !== null && bitrate <= currentBitrate + tier.minBitrateImprovementKbps) continue;
+        if (best && bitrate <= best.bitrate) continue;
+
+        const parsed = parseArtistAndTitle(baseNameFromSlskdPath(filename), null);
+        if (!parsed.artist) continue;
+        if (!tier.textMatch(parsed.artist, parsed.title, artist, title)) continue;
+
+        const candidateDurationSec = typeof file?.length === 'number' ? file.length : null;
+        if (!isDurationPlausible(candidateDurationSec, videoDurationSec, tier.durationStrictness, tier.requireKnownDuration)) continue;
+
+        best = { username: response.username, filename, size: file.size, bitrate };
+      }
     }
+    if (best) return best;
   }
-  return best;
+  return null;
 }
 
 function findMatchingTransfer(downloads: any[], filename: string): any {

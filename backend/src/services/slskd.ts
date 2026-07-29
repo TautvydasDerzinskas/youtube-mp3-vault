@@ -21,6 +21,11 @@ export interface SlskdFile {
   filename: string;
   size: number;
   bitRate: number | null;
+  // Track length in seconds, per slskd's own File model (Soulseek protocol
+  // field) — not every peer's client reports it, so this is nullable, but
+  // when present it's a useful corroborating signal for hqReplace.ts's
+  // duration-proximity match tiers.
+  length: number | null;
 }
 
 export interface SlskdSearchResponse {

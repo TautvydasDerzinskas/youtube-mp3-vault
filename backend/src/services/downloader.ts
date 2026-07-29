@@ -91,6 +91,23 @@ export function isLikelyRateLimited(message: string): boolean {
   return RATE_LIMIT_PATTERNS.some((re) => re.test(message));
 }
 
+// yt-dlp's youtube extractor funnels every YouTube-reported playability
+// reason that mentions "sign in" through the same generic wrapper (append
+// the --cookies-from-browser/--cookies hint) — that includes the age-gate
+// and bot-check wordings above, but also a bare "Please sign in." for
+// videos that require a signed-in account for some other reason (regional
+// restriction, member-only-style gating, etc). We have no signed-in
+// cookies configured, so any of these can never succeed no matter how many
+// times it's retried — same as age-restriction. Excludes the age and
+// bot-check patterns since those are already handled distinctly: bot-check
+// in particular is IP-health signal, not a per-video dead end, so it must
+// never be folded in here.
+const SIGN_IN_REQUIRED_PATTERN = /sign in/i;
+
+export function isSignInRequired(message: string): boolean {
+  return SIGN_IN_REQUIRED_PATTERN.test(message) && !isAgeRestricted(message) && !isLikelyRateLimited(message);
+}
+
 // 10 minutes — generous ceiling for a single track even on a slow
 // connection; yt-dlp's own --retries/--fragment-retries already absorb
 // transient stalls within that window. Without this, a genuine network

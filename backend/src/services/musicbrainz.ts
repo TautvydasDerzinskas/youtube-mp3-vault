@@ -79,6 +79,10 @@ const JUNK_TAG_WORDS = [
   'hd', 'hq', '4k', 'cover\\s*art', 'out\\s*now',
   'клип', 'официальн\\w*', 'премьера\\w*',
   'oficialus', 'klipas',
+  // Promo/platform call-outs — describe the upload/distribution, never the
+  // track itself, same reasoning as the rest of this list.
+  'free\\s*download', 'download\\s*link', 'radio\\s*rip', 'copyright\\s*free(\\s*music)?',
+  'english\\s*version', 'premiere',
 ];
 // Multi-word phrases only meaningful as a *trailing, unbracketed* suffix —
 // kept separate from JUNK_TAG_WORDS above because a bare "music"/"mood"
@@ -87,10 +91,55 @@ const JUNK_TAG_WORDS = [
 const JUNK_TRAILING_PHRASES = ['music\\s*video', 'lyric\\s*video', 'video\\s*clip', 'mood\\s*video', 'video\\s*visual'];
 
 const JUNK_BRACKET_RE = new RegExp(`[([][^)\\]]*\\b(${JUNK_TAG_WORDS.join('|')})\\b[^)\\]]*[)\\]]`, 'gi');
-const JUNK_TRAILING_RE = new RegExp(`[\\s\\-|/,]+\\b(${[...JUNK_TRAILING_PHRASES, ...JUNK_TAG_WORDS].join('|')})\\b\\s*$`, 'i');
+// '•' and '*' added to the separator class alongside the pre-existing
+// dash/pipe/comma ones — both show up as decorative wrapping around exactly
+// this kind of trailing junk ("• Copyright Free Music •", "*Free Download*").
+const JUNK_TRAILING_RE = new RegExp(`[\\s\\-|/,*•]+\\b(${[...JUNK_TRAILING_PHRASES, ...JUNK_TAG_WORDS].join('|')})\\b\\s*$`, 'i');
+
+// Bracketed content is only worth keeping if it actually describes the
+// track itself (a remix/edit/version/feature credit) — anything still
+// bracketed after JUNK_BRACKET_RE above has already removed the *known*
+// upload-noise phrasing is far more likely to be a platform/label tag, a
+// promo call-out, or other trivia ("[Silk Music]", "[Free Download]",
+// "(Belgium)") than a legitimate description we'd wrongly gut. Deliberately
+// an allowlist, not a denylist, for that remaining set — the opposite bet
+// JUNK_TAG_WORDS makes, on purpose. Known tradeoff: a handful of real
+// official titles use a bracket with no descriptor word at all (Rihanna's
+// "Only Girl (In The World)") — those lose the bracket too, since nothing
+// short of a full canonical-title lookup (i.e. an actual MusicBrainz match)
+// can tell that apart from upload trivia.
+const MEANINGFUL_BRACKET_WORDS = [
+  'mix', 'remix', 'edit', 'version', 'vers\\.?', 'vip', 'bootleg', 'mashup',
+  'cover', 'instrumental', 'acoustic', 'a\\s*c?appella', 'unplugged', 'medley',
+  'rework', 'flip', 'dub', 'extended', 'radio', 'club', 'original', 'edition',
+  'ft\\.?', 'feat\\.?', 'featuring', 'with', 'vs\\.?', 'chorus', 'reprise',
+  'refix', 'redux', 'bonus', 'demo', 'live', 'prod\\.?',
+];
+const MEANINGFUL_BRACKET_RE = new RegExp(`\\b(${MEANINGFUL_BRACKET_WORDS.join('|')})\\b`, 'i');
+const ANY_BRACKET_RE = /\([^()]*\)/g;
+
+// A small explicit list rather than a generic trailing ".xxx" — some
+// uploads carry a literal filename extension (re-uploaded straight from a
+// local file, never renamed); a generic pattern would risk eating something
+// like a genuine "Vol.2" ending instead.
+const TRAILING_EXTENSION_RE = /\.(mp3|mp4|mpg|mpeg|flv|avi|mov|wav|wma|m4a)$/i;
 
 function stripJunkTags(rawTitle: string): string {
-  let cleaned = rawTitle.replace(JUNK_BRACKET_RE, ' ').replace(/\s+/g, ' ').trim();
+  // YouTube titles use [], {}, and full-width 【】 interchangeably with ()
+  // for the exact same remix/edit/ft. annotations — normalizing to one
+  // style up front means every bracket-aware rule below only deals with one.
+  let cleaned = rawTitle.replace(/[[{【]/g, '(').replace(/[\]}】]/g, ')');
+
+  // "Title(Remix)" → "Title (Remix)" (a missing space is always a slip,
+  // never intentional), then "( Remix )" → "(Remix)".
+  cleaned = cleaned.replace(/(\S)\(/g, '$1 (');
+  cleaned = cleaned.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+
+  cleaned = cleaned.replace(JUNK_BRACKET_RE, ' ');
+  cleaned = cleaned.replace(ANY_BRACKET_RE, (group) => (MEANINGFUL_BRACKET_RE.test(group) ? group : ' '));
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  cleaned = cleaned.replace(TRAILING_EXTENSION_RE, '').trim();
 
   // Bare (non-bracketed) junk suffixes, e.g. `Song Title - Official Video`
   // with no brackets at all. Strip iteratively for chains like `Lyrics / Lyric Video`.
@@ -100,7 +149,13 @@ function stripJunkTags(rawTitle: string): string {
     cleaned = next;
   }
 
-  cleaned = cleaned.replace(/^[\s\-|,:]+|[\s\-|,:]+$/g, '').trim();
+  // Edge punctuation/decoration left over once everything above has run —
+  // a lone trailing "+", leftover separators with nothing after them, or
+  // decorative unicode (music notes, stars, hearts...) wrapping the title.
+  cleaned = cleaned.replace(
+    /^[\s\-|,:+*•·~#♫♡♥❀☆★✦✧]+|[\s\-|,:+*•·~#♫♡♥❀☆★✦✧\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+$/gu,
+    ''
+  ).trim();
 
   // If every word turned out to be junk (e.g. the whole title was
   // "[Official Video]"), fall back to the untouched original rather than

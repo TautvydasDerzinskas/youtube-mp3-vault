@@ -51,7 +51,7 @@ export async function resolvePlaylistQuality(
 
     try {
       if (isHqAutoDownloadEnabled()) {
-        const candidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate);
+        const candidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
         if (!candidate) {
           // Search+match concluded there's nothing eligible right now — a
           // stable, repeatable verdict, same as the free path below.
