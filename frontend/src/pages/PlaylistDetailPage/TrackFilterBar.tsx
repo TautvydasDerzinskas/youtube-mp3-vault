@@ -40,6 +40,8 @@ export function TrackFilterBar({
           value={sort}
           onChange={(e: SelectChangeEvent) => onSortChange(e.target.value as SortOption)}
         >
+          <MenuItem value="import-desc">{t('playlists.detail.sortImportDesc')}</MenuItem>
+          <MenuItem value="import-asc">{t('playlists.detail.sortImportAsc')}</MenuItem>
           <MenuItem value="name-asc">{t('playlists.detail.sortNameAsc')}</MenuItem>
           <MenuItem value="name-desc">{t('playlists.detail.sortNameDesc')}</MenuItem>
           <MenuItem value="artist-asc">{t('playlists.detail.sortArtistAsc')}</MenuItem>

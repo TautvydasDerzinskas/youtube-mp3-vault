@@ -179,6 +179,8 @@
       "noGenre": "Bez gatunku ({{count}})",
       "noTracks": "Żaden utwór nie pasuje do wybranych filtrów.",
       "sortBy": "Sortuj według",
+      "sortImportDesc": "Kolejności importu (najnowsze najpierw)",
+      "sortImportAsc": "Kolejności importu (najstarsze najpierw)",
       "sortNameAsc": "Nazwy (A-Z)",
       "sortNameDesc": "Nazwy (Z-A)",
       "sortArtistAsc": "Wykonawcy (A-Z)",

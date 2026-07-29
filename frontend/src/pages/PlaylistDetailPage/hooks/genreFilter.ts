@@ -7,9 +7,21 @@ export type GenreCount = { key: string; label: string; count: number };
 
 export const NO_GENRE_KEY = 'none';
 
-export type SortOption = 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'plays-asc' | 'plays-desc';
-export const DEFAULT_SORT: SortOption = 'name-asc';
-const SORT_OPTIONS = new Set<SortOption>(['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'plays-asc', 'plays-desc']);
+export type SortOption =
+  | 'import-asc' | 'import-desc'
+  | 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'plays-asc' | 'plays-desc';
+// "Import order" = addedAt, i.e. the order tracks were actually added to the
+// library — not YouTube's mutable per-playlist `position`, which only makes
+// sense within a single playlist and would collide across playlists on the
+// All Tracks page. Descending (newest-added-first) is the default, matching
+// the All Tracks page's own backend fetch order (routes/youtube.ts's
+// /all-tracks uses orderBy: addedAt desc) — picking it back explicitly is a
+// no-op, same as any other default sort choice.
+export const DEFAULT_SORT: SortOption = 'import-desc';
+const SORT_OPTIONS = new Set<SortOption>([
+  'import-asc', 'import-desc',
+  'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'plays-asc', 'plays-desc',
+]);
 
 const GENRES_PARAM = 'genres';
 const SORT_PARAM = 'sort';
@@ -133,6 +145,8 @@ export function filterBySearch(videos: PlaylistVideo[], query: string): Playlist
 export function sortTracks(videos: PlaylistVideo[], sort: SortOption): PlaylistVideo[] {
   const sorted = [...videos];
   switch (sort) {
+    case 'import-asc': return sorted.sort((a, b) => Date.parse(a.addedAt) - Date.parse(b.addedAt));
+    case 'import-desc': return sorted.sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt));
     case 'name-asc': return sorted.sort((a, b) => a.title.localeCompare(b.title));
     case 'name-desc': return sorted.sort((a, b) => b.title.localeCompare(a.title));
     case 'artist-asc': return sorted.sort((a, b) => (a.artist ?? '').localeCompare(b.artist ?? '') || a.title.localeCompare(b.title));

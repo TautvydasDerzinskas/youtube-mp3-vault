@@ -175,6 +175,8 @@
       "noGenre": "Be žanro ({{count}})",
       "noTracks": "Nėra dainų, atitinkančių pasirinktus filtrus.",
       "sortBy": "Rikiuoti pagal",
+      "sortImportDesc": "Importavimo tvarką (naujausius pirmiau)",
+      "sortImportAsc": "Importavimo tvarką (seniausius pirmiau)",
       "sortNameAsc": "Pavadinimą (A-Ž)",
       "sortNameDesc": "Pavadinimą (Ž-A)",
       "sortArtistAsc": "Atlikėją (A-Ž)",

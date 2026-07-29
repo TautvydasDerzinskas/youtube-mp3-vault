@@ -171,6 +171,8 @@
       "noGenre": "No genre ({{count}})",
       "noTracks": "No tracks match the current filters.",
       "sortBy": "Sort by",
+      "sortImportDesc": "Import order (newest first)",
+      "sortImportAsc": "Import order (oldest first)",
       "sortNameAsc": "Name (A-Z)",
       "sortNameDesc": "Name (Z-A)",
       "sortArtistAsc": "Artist (A-Z)",
