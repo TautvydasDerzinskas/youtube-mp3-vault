@@ -165,7 +165,6 @@
       "back": "Back to playlists",
       "failedToLoad": "Failed to load this playlist.",
       "trackCount": "{{count}} tracks",
-      "syncedCount": "{{count}} synced",
       "filterByGenre": "Filter by genre",
       "clearGenreFilter": "Clear genre filter",
       "noGenre": "No genre ({{count}})",

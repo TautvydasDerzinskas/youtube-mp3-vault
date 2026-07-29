@@ -169,7 +169,6 @@
       "back": "Grįžti į grojaraščius",
       "failedToLoad": "Nepavyko įkelti šio grojaraščio.",
       "trackCount": "{{count}} dainų",
-      "syncedCount": "{{count}} sinchronizuota",
       "filterByGenre": "Filtruoti pagal žanrą",
       "clearGenreFilter": "Išvalyti žanrų filtrą",
       "noGenre": "Be žanro ({{count}})",

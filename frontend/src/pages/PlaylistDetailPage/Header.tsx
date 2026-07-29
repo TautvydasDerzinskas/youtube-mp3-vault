@@ -54,8 +54,6 @@ export function Header({
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 0.5 }}>
             <Chip size="small" variant="outlined"
               label={t('playlists.detail.trackCount', { count: playlist.videoCount })} />
-            <Chip size="small" variant="outlined" color={playlist.downloadedCount === playlist.videoCount ? 'success' : 'default'}
-              label={t('playlists.detail.syncedCount', { count: playlist.downloadedCount })} />
             {playlist.totalSize > 0 && (
               <Chip size="small" variant="outlined" label={formatBytes(playlist.totalSize)} />
             )}
