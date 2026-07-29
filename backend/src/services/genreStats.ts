@@ -48,3 +48,22 @@ export async function topGenresByTrackCount(userId: string, limit: number): Prom
     .sort((a, b) => b.count - a.count || a.genre.localeCompare(b.genre))
     .slice(0, limit);
 }
+
+// Distinct genre count for the dashboard's small stat panel — same
+// normalizeKey dedup as topGenresByTrackCount above, so this lines up with
+// however many distinct genres that list would show uncapped.
+export async function countDistinctGenres(userId: string): Promise<number> {
+  const videos = await prisma.playlistVideo.findMany({
+    where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
+    select: { genres: true },
+  });
+
+  const keys = new Set<string>();
+  for (const v of videos) {
+    for (const raw of v.genres) {
+      const trimmed = raw.trim();
+      if (trimmed) keys.add(normalizeKey(trimmed));
+    }
+  }
+  return keys.size;
+}

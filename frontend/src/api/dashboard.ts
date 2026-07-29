@@ -29,6 +29,7 @@ export interface DashboardSummary {
   playlistCount: number;
   totalSongCount: number;
   totalArtistCount: number;
+  totalGenreCount: number;
   topSongs: DashboardSong[];
   topArtists: DashboardArtist[];
   topGenres: DashboardGenre[];

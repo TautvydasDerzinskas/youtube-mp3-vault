@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/prisma';
-import { topGenresByTrackCount } from '../services/genreStats';
+import { topGenresByTrackCount, countDistinctGenres } from '../services/genreStats';
 import { normalizeKey } from '../services/textNormalization';
 
 const router = Router();
@@ -69,12 +69,13 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
   try {
     const userId = req.userId!;
 
-    const [playlistCount, totalSongCount, totalArtistCount, topSongs, topArtists, topGenres] = await Promise.all([
+    const [playlistCount, totalSongCount, totalArtistCount, totalGenreCount, topSongs, topArtists, topGenres] = await Promise.all([
       prisma.playlist.count({ where: { userId } }),
       prisma.playlistVideo.count({
         where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
       }),
       countDistinctArtists(userId),
+      countDistinctGenres(userId),
       prisma.playlistVideo.findMany({
         where: {
           playlist: { userId },
@@ -90,7 +91,7 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
       topGenresByTrackCount(userId, TOP_GENRES_PREVIEW),
     ]);
 
-    res.json({ playlistCount, totalSongCount, totalArtistCount, topSongs, topArtists, topGenres });
+    res.json({ playlistCount, totalSongCount, totalArtistCount, totalGenreCount, topSongs, topArtists, topGenres });
   } catch (err) {
     next(err);
   }

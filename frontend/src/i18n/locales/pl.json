@@ -388,6 +388,12 @@
       "label_many": "artystów",
       "label_other": "artystów"
     },
+    "genreCount": {
+      "label_one": "gatunek",
+      "label_few": "gatunki",
+      "label_many": "gatunków",
+      "label_other": "gatunków"
+    },
     "songsOnRepeat": {
       "title": "Utwory na powtórce",
       "empty": "Nic jeszcze nie odtworzono — utwory, których słuchasz, pojawią się tutaj."

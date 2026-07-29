@@ -54,6 +54,12 @@ const PERMANENT_UNAVAILABILITY_PATTERNS = [
   // on the literal "not available" phrase.
   /available in your country/i,
   /blocked (it|this video) (on|in|for) copyright/i,
+  // yt-dlp has no audio (or any) format left to select for this video —
+  // seen on livestream leftovers/deleted-then-reindexed videos. Not a
+  // transient formats-list hiccup: the same request never yields a
+  // different format on retry, so it belongs here rather than the
+  // attempt-counter fallback.
+  /requested format is not available/i,
 ];
 
 export function isPermanentlyUnavailable(message: string): boolean {

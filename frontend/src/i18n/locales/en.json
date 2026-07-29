@@ -370,6 +370,10 @@
       "label_one": "artist",
       "label_other": "artists"
     },
+    "genreCount": {
+      "label_one": "genre",
+      "label_other": "genres"
+    },
     "songsOnRepeat": {
       "title": "Songs on Repeat",
       "empty": "Nothing played yet — songs you listen to will show up here."

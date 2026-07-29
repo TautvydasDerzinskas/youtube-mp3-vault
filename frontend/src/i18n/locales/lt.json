@@ -379,6 +379,11 @@
       "label_few": "atlikėjai",
       "label_other": "atlikėjų"
     },
+    "genreCount": {
+      "label_one": "žanras",
+      "label_few": "žanrai",
+      "label_other": "žanrų"
+    },
     "songsOnRepeat": {
       "title": "Dažniausiai klausomos dainos",
       "empty": "Dar niekas negrota — dainos, kurias klausysite, atsiras čia."

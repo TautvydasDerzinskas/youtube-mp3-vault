@@ -5,6 +5,7 @@ import { dashboardApi, DashboardSummary } from '../../api/dashboard';
 import { PlaylistCountCard } from './PlaylistCountCard';
 import { TotalSongsCard } from './TotalSongsCard';
 import { ArtistCountCard } from './ArtistCountCard';
+import { GenreCountCard } from './GenreCountCard';
 import { SongsOnRepeatCard } from './SongsOnRepeatCard';
 import { TopArtistsCard } from './TopArtistsCard';
 import { TopGenresCard } from './TopGenresCard';
@@ -44,6 +45,7 @@ export default function DashboardPage() {
           <PlaylistCountCard count={summary.playlistCount} />
           <TotalSongsCard count={summary.totalSongCount} />
           <ArtistCountCard count={summary.totalArtistCount} />
+          <GenreCountCard count={summary.totalGenreCount} />
         </Box>
         <Box sx={{ width: { xs: '100%', md: 0 }, flex: { md: 1.4 } }}>
           <SongsOnRepeatCard songs={summary.topSongs} onSeeMore={() => setShowAllSongs(true)} />
