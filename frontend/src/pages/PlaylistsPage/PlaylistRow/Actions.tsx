@@ -57,7 +57,16 @@ export function Actions({
   // generated playlist).
   const isGenerated = playlist.youtubeId === null;
   const showSync = !isGenerated && !playlist.syncPaused;
-  const showRetry = !isGenerated && !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
+  // Unlike Sync, this never touches YouTube (retryFailedVideos only resets
+  // already-downloaded-once videos stuck at downloadStatus 'failed' back to
+  // pending) — so it works the same for a generated playlist as a regular
+  // one. It's the only way to retry those at all for a generated playlist:
+  // they get exactly one downloadPendingVideos pass during generation, then
+  // are excluded from both the weekly cron and (previously) this button, so
+  // any transient failure from that one pass — a video that failed but
+  // hadn't yet hit MAX_DOWNLOAD_ATTEMPTS — would otherwise sit unresolved
+  // forever with nothing left to ever retry it.
+  const showRetry = !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
   const showPauseToggle = !isGenerated && !isRetrying && (isBusy || playlist.syncPaused);
   // Generating a similar playlist reads this playlist's video list, so it
   // only needs to have actually finished a sync pass at least once — not
