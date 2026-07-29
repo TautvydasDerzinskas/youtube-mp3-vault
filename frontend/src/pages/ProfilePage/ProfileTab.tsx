@@ -1,19 +1,14 @@
-import { Box, Typography, TextField, MenuItem, Avatar, Stack, Button, Divider } from '@mui/material';
+import { Box, Typography, TextField, Avatar, Stack, Button, Divider } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, SupportedLanguage } from '../../i18n';
 import { useGravatarUrl } from '../../hooks/useGravatarUrl';
 
 export function ProfileTab() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, updateLanguage } = useAuth();
+  const { user } = useAuth();
   const avatarUrl = useGravatarUrl(user?.email, 128);
-
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateLanguage(e.target.value as SupportedLanguage);
-  };
 
   return (
     <Box>
@@ -29,19 +24,6 @@ export function ProfileTab() {
 
       <TextField label={t('profile.displayName')} value={user?.displayName ?? ''} disabled fullWidth
         helperText={t('profile.displayNameHelper')} sx={{ mb: 3 }} />
-
-      <TextField
-        select
-        label={t('profile.language')}
-        value={user?.language ?? 'en'}
-        onChange={handleLanguageChange}
-        fullWidth
-        sx={{ mb: 3 }}
-      >
-        {SUPPORTED_LANGUAGES.map(code => (
-          <MenuItem key={code} value={code}>{LANGUAGE_LABELS[code]}</MenuItem>
-        ))}
-      </TextField>
 
       <Divider sx={{ mb: 2 }} />
 

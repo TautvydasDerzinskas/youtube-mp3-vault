@@ -1,12 +1,17 @@
 import { useState } from 'react';
-import { Box, Typography, Switch, FormControlLabel } from '@mui/material';
+import { Box, Typography, Switch, FormControlLabel, TextField, MenuItem, Divider } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, SupportedLanguage } from '../../i18n';
 
 export function SettingsTab() {
   const { t } = useTranslation();
-  const { user, setAutoDeleteNonMusic } = useAuth();
+  const { user, updateLanguage, setAutoDeleteNonMusic } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateLanguage(e.target.value as SupportedLanguage);
+  };
 
   const handleToggle = async (enabled: boolean) => {
     setLoading(true);
@@ -19,6 +24,21 @@ export function SettingsTab() {
 
   return (
     <Box>
+      <TextField
+        select
+        label={t('profile.language')}
+        value={user?.language ?? 'en'}
+        onChange={handleLanguageChange}
+        fullWidth
+        sx={{ mb: 3 }}
+      >
+        {SUPPORTED_LANGUAGES.map(code => (
+          <MenuItem key={code} value={code}>{LANGUAGE_LABELS[code]}</MenuItem>
+        ))}
+      </TextField>
+
+      <Divider sx={{ mb: 2 }} />
+
       <FormControlLabel
         control={
           <Switch
