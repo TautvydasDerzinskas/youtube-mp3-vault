@@ -201,6 +201,7 @@
     "title": "Profil",
     "back": "Wróć do playlist",
     "tabProfile": "Profil",
+    "tabSettings": "Ustawienia",
     "tabLastfm": "Last.fm",
     "avatarAlt": "Awatar profilu",
     "displayName": "Nazwa wyświetlana",
@@ -221,6 +222,12 @@
     "language": "Język",
     "logout": "Wyloguj się",
     "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "settings": {
+      "autoDeleteNonMusic": {
+        "label": "Automatycznie usuwaj utwory niebędące muzyką",
+        "description": "Automatycznie usuwa wpis i plik audio dla każdego utworu, który analiza dźwięku zaklasyfikuje jako niebędący muzyką (np. mowa, ASMR, efekty dźwiękowe). Włączenie tej opcji usunie również takie utwory już znajdujące się w Twojej bibliotece."
+      }
+    },
     "lastfm": {
       "title": "Last.fm",
       "description": "Połącz swoje konto Last.fm, aby zapisywać (scrobblować) utwory, których wysłuchasz do końca.",

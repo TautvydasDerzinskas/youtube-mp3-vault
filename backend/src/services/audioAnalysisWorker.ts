@@ -2,8 +2,9 @@ import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { analyzeAudio } from './audioAnalysis';
 import { getSharedFilePath } from './downloader';
-import { removePlaylistVideo } from './syncService';
+import { removePlaylistVideo, markVideoRemoved } from './syncService';
 import { bufferToFloat32Array, cosineSimilarity } from './embeddings';
+import { normalizeKey } from './textNormalization';
 
 const IDLE_POLL_MS = 60_000; // nothing pending, or the analysis service is unreachable
 
@@ -25,27 +26,33 @@ function capitalizeFirst(s: string): string {
   return s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
-// Null when this video's playlist isn't a generated one — both of the
-// checks below (Non-Music, audio duplicate) only ever apply to generated
-// playlists, per source's own comment.
-async function getGeneratedPlaylistSourceId(playlistId: string): Promise<string | null> {
+// sourcePlaylistId is non-null only when this video's playlist is itself a
+// generated one — the audio-duplicate check below only ever applies there.
+// autoDeleteNonMusicEnabled is the owning user's preference (see User model
+// in schema.prisma) — checked regardless of playlist type.
+async function getPlaylistDropContext(playlistId: string): Promise<{ sourcePlaylistId: string | null; autoDeleteNonMusicEnabled: boolean }> {
   const playlist = await prisma.playlist.findUnique({
     where: { id: playlistId },
-    select: { sourcePlaylistId: true },
+    select: { sourcePlaylistId: true, user: { select: { autoDeleteNonMusicEnabled: true } } },
   });
-  return playlist?.sourcePlaylistId ?? null;
+  return {
+    sourcePlaylistId: playlist?.sourcePlaylistId ?? null,
+    autoDeleteNonMusicEnabled: playlist?.user.autoDeleteNonMusicEnabled ?? false,
+  };
 }
 
 // The genre classifier can, correctly, decide a candidate isn't music at all
 // (spoken word, ASMR, sound effects, a podcast clip that matched a search
 // query, …) — real audio-content analysis is a much stronger signal for
-// this than anything in the title/metadata pipeline, so for a generated
-// playlist specifically we trust it outright.
+// this than anything in the title/metadata pipeline, so it's trusted
+// outright wherever it applies (see call sites below). Same trim+lowercase
+// normalization as the /all-tracks genres=non-music filter, so this lines
+// up with what a user filtering by that genre would see — the exact label
+// casing itself comes from a model file fetched from essentia.upf.edu at
+// Docker build time (not vendored/pinned in this repo), so it can't be
+// relied on to match a hardcoded casing exactly.
 function isNonMusic(genres: string[]): boolean {
-  // Case-insensitive — the exact label casing comes from a model file
-  // fetched from essentia.upf.edu at Docker build time (not vendored/pinned
-  // in this repo), so don't rely on it matching a hardcoded casing exactly.
-  return genres.some((g) => g.toLowerCase() === 'non-music');
+  return genres.some((g) => normalizeKey(g) === 'non-music');
 }
 
 // Checks a freshly-computed embedding against the source playlist's tracks
@@ -115,8 +122,12 @@ async function loop(): Promise<void> {
       if (result) {
         console.log(`[audio-analysis] ✓ ${video.youtubeId} — ${genres.join(', ')} (${video.title.slice(0, 60)})`);
 
-        const sourcePlaylistId = await getGeneratedPlaylistSourceId(video.playlistId);
+        const { sourcePlaylistId, autoDeleteNonMusicEnabled } = await getPlaylistDropContext(video.playlistId);
         if (sourcePlaylistId) {
+          // Generated playlist — Non-Music and duplicate tracks are always
+          // dropped outright regardless of the user's auto-delete
+          // preference, since a generated playlist is a one-shot quality
+          // filter, not a track the user actively added themselves.
           let dropReason: string | null = null;
           if (isNonMusic(genres)) {
             dropReason = 'tagged Non-Music';
@@ -127,6 +138,9 @@ async function loop(): Promise<void> {
             console.log(`[audio-analysis] Dropping ${video.youtubeId} — ${dropReason} (${video.title.slice(0, 60)})`);
             await removePlaylistVideo(video.id, video.mediaFileId).catch(() => {});
           }
+        } else if (isNonMusic(genres) && autoDeleteNonMusicEnabled) {
+          console.log(`[audio-analysis] Auto-removing ${video.youtubeId} — tagged Non-Music (${video.title.slice(0, 60)})`);
+          await markVideoRemoved(video.id, video.playlistId, video.mediaFileId).catch(() => {});
         }
       } else {
         console.error(`[audio-analysis] ✗ ${video.youtubeId} — analysis failed (${video.title.slice(0, 60)})`);

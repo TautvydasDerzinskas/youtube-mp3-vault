@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useOnlineStatus } from '../PlaylistsPage/hooks/useOnlineStatus';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileTab } from './ProfileTab';
+import { SettingsTab } from './SettingsTab';
 import { LastfmTab } from './LastfmTab';
 
 export default function ProfilePage() {
@@ -16,7 +17,7 @@ export default function ProfilePage() {
   const showLastfmTab = lastfmScrobblingAvailable && online;
   const [searchParams, setSearchParams] = useSearchParams();
   const lastfmResult = searchParams.get('lastfm');
-  const [tab, setTab] = useState(lastfmResult ? 1 : 0);
+  const [tab, setTab] = useState(lastfmResult ? 2 : 0);
 
   useEffect(() => {
     if (lastfmResult) setSearchParams({}, { replace: true });
@@ -27,19 +28,15 @@ export default function ProfilePage() {
       <ProfileHeader title={t('profile.title')} onBack={() => navigate('/dashboard')} />
 
       <Box sx={{ maxWidth: 480 }}>
-        {showLastfmTab ? (
-          <>
-            <Tabs value={tab} onChange={(_, v: number) => setTab(v)} variant="fullWidth" sx={{ mb: 3 }}>
-              <Tab label={t('profile.tabProfile')} />
-              <Tab label={t('profile.tabLastfm')} />
-            </Tabs>
+        <Tabs value={tab} onChange={(_, v: number) => setTab(v)} variant="fullWidth" sx={{ mb: 3 }}>
+          <Tab label={t('profile.tabProfile')} />
+          <Tab label={t('profile.tabSettings')} />
+          {showLastfmTab && <Tab label={t('profile.tabLastfm')} />}
+        </Tabs>
 
-            {tab === 0 && <ProfileTab />}
-            {tab === 1 && <LastfmTab result={lastfmResult} />}
-          </>
-        ) : (
-          <ProfileTab />
-        )}
+        {tab === 0 && <ProfileTab />}
+        {tab === 1 && <SettingsTab />}
+        {tab === 2 && showLastfmTab && <LastfmTab result={lastfmResult} />}
       </Box>
     </Box>
   );

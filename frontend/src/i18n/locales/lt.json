@@ -197,6 +197,7 @@
     "title": "Profilis",
     "back": "Grįžti į grojaraščius",
     "tabProfile": "Profilis",
+    "tabSettings": "Nustatymai",
     "tabLastfm": "Last.fm",
     "avatarAlt": "Profilio nuotrauka",
     "displayName": "Rodomas vardas",
@@ -217,6 +218,12 @@
     "language": "Kalba",
     "logout": "Atsijungti",
     "genericError": "Įvyko klaida. Bandykite dar kartą.",
+    "settings": {
+      "autoDeleteNonMusic": {
+        "label": "Automatiškai šalinti ne muzikos įrašus",
+        "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai (pvz., kalba, ASMR, garso efektai). Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
+      }
+    },
     "lastfm": {
       "title": "Last.fm",
       "description": "Prijunkite savo Last.fm paskyrą, kad būtų fiksuojamos (scrobbinamos) iki galo išklausytos dainos.",

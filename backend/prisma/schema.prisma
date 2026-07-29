@@ -9,29 +9,36 @@ datasource db {
 }
 
 model User {
-  id                       String     @id @default(uuid())
-  email                    String     @unique
-  passwordHash             String
-  displayName              String
-  language                 String     @default("en")
-  emailVerified            Boolean    @default(false)
-  emailVerificationToken   String?    @unique
-  emailVerificationExpires DateTime?
-  pendingEmail             String?
-  isAdmin                  Boolean    @default(false)
-  isBanned                 Boolean    @default(false)
+  id                        String     @id @default(uuid())
+  email                     String     @unique
+  passwordHash              String
+  displayName               String
+  language                  String     @default("en")
+  emailVerified             Boolean    @default(false)
+  emailVerificationToken    String?    @unique
+  emailVerificationExpires  DateTime?
+  pendingEmail              String?
+  isAdmin                   Boolean    @default(false)
+  isBanned                  Boolean    @default(false)
   // Last.fm account link — see routes/auth.ts's /lastfm/connect+callback for
   // how this gets set (their "desktop auth" flow: a permanent session key,
   // not an expiring OAuth token) and services/lastfm.ts's scrobble() for how
   // it's used. scrobblingEnabled is a separate flag from "is connected" —
   // connecting doesn't turn it on by itself, see ProfilePage's toggle.
-  lastfmSessionKey         String?
-  lastfmUsername           String?
-  scrobblingEnabled        Boolean    @default(false)
-  createdAt                DateTime   @default(now())
-  updatedAt                DateTime   @updatedAt
-  playlists                Playlist[]
-  logs                     Log[]
+  lastfmSessionKey          String?
+  lastfmUsername            String?
+  scrobblingEnabled         Boolean    @default(false)
+  // Default true: a track the local Essentia audio analysis classifies as
+  // "Non-Music" (spoken word, ASMR, sound effects, ...) is one nobody wants
+  // sitting in their music library, so opt-out rather than opt-in. See
+  // audioAnalysisWorker.ts for where this is checked per-track and
+  // syncService.ts's removeExistingNonMusicVideos for the one-time sweep run
+  // when this flips from off to on (routes/auth.ts).
+  autoDeleteNonMusicEnabled Boolean    @default(true)
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+  playlists                 Playlist[]
+  logs                      Log[]
 
   @@map("users")
 }

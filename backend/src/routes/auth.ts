@@ -8,6 +8,7 @@ import { sendVerificationEmail } from '../services/mailer';
 import { isSmtpConfigured, isLastfmScrobblingConfigured, isLastfmDiscoverEnabled } from '../services/settings';
 import { getAuthUrl, getSession } from '../services/lastfm';
 import { isOnline } from '../services/connectivity';
+import { removeExistingNonMusicVideos } from '../services/syncService';
 import { config } from '../config';
 import {
   requireAuth,
@@ -42,6 +43,7 @@ function toSafeUser(user: {
   pendingEmail: string | null;
   lastfmUsername: string | null;
   scrobblingEnabled: boolean;
+  autoDeleteNonMusicEnabled: boolean;
 }) {
   return {
     id: user.id,
@@ -52,6 +54,7 @@ function toSafeUser(user: {
     pendingEmail: user.pendingEmail,
     lastfmUsername: user.lastfmUsername,
     scrobblingEnabled: user.scrobblingEnabled,
+    autoDeleteNonMusicEnabled: user.autoDeleteNonMusicEnabled,
   };
 }
 
@@ -281,7 +284,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       where: { id: req.userId },
       select: {
         id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true,
-        lastfmUsername: true, scrobblingEnabled: true,
+        lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true,
       },
     });
     if (!user) {
@@ -311,6 +314,31 @@ router.patch('/language', requireAuth, async (req: AuthRequest, res, next) => {
       where: { id: req.userId },
       data: { language },
     });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/auth/settings/auto-delete-non-music
+router.patch('/settings/auto-delete-non-music', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { enabled } = req.body as { enabled?: unknown };
+    if (typeof enabled !== 'boolean') {
+      res.status(400).json({ error: 'enabled must be a boolean' });
+      return;
+    }
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { autoDeleteNonMusicEnabled: enabled },
+    });
+    if (enabled) {
+      // Fire-and-forget — a library-wide sweep can take a while, and the
+      // toggle itself should save instantly regardless of library size.
+      removeExistingNonMusicVideos(req.userId!).catch((err) =>
+        console.error(`[auth] Non-music sweep failed for user ${req.userId}:`, err)
+      );
+    }
     res.json({ user: toSafeUser(user) });
   } catch (err) {
     next(err);

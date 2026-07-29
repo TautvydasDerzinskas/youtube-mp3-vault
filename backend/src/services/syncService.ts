@@ -4,6 +4,7 @@ import { fetchPlaylist } from './youtube';
 import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited, isAgeRestricted, isSignInRequired } from './downloader';
 import { resolvePlaylistMetadata } from './metadataWorker';
 import { resolvePlaylistQuality } from './slskdQualityWorker';
+import { normalizeKey } from './textNormalization';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -625,6 +626,50 @@ export async function removePlaylistVideo(playlistVideoId: string, mediaFileId: 
   });
   if (mediaFileId) {
     await tryDeleteMediaFile(mediaFileId);
+  }
+}
+
+// Soft-removes a single video the same way refreshPlaylistFromYoutube does
+// when a video disappears from the real YouTube playlist (step 3 above) —
+// the row stays around (hidden everywhere via downloadStatus: 'removed')
+// rather than being hard-deleted, so it can't get resurrected as "new" by a
+// later sync the way a hard delete could. Unlike that step, this runs
+// outside of a resync pass, so it decrements videoCount itself instead of
+// relying on refreshPlaylistFromYoutube's end-of-sync recount. Used by the
+// per-user "auto-delete non-music" preference (audioAnalysisWorker.ts and
+// removeExistingNonMusicVideos below).
+export async function markVideoRemoved(playlistVideoId: string, playlistId: string, mediaFileId: string | null): Promise<void> {
+  await prisma.playlistVideo.update({
+    where: { id: playlistVideoId },
+    data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null },
+  });
+  await prisma.playlist.update({
+    where: { id: playlistId },
+    data: { videoCount: { decrement: 1 } },
+  });
+  if (mediaFileId) {
+    await tryDeleteMediaFile(mediaFileId);
+  }
+}
+
+// One-time sweep run when a user flips "auto-delete non-music" from off to
+// on (see PATCH /api/auth/settings/auto-delete-non-music) — without this,
+// tracks already tagged Non-Music before the toggle was enabled would sit
+// in the library forever, since the per-track check in
+// audioAnalysisWorker.ts only ever fires once, at analysis time. Same
+// genre-matching (trim+lowercase via normalizeKey) as the /all-tracks
+// genre filter, so this matches exactly what a user filtering by
+// genres=non-music would see.
+export async function removeExistingNonMusicVideos(userId: string): Promise<void> {
+  const videos = await prisma.playlistVideo.findMany({
+    where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
+    select: { id: true, playlistId: true, mediaFileId: true, genres: true },
+  });
+
+  for (const video of videos) {
+    if (video.genres.some((g) => normalizeKey(g) === 'non-music')) {
+      await markVideoRemoved(video.id, video.playlistId, video.mediaFileId);
+    }
   }
 }
 

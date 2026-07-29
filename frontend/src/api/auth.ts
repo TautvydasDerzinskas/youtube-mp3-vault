@@ -9,6 +9,7 @@ export interface User {
   pendingEmail: string | null;
   lastfmUsername: string | null;
   scrobblingEnabled: boolean;
+  autoDeleteNonMusicEnabled: boolean;
 }
 
 interface AuthResponse {
@@ -93,6 +94,11 @@ export const authApi = {
 
   setScrobbling: async (enabled: boolean): Promise<AuthResponse> => {
     const { data } = await client.patch<AuthResponse>('/auth/lastfm/scrobbling', { enabled });
+    return data;
+  },
+
+  setAutoDeleteNonMusic: async (enabled: boolean): Promise<AuthResponse> => {
+    const { data } = await client.patch<AuthResponse>('/auth/settings/auto-delete-non-music', { enabled });
     return data;
   },
 };

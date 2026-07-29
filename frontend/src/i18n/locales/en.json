@@ -193,6 +193,7 @@
     "title": "Profile",
     "back": "Back to playlists",
     "tabProfile": "Profile",
+    "tabSettings": "Settings",
     "tabLastfm": "Last.fm",
     "avatarAlt": "Profile avatar",
     "displayName": "Display Name",
@@ -213,6 +214,12 @@
     "language": "Language",
     "logout": "Logout",
     "genericError": "Something went wrong. Please try again.",
+    "settings": {
+      "autoDeleteNonMusic": {
+        "label": "Auto-delete non-music tracks",
+        "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music (e.g. spoken word, ASMR, sound effects). Turning this on removes any non-music tracks already in your library."
+      }
+    },
     "lastfm": {
       "title": "Last.fm",
       "description": "Connect your Last.fm account to scrobble songs you finish listening to.",
