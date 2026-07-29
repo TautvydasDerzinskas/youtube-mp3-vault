@@ -344,7 +344,6 @@
     }
   },
   "dashboard": {
-    "title": "Prietaisų skydelis",
     "loadError": "Nepavyko įkelti prietaisų skydelio.",
     "seeMore": "Rodyti daugiau",
     "playCount_one": "Grota {{count}} kartą",

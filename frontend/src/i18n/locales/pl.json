@@ -348,7 +348,6 @@
     }
   },
   "dashboard": {
-    "title": "Panel",
     "loadError": "Nie udało się załadować panelu.",
     "seeMore": "Zobacz więcej",
     "playCount_one": "Odtworzono {{count}} raz",

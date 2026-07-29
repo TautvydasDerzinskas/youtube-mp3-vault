@@ -79,16 +79,20 @@ router.get('/all-tracks', requireAuth, async (req: AuthRequest, res, next) => {
 router.get('/all-tracks/summary', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const userId = req.userId!;
-    const [songCount, durationResult] = await Promise.all([
+    const [songCount, doneAggregate] = await Promise.all([
       prisma.playlistVideo.count({
         where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
       }),
       prisma.playlistVideo.aggregate({
         where: { playlist: { userId }, isAvailable: true, downloadStatus: 'done' },
-        _sum: { duration: true },
+        _sum: { duration: true, fileSize: true },
       }),
     ]);
-    res.json({ songCount, totalDurationSec: durationResult._sum.duration ?? 0 });
+    res.json({
+      songCount,
+      totalDurationSec: doneAggregate._sum.duration ?? 0,
+      totalSize: doneAggregate._sum.fileSize ?? 0,
+    });
   } catch (err) {
     next(err);
   }
@@ -352,9 +356,10 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
 });
 
 // ─── GET /api/playlists/:id/videos/:videoId/used-in ───────────────────────────
-// Other playlists (this user's own) that also contain this exact YouTube
-// video — e.g. a generated ("similar") playlist and the source it came from,
-// or simply the same video added to two playlists manually.
+// Every playlist (this user's own) that contains this exact YouTube video —
+// always includes the current playlist itself (every video belongs to at
+// least one), plus any others, e.g. a generated ("similar") playlist and the
+// source it came from, or the same video added to two playlists manually.
 
 router.get('/:id/videos/:videoId/used-in', requireAuth, async (req: AuthRequest, res, next) => {
   try {
@@ -377,7 +382,6 @@ router.get('/:id/videos/:videoId/used-in', requireAuth, async (req: AuthRequest,
     const matches = await prisma.playlistVideo.findMany({
       where: {
         youtubeId: video.youtubeId,
-        playlistId: { not: playlist.id },
         downloadStatus: { not: 'removed' },
         playlist: { userId: req.userId },
       },

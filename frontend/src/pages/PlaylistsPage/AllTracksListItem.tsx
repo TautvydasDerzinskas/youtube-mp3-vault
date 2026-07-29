@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, Paper, Chip, IconButton, Tooltip, Avatar } from '@mui/material';
+import { Box, Typography, Paper, Chip, IconButton, Tooltip, Avatar, Stack } from '@mui/material';
 import { MusicNote as MusicNoteIcon, ChevronRight as ChevronRightIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Playlist, playlistsApi } from '../../api/youtube';
-import { formatPlaybackTime } from './utils';
+import { formatBytes, formatPlaybackTime } from './utils';
 
 interface AllTracksListItemProps {
   // Re-fetches the summary whenever this changes. Passing the same
@@ -22,7 +22,7 @@ interface AllTracksListItemProps {
 export function AllTracksListItem({ refreshOn }: AllTracksListItemProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [summary, setSummary] = useState<{ songCount: number; totalDurationSec: number } | null>(null);
+  const [summary, setSummary] = useState<{ songCount: number; totalDurationSec: number; totalSize: number } | null>(null);
 
   useEffect(() => {
     playlistsApi.getAllTracksSummary().then(setSummary).catch(() => {});
@@ -52,8 +52,13 @@ export function AllTracksListItem({ refreshOn }: AllTracksListItemProps) {
           </Typography>
         )}
 
-        <Chip label={t('playlists.detail.trackCount', { count: summary.songCount })}
-          size="small" variant="outlined" sx={{ fontSize: 11, mt: 0.5 }} />
+        <Stack direction="row" gap={1} sx={{ mt: 0.5 }}>
+          <Chip label={t('playlists.detail.trackCount', { count: summary.songCount })}
+            size="small" variant="outlined" sx={{ fontSize: 11 }} />
+          {summary.totalSize > 0 && (
+            <Chip label={formatBytes(summary.totalSize)} size="small" variant="outlined" sx={{ fontSize: 11 }} />
+          )}
+        </Stack>
       </Box>
 
       <Tooltip title={t('playlists.openPlaylist')}>

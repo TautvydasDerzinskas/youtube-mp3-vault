@@ -1,5 +1,5 @@
-import { Accordion, AccordionSummary, AccordionDetails, Paper, Tooltip, IconButton } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, ChevronRight as ChevronRightIcon } from '@mui/icons-material';
+import { Accordion, AccordionSummary, AccordionDetails, Paper, Tooltip, IconButton, Box } from '@mui/material';
+import { ExpandMore as ExpandMoreIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Playlist, PlaylistVideo } from '../../../api/youtube';
@@ -24,6 +24,7 @@ interface PlaylistRowProps {
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo) => void;
+  onPlayFirst: (e: React.MouseEvent, playlist: Playlist) => void;
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
@@ -35,7 +36,7 @@ interface PlaylistRowProps {
 export function PlaylistRow({
   playlist, expanded, onToggleExpand, isSyncingLocally, isRetryingLocally, online, canGenerateSimilar,
   hasGeneratedPlaylist, isLockedBySource,
-  videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay,
+  videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay, onPlayFirst,
   onRename, onSync, onRetryFailed, onTogglePause, onDelete, onGenerateSimilar,
 }: PlaylistRowProps) {
   const { t } = useTranslation();
@@ -49,6 +50,17 @@ export function PlaylistRow({
   // confusing "no videos found" empty state, so don't offer it at all.
   const isGenerating = playlist.syncStatus === 'generating';
 
+  const playButton = (
+    <Tooltip title={t('playlists.videoList.play')}>
+      <span>
+        <IconButton size="small" disabled={playlist.downloadedCount === 0}
+          onClick={e => onPlayFirst(e, playlist)} sx={{ color: 'primary.main', flexShrink: 0 }}>
+          <PlayArrowIcon />
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
+
   if (isSynced) {
     const open = () => navigate(`/playlists/${playlist.id}`);
     return (
@@ -56,6 +68,7 @@ export function PlaylistRow({
         sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
           border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px',
           '&:hover': { borderColor: 'primary.dark' } }}>
+        <Box onClick={e => e.stopPropagation()}>{playButton}</Box>
         <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
         <Info playlist={playlist} isBusy={isBusy} isPausing={isPausing} expanded={false} />
         <Actions
@@ -67,6 +80,7 @@ export function PlaylistRow({
           canGenerateSimilar={canGenerateSimilar}
           hasGeneratedPlaylist={hasGeneratedPlaylist}
           isLockedBySource={isLockedBySource}
+          onOpen={open}
           onRename={onRename}
           onSync={onSync}
           onRetryFailed={onRetryFailed}
@@ -74,11 +88,6 @@ export function PlaylistRow({
           onDelete={onDelete}
           onGenerateSimilar={onGenerateSimilar}
         />
-        <Tooltip title={t('playlists.openPlaylist')}>
-          <IconButton size="small" onClick={e => { e.stopPropagation(); open(); }}>
-            <ChevronRightIcon />
-          </IconButton>
-        </Tooltip>
       </Paper>
     );
   }
@@ -95,6 +104,8 @@ export function PlaylistRow({
       <AccordionSummary expandIcon={isGenerating ? undefined : <ExpandMoreIcon />}
         sx={{ px: 2, py: 1, cursor: isGenerating ? 'default' : 'pointer',
           '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5, minWidth: 0 } }}>
+
+        <Box onClick={e => e.stopPropagation()}>{playButton}</Box>
 
         <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
 

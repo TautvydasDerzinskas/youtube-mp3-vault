@@ -340,7 +340,6 @@
     }
   },
   "dashboard": {
-    "title": "Dashboard",
     "loadError": "Failed to load your dashboard.",
     "seeMore": "See more",
     "playCount_one": "Played {{count}} time",

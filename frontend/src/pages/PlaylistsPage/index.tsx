@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Box, Typography, Button, Alert, CircularProgress, Stack, Divider } from '@mui/material';
 import { Add as AddIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Playlist } from '../../api/youtube';
+import { useNavigate } from 'react-router-dom';
+import { Playlist, playlistsApi } from '../../api/youtube';
 import { usePlaylists } from './hooks/usePlaylists';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { usePlayer } from '../../contexts/PlayerContext';
@@ -16,6 +17,7 @@ import { displayName } from './utils';
 
 export default function PlaylistsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
   const [renaming, setRenaming] = useState<Playlist | null>(null);
   const [deleting, setDeleting] = useState<Playlist | null>(null);
@@ -55,6 +57,23 @@ export default function PlaylistsPage() {
     }
     return { generatedSourceIds: generated, busyGeneratedSourceIds: busy };
   }, [playlists]);
+
+  // Navigates immediately (feels responsive) and starts playback in the
+  // background once the video list resolves — same queue-building logic
+  // handleTogglePlay would do on its own, done here up front so the very
+  // first track played is deterministically the playlist's first (by
+  // position), not whatever the queue fetch happens to put first.
+  const handlePlayFirst = async (e: React.MouseEvent, playlist: Playlist) => {
+    e.stopPropagation();
+    navigate(`/playlists/${playlist.id}`);
+    try {
+      const { videos } = await playlistsApi.getVideos(playlist.id);
+      const playable = videos.filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position);
+      if (playable.length > 0) handleTogglePlay(playlist.id, playable[0], playable);
+    } catch {
+      // navigation already happened — nothing else to do
+    }
+  };
 
   const handleConfirmGenerate = async () => {
     if (!generating) return;
@@ -133,6 +152,7 @@ export default function PlaylistsPage() {
           nowPlaying={nowPlaying}
           isAudioPlaying={isAudioPlaying}
           onTogglePlay={handleTogglePlay}
+          onPlayFirst={handlePlayFirst}
           onRename={setRenaming}
           onSync={handleSync}
           onRetryFailed={handleRetryFailed}

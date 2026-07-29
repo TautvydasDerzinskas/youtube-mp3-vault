@@ -126,10 +126,10 @@ export const playlistsApi = {
     return data;
   },
 
-  // Just the two numbers the "All Tracks" row in the playlists list needs —
+  // Just the numbers the "All Tracks" row in the playlists list needs —
   // avoids pulling every video's full metadata just to render that summary.
-  getAllTracksSummary: async (): Promise<{ songCount: number; totalDurationSec: number }> => {
-    const { data } = await client.get<{ songCount: number; totalDurationSec: number }>('/playlists/all-tracks/summary');
+  getAllTracksSummary: async (): Promise<{ songCount: number; totalDurationSec: number; totalSize: number }> => {
+    const { data } = await client.get<{ songCount: number; totalDurationSec: number; totalSize: number }>('/playlists/all-tracks/summary');
     return data;
   },
 

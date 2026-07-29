@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import { Box, CircularProgress, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { dashboardApi, DashboardSummary } from '../../api/dashboard';
 import { PlaylistCountCard } from './PlaylistCountCard';
@@ -32,8 +32,6 @@ export default function DashboardPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>{t('dashboard.title')}</Typography>
-
       <Box
         sx={{
           display: 'flex',

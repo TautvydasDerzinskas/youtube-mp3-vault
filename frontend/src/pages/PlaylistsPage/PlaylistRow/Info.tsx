@@ -1,5 +1,5 @@
 import { Box, Typography, Chip, Stack, Tooltip, LinearProgress, Link } from '@mui/material';
-import { ErrorOutline } from '@mui/icons-material';
+import { ErrorOutline, Check as CheckIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
 import { displayName, formatBytes, formatPlaybackTime, timeAgo, youtubePlaylistUrl } from '../utils';
@@ -70,7 +70,14 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
             {isGenerated ? (
               <Chip label={t('playlists.generatedBadge')} size="small" variant="outlined" color="secondary" sx={{ fontSize: 11 }} />
             ) : fullySynced ? (
-              <Chip label={t('playlists.allSynced')} size="small" color="success" sx={{ fontSize: 11 }} />
+              <Tooltip title={playlist.lastSyncedAt ? t('playlists.syncedAgo', { time: timeAgo(playlist.lastSyncedAt, t) }) : ''}>
+                <Chip
+                  label={<CheckIcon sx={{ fontSize: 14, display: 'flex' }} />}
+                  size="small"
+                  color="success"
+                  sx={{ fontSize: 11, '& .MuiChip-label': { px: 0.75, display: 'flex', alignItems: 'center' } }}
+                />
+              </Tooltip>
             ) : (
               <Chip label={t('playlists.downloadedCount', { count: playlist.downloadedCount, total: playlist.videoCount })}
                 size="small" sx={{ fontSize: 11 }} />
@@ -87,14 +94,8 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
         {playlist.totalSize > 0 && (
           <Chip label={formatBytes(playlist.totalSize)} size="small" variant="outlined" sx={{ fontSize: 11 }} />
         )}
-        {!isBusy && !isGenerated && (
-          playlist.lastSyncedAt ? (
-            <Typography variant="caption" color="text.secondary">
-              {t('playlists.syncedAgo', { time: timeAgo(playlist.lastSyncedAt, t) })}
-            </Typography>
-          ) : (
-            <Chip label={t('playlists.notSynced')} size="small" variant="outlined" sx={{ fontSize: 11 }} />
-          )
+        {!isBusy && !isGenerated && !playlist.lastSyncedAt && (
+          <Chip label={t('playlists.notSynced')} size="small" variant="outlined" sx={{ fontSize: 11 }} />
         )}
       </Stack>
 
