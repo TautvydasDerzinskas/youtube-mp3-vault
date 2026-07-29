@@ -2,9 +2,10 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 
-// Placeholder landing screen — just proves the login → persisted-session
-// round trip works end to end. Playlist browsing/sync comes later.
-export function HomeScreen() {
+// Placeholder — proves the login → persisted-session round trip works end
+// to end. Real dashboard content (stat panes, top songs/artists/genres,
+// mirroring frontend/src/pages/DashboardPage) comes later.
+export function DashboardScreen() {
   const { user, logout } = useAuth();
 
   return (

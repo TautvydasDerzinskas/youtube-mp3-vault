@@ -10,7 +10,7 @@ import { useUpdateCheck } from './src/hooks/useUpdateCheck';
 import { registerToastListener } from './src/utils/toast';
 import { ServerSetupScreen } from './src/screens/ServerSetupScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
-import { HomeScreen } from './src/screens/HomeScreen';
+import { RootNavigator } from './src/navigation/RootNavigator';
 
 function AuthGate() {
   const { user, loading } = useAuth();
@@ -31,7 +31,7 @@ function AuthGate() {
 
   return (
     <>
-      {user ? <HomeScreen /> : <LoginScreen />}
+      {user ? <RootNavigator /> : <LoginScreen />}
       <Snackbar
         visible={available && !dismissed}
         onDismiss={() => setDismissed(true)}

@@ -4,6 +4,8 @@
   "main": "index.ts",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@react-navigation/bottom-tabs": "^7.18.14",
+    "@react-navigation/native": "^7.3.14",
     "axios": "^1.18.1",
     "expo": "~57.0.7",
     "expo-build-properties": "~57.0.6",
@@ -12,7 +14,8 @@
     "react": "19.2.3",
     "react-native": "0.86.0",
     "react-native-paper": "^5.15.3",
-    "react-native-safe-area-context": "~5.7.0"
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
