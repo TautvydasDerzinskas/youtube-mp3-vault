@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18next from 'i18next';
 import { tokenStorage } from '../auth/tokenStorage';
 import { showToast } from '../utils/toast';
 
@@ -21,9 +22,9 @@ client.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
     if (status === 404) {
-      showToast('Service not found at this server address (404). Check the saved address.');
+      showToast(i18next.t('network.notFound'));
     } else if (status >= 500 && status < 600) {
-      showToast('The server ran into an error. Please try again shortly.');
+      showToast(i18next.t('network.serverError'));
     }
     return Promise.reject(error);
   },

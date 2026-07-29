@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Animated, Image, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { usePlayer } from '../contexts/PlayerContext';
 
-// Icon + label per route name — kept here rather than on each Tab.Screen's
-// `options` since this bar is the only thing that reads them (no default
-// react-navigation tab bar rendering is used at all, see RootNavigator).
-const TAB_META: Record<string, { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string }> = {
-  Dashboard: { icon: 'view-dashboard', label: 'Dashboard' },
-  Playlists: { icon: 'playlist-music', label: 'Playlists' },
-  Artists: { icon: 'microphone-variant', label: 'Artists' },
-  Genres: { icon: 'tag-multiple', label: 'Genres' },
+// Icon + i18n label key per route name — kept here rather than on each
+// Tab.Screen's `options` since this bar is the only thing that reads them
+// (no default react-navigation tab bar rendering is used at all, see
+// RootNavigator). Label keys reuse the same frontend/src/i18n nav.* strings
+// as the web sidebar.
+const TAB_META: Record<string, { icon: keyof typeof MaterialCommunityIcons.glyphMap; labelKey: string }> = {
+  Dashboard: { icon: 'view-dashboard', labelKey: 'nav.dashboard' },
+  Playlists: { icon: 'playlist-music', labelKey: 'nav.playlists' },
+  Artists: { icon: 'microphone-variant', labelKey: 'nav.artists' },
+  Genres: { icon: 'tag-multiple', labelKey: 'nav.genres' },
 };
 
 const BAR_HEIGHT = 60;
@@ -63,6 +66,7 @@ function MiddleButton() {
 // fully JS-driven with zero new native modules.
 export function BottomNav({ state, navigation }: BottomTabBarProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const panelHeight = useRef(new Animated.Value(0)).current;
@@ -114,7 +118,7 @@ export function BottomNav({ state, navigation }: BottomTabBarProps) {
     return (
       <Pressable key={route.key} onPress={onPress} style={styles.tabButton}>
         <MaterialCommunityIcons name={meta.icon} size={26} color={color} />
-        <Text style={[styles.tabLabel, { color }]}>{meta.label}</Text>
+        <Text style={[styles.tabLabel, { color }]}>{t(meta.labelKey)}</Text>
       </Pressable>
     );
   };

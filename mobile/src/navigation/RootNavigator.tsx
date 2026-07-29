@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DarkTheme, NavigationContainer, Theme } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { theme } from '../theme';
 import { PlayerProvider } from '../contexts/PlayerContext';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -9,9 +10,12 @@ import { PlaylistsScreen } from '../screens/PlaylistsScreen';
 import { ArtistsScreen } from '../screens/ArtistsScreen';
 import { GenresScreen } from '../screens/GenresScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { AllSongsScreen } from '../screens/AllSongsScreen';
+import { AllArtistsScreen } from '../screens/AllArtistsScreen';
+import { AllGenresScreen } from '../screens/AllGenresScreen';
 import { TopBar } from './TopBar';
 import { BottomNav } from './BottomNav';
-import { RootStackParamList } from './types';
+import { RootStackParamList, TabParamList } from './types';
 
 // Keeps screen-transition backgrounds/borders consistent with the app's own
 // theme.ts (react-native-paper) instead of react-navigation's own default
@@ -28,7 +32,7 @@ const navTheme: Theme = {
   },
 };
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // TopBar + the 4-tab shell — a plain View wrapper (not a Tab.Screen option)
@@ -49,24 +53,27 @@ function AppShell() {
 }
 
 // The authenticated app shell — mounted once a user is signed in (see
-// App.tsx's AuthGate). Profile lives on this outer stack (not as a 5th
-// tab) since it's reached only via TopBar's avatar, mirroring web's
-// sidebar-avatar-click pattern rather than being a primary nav section.
+// App.tsx's AuthGate). Profile and the dashboard "see more" screens all
+// live on this outer stack (not as tabs) since they're each reached from
+// somewhere other than the bottom nav — Profile via TopBar's avatar,
+// AllSongs/AllArtists/AllGenres via DashboardScreen's "see more" buttons.
 export function RootNavigator() {
+  const { t } = useTranslation();
+
   return (
     <PlayerProvider>
       <NavigationContainer theme={navTheme}>
-        <Stack.Navigator>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: { backgroundColor: theme.colors.elevation.level2 },
+            headerTintColor: theme.colors.onBackground,
+          }}
+        >
           <Stack.Screen name="Tabs" component={AppShell} options={{ headerShown: false }} />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{
-              title: 'Profile',
-              headerStyle: { backgroundColor: theme.colors.elevation.level2 },
-              headerTintColor: theme.colors.onBackground,
-            }}
-          />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: t('profile.title') }} />
+          <Stack.Screen name="AllSongs" component={AllSongsScreen} options={{ title: t('dashboard.songsOnRepeat.title') }} />
+          <Stack.Screen name="AllArtists" component={AllArtistsScreen} options={{ title: t('dashboard.topArtists.title') }} />
+          <Stack.Screen name="AllGenres" component={AllGenresScreen} options={{ title: t('dashboard.topGenres.title') }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PlayerProvider>

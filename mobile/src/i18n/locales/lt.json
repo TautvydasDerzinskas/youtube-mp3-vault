@@ -1,0 +1,86 @@
+{
+  "auth": {
+    "appName": "YoutubeVault",
+    "email": "El. paštas",
+    "password": "Slaptažodis",
+    "signIn": "Prisijungti",
+    "signInFailed": "Prisijungti nepavyko. Patikrinkite duomenis."
+  },
+  "nav": {
+    "dashboard": "Prietaisų skydelis",
+    "playlists": "Grojaraščiai",
+    "artists": "Atlikėjai",
+    "genres": "Žanrai",
+    "logout": "Atsijungti"
+  },
+  "profile": {
+    "title": "Profilis",
+    "logout": "Atsijungti"
+  },
+  "dashboard": {
+    "loadError": "Nepavyko įkelti prietaisų skydelio.",
+    "seeMore": "Rodyti daugiau",
+    "playCount_one": "Grota {{count}} kartą",
+    "playCount_few": "Grota {{count}} kartus",
+    "playCount_other": "Grota {{count}} kartų",
+    "songCount_one": "{{count}} daina",
+    "songCount_few": "{{count}} dainos",
+    "songCount_other": "{{count}} dainų",
+    "playlistCount": {
+      "label_one": "grojaraštis",
+      "label_few": "grojaraščiai",
+      "label_other": "grojaraščių"
+    },
+    "totalSongCount": {
+      "label_one": "daina",
+      "label_few": "dainos",
+      "label_other": "dainų"
+    },
+    "artistCount": {
+      "label_one": "atlikėjas",
+      "label_few": "atlikėjai",
+      "label_other": "atlikėjų"
+    },
+    "genreCount": {
+      "label_one": "žanras",
+      "label_few": "žanrai",
+      "label_other": "žanrų"
+    },
+    "songsOnRepeat": {
+      "title": "Dažniausiai klausomos dainos",
+      "empty": "Dar niekas negrota — dainos, kurias klausysite, atsiras čia."
+    },
+    "topArtists": {
+      "title": "Populiariausi atlikėjai",
+      "empty": "Atlikėjų dar nėra — importuokite grojaraštį, kad pamatytumėte savo populiariausius atlikėjus."
+    },
+    "topGenres": {
+      "title": "Populiariausi žanrai",
+      "empty": "Žanrų dar nėra — jie atsiras, kai jūsų dainos bus išanalizuotos."
+    }
+  },
+  "common": {
+    "comingSoon": "Netrukus."
+  },
+  "serverSetup": {
+    "subtitle": "Įveskite savo YoutubeVault serverio adresą, įskaitant prievadą, jei naudojamas nestandartinis.",
+    "urlLabel": "Serverio adresas",
+    "testConnection": "Tikrinti ryšį",
+    "enterAddress": "Įveskite savo YoutubeVault serverio adresą.",
+    "invalidUrl": "Nurodykite http:// arba https://, ir prievadą, jei serveris naudoja nestandartinį.",
+    "serverError": "Serveris grąžino klaidą ({{status}}). Patikrinkite adresą.",
+    "unreachable": "Nepavyko pasiekti serverio. Patikrinkite adresą ir interneto ryšį.",
+    "confirmTitle": "Išsaugoti šį serverį?",
+    "confirmBody": "{{url}} bus visam laikui išsaugotas ir naudojamas šioje programėlėje. Tęsti?",
+    "cancel": "Atšaukti",
+    "confirm": "Patvirtinti"
+  },
+  "update": {
+    "available": "Yra naujesnė YoutubeVault versija.",
+    "view": "Žiūrėti"
+  },
+  "network": {
+    "notFound": "Paslauga nerasta šiuo serverio adresu (404). Patikrinkite išsaugotą adresą.",
+    "serverError": "Serveryje įvyko klaida. Bandykite dar kartą netrukus."
+  }
+}

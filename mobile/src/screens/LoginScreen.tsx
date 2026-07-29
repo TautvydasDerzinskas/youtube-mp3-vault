@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LoginScreen() {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +19,7 @@ export function LoginScreen() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err?.response?.data?.error ?? 'Sign in failed. Please check your credentials.');
+      setError(err?.response?.data?.error ?? t('auth.signInFailed'));
     } finally {
       setLoading(false);
     }
@@ -28,11 +30,11 @@ export function LoginScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
-        <Text variant="headlineMedium" style={styles.title}>YoutubeVault</Text>
+        <Text variant="headlineMedium" style={styles.title}>{t('auth.appName')}</Text>
 
         <TextInput
           mode="outlined"
-          label="Email"
+          label={t('auth.email')}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
@@ -42,7 +44,7 @@ export function LoginScreen() {
         />
         <TextInput
           mode="outlined"
-          label="Password"
+          label={t('auth.password')}
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
@@ -60,7 +62,7 @@ export function LoginScreen() {
         </HelperText>
 
         <Button mode="contained" onPress={handleSubmit} loading={loading} disabled={!canSubmit}>
-          Sign In
+          {t('auth.signIn')}
         </Button>
       </View>
     </KeyboardAvoidingView>

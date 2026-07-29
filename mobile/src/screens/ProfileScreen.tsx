@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { UserAvatar } from '../components/UserAvatar';
 
@@ -7,6 +8,7 @@ import { UserAvatar } from '../components/UserAvatar';
 // RootNavigator) — currently just identity + logout. Language/email/
 // password/Last.fm settings (see frontend's ProfilePage tabs) come later.
 export function ProfileScreen() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
 
   return (
@@ -15,7 +17,7 @@ export function ProfileScreen() {
       <Text variant="titleMedium" style={styles.name}>{user?.displayName}</Text>
       <Text variant="bodyMedium" style={styles.email}>{user?.email}</Text>
       <Button mode="outlined" onPress={() => logout()} style={styles.logoutButton}>
-        Log out
+        {t('profile.logout')}
       </Button>
     </View>
   );

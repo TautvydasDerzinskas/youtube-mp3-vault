@@ -1,12 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 // Placeholder — artist browsing comes later.
 export function ArtistsScreen() {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      <Text variant="titleMedium">Artists</Text>
-      <Text variant="bodyMedium" style={styles.subtitle}>Coming soon.</Text>
+      <Text variant="titleMedium">{t('nav.artists')}</Text>
+      <Text variant="bodyMedium" style={styles.subtitle}>{t('common.comingSoon')}</Text>
     </View>
   );
 }

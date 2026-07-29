@@ -1,12 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 // Placeholder — playlist browsing/sync comes later.
 export function PlaylistsScreen() {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      <Text variant="titleMedium">Playlists</Text>
-      <Text variant="bodyMedium" style={styles.subtitle}>Coming soon.</Text>
+      <Text variant="titleMedium">{t('nav.playlists')}</Text>
+      <Text variant="bodyMedium" style={styles.subtitle}>{t('common.comingSoon')}</Text>
     </View>
   );
 }

@@ -1,0 +1,80 @@
+{
+  "auth": {
+    "appName": "YoutubeVault",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign In",
+    "signInFailed": "Sign in failed. Please check your credentials."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "playlists": "Playlists",
+    "artists": "Artists",
+    "genres": "Genres",
+    "logout": "Logout"
+  },
+  "profile": {
+    "title": "Profile",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "loadError": "Failed to load your dashboard.",
+    "seeMore": "See more",
+    "playCount_one": "Played {{count}} time",
+    "playCount_other": "Played {{count}} times",
+    "songCount_one": "{{count}} song",
+    "songCount_other": "{{count}} songs",
+    "playlistCount": {
+      "label_one": "playlist",
+      "label_other": "playlists"
+    },
+    "totalSongCount": {
+      "label_one": "song",
+      "label_other": "songs"
+    },
+    "artistCount": {
+      "label_one": "artist",
+      "label_other": "artists"
+    },
+    "genreCount": {
+      "label_one": "genre",
+      "label_other": "genres"
+    },
+    "songsOnRepeat": {
+      "title": "Songs on Repeat",
+      "empty": "Nothing played yet — songs you listen to will show up here."
+    },
+    "topArtists": {
+      "title": "Top Artists",
+      "empty": "No artists yet — import a playlist to see your top artists here."
+    },
+    "topGenres": {
+      "title": "Top Genres",
+      "empty": "No genres yet — genres appear here once your songs are analyzed."
+    }
+  },
+  "common": {
+    "comingSoon": "Coming soon."
+  },
+  "serverSetup": {
+    "subtitle": "Enter the address of your YoutubeVault service, including the port if it uses a custom one.",
+    "urlLabel": "Service URL",
+    "testConnection": "Test Connection",
+    "enterAddress": "Enter the address of your YoutubeVault service.",
+    "invalidUrl": "Include http:// or https://, and a port if your server uses a custom one.",
+    "serverError": "Server responded with an error ({{status}}). Check the address.",
+    "unreachable": "Could not reach that server. Check the address and your connection.",
+    "confirmTitle": "Save this server?",
+    "confirmBody": "{{url}} will be permanently saved and used by this app. Continue?",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "update": {
+    "available": "A newer version of YoutubeVault is available.",
+    "view": "View"
+  },
+  "network": {
+    "notFound": "Service not found at this server address (404). Check the saved address.",
+    "serverError": "The server ran into an error. Please try again shortly."
+  }
+}

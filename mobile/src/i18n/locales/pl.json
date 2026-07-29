@@ -1,0 +1,92 @@
+{
+  "auth": {
+    "appName": "YoutubeVault",
+    "email": "E-mail",
+    "password": "Hasło",
+    "signIn": "Zaloguj się",
+    "signInFailed": "Logowanie nie powiodło się. Sprawdź dane logowania."
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "playlists": "Playlisty",
+    "artists": "Artyści",
+    "genres": "Gatunki",
+    "logout": "Wyloguj się"
+  },
+  "profile": {
+    "title": "Profil",
+    "logout": "Wyloguj się"
+  },
+  "dashboard": {
+    "loadError": "Nie udało się załadować panelu.",
+    "seeMore": "Zobacz więcej",
+    "playCount_one": "Odtworzono {{count}} raz",
+    "playCount_few": "Odtworzono {{count}} razy",
+    "playCount_many": "Odtworzono {{count}} razy",
+    "playCount_other": "Odtworzono {{count}} razy",
+    "songCount_one": "{{count}} utwór",
+    "songCount_few": "{{count}} utwory",
+    "songCount_many": "{{count}} utworów",
+    "songCount_other": "{{count}} utworów",
+    "playlistCount": {
+      "label_one": "playlista",
+      "label_few": "playlisty",
+      "label_many": "playlist",
+      "label_other": "playlist"
+    },
+    "totalSongCount": {
+      "label_one": "utwór",
+      "label_few": "utwory",
+      "label_many": "utworów",
+      "label_other": "utworów"
+    },
+    "artistCount": {
+      "label_one": "artysta",
+      "label_few": "artystów",
+      "label_many": "artystów",
+      "label_other": "artystów"
+    },
+    "genreCount": {
+      "label_one": "gatunek",
+      "label_few": "gatunki",
+      "label_many": "gatunków",
+      "label_other": "gatunków"
+    },
+    "songsOnRepeat": {
+      "title": "Utwory na powtórce",
+      "empty": "Nic jeszcze nie odtworzono — utwory, których słuchasz, pojawią się tutaj."
+    },
+    "topArtists": {
+      "title": "Najpopularniejsi wykonawcy",
+      "empty": "Brak wykonawców — zaimportuj playlistę, aby zobaczyć tutaj swoich najpopularniejszych wykonawców."
+    },
+    "topGenres": {
+      "title": "Najpopularniejsze gatunki",
+      "empty": "Brak gatunków — pojawią się tutaj, gdy Twoje utwory zostaną przeanalizowane."
+    }
+  },
+  "common": {
+    "comingSoon": "Wkrótce."
+  },
+  "serverSetup": {
+    "subtitle": "Podaj adres swojej usługi YoutubeVault, wraz z portem, jeśli używa niestandardowego.",
+    "urlLabel": "Adres usługi",
+    "testConnection": "Testuj połączenie",
+    "enterAddress": "Podaj adres swojej usługi YoutubeVault.",
+    "invalidUrl": "Podaj http:// lub https://, oraz port, jeśli serwer używa niestandardowego.",
+    "serverError": "Serwer zwrócił błąd ({{status}}). Sprawdź adres.",
+    "unreachable": "Nie udało się połączyć z serwerem. Sprawdź adres i połączenie internetowe.",
+    "confirmTitle": "Zapisać ten serwer?",
+    "confirmBody": "{{url}} zostanie trwale zapisany i używany przez tę aplikację. Kontynuować?",
+    "cancel": "Anuluj",
+    "confirm": "Potwierdź"
+  },
+  "update": {
+    "available": "Dostępna jest nowsza wersja YoutubeVault.",
+    "view": "Zobacz"
+  },
+  "network": {
+    "notFound": "Nie znaleziono usługi pod tym adresem serwera (404). Sprawdź zapisany adres.",
+    "serverError": "Na serwerze wystąpił błąd. Spróbuj ponownie za chwilę."
+  }
+}

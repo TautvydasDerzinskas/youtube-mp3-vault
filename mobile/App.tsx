@@ -3,6 +3,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, PaperProvider, Snackbar } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { theme } from './src/theme';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { ServerConfigProvider, useServerConfig } from './src/contexts/ServerConfigContext';
@@ -13,6 +14,7 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 function AuthGate() {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const { available, releaseUrl } = useUpdateCheck();
   const [dismissed, setDismissed] = useState(false);
@@ -35,9 +37,9 @@ function AuthGate() {
       <Snackbar
         visible={available && !dismissed}
         onDismiss={() => setDismissed(true)}
-        action={releaseUrl ? { label: 'View', onPress: () => Linking.openURL(releaseUrl) } : undefined}
+        action={releaseUrl ? { label: t('update.view'), onPress: () => Linking.openURL(releaseUrl) } : undefined}
       >
-        A newer version of YoutubeVault is available.
+        {t('update.available')}
       </Snackbar>
     </>
   );

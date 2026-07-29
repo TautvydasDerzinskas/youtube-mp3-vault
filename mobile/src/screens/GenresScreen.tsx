@@ -1,12 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 // Placeholder — genre browsing comes later.
 export function GenresScreen() {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      <Text variant="titleMedium">Genres</Text>
-      <Text variant="bodyMedium" style={styles.subtitle}>Coming soon.</Text>
+      <Text variant="titleMedium">{t('nav.genres')}</Text>
+      <Text variant="bodyMedium" style={styles.subtitle}>{t('common.comingSoon')}</Text>
     </View>
   );
 }

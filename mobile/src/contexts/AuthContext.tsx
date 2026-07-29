@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import i18next from 'i18next';
 import { authApi, User } from '../api/auth';
 import { tokenStorage } from '../auth/tokenStorage';
 
@@ -10,6 +11,14 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// Mirrors web's AuthContext.tsx applyUser — the user's stored language
+// preference is the single source of truth for UI language, so every path
+// that sets `user` also switches i18next to match.
+function applyUser(user: User): User {
+  i18next.changeLanguage(user.language);
+  return user;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -24,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       try {
         const { user } = await authApi.me();
-        setUser(user);
+        setUser(applyUser(user));
       } catch {
         await tokenStorage.clear();
       } finally {
@@ -36,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const { user, token } = await authApi.login(email, password);
     await tokenStorage.set(token);
-    setUser(user);
+    setUser(applyUser(user));
   }, []);
 
   const logout = useCallback(async () => {

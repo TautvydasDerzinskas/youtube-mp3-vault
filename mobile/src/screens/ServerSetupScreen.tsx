@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Dialog, HelperText, Portal, Text, TextInput } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useServerConfig } from '../contexts/ServerConfigContext';
 import { DEFAULT_API_URL, isCompleteServerUrl, normalizeServerUrl } from '../config';
 
 export function ServerSetupScreen() {
+  const { t } = useTranslation();
   const { setServerUrl } = useServerConfig();
   const [url, setUrl] = useState('');
   const [testing, setTesting] = useState(false);
@@ -17,11 +19,11 @@ export function ServerSetupScreen() {
     setError(null);
     const trimmed = url.trim();
     if (!trimmed) {
-      setError('Enter the address of your YoutubeVault service.');
+      setError(t('serverSetup.enterAddress'));
       return;
     }
     if (!isCompleteServerUrl(trimmed)) {
-      setError('Include http:// or https://, and a port if your server uses a custom one.');
+      setError(t('serverSetup.invalidUrl'));
       return;
     }
 
@@ -33,11 +35,7 @@ export function ServerSetupScreen() {
       setConfirmUrl(normalized);
     } catch (err: any) {
       const status = err?.response?.status;
-      setError(
-        status
-          ? `Server responded with an error (${status}). Check the address.`
-          : 'Could not reach that server. Check the address and your connection.',
-      );
+      setError(status ? t('serverSetup.serverError', { status }) : t('serverSetup.unreachable'));
     } finally {
       setTesting(false);
     }
@@ -57,15 +55,14 @@ export function ServerSetupScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
-        <Text variant="headlineMedium" style={styles.title}>YoutubeVault</Text>
+        <Text variant="headlineMedium" style={styles.title}>{t('auth.appName')}</Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
-          Enter the address of your YoutubeVault service, including the port if it uses a
-          custom one.
+          {t('serverSetup.subtitle')}
         </Text>
 
         <TextInput
           mode="outlined"
-          label="Service URL"
+          label={t('serverSetup.urlLabel')}
           placeholder={`${DEFAULT_API_URL.replace(/\/api$/, '')} or http://192.168.1.50:8065`}
           autoCapitalize="none"
           autoCorrect={false}
@@ -79,21 +76,21 @@ export function ServerSetupScreen() {
         </HelperText>
 
         <Button mode="contained" onPress={handleTest} loading={testing} disabled={testing || url.trim().length === 0}>
-          Test Connection
+          {t('serverSetup.testConnection')}
         </Button>
       </View>
 
       <Portal>
         <Dialog visible={confirmUrl != null} onDismiss={() => setConfirmUrl(null)}>
-          <Dialog.Title>Save this server?</Dialog.Title>
+          <Dialog.Title>{t('serverSetup.confirmTitle')}</Dialog.Title>
           <Dialog.Content>
             <Text>
-              {confirmUrl} will be permanently saved and used by this app. Continue?
+              {t('serverSetup.confirmBody', { url: confirmUrl })}
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setConfirmUrl(null)} disabled={saving}>Cancel</Button>
-            <Button onPress={handleConfirm} loading={saving}>Confirm</Button>
+            <Button onPress={() => setConfirmUrl(null)} disabled={saving}>{t('serverSetup.cancel')}</Button>
+            <Button onPress={handleConfirm} loading={saving}>{t('serverSetup.confirm')}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
