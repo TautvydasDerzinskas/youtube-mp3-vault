@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { playlistsApi, PlaylistVideo } from '../../../api/youtube';
-import { useGenreFilterParams, computeGenreCounts, filterByGenres } from '../../PlaylistDetailPage/hooks/genreFilter';
+import {
+  useTrackFilterParams, computeGenreCounts, filterByGenres, filterByHq, filterBySearch, sortTracks,
+} from '../../PlaylistDetailPage/hooks/genreFilter';
 
 export interface AllTracksSummary {
   songCount: number;
@@ -16,16 +18,19 @@ export function useAllTracksDetail() {
       .catch(() => setData('error'));
   }, []);
 
-  const { selectedGenres, toggleGenre, clearGenres } = useGenreFilterParams();
+  const {
+    selectedGenres, toggleGenre, clearGenres,
+    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
+  } = useTrackFilterParams();
 
   const videos = useMemo(() => (data === 'loading' || data === 'error' ? [] : data.videos), [data]);
 
   const genreCounts = useMemo(() => computeGenreCounts(videos), [videos]);
 
   const filteredTracks = useMemo(() => {
-    const filtered = filterByGenres(videos, selectedGenres);
-    return [...filtered].sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
-  }, [videos, selectedGenres]);
+    const filtered = filterBySearch(filterByHq(filterByGenres(videos, selectedGenres), hqOnly), searchQuery);
+    return sortTracks(filtered, sort);
+  }, [videos, selectedGenres, hqOnly, searchQuery, sort]);
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
@@ -33,6 +38,7 @@ export function useAllTracksDetail() {
     status: data === 'loading' ? 'loading' as const : data === 'error' ? 'error' as const : 'ready' as const,
     summary: data === 'loading' || data === 'error' ? null : data.summary,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
+    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
   };
 }

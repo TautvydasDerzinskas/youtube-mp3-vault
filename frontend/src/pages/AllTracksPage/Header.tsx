@@ -2,8 +2,8 @@ import { Box, Typography, Avatar, Chip, IconButton, Tooltip } from '@mui/materia
 import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { GenreCount } from '../PlaylistDetailPage/hooks/genreFilter';
-import { GenreFilterBar } from '../PlaylistDetailPage/GenreFilterBar';
+import { GenreCount, SortOption } from '../PlaylistDetailPage/hooks/genreFilter';
+import { TrackFilterBar } from '../PlaylistDetailPage/TrackFilterBar';
 import { formatPlaybackTime } from '../PlaylistsPage/utils';
 import { AllTracksSummary } from './hooks/useAllTracksDetail';
 
@@ -13,15 +13,24 @@ interface HeaderProps {
   selectedGenres: Set<string>;
   onToggleGenre: (genre: string) => void;
   onClearGenres: () => void;
+  sort: SortOption;
+  onSortChange: (sort: SortOption) => void;
+  hqOnly: boolean;
+  onHqOnlyChange: (hqOnly: boolean) => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
 }
 
 // Deliberately not the real PlaylistDetailPage Header — this is a virtual
 // aggregate, not a real playlist, so there's no thumbnail, no rename/sync
 // concept, and no "synced X/Y" chip to show (nothing here is ever "synced"
 // as a whole — each track's own download state is already visible in its
-// row). Only genre filtering carries over, since that's the one thing this
-// page is explicitly meant to behave like a playlist page for.
-export function Header({ summary, genreCounts, selectedGenres, onToggleGenre, onClearGenres }: HeaderProps) {
+// row). Only the track filter/sort bar carries over, since that's the one
+// thing this page is explicitly meant to behave like a playlist page for.
+export function Header({
+  summary, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
+  sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
+}: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -53,11 +62,17 @@ export function Header({ summary, genreCounts, selectedGenres, onToggleGenre, on
         </Box>
       </Box>
 
-      <GenreFilterBar
+      <TrackFilterBar
         genreCounts={genreCounts}
         selectedGenres={selectedGenres}
         onToggleGenre={onToggleGenre}
         onClearGenres={onClearGenres}
+        sort={sort}
+        onSortChange={onSortChange}
+        hqOnly={hqOnly}
+        onHqOnlyChange={onHqOnlyChange}
+        searchQuery={searchQuery}
+        onSearchQueryChange={onSearchQueryChange}
       />
     </Box>
   );

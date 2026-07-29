@@ -11,7 +11,9 @@ import { TrackList } from '../PlaylistDetailPage/TrackList';
 export default function AllTracksPage() {
   const { t } = useTranslation();
   const {
-    status, summary, genreCounts, selectedGenres, toggleGenre, clearGenres, filteredTracks, playableTracks,
+    status, summary, genreCounts, selectedGenres, toggleGenre, clearGenres,
+    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
+    filteredTracks, playableTracks,
   } = useAllTracksDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
   const location = useLocation();
@@ -31,15 +33,21 @@ export default function AllTracksPage() {
 
     const index = filteredTracks.findIndex(v => v.id === nowPlaying.videoId);
     if (index < 0) {
-      // Likely just hidden by an active genre filter — clear it and let this
-      // effect re-run once filteredTracks reflects the full list again.
+      // Likely just hidden by an active genre/HQ/search filter — clear them
+      // and let this effect re-run once filteredTracks reflects the full
+      // list again.
       if (selectedGenres.size > 0) clearGenres();
+      if (hqOnly) setHqOnly(false);
+      if (searchQuery) setSearchQuery('');
       return;
     }
 
     listRef.current.scrollToRow({ index, align: 'center', behavior: 'smooth' });
     scrolledForKeyRef.current = location.key;
-  }, [location, nowPlaying, filteredTracks, listRef, selectedGenres, clearGenres, status]);
+  }, [
+    location, nowPlaying, filteredTracks, listRef,
+    selectedGenres, clearGenres, hqOnly, setHqOnly, searchQuery, setSearchQuery, status,
+  ]);
 
   if (status === 'loading') {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}><CircularProgress /></Box>;
@@ -56,6 +64,12 @@ export default function AllTracksPage() {
         selectedGenres={selectedGenres}
         onToggleGenre={toggleGenre}
         onClearGenres={clearGenres}
+        sort={sort}
+        onSortChange={setSort}
+        hqOnly={hqOnly}
+        onHqOnlyChange={setHqOnly}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
       />
       {/* Takes whatever height Header didn't use — TrackList's own virtualized
           list is what actually scrolls, Header stays pinned above it. */}

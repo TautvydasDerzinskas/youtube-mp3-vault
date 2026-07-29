@@ -1,5 +1,5 @@
 import {
-  Box, FormControl, InputLabel, Select, OutlinedInput, MenuItem, Checkbox, ListItemText,
+  FormControl, InputLabel, Select, OutlinedInput, MenuItem, Checkbox, ListItemText,
   IconButton, Tooltip, SelectChangeEvent,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
@@ -13,8 +13,9 @@ interface GenreFilterBarProps {
   onClearGenres: () => void;
 }
 
-// Shared by PlaylistDetailPage and AllTracksPage — both filter a track list
-// by genre the same way, just sourced from a different set of tracks.
+// Rendered inside TrackFilterBar's row, shared by PlaylistDetailPage and
+// AllTracksPage — both filter a track list by genre the same way, just
+// sourced from a different set of tracks.
 //
 // A multi-select dropdown rather than an inline chip cloud: a library with a
 // lot of genres (an "All Tracks" aggregate especially) could previously push
@@ -40,7 +41,7 @@ export function GenreFilterBar({ genreCounts, selectedGenres, onToggleGenre, onC
   };
 
   return (
-    <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+    <>
       <FormControl size="small" sx={{ minWidth: 220, maxWidth: 420 }}>
         <InputLabel id="genre-filter-label">{t('playlists.detail.filterByGenre')}</InputLabel>
         <Select
@@ -72,6 +73,6 @@ export function GenreFilterBar({ genreCounts, selectedGenres, onToggleGenre, onC
           </IconButton>
         </Tooltip>
       )}
-    </Box>
+    </>
   );
 }

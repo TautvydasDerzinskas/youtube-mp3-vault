@@ -7,19 +7,34 @@ export type GenreCount = { key: string; label: string; count: number };
 
 export const NO_GENRE_KEY = 'none';
 
+export type SortOption = 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'plays-asc' | 'plays-desc';
+export const DEFAULT_SORT: SortOption = 'name-asc';
+const SORT_OPTIONS = new Set<SortOption>(['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'plays-asc', 'plays-desc']);
+
 const GENRES_PARAM = 'genres';
+const SORT_PARAM = 'sort';
+const HQ_PARAM = 'hq';
+const SEARCH_PARAM = 'q';
 
 function parseGenres(raw: string | null): Set<string> {
   return new Set((raw ?? '').split(',').map(normalizeGenreKey).filter(Boolean));
 }
 
+function parseSort(raw: string | null): SortOption {
+  return SORT_OPTIONS.has(raw as SortOption) ? (raw as SortOption) : DEFAULT_SORT;
+}
+
 // Shared by usePlaylistDetail and useAllTracksDetail — both read/write the
-// same ?genres= URL param convention, so a genre filter is deep-linkable and
-// survives navigation the same way on either page.
-export function useGenreFilterParams() {
+// same URL param conventions (?genres=, ?sort=, ?hq=, ?q=), so every track
+// filter/sort control is deep-linkable and survives a refresh the same way
+// on either page.
+export function useTrackFilterParams() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedGenres = useMemo(() => parseGenres(searchParams.get(GENRES_PARAM)), [searchParams]);
+  const sort = useMemo(() => parseSort(searchParams.get(SORT_PARAM)), [searchParams]);
+  const hqOnly = searchParams.get(HQ_PARAM) === '1';
+  const searchQuery = searchParams.get(SEARCH_PARAM) ?? '';
 
   const toggleGenre = useCallback((genre: string) => {
     const key = normalizeGenreKey(genre);
@@ -40,7 +55,36 @@ export function useGenreFilterParams() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  return { selectedGenres, toggleGenre, clearGenres };
+  const setSort = useCallback((next: SortOption) => {
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      if (next === DEFAULT_SORT) params.delete(SORT_PARAM); else params.set(SORT_PARAM, next);
+      return params;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const setHqOnly = useCallback((next: boolean) => {
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      if (next) params.set(HQ_PARAM, '1'); else params.delete(HQ_PARAM);
+      return params;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const setSearchQuery = useCallback((next: string) => {
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      if (next.trim()) params.set(SEARCH_PARAM, next); else params.delete(SEARCH_PARAM);
+      return params;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  return {
+    selectedGenres, toggleGenre, clearGenres,
+    sort, setSort,
+    hqOnly, setHqOnly,
+    searchQuery, setSearchQuery,
+  };
 }
 
 export function computeGenreCounts(videos: PlaylistVideo[]): GenreCount[] {
@@ -74,4 +118,26 @@ export function filterByGenres(videos: PlaylistVideo[], selectedGenres: Set<stri
   return videos.filter(v => v.genres.length === 0
     ? selectedGenres.has(NO_GENRE_KEY)
     : v.genres.some(g => selectedGenres.has(normalizeGenreKey(g))));
+}
+
+export function filterByHq(videos: PlaylistVideo[], hqOnly: boolean): PlaylistVideo[] {
+  return hqOnly ? videos.filter(v => v.hqFileDownloaded) : videos;
+}
+
+export function filterBySearch(videos: PlaylistVideo[], query: string): PlaylistVideo[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return videos;
+  return videos.filter(v => v.title.toLowerCase().includes(q) || (v.artist?.toLowerCase().includes(q) ?? false));
+}
+
+export function sortTracks(videos: PlaylistVideo[], sort: SortOption): PlaylistVideo[] {
+  const sorted = [...videos];
+  switch (sort) {
+    case 'name-asc': return sorted.sort((a, b) => a.title.localeCompare(b.title));
+    case 'name-desc': return sorted.sort((a, b) => b.title.localeCompare(a.title));
+    case 'artist-asc': return sorted.sort((a, b) => (a.artist ?? '').localeCompare(b.artist ?? '') || a.title.localeCompare(b.title));
+    case 'artist-desc': return sorted.sort((a, b) => (b.artist ?? '').localeCompare(a.artist ?? '') || a.title.localeCompare(b.title));
+    case 'plays-asc': return sorted.sort((a, b) => a.playCount - b.playCount || a.title.localeCompare(b.title));
+    case 'plays-desc': return sorted.sort((a, b) => b.playCount - a.playCount || a.title.localeCompare(b.title));
+  }
 }

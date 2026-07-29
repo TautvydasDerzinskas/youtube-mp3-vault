@@ -13,6 +13,7 @@ export default function PlaylistDetailPage() {
   const {
     playlistId, playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
+    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
   } = usePlaylistDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
@@ -38,17 +39,23 @@ export default function PlaylistDetailPage() {
 
     const index = filteredTracks.findIndex(v => v.id === nowPlaying.videoId);
     if (index < 0) {
-      // Likely just hidden by an active genre filter — clear it and let this
-      // effect re-run once filteredTracks reflects the full list again. If
-      // the track genuinely isn't in the playlist, selectedGenres is empty
-      // on the next pass and this becomes a harmless no-op.
+      // Likely just hidden by an active genre/HQ/search filter — clear them
+      // and let this effect re-run once filteredTracks reflects the full
+      // list again. If the track genuinely isn't in the playlist, every
+      // filter is already at its default on the next pass and this becomes
+      // a harmless no-op.
       if (selectedGenres.size > 0) clearGenres();
+      if (hqOnly) setHqOnly(false);
+      if (searchQuery) setSearchQuery('');
       return;
     }
 
     listRef.current.scrollToRow({ index, align: 'center', behavior: 'smooth' });
     scrolledForKeyRef.current = location.key;
-  }, [location, nowPlaying, filteredTracks, playlistId, listRef, selectedGenres, clearGenres, playlist, videos]);
+  }, [
+    location, nowPlaying, filteredTracks, playlistId, listRef,
+    selectedGenres, clearGenres, hqOnly, setHqOnly, searchQuery, setSearchQuery, playlist, videos,
+  ]);
 
   if (!playlistId) return <Navigate to="/playlists" replace />;
 
@@ -67,6 +74,12 @@ export default function PlaylistDetailPage() {
         selectedGenres={selectedGenres}
         onToggleGenre={toggleGenre}
         onClearGenres={clearGenres}
+        sort={sort}
+        onSortChange={setSort}
+        hqOnly={hqOnly}
+        onHqOnlyChange={setHqOnly}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
       />
       {/* Takes whatever height Header didn't use — TrackList's own virtualized
           list is what actually scrolls, Header stays pinned above it. */}

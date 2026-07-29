@@ -169,7 +169,16 @@
       "filterByGenre": "Filter by genre",
       "clearGenreFilter": "Clear genre filter",
       "noGenre": "No genre ({{count}})",
-      "noTracks": "No tracks match the selected genres."
+      "noTracks": "No tracks match the current filters.",
+      "sortBy": "Sort by",
+      "sortNameAsc": "Name (A-Z)",
+      "sortNameDesc": "Name (Z-A)",
+      "sortArtistAsc": "Artist (A-Z)",
+      "sortArtistDesc": "Artist (Z-A)",
+      "sortPlaysDesc": "Plays (High-Low)",
+      "sortPlaysAsc": "Plays (Low-High)",
+      "hqOnly": "HQ only",
+      "searchPlaceholder": "Search by name or artist…"
     },
     "trackDetail": {
       "backToPlaylist": "Back to playlist",
@@ -377,7 +386,14 @@
   "genres": {
     "title": "Genres",
     "empty": "No genres yet — genres appear here once your songs are analyzed.",
-    "failedToLoad": "Failed to load genres."
+    "failedToLoad": "Failed to load genres.",
+    "sortBy": "Sort by",
+    "sortNameAsc": "Name (A-Z)",
+    "sortNameDesc": "Name (Z-A)",
+    "sortSongCountDesc": "Song count (High-Low)",
+    "sortSongCountAsc": "Song count (Low-High)",
+    "searchPlaceholder": "Search genres…",
+    "noResults": "No genres match your search."
   },
   "artists": {
     "title": "Artists",

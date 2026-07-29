@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { playlistsApi, Playlist, PlaylistVideo } from '../../../api/youtube';
-import { useGenreFilterParams, computeGenreCounts, filterByGenres } from './genreFilter';
+import { useTrackFilterParams, computeGenreCounts, filterByGenres, filterByHq, filterBySearch, sortTracks } from './genreFilter';
 
 export function usePlaylistDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +17,10 @@ export function usePlaylistDetail() {
     playlistsApi.getVideos(id).then(({ videos }) => setVideos(videos)).catch(() => setVideos('error'));
   }, [id]);
 
-  const { selectedGenres, toggleGenre, clearGenres } = useGenreFilterParams();
+  const {
+    selectedGenres, toggleGenre, clearGenres,
+    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
+  } = useTrackFilterParams();
 
   const currentVideos = useMemo(
     () => (Array.isArray(videos) ? videos.filter(v => v.downloadStatus !== 'removed') : []),
@@ -27,9 +30,9 @@ export function usePlaylistDetail() {
   const genreCounts = useMemo(() => computeGenreCounts(currentVideos), [currentVideos]);
 
   const filteredTracks = useMemo(() => {
-    const filtered = filterByGenres(currentVideos, selectedGenres);
-    return [...filtered].sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
-  }, [currentVideos, selectedGenres]);
+    const filtered = filterBySearch(filterByHq(filterByGenres(currentVideos, selectedGenres), hqOnly), searchQuery);
+    return sortTracks(filtered, sort);
+  }, [currentVideos, selectedGenres, hqOnly, searchQuery, sort]);
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
@@ -37,6 +40,7 @@ export function usePlaylistDetail() {
     playlistId: id ?? '',
     playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
+    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
   };
 }

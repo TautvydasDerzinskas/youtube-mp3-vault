@@ -177,7 +177,16 @@
       "filterByGenre": "Filtruj wg gatunku",
       "clearGenreFilter": "Wyczyść filtr gatunków",
       "noGenre": "Bez gatunku ({{count}})",
-      "noTracks": "Żaden utwór nie pasuje do wybranych gatunków."
+      "noTracks": "Żaden utwór nie pasuje do wybranych filtrów.",
+      "sortBy": "Sortuj według",
+      "sortNameAsc": "Nazwy (A-Z)",
+      "sortNameDesc": "Nazwy (Z-A)",
+      "sortArtistAsc": "Wykonawcy (A-Z)",
+      "sortArtistDesc": "Wykonawcy (Z-A)",
+      "sortPlaysDesc": "Odtworzeń (malejąco)",
+      "sortPlaysAsc": "Odtworzeń (rosnąco)",
+      "hqOnly": "Tylko HQ",
+      "searchPlaceholder": "Szukaj wg nazwy lub wykonawcy…"
     },
     "trackDetail": {
       "backToPlaylist": "Wróć do playlisty",
@@ -395,7 +404,14 @@
   "genres": {
     "title": "Gatunki",
     "empty": "Brak gatunków — pojawią się tutaj, gdy Twoje utwory zostaną przeanalizowane.",
-    "failedToLoad": "Nie udało się załadować gatunków."
+    "failedToLoad": "Nie udało się załadować gatunków.",
+    "sortBy": "Sortuj według",
+    "sortNameAsc": "Nazwy (A-Z)",
+    "sortNameDesc": "Nazwy (Z-A)",
+    "sortSongCountDesc": "Liczby utworów (malejąco)",
+    "sortSongCountAsc": "Liczby utworów (rosnąco)",
+    "searchPlaceholder": "Szukaj gatunków…",
+    "noResults": "Żaden gatunek nie pasuje do wyszukiwania."
   },
   "artists": {
     "title": "Artyści",

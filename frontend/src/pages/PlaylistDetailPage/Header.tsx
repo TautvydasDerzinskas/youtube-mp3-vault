@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
-import { GenreCount } from './hooks/genreFilter';
-import { GenreFilterBar } from './GenreFilterBar';
+import { GenreCount, SortOption } from './hooks/genreFilter';
+import { TrackFilterBar } from './TrackFilterBar';
 
 interface HeaderProps {
   playlist: Playlist;
@@ -13,9 +13,18 @@ interface HeaderProps {
   selectedGenres: Set<string>;
   onToggleGenre: (genre: string) => void;
   onClearGenres: () => void;
+  sort: SortOption;
+  onSortChange: (sort: SortOption) => void;
+  hqOnly: boolean;
+  onHqOnlyChange: (hqOnly: boolean) => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
 }
 
-export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, onClearGenres }: HeaderProps) {
+export function Header({
+  playlist, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
+  sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
+}: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -54,11 +63,17 @@ export function Header({ playlist, genreCounts, selectedGenres, onToggleGenre, o
         </Box>
       </Box>
 
-      <GenreFilterBar
+      <TrackFilterBar
         genreCounts={genreCounts}
         selectedGenres={selectedGenres}
         onToggleGenre={onToggleGenre}
         onClearGenres={onClearGenres}
+        sort={sort}
+        onSortChange={onSortChange}
+        hqOnly={hqOnly}
+        onHqOnlyChange={onHqOnlyChange}
+        searchQuery={searchQuery}
+        onSearchQueryChange={onSearchQueryChange}
       />
     </Box>
   );

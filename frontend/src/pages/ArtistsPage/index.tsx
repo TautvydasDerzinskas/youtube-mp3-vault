@@ -60,21 +60,7 @@ export default function ArtistsPage() {
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" fontWeight={700} mb={2}>{t('artists.title')}</Typography>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder={t('artists.searchPlaceholder')}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          sx={{ maxWidth: 400 }}
-          slotProps={{
-            input: {
-              startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
-            },
-          }}
-        />
-
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ minWidth: 220 }}>
           <InputLabel id="artists-sort-label">{t('artists.sortBy')}</InputLabel>
           <Select
@@ -91,6 +77,19 @@ export default function ArtistsPage() {
             <MenuItem value="plays-asc">{t('artists.sortPlaysAsc')}</MenuItem>
           </Select>
         </FormControl>
+
+        <TextField
+          size="small"
+          placeholder={t('artists.searchPlaceholder')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          sx={{ ml: 'auto', minWidth: 220, maxWidth: 400 }}
+          slotProps={{
+            input: {
+              startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+            },
+          }}
+        />
       </Box>
 
       {sortedArtists === 'loading' ? (

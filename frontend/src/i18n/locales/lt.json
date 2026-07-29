@@ -173,7 +173,16 @@
       "filterByGenre": "Filtruoti pagal žanrą",
       "clearGenreFilter": "Išvalyti žanrų filtrą",
       "noGenre": "Be žanro ({{count}})",
-      "noTracks": "Nėra dainų, atitinkančių pasirinktus žanrus."
+      "noTracks": "Nėra dainų, atitinkančių pasirinktus filtrus.",
+      "sortBy": "Rikiuoti pagal",
+      "sortNameAsc": "Pavadinimą (A-Ž)",
+      "sortNameDesc": "Pavadinimą (Ž-A)",
+      "sortArtistAsc": "Atlikėją (A-Ž)",
+      "sortArtistDesc": "Atlikėją (Ž-A)",
+      "sortPlaysDesc": "Peržiūras (nuo didž. iki maž.)",
+      "sortPlaysAsc": "Peržiūras (nuo maž. iki didž.)",
+      "hqOnly": "Tik HQ",
+      "searchPlaceholder": "Ieškoti pagal pavadinimą ar atlikėją…"
     },
     "trackDetail": {
       "backToPlaylist": "Grįžti į grojaraštį",
@@ -386,7 +395,14 @@
   "genres": {
     "title": "Žanrai",
     "empty": "Žanrų dar nėra — jie atsiras, kai jūsų dainos bus išanalizuotos.",
-    "failedToLoad": "Nepavyko įkelti žanrų."
+    "failedToLoad": "Nepavyko įkelti žanrų.",
+    "sortBy": "Rikiuoti pagal",
+    "sortNameAsc": "Pavadinimą (A-Ž)",
+    "sortNameDesc": "Pavadinimą (Ž-A)",
+    "sortSongCountDesc": "Dainų skaičių (nuo didž. iki maž.)",
+    "sortSongCountAsc": "Dainų skaičių (nuo maž. iki didž.)",
+    "searchPlaceholder": "Ieškoti žanrų…",
+    "noResults": "Nėra žanrų, atitinkančių paiešką."
   },
   "artists": {
     "title": "Atlikėjai",
