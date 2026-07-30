@@ -4,7 +4,9 @@
     "email": "Email",
     "password": "Password",
     "signIn": "Sign In",
-    "signInFailed": "Sign in failed. Please check your credentials."
+    "signInFailed": "Sign in failed. Please check your credentials.",
+    "passwordHelper": "At least 8 characters",
+    "passwordsDoNotMatch": "Passwords do not match"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -15,7 +17,44 @@
   },
   "profile": {
     "title": "Profile",
-    "logout": "Logout"
+    "tabProfile": "Profile",
+    "tabSettings": "Settings",
+    "tabLastfm": "Last.fm",
+    "displayName": "Display Name",
+    "displayNameHelper": "Display name can't be changed",
+    "email": "Email",
+    "changeEmailLink": "Change email",
+    "changeEmailTitle": "Change Email",
+    "saveEmail": "Save Email",
+    "pendingEmailNotice": "A confirmation link was sent to {{email}}. Click it to finish changing your email — submit this form again to resend.",
+    "pendingEmailShort": "Pending confirmation for {{email}}",
+    "changePasswordLink": "Change password",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "savePassword": "Save Password",
+    "passwordUpdated": "Password updated",
+    "language": "Language",
+    "logout": "Logout",
+    "genericError": "Something went wrong. Please try again.",
+    "settings": {
+      "autoDeleteNonMusic": {
+        "label": "Auto-delete non-music tracks",
+        "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music, an audiobook, or noise. Turning this on removes any tracks like these already in your library."
+      }
+    },
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Connect your Last.fm account to scrobble songs you finish listening to.",
+      "connect": "Connect to Last.fm",
+      "connectUnavailableOnMobile": "Connecting a new Last.fm account isn't supported in the mobile app yet — connect from the web app, then come back here to manage it.",
+      "connectedAs": "Connected as {{username}}",
+      "enableScrobbling": "Scrobble songs I finish listening to",
+      "disconnect": "Disconnect",
+      "connectedAlert": "Connected to Last.fm.",
+      "errorAlert": "Couldn't connect to Last.fm. Please try again."
+    }
   },
   "dashboard": {
     "loadError": "Failed to load your dashboard.",

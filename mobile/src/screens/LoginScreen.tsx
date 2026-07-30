@@ -3,13 +3,13 @@ import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { PasswordInput } from '../components/PasswordInput';
 
 export function LoginScreen() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,21 +42,7 @@ export function LoginScreen() {
           onChangeText={setEmail}
           style={styles.input}
         />
-        <TextInput
-          mode="outlined"
-          label={t('auth.password')}
-          secureTextEntry={!showPassword}
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-          right={
-            <TextInput.Icon
-              icon={showPassword ? 'eye-off' : 'eye'}
-              onPress={() => setShowPassword((v) => !v)}
-              forceTextInputFocus={false}
-            />
-          }
-        />
+        <PasswordInput label={t('auth.password')} value={password} onChangeText={setPassword} style={styles.input} />
         <HelperText type="error" visible={error != null}>
           {error}
         </HelperText>

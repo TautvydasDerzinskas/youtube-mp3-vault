@@ -4,7 +4,9 @@
     "email": "E-mail",
     "password": "Hasło",
     "signIn": "Zaloguj się",
-    "signInFailed": "Logowanie nie powiodło się. Sprawdź dane logowania."
+    "signInFailed": "Logowanie nie powiodło się. Sprawdź dane logowania.",
+    "passwordHelper": "Co najmniej 8 znaków",
+    "passwordsDoNotMatch": "Hasła nie są zgodne"
   },
   "nav": {
     "dashboard": "Panel",
@@ -15,7 +17,44 @@
   },
   "profile": {
     "title": "Profil",
-    "logout": "Wyloguj się"
+    "tabProfile": "Profil",
+    "tabSettings": "Ustawienia",
+    "tabLastfm": "Last.fm",
+    "displayName": "Nazwa wyświetlana",
+    "displayNameHelper": "Nazwy wyświetlanej nie można zmienić",
+    "email": "E-mail",
+    "changeEmailLink": "Zmień e-mail",
+    "changeEmailTitle": "Zmień e-mail",
+    "saveEmail": "Zapisz e-mail",
+    "pendingEmailNotice": "Link potwierdzający został wysłany na adres {{email}}. Kliknij go, aby dokończyć zmianę e-maila — aby wysłać ponownie, wyślij ten formularz jeszcze raz.",
+    "pendingEmailShort": "Oczekuje potwierdzenia na {{email}}",
+    "changePasswordLink": "Zmień hasło",
+    "changePassword": "Zmień hasło",
+    "currentPassword": "Obecne hasło",
+    "newPassword": "Nowe hasło",
+    "confirmNewPassword": "Potwierdź nowe hasło",
+    "savePassword": "Zapisz hasło",
+    "passwordUpdated": "Hasło zaktualizowane",
+    "language": "Język",
+    "logout": "Wyloguj się",
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "settings": {
+      "autoDeleteNonMusic": {
+        "label": "Automatycznie usuwaj utwory niebędące muzyką",
+        "description": "Automatycznie usuwa wpis i plik audio dla każdego utworu, który analiza dźwięku zaklasyfikuje jako niebędący muzyką, audiobook lub szum. Włączenie tej opcji usunie również takie utwory już znajdujące się w Twojej bibliotece."
+      }
+    },
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Połącz swoje konto Last.fm, aby zapisywać (scrobblować) utwory, których wysłuchasz do końca.",
+      "connect": "Połącz z Last.fm",
+      "connectUnavailableOnMobile": "Łączenie nowego konta Last.fm nie jest jeszcze obsługiwane w aplikacji mobilnej — połącz je w wersji webowej, a następnie wróć tutaj, aby nim zarządzać.",
+      "connectedAs": "Połączono jako {{username}}",
+      "enableScrobbling": "Zapisuj utwory, których wysłucham do końca",
+      "disconnect": "Rozłącz",
+      "connectedAlert": "Połączono z Last.fm.",
+      "errorAlert": "Nie udało się połączyć z Last.fm. Spróbuj ponownie."
+    }
   },
   "dashboard": {
     "loadError": "Nie udało się załadować panelu.",

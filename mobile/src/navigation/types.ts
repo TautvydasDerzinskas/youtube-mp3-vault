@@ -1,6 +1,8 @@
 export type RootStackParamList = {
   Tabs: undefined;
   Profile: undefined;
+  ChangeEmail: undefined;
+  ChangePassword: undefined;
   AllSongs: undefined;
   AllArtists: undefined;
   AllGenres: undefined;

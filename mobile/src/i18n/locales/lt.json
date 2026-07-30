@@ -4,7 +4,9 @@
     "email": "El. paštas",
     "password": "Slaptažodis",
     "signIn": "Prisijungti",
-    "signInFailed": "Prisijungti nepavyko. Patikrinkite duomenis."
+    "signInFailed": "Prisijungti nepavyko. Patikrinkite duomenis.",
+    "passwordHelper": "Bent 8 simboliai",
+    "passwordsDoNotMatch": "Slaptažodžiai nesutampa"
   },
   "nav": {
     "dashboard": "Prietaisų skydelis",
@@ -15,7 +17,44 @@
   },
   "profile": {
     "title": "Profilis",
-    "logout": "Atsijungti"
+    "tabProfile": "Profilis",
+    "tabSettings": "Nustatymai",
+    "tabLastfm": "Last.fm",
+    "displayName": "Rodomas vardas",
+    "displayNameHelper": "Rodomo vardo pakeisti negalima",
+    "email": "El. paštas",
+    "changeEmailLink": "Keisti el. paštą",
+    "changeEmailTitle": "El. pašto keitimas",
+    "saveEmail": "Išsaugoti el. paštą",
+    "pendingEmailNotice": "Patvirtinimo nuoroda išsiųsta adresu {{email}}. Paspauskite ją, kad baigtumėte keisti el. paštą — norėdami išsiųsti dar kartą, pateikite šią formą iš naujo.",
+    "pendingEmailShort": "Laukiama patvirtinimo adresu {{email}}",
+    "changePasswordLink": "Keisti slaptažodį",
+    "changePassword": "Keisti slaptažodį",
+    "currentPassword": "Dabartinis slaptažodis",
+    "newPassword": "Naujas slaptažodis",
+    "confirmNewPassword": "Pakartokite naują slaptažodį",
+    "savePassword": "Išsaugoti slaptažodį",
+    "passwordUpdated": "Slaptažodis atnaujintas",
+    "language": "Kalba",
+    "logout": "Atsijungti",
+    "genericError": "Įvyko klaida. Bandykite dar kartą.",
+    "settings": {
+      "autoDeleteNonMusic": {
+        "label": "Automatiškai šalinti ne muzikos įrašus",
+        "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai, garso knygai arba triukšmui. Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
+      }
+    },
+    "lastfm": {
+      "title": "Last.fm",
+      "description": "Prijunkite savo Last.fm paskyrą, kad būtų fiksuojamos (scrobbinamos) iki galo išklausytos dainos.",
+      "connect": "Prisijungti prie Last.fm",
+      "connectUnavailableOnMobile": "Naujos Last.fm paskyros prijungimas kol kas nepalaikomas mobiliojoje programėlėje — prijunkite per interneto svetainę, tada grįžkite čia ją tvarkyti.",
+      "connectedAs": "Prisijungta kaip {{username}}",
+      "enableScrobbling": "Fiksuoti dainas, kurias išklausau iki galo",
+      "disconnect": "Atsijungti",
+      "connectedAlert": "Prisijungta prie Last.fm.",
+      "errorAlert": "Nepavyko prisijungti prie Last.fm. Bandykite dar kartą."
+    }
   },
   "dashboard": {
     "loadError": "Nepavyko įkelti prietaisų skydelio.",
