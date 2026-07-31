@@ -7,7 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true
+      }
     },
     "android": {
       "package": "com.ympv.youtubevault",
@@ -32,7 +36,15 @@
           }
         }
       ],
-      ["expo-audio", { "enableBackgroundPlayback": true }]
+      ["expo-audio", { "enableBackgroundPlayback": true }],
+      [
+        "expo-media-library",
+        {
+          "granularPermissions": ["audio"],
+          "photosPermission": false,
+          "savePhotosPermission": false
+        }
+      ]
     ]
   }
 }

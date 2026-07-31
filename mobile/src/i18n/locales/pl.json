@@ -251,6 +251,16 @@
     "trackDetail": {
       "failedToLoad": "Nie udało się załadować tego utworu.",
       "recommendedTitle": "Podobne utwory"
+    },
+    "offline": {
+      "toggleLabel": "Włącz tryb offline",
+      "downloading": "Pobieranie {{completed}}/{{total}}…",
+      "downloaded": "Pobrano {{completed}}/{{total}} do trybu offline",
+      "syncFailed": "Nie udało się połączyć z serwerem, aby zsynchronizować pliki",
+      "confirmTitle": "Włączyć tryb offline?",
+      "confirmMessage": "Utwory z tej playlisty zostaną pobrane na urządzenie.",
+      "confirmMessageWithSize": "Zostanie pobrane około {{size}} na urządzenie.",
+      "enable": "Włącz"
     }
   },
   "serverSetup": {
@@ -274,5 +284,12 @@
   "network": {
     "notFound": "Nie znaleziono usługi pod tym adresem serwera (404). Sprawdź zapisany adres.",
     "serverError": "Na serwerze wystąpił błąd. Spróbuj ponownie za chwilę."
+  },
+  "offline": {
+    "unavailableBanner": "Serwer niedostępny — pokazywane są tylko pobrane playlisty",
+    "trackCount": "{{count}} utworów",
+    "emptyState": "Żadna playlista nie jest jeszcze dostępna offline. Włącz tryb offline dla playlisty, gdy masz połączenie z serwerem.",
+    "playlistNotFound": "Ta playlista nie jest dostępna offline.",
+    "noTracks": "Dla tej playlisty nie pobrano żadnych utworów."
   }
 }

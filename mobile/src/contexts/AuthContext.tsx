@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import i18next from 'i18next';
 import { authApi, User } from '../api/auth';
 import { tokenStorage } from '../auth/tokenStorage';
+import { cachedUserStorage } from '../storage/cachedUserStorage';
 
 interface AuthContextType {
   user: User | null;
@@ -32,6 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [lastfmScrobblingAvailable, setLastfmScrobblingAvailable] = useState(false);
   const [lastfmDiscoverAvailable, setLastfmDiscoverAvailable] = useState(false);
+  // Mirrors the two state values above so persistUserCache (called from
+  // setters that only receive `user`, e.g. updateProfile) can still write a
+  // complete cache entry without needing every one of those callbacks to
+  // also thread the flags through.
+  const lastfmFlagsRef = useRef({ lastfmScrobblingAvailable: false, lastfmDiscoverAvailable: false });
+
+  const persistUserCache = useCallback((u: User) => {
+    cachedUserStorage.set({ user: u, ...lastfmFlagsRef.current }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -45,13 +55,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(applyUser(user));
         setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
         setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
-      } catch {
-        await tokenStorage.clear();
+        lastfmFlagsRef.current = { lastfmScrobblingAvailable, lastfmDiscoverAvailable };
+        persistUserCache(user);
+      } catch (err: any) {
+        const status = err?.response?.status;
+        if (status === 401 || status === 403) {
+          // The token itself was rejected — genuinely signed out server-side.
+          await tokenStorage.clear();
+          await cachedUserStorage.clear();
+        } else {
+          // Network/server-unreachable, not an auth rejection — fall back to
+          // the last-known user (if any) instead of forcing a logout, so the
+          // app can still boot into the authenticated shell and hand off to
+          // the server-unavailable/offline mode (see useServerReachability)
+          // rather than stranding the user on the login screen.
+          const cached = await cachedUserStorage.get();
+          if (cached) {
+            setUser(applyUser(cached.user));
+            setLastfmScrobblingAvailable(cached.lastfmScrobblingAvailable);
+            setLastfmDiscoverAvailable(cached.lastfmDiscoverAvailable);
+            lastfmFlagsRef.current = {
+              lastfmScrobblingAvailable: cached.lastfmScrobblingAvailable,
+              lastfmDiscoverAvailable: cached.lastfmDiscoverAvailable,
+            };
+          }
+        }
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [persistUserCache]);
 
   const login = useCallback(async (email: string, password: string) => {
     const { user, token } = await authApi.login(email, password);
@@ -64,10 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { lastfmScrobblingAvailable, lastfmDiscoverAvailable } = await authApi.me();
       setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
       setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
+      lastfmFlagsRef.current = { lastfmScrobblingAvailable, lastfmDiscoverAvailable };
     } catch {
       // Best-effort — worst case these stay hidden until next launch.
     }
-  }, []);
+    persistUserCache(user);
+  }, [persistUserCache]);
 
   const logout = useCallback(async () => {
     // The JWT isn't server-revocable (see backend/src/middleware/auth.ts) —
@@ -81,33 +116,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Best-effort — see above.
     }
     await tokenStorage.clear();
+    await cachedUserStorage.clear();
     setUser(null);
   }, []);
 
   const updateLanguage = useCallback(async (language: string) => {
     const { user } = await authApi.updateLanguage(language);
     setUser(applyUser(user));
-  }, []);
+    persistUserCache(user);
+  }, [persistUserCache]);
 
   const updateProfile = useCallback(async (params: { currentPassword: string; email?: string; newPassword?: string }) => {
     const { user } = await authApi.updateProfile(params);
     setUser(applyUser(user));
-  }, []);
+    persistUserCache(user);
+  }, [persistUserCache]);
 
   const disconnectLastfm = useCallback(async () => {
     const { user } = await authApi.disconnectLastfm();
     setUser(applyUser(user));
-  }, []);
+    persistUserCache(user);
+  }, [persistUserCache]);
 
   const setScrobbling = useCallback(async (enabled: boolean) => {
     const { user } = await authApi.setScrobbling(enabled);
     setUser(applyUser(user));
-  }, []);
+    persistUserCache(user);
+  }, [persistUserCache]);
 
   const setAutoDeleteNonMusic = useCallback(async (enabled: boolean) => {
     const { user } = await authApi.setAutoDeleteNonMusic(enabled);
     setUser(applyUser(user));
-  }, []);
+    persistUserCache(user);
+  }, [persistUserCache]);
 
   return (
     <AuthContext.Provider

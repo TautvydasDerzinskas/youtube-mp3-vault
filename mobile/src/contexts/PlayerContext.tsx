@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { createAudioPlayer, useAudioPlayerStatus, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { playlistsApi, getStreamSource, PlaylistVideo } from '../api/playlists';
+import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
 
 export type QueueTrack = PlaylistVideo & { playlistId?: string };
 
@@ -69,6 +70,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }
   const player = playerRef.current;
   const status = useAudioPlayerStatus(player);
+  const { getLocalUri } = useOfflineDownloads();
 
   const [current, setCurrentState] = useState<CurrentTrack | null>(null);
   const [queue, setQueueState] = useState<QueueTrack[]>([]);
@@ -119,7 +121,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
     let cancelled = false;
     (async () => {
-      const source = await getStreamSource(current.playlistId, current.video.id);
+      // A locally downloaded file (see mobile/src/offline/) is preferred
+      // over network streaming whenever one exists — not just while
+      // offline, since it's also the cheaper/faster path when at home. No
+      // Authorization header needed: it's a plain file:// path on iOS or a
+      // MediaLibrary content:// asset URI on Android, both already
+      // accessible to this app without going through the backend at all.
+      const localUri = getLocalUri(current.playlistId, current.video.id);
+      const source = localUri ? { uri: localUri } : await getStreamSource(current.playlistId, current.video.id);
       if (cancelled) return;
       player.replace(source);
       player.play();

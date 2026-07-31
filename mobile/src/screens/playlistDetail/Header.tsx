@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
-import { Chip, ProgressBar, Text, useTheme } from 'react-native-paper';
+import { Chip, ProgressBar, Switch, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Playlist } from '../../api/playlists';
+import { useOfflineDownloads } from '../../offline/OfflineDownloadsContext';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { displayName, formatBytes } from '../../utils/format';
 
 interface HeaderProps {
@@ -21,6 +24,16 @@ interface HeaderProps {
 export function Header({ playlist, canPlayFirst, onPlayFirst }: HeaderProps) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { isEnabled, enableOffline, disableOffline, progress: offlineProgressMap } = useOfflineDownloads();
+  const [confirmingEnable, setConfirmingEnable] = useState(false);
+
+  const offlineEnabled = isEnabled(playlist.id);
+  const offlineProgress = offlineProgressMap[playlist.id];
+
+  const handleToggleOffline = (value: boolean) => {
+    if (value) setConfirmingEnable(true);
+    else disableOffline(playlist.id);
+  };
 
   const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || playlist.syncStatus === 'retrying';
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
@@ -81,6 +94,41 @@ export function Header({ playlist, canPlayFirst, onPlayFirst }: HeaderProps) {
           />
         </View>
       )}
+
+      <View style={styles.offlineRow}>
+        <MaterialCommunityIcons name="cloud-download-outline" size={18} color={theme.colors.onSurfaceVariant} />
+        <Text style={{ flex: 1, color: theme.colors.onSurfaceVariant }}>{t('playlists.offline.toggleLabel')}</Text>
+        <Switch value={offlineEnabled} onValueChange={handleToggleOffline} />
+      </View>
+      {offlineEnabled && offlineProgress && (
+        <View style={styles.syncStatus}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            {offlineProgress.error === 'sync-failed'
+              ? t('playlists.offline.syncFailed')
+              : offlineProgress.syncing
+              ? t('playlists.offline.downloading', { completed: offlineProgress.completed, total: offlineProgress.total })
+              : t('playlists.offline.downloaded', { completed: offlineProgress.completed, total: offlineProgress.total })}
+          </Text>
+          <ProgressBar
+            progress={offlineProgress.total > 0 ? offlineProgress.completed / offlineProgress.total : 0}
+            style={styles.progress}
+          />
+        </View>
+      )}
+
+      <ConfirmDialog
+        visible={confirmingEnable}
+        title={t('playlists.offline.confirmTitle')}
+        message={
+          playlist.totalSize > 0
+            ? t('playlists.offline.confirmMessageWithSize', { size: formatBytes(playlist.totalSize) })
+            : t('playlists.offline.confirmMessage')
+        }
+        confirmLabel={t('playlists.offline.enable')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => { setConfirmingEnable(false); enableOffline(playlist.id); }}
+        onCancel={() => setConfirmingEnable(false)}
+      />
     </View>
   );
 }
@@ -95,4 +143,5 @@ const styles = StyleSheet.create({
   chip: { height: 24 },
   syncStatus: { marginTop: 10 },
   progress: { height: 3, borderRadius: 2, marginTop: 4 },
+  offlineRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
 });

@@ -239,6 +239,16 @@
     "trackDetail": {
       "failedToLoad": "Nepavyko įkelti šios dainos.",
       "recommendedTitle": "Panašios dainos"
+    },
+    "offline": {
+      "toggleLabel": "Įjungti neprisijungus",
+      "downloading": "Atsisiunčiama {{completed}}/{{total}}…",
+      "downloaded": "Atsisiųsta {{completed}}/{{total}} naudojimui neprisijungus",
+      "syncFailed": "Nepavyko pasiekti serverio sinchronizuoti failų",
+      "confirmTitle": "Įjungti neprisijungus?",
+      "confirmMessage": "Šio grojaraščio dainos bus atsisiųstos į jūsų įrenginį.",
+      "confirmMessageWithSize": "Bus atsisiųsta apie {{size}} į jūsų įrenginį.",
+      "enable": "Įjungti"
     }
   },
   "serverSetup": {
@@ -262,5 +272,12 @@
   "network": {
     "notFound": "Paslauga nerasta šiuo serverio adresu (404). Patikrinkite išsaugotą adresą.",
     "serverError": "Serveryje įvyko klaida. Bandykite dar kartą netrukus."
+  },
+  "offline": {
+    "unavailableBanner": "Serveris nepasiekiamas — rodomi tik atsisiųsti grojaraščiai",
+    "trackCount": "{{count}} dainų",
+    "emptyState": "Kol kas nėra grojaraščių, pasiekiamų neprisijungus. Prisijungę prie serverio, įjunkite neprisijungimo režimą norimam grojaraščiui.",
+    "playlistNotFound": "Šis grojaraštis nepasiekiamas neprisijungus.",
+    "noTracks": "Šiam grojaraščiui neatsisiųsta jokių dainų."
   }
 }

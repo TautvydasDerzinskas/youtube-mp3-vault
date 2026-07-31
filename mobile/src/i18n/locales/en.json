@@ -227,6 +227,16 @@
     "trackDetail": {
       "failedToLoad": "Failed to load this track.",
       "recommendedTitle": "Similar songs"
+    },
+    "offline": {
+      "toggleLabel": "Enable offline",
+      "downloading": "Downloading {{completed}}/{{total}}…",
+      "downloaded": "{{completed}}/{{total}} downloaded for offline",
+      "syncFailed": "Couldn't reach the server to sync offline files",
+      "confirmTitle": "Enable offline?",
+      "confirmMessage": "This playlist's tracks will be downloaded to your device.",
+      "confirmMessageWithSize": "This will download about {{size}} to your device.",
+      "enable": "Enable"
     }
   },
   "serverSetup": {
@@ -250,5 +260,12 @@
   "network": {
     "notFound": "Service not found at this server address (404). Check the saved address.",
     "serverError": "The server ran into an error. Please try again shortly."
+  },
+  "offline": {
+    "unavailableBanner": "Server unavailable — showing downloaded playlists only",
+    "trackCount": "{{count}} tracks",
+    "emptyState": "No playlists are available offline yet. Enable offline on a playlist while connected to your server.",
+    "playlistNotFound": "This playlist isn't available offline.",
+    "noTracks": "No tracks downloaded for this playlist."
   }
 }

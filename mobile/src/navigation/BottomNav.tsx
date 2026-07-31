@@ -20,6 +20,10 @@ const TAB_META: Record<string, { icon: keyof typeof MaterialCommunityIcons.glyph
   Genres: { icon: 'tag-multiple', labelKey: 'nav.genres' },
 };
 
+// Fixed display order used only in `disabled` mode (see below), where there's
+// no real Tab.Navigator state to read route order from.
+const DISABLED_ROUTE_ORDER = ['Dashboard', 'Playlists', 'Artists', 'Genres'];
+
 const BAR_HEIGHT = 60;
 const MIDDLE_BUTTON_SIZE = 68;
 const PANEL_MAX_HEIGHT = 160;
@@ -65,7 +69,19 @@ function MiddleButton() {
 // react-native-reanimated/gesture-handler, since neither was already a
 // dependency here and both need native config — this keeps the interaction
 // fully JS-driven with zero new native modules.
-export function BottomNav({ state, navigation }: BottomTabBarProps) {
+//
+// `disabled` mode: rendered without a real Tab.Navigator behind it, when
+// AppShell swaps in the offline stack for a server-unreachable session (see
+// RootNavigator.tsx) — the 4 route tabs render grayed-out and inert (no
+// `state`/`navigation` props are even available in that mode), but the
+// middle play/pause button and the drag-reveal MiniPlayer panel keep
+// working normally, since both depend only on PlayerContext.
+type BottomNavProps = ({ disabled?: false } & BottomTabBarProps) | { disabled: true };
+
+export function BottomNav(props: BottomNavProps) {
+  const { disabled } = props;
+  const state = disabled ? undefined : props.state;
+  const navigation = disabled ? undefined : props.navigation;
   const theme = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -106,18 +122,22 @@ export function BottomNav({ state, navigation }: BottomTabBarProps) {
     })
   ).current;
 
-  const renderTab = (route: (typeof state.routes)[number], index: number) => {
-    const meta = TAB_META[route.name];
-    const isFocused = state.index === index;
-    const color = isFocused ? theme.colors.primary : theme.colors.onSurfaceVariant;
+  const routeNames = disabled ? DISABLED_ROUTE_ORDER : state!.routes.map(r => r.name);
+
+  const renderTab = (routeName: string, index: number) => {
+    const meta = TAB_META[routeName];
+    const isFocused = !disabled && state!.index === index;
+    const color = disabled ? theme.colors.outlineVariant : (isFocused ? theme.colors.primary : theme.colors.onSurfaceVariant);
 
     const onPress = () => {
-      const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-      if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+      if (disabled) return;
+      const route = state!.routes[index];
+      const event = navigation!.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+      if (!isFocused && !event.defaultPrevented) navigation!.navigate(route.name);
     };
 
     return (
-      <Pressable key={route.key} onPress={onPress} style={styles.tabButton}>
+      <Pressable key={routeName} onPress={onPress} disabled={disabled} style={styles.tabButton}>
         <MaterialCommunityIcons name={meta.icon} size={26} color={color} />
         <Text style={[styles.tabLabel, { color }]}>{t(meta.labelKey)}</Text>
       </Pressable>
@@ -137,11 +157,11 @@ export function BottomNav({ state, navigation }: BottomTabBarProps) {
       </Animated.View>
       <View style={styles.grabHandle} />
       <View style={[styles.tabRow, { height: BAR_HEIGHT }]}>
-        {renderTab(state.routes[0], 0)}
-        {renderTab(state.routes[1], 1)}
+        {renderTab(routeNames[0], 0)}
+        {renderTab(routeNames[1], 1)}
         <MiddleButton />
-        {renderTab(state.routes[2], 2)}
-        {renderTab(state.routes[3], 3)}
+        {renderTab(routeNames[2], 2)}
+        {renderTab(routeNames[3], 3)}
       </View>
     </View>
   );

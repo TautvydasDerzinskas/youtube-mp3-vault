@@ -4,6 +4,7 @@ import { ActivityIndicator, Chip, IconButton, Menu, ProgressBar, Text, Tooltip, 
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Playlist } from '../../api/playlists';
+import { useOfflineDownloads } from '../../offline/OfflineDownloadsContext';
 import { displayName } from '../../utils/format';
 
 interface PlaylistRowProps {
@@ -37,6 +38,8 @@ export function PlaylistRow({
   const { t } = useTranslation();
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
+  const { isEnabled: isOfflineEnabled } = useOfflineDownloads();
+  const offlineEnabled = isOfflineEnabled(playlist.id);
 
   const isRetrying = playlist.syncStatus === 'retrying';
   const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isRetrying;
@@ -81,7 +84,12 @@ export function PlaylistRow({
       )}
 
       <View style={styles.info}>
-        <Text numberOfLines={1} style={[styles.title, { color: theme.colors.onBackground }]}>{displayName(playlist)}</Text>
+        <View style={styles.titleRow}>
+          <Text numberOfLines={1} style={[styles.title, { color: theme.colors.onBackground, flexShrink: 1 }]}>{displayName(playlist)}</Text>
+          {offlineEnabled && (
+            <MaterialCommunityIcons name="cloud-check-outline" size={14} color={theme.colors.primary} />
+          )}
+        </View>
 
         <View style={styles.chipRow}>
           {playlist.syncStatus === 'generating' ? (
@@ -169,6 +177,7 @@ const styles = StyleSheet.create({
   thumb: { width: 48, height: 36, borderRadius: 6 },
   thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 4 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   title: { fontSize: 14, fontWeight: '600' },
   chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   chip: { height: 24 },

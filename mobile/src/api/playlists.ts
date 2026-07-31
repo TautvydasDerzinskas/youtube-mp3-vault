@@ -49,6 +49,48 @@ export interface PlaylistVideo {
   playlistId?: string;
 }
 
+// Shapes for GET /playlists/:id/manifest — see backend/src/routes/youtube.ts's
+// MANIFEST_TRACK_SELECT/handler. Deliberately a separate (slimmer) type from
+// PlaylistVideo/Playlist above rather than reusing them: the manifest is the
+// one endpoint the offline-download feature (see mobile/src/offline/) polls
+// repeatedly to diff against what's already on-device, so its shape is
+// pinned to exactly what that diff needs (includes tracks regardless of
+// isAvailable, unlike getVideos).
+export interface ManifestTrack {
+  id: string;
+  youtubeId: string;
+  title: string;
+  artist: string | null;
+  album: string | null;
+  trackNumber: number | null;
+  genres: string[];
+  releaseYear: number | null;
+  duration: number | null;
+  thumbnailUrl: string | null;
+  position: number;
+  addedAt: string;
+  downloadStatus: 'pending' | 'downloading' | 'done' | 'failed' | 'removed';
+  mediaFileId: string | null;
+  fileSize: number | null;
+  bitrate: number | null;
+  downloadUrl: string | null;
+}
+
+export interface PlaylistManifest {
+  playlist: {
+    id: string;
+    title: string;
+    customName: string | null;
+    thumbnailUrl: string | null;
+    videoCount: number;
+    downloadedCount: number;
+    failedCount: number;
+    totalSize: number;
+    lastSyncedAt: string | null;
+  };
+  tracks: ManifestTrack[];
+}
+
 export interface RecommendedTrack {
   id: string;
   playlistId: string;
@@ -110,6 +152,11 @@ export const playlistsApi = {
 
   getVideos: async (id: string): Promise<{ videos: PlaylistVideo[] }> => {
     const { data } = await client.get<{ videos: PlaylistVideo[] }>(`/playlists/${id}/videos`);
+    return data;
+  },
+
+  getManifest: async (id: string): Promise<PlaylistManifest> => {
+    const { data } = await client.get<PlaylistManifest>(`/playlists/${id}/manifest`);
     return data;
   },
 
@@ -184,6 +231,20 @@ export async function getStreamSource(playlistId: string, videoId: string): Prom
   const token = await tokenStorage.get();
   return {
     uri: streamUrl(playlistId, videoId),
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  };
+}
+
+// Same absolute-URL-plus-Bearer-header pattern as getStreamSource above, but
+// for the permanent (non-range) /download route — this is what the offline
+// downloader (mobile/src/offline/) fetches into a local/shared file. Built
+// from playlistId/videoId directly rather than trusting ManifestTrack.downloadUrl
+// as-is, since that path already includes a leading "/api" segment that
+// would double up against client.defaults.baseURL (which itself ends in "/api").
+export async function getDownloadSource(playlistId: string, videoId: string): Promise<{ uri: string; headers: Record<string, string> }> {
+  const token = await tokenStorage.get();
+  return {
+    uri: `${client.defaults.baseURL}/playlists/${playlistId}/videos/${videoId}/download`,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   };
 }
