@@ -1,6 +1,5 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PlaylistVideo } from '../../api/playlists';
@@ -30,7 +29,6 @@ interface TrackRowProps {
 // download reads differently on mobile, so left out of this pass).
 export function TrackRow({ track, playlistId, queue }: TrackRowProps) {
   const theme = useTheme();
-  const { t } = useTranslation();
   const navigation = useNavigation();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
 

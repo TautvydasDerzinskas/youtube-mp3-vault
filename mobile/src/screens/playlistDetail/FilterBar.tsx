@@ -24,7 +24,7 @@ const SORT_OPTIONS: { value: SortOption; labelKey: string }[] = [
 
 // Mirrors frontend/src/pages/PlaylistDetailPage/TrackFilterBar.tsx's sort +
 // search — genre filter and the HQ-only toggle aren't ported yet.
-export function FilterBar({ sort, onSortChange, searchQuery, onSearchQueryChange }: FilterBarProps) {
+export function FilterBar({ onSortChange, searchQuery, onSearchQueryChange }: FilterBarProps) {
   const { t } = useTranslation();
   const [menuVisible, setMenuVisible] = useState(false);
 

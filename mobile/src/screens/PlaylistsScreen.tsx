@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Banner, Button, FAB, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Banner, FAB, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
