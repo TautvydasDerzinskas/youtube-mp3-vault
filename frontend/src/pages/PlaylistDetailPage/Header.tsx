@@ -1,5 +1,5 @@
 import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip } from '@mui/material';
-import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Playlist } from '../../api/youtube';
@@ -19,11 +19,14 @@ interface HeaderProps {
   onHqOnlyChange: (hqOnly: boolean) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
+  onPlayFirst: () => void;
+  canPlayFirst: boolean;
 }
 
 export function Header({
   playlist, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
   sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
+  onPlayFirst, canPlayFirst,
 }: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -37,6 +40,15 @@ export function Header({
       </Tooltip>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <Tooltip title={t('playlists.videoList.play')}>
+          <span>
+            <IconButton disabled={!canPlayFirst} onClick={onPlayFirst}
+              sx={{ color: 'primary.main', flexShrink: 0 }}>
+              <PlayArrowIcon sx={{ fontSize: 32 }} />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         <Avatar src={playlist.thumbnailUrl ?? undefined} variant="rounded"
           sx={{ width: 96, height: 72, borderRadius: 2, flexShrink: 0 }}>
           <MusicNoteIcon sx={{ fontSize: 32 }} />

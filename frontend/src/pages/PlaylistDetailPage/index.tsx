@@ -14,9 +14,12 @@ export default function PlaylistDetailPage() {
     playlistId, playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
     sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
-    filteredTracks, playableTracks,
+    filteredTracks, playableTracks, orderedPlayableTracks, firstPlayableTrack,
   } = usePlaylistDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
+  const handlePlayFirst = () => {
+    if (firstPlayableTrack) handleTogglePlay(playlistId, firstPlayableTrack, orderedPlayableTracks);
+  };
   const location = useLocation();
   const listRef = useRef<ListImperativeAPI>(null);
   // Guards against re-scrolling on every render — only once per distinct
@@ -80,6 +83,8 @@ export default function PlaylistDetailPage() {
         onHqOnlyChange={setHqOnly}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
+        onPlayFirst={handlePlayFirst}
+        canPlayFirst={firstPlayableTrack !== null}
       />
       {/* Takes whatever height Header didn't use — TrackList's own virtualized
           list is what actually scrolls, Header stays pinned above it. */}

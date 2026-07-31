@@ -36,11 +36,22 @@ export function usePlaylistDetail() {
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
+  // Independent of the current sort/filter/search state above (unlike
+  // playableTracks) — "play first" always means the actual first track of
+  // the playlist itself, not whatever happens to be first in a filtered or
+  // re-sorted view of it.
+  const orderedPlayableTracks = useMemo(
+    () => [...currentVideos].filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position),
+    [currentVideos]
+  );
+  const firstPlayableTrack = orderedPlayableTracks[0] ?? null;
+
   return {
     playlistId: id ?? '',
     playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
     sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
+    orderedPlayableTracks, firstPlayableTrack,
   };
 }
