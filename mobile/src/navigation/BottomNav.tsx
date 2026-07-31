@@ -29,7 +29,14 @@ const DISABLED_ROUTE_ORDER = ['Dashboard', 'Playlists', 'Artists', 'Genres'];
 const BAR_HEIGHT = 60;
 const MIDDLE_BUTTON_SIZE = 68;
 const ROUND_BUTTON_SIZE = 52;
-const PANEL_MAX_HEIGHT = 160;
+const PROGRESS_BAR_HEIGHT = 16;
+// Tall enough for MiniPlayer's own content (a thumbnail/title row) plus a
+// current-time/duration row at the very bottom, visible only while expanded
+// (see the panel content below) — the seek bar itself moved out (it's the
+// always-on slider pinned just above the tab row, see progressSlider), and
+// the transport row became the pop-up controls in the tab row, so this only
+// needs to fit those two remaining rows, not the old full control stack.
+const PANEL_MAX_HEIGHT = 96;
 // A drag must move at least this far before it's treated as "reveal the
 // panel" rather than a tap — lets Pressable children (the tab buttons)
 // still receive ordinary taps, since PanResponder only claims the gesture
@@ -126,13 +133,14 @@ function Slot({
 
 // Custom tab bar for the root Tab.Navigator (see RootNavigator.tsx) — fully
 // custom rather than the default react-navigation bar because of what the
-// default bar can't do: a bigger, non-route middle play/pause button, an
-// always-visible playback progress bar pinned just above the bar, and a
-// panel above the bar that reveals on an upward drag — hosting the mini
-// player's track info (see MiniPlayer.tsx) plus, in place of the 4 outer tab
-// icons, prev/next/shuffle/repeat controls, so the bar becomes a full
-// playback control surface while dragged open instead of needing a second
-// set of transport buttons inside the panel itself.
+// default bar can't do: a bigger, non-route middle play/pause button, a
+// full-width playback progress bar that doubles as the bar's own top border
+// whenever a track is loaded, and a panel above the bar that reveals on an
+// upward drag — hosting the mini player's track info (see MiniPlayer.tsx)
+// plus, in place of the 4 outer tab icons, prev/next/shuffle/repeat
+// controls, so the bar becomes a full playback control surface while
+// dragged open instead of needing a second set of transport buttons inside
+// the panel itself.
 //
 // The drag panel is built on core RN Animated + PanResponder rather than
 // react-native-reanimated/gesture-handler, since neither was already a
@@ -242,33 +250,23 @@ export function BottomNav(props: BottomNavProps) {
       {...panResponder.panHandlers}
     >
       <Animated.View style={[styles.panel, { height: panelHeight }]}>
-        <MiniPlayer />
+        <View style={styles.panelContent}>
+          <MiniPlayer />
+          {/* Only meaningful once the panel has actually opened up enough to
+              show it — fades in with the same controlsOpacity driving the
+              pop-up transport buttons, so it appears/disappears in lockstep
+              with the rest of the "expanded" chrome. */}
+          {nowPlaying && (
+            <Animated.View style={{ opacity: controlsOpacity }}>
+              <View style={styles.expandedTimeRow}>
+                <Text style={[styles.expandedTimeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(currentTime)}</Text>
+                <Text style={[styles.expandedTimeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(duration)}</Text>
+              </View>
+            </Animated.View>
+          )}
+        </View>
       </Animated.View>
       <View style={styles.grabHandle} />
-
-      {/* Always visible whenever a track is loaded (playing or paused), and
-          pinned directly above the tab row regardless of panel state — the
-          panel grows upward above this, so this row's own position never
-          moves. Interactive (seek by dragging) in both collapsed and
-          expanded states. */}
-      {nowPlaying && (
-        <View style={styles.progressSection}>
-          <View style={styles.timeRow}>
-            <Text style={[styles.timeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(currentTime)}</Text>
-            <Text style={[styles.timeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(duration)}</Text>
-          </View>
-          <Slider
-            style={styles.progressSlider}
-            minimumValue={0}
-            maximumValue={duration || 1}
-            value={currentTime}
-            minimumTrackTintColor={theme.colors.primary}
-            maximumTrackTintColor={theme.colors.outline}
-            thumbTintColor={theme.colors.primary}
-            onSlidingComplete={seekTo}
-          />
-        </View>
-      )}
 
       <View style={[styles.tabRow, { height: BAR_HEIGHT }]}>
         <Slot
@@ -293,6 +291,28 @@ export function BottomNav(props: BottomNavProps) {
           control={<RoundButton icon="shuffle" variant="dark" active={isShuffle} onPress={toggleShuffle} />}
         />
       </View>
+
+      {/* Rendered last (so it stacks visually above everything else in the
+          wrapper) and positioned absolutely relative to the wrapper's
+          BOTTOM edge — straddling the seam right above the tab row — rather
+          than its top edge. The tab row's own position never moves as the
+          panel expands/collapses (only the wrapper's top edge does), so
+          anchoring from the bottom is what keeps this fixed in the exact
+          same screen position in both states, overlaying the tab row's top
+          border instead of drifting with the panel. Full width, no label,
+          no padding. */}
+      {nowPlaying && (
+        <Slider
+          style={[styles.progressSlider, { bottom: BAR_HEIGHT + insets.bottom - PROGRESS_BAR_HEIGHT / 2 }]}
+          minimumValue={0}
+          maximumValue={duration || 1}
+          value={currentTime}
+          minimumTrackTintColor={theme.colors.primary}
+          maximumTrackTintColor={theme.colors.outline}
+          thumbTintColor={theme.colors.primary}
+          onSlidingComplete={seekTo}
+        />
+      )}
     </View>
   );
 }
@@ -300,9 +320,25 @@ export function BottomNav(props: BottomNavProps) {
 const styles = StyleSheet.create({
   wrapper: {
     borderTopWidth: 1,
+    position: 'relative',
   },
   panel: {
     overflow: 'hidden',
+  },
+  panelContent: {
+    // MiniPlayer's own container is flex:1, so it fills all the space above
+    // this and centers its row within it — expandedTimeRow below just takes
+    // its own intrinsic height, landing at the very bottom of the panel.
+    flex: 1,
+  },
+  expandedTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+  expandedTimeText: {
+    fontSize: 11,
   },
   grabHandle: {
     alignSelf: 'center',
@@ -312,20 +348,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     marginTop: 6,
   },
-  progressSection: {
-    paddingHorizontal: 14,
-    paddingTop: 2,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  timeText: {
-    fontSize: 11,
-  },
   progressSlider: {
-    width: '100%',
-    height: 20,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: PROGRESS_BAR_HEIGHT,
+    zIndex: 10,
   },
   tabRow: {
     flexDirection: 'row',
