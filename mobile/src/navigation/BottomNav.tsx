@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Image, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { usePlayer } from '../contexts/PlayerContext';
+import { formatDuration } from '../utils/format';
 import { MiniPlayer } from './MiniPlayer';
 
 // Icon + i18n label key per route name — kept here rather than on each
@@ -26,6 +28,7 @@ const DISABLED_ROUTE_ORDER = ['Dashboard', 'Playlists', 'Artists', 'Genres'];
 
 const BAR_HEIGHT = 60;
 const MIDDLE_BUTTON_SIZE = 68;
+const ROUND_BUTTON_SIZE = 52;
 const PANEL_MAX_HEIGHT = 160;
 // A drag must move at least this far before it's treated as "reveal the
 // panel" rather than a tap — lets Pressable children (the tab buttons)
@@ -59,11 +62,77 @@ function MiddleButton() {
   );
 }
 
+type RoundButtonVariant = 'light' | 'dark';
+
+// Prev/next ("light": white circle, red icon) and shuffle/repeat ("dark":
+// gray circle, white icon, red when active) — the four controls that pop up
+// in place of the outer tab icons once the mini player panel is dragged open
+// (see Slot below). Deliberately smaller than MiddleButton so the play/pause
+// button stays the visually dominant control even while these are showing.
+function RoundButton({
+  icon, onPress, disabled, active, variant,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  onPress: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  variant: RoundButtonVariant;
+}) {
+  const theme = useTheme();
+  const backgroundColor = variant === 'light' ? '#ffffff' : theme.colors.elevation.level5;
+  const iconColor = variant === 'light'
+    ? (disabled ? theme.colors.outlineVariant : theme.colors.primary)
+    : (active ? theme.colors.primary : '#ffffff');
+
+  return (
+    <Pressable onPress={onPress} disabled={disabled} hitSlop={8}>
+      <View style={[styles.roundButton, { backgroundColor }]}>
+        <MaterialCommunityIcons name={icon} size={24} color={iconColor} />
+      </View>
+    </Pressable>
+  );
+}
+
+// One of the 4 outer tab positions — stacks the normal tab button and its
+// pop-up-control replacement in the same spot, cross-fading between them off
+// the same panelHeight value that drives the panel reveal, so the fade and
+// the "pop up from the bottom" motion always stay in lockstep with the drag.
+// `expanded` (not the raw animated value) gates pointerEvents, since that has
+// to flip discretely — a mid-fade layer can't be "a little bit tappable".
+function Slot({
+  tab, control, expanded, tabsOpacity, controlsOpacity, controlsTranslateY,
+}: {
+  tab: ReactNode;
+  control: ReactNode;
+  expanded: boolean;
+  tabsOpacity: Animated.AnimatedInterpolation<number>;
+  controlsOpacity: Animated.AnimatedInterpolation<number>;
+  controlsTranslateY: Animated.AnimatedInterpolation<number>;
+}) {
+  return (
+    <View style={styles.slot}>
+      <Animated.View style={[styles.slotLayer, { opacity: tabsOpacity }]} pointerEvents={expanded ? 'none' : 'auto'}>
+        {tab}
+      </Animated.View>
+      <Animated.View
+        style={[styles.slotLayer, { opacity: controlsOpacity, transform: [{ translateY: controlsTranslateY }] }]}
+        pointerEvents={expanded ? 'auto' : 'none'}
+      >
+        {control}
+      </Animated.View>
+    </View>
+  );
+}
+
 // Custom tab bar for the root Tab.Navigator (see RootNavigator.tsx) — fully
-// custom rather than the default react-navigation bar because of the two
-// requirements the default bar can't do: a bigger, non-route middle
-// play/pause button, and a panel above the bar that reveals on an upward
-// drag, hosting the mini player (see MiniPlayer.tsx).
+// custom rather than the default react-navigation bar because of what the
+// default bar can't do: a bigger, non-route middle play/pause button, an
+// always-visible playback progress bar pinned just above the bar, and a
+// panel above the bar that reveals on an upward drag — hosting the mini
+// player's track info (see MiniPlayer.tsx) plus, in place of the 4 outer tab
+// icons, prev/next/shuffle/repeat controls, so the bar becomes a full
+// playback control surface while dragged open instead of needing a second
+// set of transport buttons inside the panel itself.
 //
 // The drag panel is built on core RN Animated + PanResponder rather than
 // react-native-reanimated/gesture-handler, since neither was already a
@@ -85,10 +154,21 @@ export function BottomNav(props: BottomNavProps) {
   const theme = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const {
+    nowPlaying, currentTime, duration, seekTo,
+    hasNext, hasPrevious, playNext, playPrevious,
+    isRepeat, isShuffle, toggleRepeat, toggleShuffle,
+  } = usePlayer();
 
   const panelHeight = useRef(new Animated.Value(0)).current;
   const panelHeightValue = useRef(0);
   const dragStartValue = useRef(0);
+  // Mirrors panelHeight's resting state (0 or PANEL_MAX_HEIGHT — the spring
+  // never settles in between) as a plain boolean, since pointerEvents can't
+  // be driven by an Animated value and needs a discrete "is it open" flag —
+  // this is also what makes the bottom nav genuinely inert while the panel
+  // is open, not just visually faded.
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const id = panelHeight.addListener(({ value }) => {
@@ -98,6 +178,7 @@ export function BottomNav(props: BottomNavProps) {
   }, [panelHeight]);
 
   const snapTo = useCallback((target: number) => {
+    setExpanded(target === PANEL_MAX_HEIGHT);
     Animated.spring(panelHeight, { toValue: target, useNativeDriver: false, bounciness: 4 }).start();
   }, [panelHeight]);
 
@@ -122,6 +203,12 @@ export function BottomNav(props: BottomNavProps) {
     })
   ).current;
 
+  // Same panelHeight value that drives the panel's own height, so the tab
+  // fade / control pop-up always finishes exactly when the panel does.
+  const tabsOpacity = panelHeight.interpolate({ inputRange: [0, PANEL_MAX_HEIGHT], outputRange: [1, 0], extrapolate: 'clamp' });
+  const controlsOpacity = panelHeight.interpolate({ inputRange: [0, PANEL_MAX_HEIGHT], outputRange: [0, 1], extrapolate: 'clamp' });
+  const controlsTranslateY = panelHeight.interpolate({ inputRange: [0, PANEL_MAX_HEIGHT], outputRange: [20, 0], extrapolate: 'clamp' });
+
   const routeNames = disabled ? DISABLED_ROUTE_ORDER : state!.routes.map(r => r.name);
 
   const renderTab = (routeName: string, index: number) => {
@@ -144,6 +231,8 @@ export function BottomNav(props: BottomNavProps) {
     );
   };
 
+  const slotProps = { expanded, tabsOpacity, controlsOpacity, controlsTranslateY };
+
   return (
     <View
       style={[
@@ -156,12 +245,53 @@ export function BottomNav(props: BottomNavProps) {
         <MiniPlayer />
       </Animated.View>
       <View style={styles.grabHandle} />
+
+      {/* Always visible whenever a track is loaded (playing or paused), and
+          pinned directly above the tab row regardless of panel state — the
+          panel grows upward above this, so this row's own position never
+          moves. Interactive (seek by dragging) in both collapsed and
+          expanded states. */}
+      {nowPlaying && (
+        <View style={styles.progressSection}>
+          <View style={styles.timeRow}>
+            <Text style={[styles.timeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(currentTime)}</Text>
+            <Text style={[styles.timeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(duration)}</Text>
+          </View>
+          <Slider
+            style={styles.progressSlider}
+            minimumValue={0}
+            maximumValue={duration || 1}
+            value={currentTime}
+            minimumTrackTintColor={theme.colors.primary}
+            maximumTrackTintColor={theme.colors.outline}
+            thumbTintColor={theme.colors.primary}
+            onSlidingComplete={seekTo}
+          />
+        </View>
+      )}
+
       <View style={[styles.tabRow, { height: BAR_HEIGHT }]}>
-        {renderTab(routeNames[0], 0)}
-        {renderTab(routeNames[1], 1)}
+        <Slot
+          {...slotProps}
+          tab={renderTab(routeNames[0], 0)}
+          control={<RoundButton icon="repeat" variant="dark" active={isRepeat} onPress={toggleRepeat} />}
+        />
+        <Slot
+          {...slotProps}
+          tab={renderTab(routeNames[1], 1)}
+          control={<RoundButton icon="skip-previous" variant="light" disabled={!hasPrevious} onPress={playPrevious} />}
+        />
         <MiddleButton />
-        {renderTab(routeNames[2], 2)}
-        {renderTab(routeNames[3], 3)}
+        <Slot
+          {...slotProps}
+          tab={renderTab(routeNames[2], 2)}
+          control={<RoundButton icon="skip-next" variant="light" disabled={!hasNext} onPress={playNext} />}
+        />
+        <Slot
+          {...slotProps}
+          tab={renderTab(routeNames[3], 3)}
+          control={<RoundButton icon="shuffle" variant="dark" active={isShuffle} onPress={toggleShuffle} />}
+        />
       </View>
     </View>
   );
@@ -182,19 +312,50 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     marginTop: 6,
   },
+  progressSection: {
+    paddingHorizontal: 14,
+    paddingTop: 2,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  timeText: {
+    fontSize: 11,
+  },
+  progressSlider: {
+    width: '100%',
+    height: 20,
+  },
   tabRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+  },
+  slot: {
+    flex: 1,
+  },
+  slotLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 8,
   },
   tabButton: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 2,
-    paddingBottom: 8,
   },
   tabLabel: {
     fontSize: 11,
+  },
+  roundButton: {
+    width: ROUND_BUTTON_SIZE,
+    height: ROUND_BUTTON_SIZE,
+    borderRadius: ROUND_BUTTON_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   middleButtonSlot: {
     flex: 1,
