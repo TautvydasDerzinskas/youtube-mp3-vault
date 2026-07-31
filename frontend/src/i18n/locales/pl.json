@@ -354,7 +354,8 @@
       "user_logged_in_web": "Zalogowano się (Web)",
       "user_logged_in_mobile": "Zalogowano się (Mobile)",
       "user_logged_out_web": "Wylogowano się (Web)",
-      "user_logged_out_mobile": "Wylogowano się (Mobile)"
+      "user_logged_out_mobile": "Wylogowano się (Mobile)",
+      "playlist_offline_enabled": "Włączono tryb offline (Mobile)"
     },
     "detailText": {
       "playlistImported": "Zaimportowano „{{name}}” ({{songCount}} utworów)",
@@ -364,7 +365,8 @@
       "syncPaused": "Wstrzymano automatyczną synchronizację „{{name}}”",
       "generatedCreated": "Wygenerowano „{{name}}” na podstawie „{{sourceName}}” ({{songCount}} utworów, {{failedCount}} nieudanych)",
       "loggedIn": "Zalogowano się jako {{email}}",
-      "loggedOut": "Wylogowano się"
+      "loggedOut": "Wylogowano się",
+      "offlineEnabled": "Włączono pobieranie offline dla „{{name}}”"
     }
   },
   "dashboard": {

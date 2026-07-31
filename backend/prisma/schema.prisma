@@ -57,6 +57,12 @@ model Playlist {
   videoCount   Int             @default(0)
   syncStatus   String          @default("idle")
   syncPaused   Boolean         @default(false)
+  // Set by the mobile app's offline-download feature (see mobile/src/offline/)
+  // — the actual downloaded files only ever live on-device, this is purely
+  // "the user turned this on," so a fresh install / lost-and-replaced phone
+  // can tell which playlists to re-download rather than starting from
+  // nothing. Not consulted by anything server-side.
+  offlineEnabled Boolean       @default(false)
   lastSyncedAt DateTime?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt

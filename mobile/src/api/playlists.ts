@@ -21,6 +21,11 @@ export interface Playlist {
   syncPhase: { phase: 'metadata' | 'quality'; current: number; total: number; title: string } | null;
   sourcePlaylistId: string | null;
   sourcePlaylistName: string | null;
+  // Server-persisted mirror of the offline-download toggle (see
+  // mobile/src/offline/OfflineDownloadsContext.tsx) — the downloaded files
+  // themselves are always local-only, but this flag survives a reinstall/
+  // new phone, letting the app restore which playlists to re-download.
+  offlineEnabled: boolean;
 }
 
 export interface PlaylistVideo {
@@ -183,6 +188,23 @@ export const playlistsApi = {
       `/playlists/${playlistId}/videos/${videoId}/recommendations`
     );
     return data;
+  },
+
+  // Persists the offline toggle server-side (Playlist.offlineEnabled) so a
+  // reinstalled app / new phone can restore which playlists to re-download
+  // (see OfflineDownloadsContext's startup reconciliation), and — enable
+  // only — writes the admin-log entry. The actual downloaded files never
+  // touch the server either way; these calls are fire-and-forget from the
+  // caller, since the local enable/disable already took effect and a
+  // failure here (including simply being offline right now) just means
+  // this device's toggle state hasn't reached the server yet — the next
+  // successful call catches it up, nothing to retry/queue in the meantime.
+  enableOfflineOnServer: async (id: string): Promise<void> => {
+    await client.post(`/playlists/${id}/enable-offline`, undefined, { suppressErrorToast: true });
+  },
+
+  disableOfflineOnServer: async (id: string): Promise<void> => {
+    await client.post(`/playlists/${id}/disable-offline`, undefined, { suppressErrorToast: true });
   },
 
   // Bulk-reports plays via mobile/src/offline/playQueue.ts's queue rather

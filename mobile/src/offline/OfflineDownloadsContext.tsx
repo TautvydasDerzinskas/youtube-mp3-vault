@@ -4,7 +4,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { playlistsApi, ManifestTrack } from '../api/playlists';
 import { offlineIndex } from './offlineIndex';
 import {
-  downloadTrack, removeOfflineTrack, removeOfflinePlaylistDir,
+  downloadTrack, removeOfflineTrack, removeOfflinePlaylistDir, offlineFileExists,
   runWithConcurrency, MAX_CONCURRENT_DOWNLOADS,
 } from './downloader';
 import { flushPlayQueue } from './playQueue';
@@ -88,17 +88,28 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       const toDelete = existingTracks.filter(t => !downloadableById.has(t.trackId));
       await Promise.all(toDelete.map(t => removeOfflineTrack(t)));
 
-      // A track already on-device is re-downloaded only if the underlying
-      // media file actually changed (HQ rescan replaced it) — same
-      // mediaFileId means the bytes are identical, no point re-fetching.
-      const toDownload = downloadable.filter(t => {
-        const have = existingById.get(t.id);
-        return !have || have.mediaFileId !== t.mediaFileId;
-      });
-      const unchanged = existingTracks.filter(t => {
+      // A track already on-device is re-downloaded if the underlying media
+      // file actually changed (HQ rescan replaced it — same mediaFileId
+      // means the bytes are identical, no point re-fetching) OR if its file
+      // is simply gone despite the index saying otherwise (deleted by
+      // another app, cleared by the OS, etc. — see offlineFileExists) —
+      // otherwise the index would keep reporting a track as "downloaded"
+      // forever even after it's no longer actually playable.
+      const sameFileCandidates = existingTracks.filter(t => {
         const server = downloadableById.get(t.trackId);
         return server !== undefined && server.mediaFileId === t.mediaFileId;
       });
+      const stillExists = await Promise.all(sameFileCandidates.map(t => offlineFileExists(t)));
+      const unchanged = sameFileCandidates.filter((_, i) => stillExists[i]);
+      const missingLocally = sameFileCandidates.filter((_, i) => !stillExists[i]);
+
+      const toDownload = [
+        ...downloadable.filter(t => {
+          const have = existingById.get(t.id);
+          return !have || have.mediaFileId !== t.mediaFileId;
+        }),
+        ...missingLocally.map(t => downloadableById.get(t.trackId)!),
+      ];
 
       setPlaylistProgress(playlistId, { total: downloadable.length, completed: unchanged.length });
 
@@ -175,6 +186,10 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
     persistEntry({
       playlistId, title: '', customName: null, thumbnailUrl: null, lastSyncedAt: null, tracks: [],
     });
+    // Persists the toggle server-side (so a reinstall can restore it — see
+    // the reconciliation effect below) and writes the admin-log entry;
+    // never blocks the actual enable/sync below.
+    playlistsApi.enableOfflineOnServer(playlistId).catch(() => {});
     await syncPlaylist(playlistId);
   }, [persistEntry, syncPlaylist]);
 
@@ -195,6 +210,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       delete next[playlistId];
       return next;
     });
+    playlistsApi.disableOfflineOnServer(playlistId).catch(() => {});
   }, []);
 
   const isEnabled = useCallback((playlistId: string) => playlistId in entriesRef.current, []);
@@ -208,8 +224,25 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
   // to the foreground or the device regains network. Both are the natural
   // "you're probably back in range of your server" signals, on top of
   // whatever a user-triggered manual sync (see the playlist screens) does.
+  //
+  // Also reconciles against the server's Playlist.offlineEnabled: a playlist
+  // marked enabled there but missing from the local index (a fresh install,
+  // or the same account on a replaced phone) gets re-enabled/re-downloaded
+  // here automatically — this is the actual "survives losing the phone"
+  // behavior, not just the toggle's own on-device state.
   useEffect(() => {
-    const syncAll = () => {
+    const syncAll = async () => {
+      try {
+        const { playlists } = await playlistsApi.getAll();
+        for (const p of playlists) {
+          if (p.offlineEnabled && !entriesRef.current[p.id]) {
+            enableOffline(p.id).catch(() => {});
+          }
+        }
+      } catch {
+        // Server unreachable — nothing to reconcile against right now;
+        // whatever's already in the local index below still gets synced.
+      }
       for (const playlistId of Object.keys(entriesRef.current)) {
         syncPlaylist(playlistId).catch(() => {});
       }

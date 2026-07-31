@@ -856,6 +856,57 @@ router.post('/:id/resume', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
+// ─── POST /api/playlists/:id/enable-offline & /disable-offline ───────────────
+// The mobile app's offline-download feature (see mobile/src/offline/) is
+// otherwise entirely client-side (local file storage + the existing
+// manifest/download endpoints) — the downloaded files themselves never
+// touch the server. These two routes just persist the on/off toggle itself
+// (Playlist.offlineEnabled) so a reinstalled app / a lost-and-replaced phone
+// can tell which playlists to re-download instead of starting from nothing,
+// and (enable only) write the admin-log entry the same way playlist_imported/
+// deleted/etc. do. The mobile app calls these fire-and-forget right after a
+// user flips the toggle — neither is on the critical path for the local
+// enable/disable to take effect.
+
+router.post('/:id/enable-offline', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    await prisma.playlist.update({ where: { id: playlist.id }, data: { offlineEnabled: true } });
+    res.status(204).send();
+
+    void createLog({
+      userId: req.userId!,
+      action: 'playlist_offline_enabled',
+      playlistId: playlist.id,
+      details: { name: playlist.customName ?? playlist.title },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/disable-offline', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    await prisma.playlist.update({ where: { id: playlist.id }, data: { offlineEnabled: false } });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── POST /api/playlists/:id/generate-similar ─────────────────────────────────
 // Generates a new playlist of similar/alternative tracks from this one (see
 // services/playlistGenerator.ts) — no real YouTube playlist behind it.

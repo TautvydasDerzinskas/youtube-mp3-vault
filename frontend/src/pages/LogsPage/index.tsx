@@ -26,6 +26,7 @@ const ACTION_COLORS: Record<LogAction, 'default' | 'primary' | 'success' | 'warn
   playlist_deleted: 'error',
   playlist_synced: 'primary',
   playlist_sync_paused: 'warning',
+  playlist_offline_enabled: 'primary',
   generated_playlist_created: 'success',
   generated_playlist_renamed: 'default',
   generated_playlist_deleted: 'error',
@@ -77,6 +78,8 @@ export default function LogsPage() {
         });
       case 'playlist_sync_paused':
         return t('logs.detailText.syncPaused', { name: d.name });
+      case 'playlist_offline_enabled':
+        return t('logs.detailText.offlineEnabled', { name: d.name });
       case 'generated_playlist_created':
         return t('logs.detailText.generatedCreated', {
           name: d.name, sourceName: d.sourceName, songCount: d.songCount, failedCount: d.failedCount,

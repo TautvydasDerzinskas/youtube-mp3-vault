@@ -130,6 +130,29 @@ export async function downloadTrack(
   return { ...base, localUri: (file ?? destination).uri };
 }
 
+// Verifies a previously-downloaded track's file/asset is actually still on
+// disk — the local index only records what *was* downloaded, and can go
+// stale if something outside this app removed it (Android's copy is a
+// normal file in the shared Music library, writable/deletable by any other
+// app or the user via a file manager/gallery app; iOS storage can also be
+// cleared by the OS under disk pressure). Called before trusting an
+// "unchanged, skip re-download" decision during sync (see
+// OfflineDownloadsContext.syncPlaylist) — without this, a deleted file would
+// keep reading as "downloaded" indefinitely and playback would just fail.
+export async function offlineFileExists(entry: OfflineTrackEntry): Promise<boolean> {
+  try {
+    if (Platform.OS === 'android') {
+      if (!entry.assetId) return false;
+      // Throws if the asset no longer exists in the MediaStore.
+      await new MediaLibrary.Asset(entry.assetId).getInfo();
+      return true;
+    }
+    return new File(entry.localUri).exists;
+  } catch {
+    return false;
+  }
+}
+
 // Removes one previously-downloaded track's local file/asset. Swallows
 // errors — the file may already be gone (user deleted it via a file manager
 // or gallery app, since Android's copy is genuinely shared/writable by

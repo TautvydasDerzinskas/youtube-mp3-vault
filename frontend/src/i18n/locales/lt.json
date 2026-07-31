@@ -350,7 +350,8 @@
       "user_logged_in_web": "Prisijungė (Web)",
       "user_logged_in_mobile": "Prisijungė (Mobili app.)",
       "user_logged_out_web": "Atsijungė (Web)",
-      "user_logged_out_mobile": "Atsijungė (Mobili app.)"
+      "user_logged_out_mobile": "Atsijungė (Mobili app.)",
+      "playlist_offline_enabled": "Įjungtas neprisijungimo režimas (Mobili app.)"
     },
     "detailText": {
       "playlistImported": "Importuota „{{name}}“ ({{songCount}} dainų)",
@@ -360,7 +361,8 @@
       "syncPaused": "Pristabdyta automatinė sinchronizacija „{{name}}“",
       "generatedCreated": "Sugeneruota „{{name}}“ iš „{{sourceName}}“ ({{songCount}} dainų, {{failedCount}} nepavyko)",
       "loggedIn": "Prisijungė kaip {{email}}",
-      "loggedOut": "Atsijungė"
+      "loggedOut": "Atsijungė",
+      "offlineEnabled": "Įjungtas atsisiuntimas neprisijungus grojaraščiui „{{name}}“"
     }
   },
   "dashboard": {
