@@ -3,7 +3,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/prisma';
 import { normalizePlaylistUrl, fetchPlaylist, searchRemixes, resolveTopMatch } from '../services/youtube';
 import { parseArtistAndTitle } from '../services/musicbrainz';
-import { getSimilarTracks, scrobble } from '../services/lastfm';
+import { getSimilarTracks, scrobble, scrobbleBatch, ScrobbleEntry } from '../services/lastfm';
 import { getSharedFilePath, sanitizeFilename } from '../services/downloader';
 import { isLastfmDiscoverEnabled } from '../services/settings';
 import { isOnline } from '../services/connectivity';
@@ -94,6 +94,90 @@ router.get('/all-tracks/summary', requireAuth, async (req: AuthRequest, res, nex
       totalDurationSec: doneAggregate._sum.duration ?? 0,
       totalSize: doneAggregate._sum.fileSize ?? 0,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/playlists/plays/sync — bulk offline play sync ─────────────────
+// Declared before /:id so Express doesn't match "plays" as an :id param (same
+// reasoning as all-tracks above). Used by the mobile app to replay plays that
+// happened while it was using a downloaded/offline copy of a playlist and the
+// server was unreachable — unlike the single-track POST .../played route
+// below (which always uses server "now"), each entry here carries its own
+// client-supplied playedAt, so playCount/lastPlayedAt and Last.fm scrobble
+// timestamps reflect when the track actually finished rather than whenever
+// the device happens to reconnect.
+
+const MAX_PLAYS_PER_SYNC = 500;
+
+interface PlaySyncEntry {
+  playlistId: string;
+  videoId: string;
+  playedAt: number;
+}
+
+function isPlaySyncEntry(value: unknown): value is PlaySyncEntry {
+  const v = value as Partial<PlaySyncEntry> | null;
+  return !!v && typeof v.playlistId === 'string' && typeof v.videoId === 'string' && typeof v.playedAt === 'number';
+}
+
+router.post('/plays/sync', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const rawPlays = Array.isArray(req.body?.plays) ? req.body.plays : [];
+    const plays: PlaySyncEntry[] = rawPlays.filter(isPlaySyncEntry).slice(0, MAX_PLAYS_PER_SYNC);
+    if (plays.length === 0) {
+      res.json({ synced: 0 });
+      return;
+    }
+
+    // Ownership check happens here, not per-entry — only videos belonging to
+    // one of this user's own playlists come back, so anything else (a stale
+    // videoId from a playlist deleted while offline, or a tampered request)
+    // is silently dropped below rather than erroring the whole batch.
+    const videoIds = [...new Set(plays.map((p) => p.videoId))];
+    const videos = await prisma.playlistVideo.findMany({
+      where: { id: { in: videoIds }, playlist: { userId: req.userId } },
+      select: { id: true, title: true, artist: true, channelName: true, lastPlayedAt: true },
+    });
+    const videoById = new Map(videos.map((v) => [v.id, v]));
+    const validPlays = plays.filter((p) => videoById.has(p.videoId));
+
+    const grouped = new Map<string, { count: number; latestPlayedAt: number }>();
+    for (const play of validPlays) {
+      const g = grouped.get(play.videoId) ?? { count: 0, latestPlayedAt: 0 };
+      g.count += 1;
+      g.latestPlayedAt = Math.max(g.latestPlayedAt, play.playedAt);
+      grouped.set(play.videoId, g);
+    }
+
+    await prisma.$transaction(
+      [...grouped.entries()].map(([videoId, g]) => {
+        const existingLastPlayedMs = videoById.get(videoId)!.lastPlayedAt?.getTime() ?? 0;
+        return prisma.playlistVideo.update({
+          where: { id: videoId },
+          data: { playCount: { increment: g.count }, lastPlayedAt: new Date(Math.max(existingLastPlayedMs, g.latestPlayedAt)) },
+        });
+      })
+    );
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { scrobblingEnabled: true, lastfmSessionKey: true },
+    });
+    if (user?.scrobblingEnabled && user.lastfmSessionKey) {
+      const scrobbleEntries: ScrobbleEntry[] = [];
+      for (const play of validPlays) {
+        const video = videoById.get(play.videoId)!;
+        const { artist: parsedArtist, title } = parseArtistAndTitle(video.title, video.channelName);
+        const artist = video.artist ?? parsedArtist;
+        if (!artist) continue;
+        scrobbleEntries.push({ artist, track: title, timestamp: Math.floor(play.playedAt / 1000) });
+      }
+      if (scrobbleEntries.length > 0) void scrobbleBatch(user.lastfmSessionKey, scrobbleEntries);
+    }
+
+    res.json({ synced: validPlays.length });
   } catch (err) {
     next(err);
   }

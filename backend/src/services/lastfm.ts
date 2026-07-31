@@ -195,3 +195,45 @@ export async function scrobble(params: {
     return false;
   }
 }
+
+export interface ScrobbleEntry {
+  artist: string;
+  track: string;
+  // Unix seconds — the actual moment the track finished playing, not "now".
+  // Used as-is by Last.fm (it doesn't verify this against wall-clock time),
+  // which is exactly what makes backdated/batched scrobbling from an
+  // offline client work correctly instead of bunching everything at
+  // whatever moment the sync happens to run.
+  timestamp: number;
+}
+
+// Last.fm's track.scrobble accepts up to 50 scrobbles per call via indexed
+// params (artist[0]/track[0]/timestamp[0], artist[1]/..., etc.) — this
+// chunks arbitrarily-long entry lists into calls of that size. Each chunk is
+// independent and best-effort (same silent-failure semantics as the
+// single-track scrobble() above): one failed chunk doesn't stop the rest
+// from being attempted, and there's no retry — a caller that needs
+// durability should only drop its own queued entries once this resolves.
+const LASTFM_SCROBBLE_BATCH_SIZE = 50;
+
+export async function scrobbleBatch(sessionKey: string, entries: ScrobbleEntry[]): Promise<void> {
+  const { apiKey, apiSecret } = getLastfmSettings();
+  if (!apiKey || !apiSecret || !isOnline() || entries.length === 0) return;
+
+  for (let i = 0; i < entries.length; i += LASTFM_SCROBBLE_BATCH_SIZE) {
+    const chunk = entries.slice(i, i + LASTFM_SCROBBLE_BATCH_SIZE);
+    const signedParams: Record<string, string> = { method: 'track.scrobble', api_key: apiKey, sk: sessionKey };
+    chunk.forEach((entry, index) => {
+      signedParams[`artist[${index}]`] = entry.artist;
+      signedParams[`track[${index}]`] = entry.track;
+      signedParams[`timestamp[${index}]`] = String(entry.timestamp);
+    });
+    const body = new URLSearchParams({ ...signedParams, api_sig: sign(signedParams, apiSecret), format: 'json' });
+
+    try {
+      await fetch(LASTFM_BASE, { method: 'POST', body, signal: AbortSignal.timeout(LASTFM_FETCH_TIMEOUT_MS) });
+    } catch {
+      // Best-effort — see doc comment above.
+    }
+  }
+}

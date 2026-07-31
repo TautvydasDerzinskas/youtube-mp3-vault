@@ -7,6 +7,7 @@ import {
   downloadTrack, removeOfflineTrack, removeOfflinePlaylistDir,
   runWithConcurrency, MAX_CONCURRENT_DOWNLOADS,
 } from './downloader';
+import { flushPlayQueue } from './playQueue';
 import { OfflinePlaylistEntry, OfflineTrackEntry, OfflineProgress } from './types';
 
 export type { OfflinePlaylistEntry, OfflineTrackEntry, OfflineProgress } from './types';
@@ -201,8 +202,9 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
     return entriesRef.current[playlistId]?.tracks.find(t => t.trackId === trackId)?.localUri;
   }, []);
 
-  // Re-run every enabled playlist's sync whenever the app comes to the
-  // foreground or the device regains network — both are the natural
+  // Re-run every enabled playlist's sync — and flush any plays queued while
+  // offline (see mobile/src/offline/playQueue.ts) — whenever the app comes
+  // to the foreground or the device regains network. Both are the natural
   // "you're probably back in range of your server" signals, on top of
   // whatever a user-triggered manual sync (see the playlist screens) does.
   useEffect(() => {
@@ -210,6 +212,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       for (const playlistId of Object.keys(entriesRef.current)) {
         syncPlaylist(playlistId).catch(() => {});
       }
+      flushPlayQueue().catch(() => {});
     };
 
     syncAll();

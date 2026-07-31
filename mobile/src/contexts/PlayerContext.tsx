@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, Re
 import { createAudioPlayer, useAudioPlayerStatus, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { playlistsApi, getStreamSource, PlaylistVideo } from '../api/playlists';
 import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
+import { enqueuePlay, flushPlayQueue } from '../offline/playQueue';
 
 export type QueueTrack = PlaylistVideo & { playlistId?: string };
 
@@ -154,10 +155,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     handleTrackEndedRef.current = () => {
       const prev = currentRef.current;
       if (prev) {
-        playlistsApi.markPlayed(prev.playlistId, prev.video.id).catch(() => {});
+        // Queued rather than sent directly — see mobile/src/offline/playQueue.ts.
+        // Works the same whether online (flushes immediately) or offline
+        // (persists until the next reconnect), so this one path covers both.
+        enqueuePlay(prev.playlistId, prev.video.id);
+        flushPlayQueue().catch(() => {});
       }
       if (isRepeatRef.current) {
-        // Repeat-one — not native player.loop, so markPlayed above still
+        // Repeat-one — not native player.loop, so the enqueue above still
         // fires every loop exactly like web's repeat-one does.
         player.seekTo(0);
         player.play();

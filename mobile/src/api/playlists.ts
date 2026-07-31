@@ -91,6 +91,15 @@ export interface PlaylistManifest {
   tracks: ManifestTrack[];
 }
 
+// Mirrors backend/src/routes/youtube.ts's PlaySyncEntry — one queued play
+// event, with the client's own record of when it actually happened
+// (playedAt, unix ms) rather than relying on server "now" at sync time.
+export interface PlaySyncEntry {
+  playlistId: string;
+  videoId: string;
+  playedAt: number;
+}
+
 export interface RecommendedTrack {
   id: string;
   playlistId: string;
@@ -172,10 +181,13 @@ export const playlistsApi = {
     return data;
   },
 
-  markPlayed: async (playlistId: string, videoId: string): Promise<{ playCount: number; lastPlayedAt: string }> => {
-    const { data } = await client.post<{ playCount: number; lastPlayedAt: string }>(
-      `/playlists/${playlistId}/videos/${videoId}/played`
-    );
+  // Bulk-reports plays via mobile/src/offline/playQueue.ts's queue rather
+  // than a single-track played endpoint — every play (online or offline) goes
+  // through the same queue+flush path, so playCount/lastPlayedAt and Last.fm
+  // scrobbles carry the real playedAt instead of "whenever this request
+  // happens to land" (see backend/src/routes/youtube.ts's plays/sync route).
+  syncPlays: async (plays: PlaySyncEntry[]): Promise<{ synced: number }> => {
+    const { data } = await client.post<{ synced: number }>('/playlists/plays/sync', { plays });
     return data;
   },
 
