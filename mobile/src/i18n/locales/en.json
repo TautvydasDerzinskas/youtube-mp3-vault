@@ -126,6 +126,18 @@
       "failedToLoad": "Failed to load artist."
     }
   },
+  "genres": {
+    "title": "Genres",
+    "empty": "No genres yet — genres appear here once your songs are analyzed.",
+    "failedToLoad": "Failed to load genres.",
+    "sortBy": "Sort by",
+    "sortNameAsc": "Name (A-Z)",
+    "sortNameDesc": "Name (Z-A)",
+    "sortSongCountDesc": "Song count (High-Low)",
+    "sortSongCountAsc": "Song count (Low-High)",
+    "searchPlaceholder": "Search genres…",
+    "noResults": "No genres match your search."
+  },
   "playlists": {
     "addPlaylist": "Add Playlist",
     "rename": "Rename",

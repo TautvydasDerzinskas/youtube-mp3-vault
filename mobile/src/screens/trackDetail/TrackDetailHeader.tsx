@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PlaylistVideo } from '../../api/playlists';
 import { usePlayer } from '../../contexts/PlayerContext';
-import { formatDuration } from '../../utils/format';
+import { formatDuration, formatGenre, normalizeGenreKey } from '../../utils/format';
 
 interface TrackDetailHeaderProps {
   video: PlaylistVideo;
@@ -54,7 +54,17 @@ export function TrackDetailHeader({ video, playlistId }: TrackDetailHeaderProps)
 
       {video.genres.length > 0 && (
         <View style={styles.chipRow}>
-          {video.genres.map(g => <Chip key={g} compact mode="flat" style={styles.chip}>{g}</Chip>)}
+          {video.genres.map(g => (
+            <Chip
+              key={g}
+              compact
+              mode="flat"
+              style={styles.chip}
+              onPress={() => navigation.navigate('AllTracks', { genreKey: normalizeGenreKey(g), genreLabel: formatGenre(g) })}
+            >
+              {g}
+            </Chip>
+          ))}
         </View>
       )}
 

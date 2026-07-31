@@ -8,10 +8,8 @@ import { DashboardArtist, DashboardGenre, DashboardSong } from '../../api/dashbo
 
 // Shared between each DashboardListCard preview and the corresponding "see
 // more" screen (AllSongsScreen/AllArtistsScreen/AllGenresScreen), so the
-// row layout only exists in one place. Song and artist rows navigate to
-// TrackDetail/ArtistDetail respectively, now that those screens exist.
-// GenreRow stays display-only — there's still no genre-filtered-tracks
-// screen on mobile to navigate to (unlike web's equivalent row).
+// row layout only exists in one place. Song/artist/genre rows navigate to
+// TrackDetail/ArtistDetail/AllTracks (genre-preselected) respectively.
 
 const styles = StyleSheet.create({
   row: {
@@ -102,13 +100,17 @@ export function ArtistRow({ artist, rank }: { artist: DashboardArtist; rank: num
 export function GenreRow({ genre, rank }: { genre: DashboardGenre; rank: number }) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const navigation = useNavigation();
   return (
-    <View style={styles.row}>
+    <Pressable
+      style={styles.row}
+      onPress={() => navigation.navigate('AllTracks', { genreKey: genre.key, genreLabel: genre.genre })}
+    >
       <Text style={[styles.rank, { color: theme.colors.onSurfaceVariant }]}>{rank}</Text>
       <Text numberOfLines={1} style={[styles.text, styles.title, { color: theme.colors.onBackground }]}>{genre.genre}</Text>
       <Text style={[styles.trailing, { color: theme.colors.onSurfaceVariant }]}>
         {t('dashboard.songCount', { count: genre.count })}
       </Text>
-    </View>
+    </Pressable>
   );
 }

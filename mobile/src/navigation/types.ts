@@ -9,7 +9,14 @@ export type RootStackParamList = {
   AllGenres: undefined;
   PlaylistDetail: { playlistId: string };
   TrackDetail: { playlistId: string; trackId: string };
-  AllTracks: undefined;
+  // genreKey preselects a genre filter (see AllTracksScreen) — optional so
+  // every existing navigate('AllTracks') call (no genre) keeps working.
+  // genreLabel is just a display-string optimization: most call sites
+  // already have a nicely-capitalized label at hand (DashboardGenre/
+  // ArtistGenreCount both carry one) and passing it avoids re-deriving it
+  // from the key; when absent (e.g. from a raw video.genres[] string),
+  // AllTracksScreen falls back to formatGenre(genreKey).
+  AllTracks: { genreKey?: string; genreLabel?: string } | undefined;
   ArtistDetail: { key: string };
 };
 

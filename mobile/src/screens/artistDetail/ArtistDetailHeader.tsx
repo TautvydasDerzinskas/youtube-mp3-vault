@@ -10,11 +10,8 @@ interface ArtistDetailHeaderProps {
 }
 
 // Mirrors frontend/src/pages/ArtistDetailPage/Header.tsx — avatar, name,
-// song/play-count chips, bio, genre chips, and "appears in" playlist chips.
-// Genre chips are display-only here (not clickable) — web routes them to
-// an all-tracks-filtered-by-genre view, which mobile's AllTracksScreen
-// doesn't support yet (no genre filter UI there). "Appears in" chips do
-// navigate, since PlaylistDetailScreen already exists.
+// song/play-count chips, bio, genre chips (→ AllTracks, genre preselected),
+// and "appears in" playlist chips (→ PlaylistDetail).
 export function ArtistDetailHeader({ artist }: ArtistDetailHeaderProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -52,7 +49,15 @@ export function ArtistDetailHeader({ artist }: ArtistDetailHeaderProps) {
       {artist.genres.length > 0 && (
         <View style={styles.chipRow}>
           {artist.genres.map(g => (
-            <Chip key={g.key} compact mode="flat" style={styles.chip}>{g.genre}</Chip>
+            <Chip
+              key={g.key}
+              compact
+              mode="flat"
+              style={styles.chip}
+              onPress={() => navigation.navigate('AllTracks', { genreKey: g.key, genreLabel: g.genre })}
+            >
+              {g.genre}
+            </Chip>
           ))}
         </View>
       )}

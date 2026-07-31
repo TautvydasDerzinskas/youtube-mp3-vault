@@ -134,6 +134,18 @@
       "failedToLoad": "Nepavyko įkelti atlikėjo."
     }
   },
+  "genres": {
+    "title": "Žanrai",
+    "empty": "Žanrų dar nėra — jie atsiras, kai jūsų dainos bus išanalizuotos.",
+    "failedToLoad": "Nepavyko įkelti žanrų.",
+    "sortBy": "Rikiuoti pagal",
+    "sortNameAsc": "Pavadinimą (A-Ž)",
+    "sortNameDesc": "Pavadinimą (Ž-A)",
+    "sortSongCountDesc": "Dainų skaičių (nuo didž. iki maž.)",
+    "sortSongCountAsc": "Dainų skaičių (nuo maž. iki didž.)",
+    "searchPlaceholder": "Ieškoti žanrų…",
+    "noResults": "Nėra žanrų, atitinkančių paiešką."
+  },
   "playlists": {
     "addPlaylist": "Pridėti grojaraštį",
     "rename": "Pervadinti",

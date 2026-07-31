@@ -1,10 +1,14 @@
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Chip, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { RootStackParamList } from '../navigation/types';
 import { useAllTracksDetail } from './allTracks/useAllTracksDetail';
 import { FilterBar } from './playlistDetail/FilterBar';
 import { TrackRow } from './playlistDetail/TrackRow';
-import { formatPlaybackTime } from '../utils/format';
+import { formatGenre, formatPlaybackTime } from '../utils/format';
+
+type AllTracksRouteProp = RouteProp<RootStackParamList, 'AllTracks'>;
 
 // Mirrors frontend/src/pages/AllTracksPage/index.tsx — reuses the same
 // FilterBar/TrackRow as PlaylistDetailScreen (TrackRow resolves each row's
@@ -14,7 +18,11 @@ import { formatPlaybackTime } from '../utils/format';
 export function AllTracksScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { status, summary, filteredTracks, playableQueue, sort, setSort, searchQuery, setSearchQuery } = useAllTracksDetail();
+  const route = useRoute<AllTracksRouteProp>();
+  const {
+    status, summary, filteredTracks, playableQueue, sort, setSort, searchQuery, setSearchQuery,
+    genreFilter, setGenreFilter,
+  } = useAllTracksDetail(route.params?.genreKey);
 
   if (status === 'loading') {
     return (
@@ -39,9 +47,16 @@ export function AllTracksScreen() {
             ? `${formatPlaybackTime(summary.totalDurationSec, t)} · ${t('playlists.allTracks.sourcedFromYoutube')}`
             : t('playlists.allTracks.sourcedFromYoutube')}
         </Text>
-        <Chip compact mode="outlined" style={styles.chip}>
-          {t('playlists.detail.trackCount', { count: summary.songCount })}
-        </Chip>
+        <View style={styles.chipRow}>
+          <Chip compact mode="outlined" style={styles.chip}>
+            {t('playlists.detail.trackCount', { count: summary.songCount })}
+          </Chip>
+          {genreFilter && (
+            <Chip compact mode="flat" style={styles.chip} onClose={() => setGenreFilter(null)}>
+              {route.params?.genreLabel ?? formatGenre(genreFilter)}
+            </Chip>
+          )}
+        </View>
       </View>
       <FilterBar sort={sort} onSortChange={setSort} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
       <FlatList
@@ -61,6 +76,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 4, gap: 6 },
+  chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   chip: { height: 24, alignSelf: 'flex-start' },
   list: { paddingBottom: 24 },
   empty: { textAlign: 'center', marginTop: 40 },

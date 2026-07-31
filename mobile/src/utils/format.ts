@@ -2,6 +2,21 @@ export function displayName(playlist: { title: string; customName: string | null
   return playlist.customName ?? playlist.title;
 }
 
+// Mirrors frontend/src/pages/PlaylistsPage/utils.tsx's normalizeGenreKey —
+// same trim+lowercase as backend's normalizeKey, so a genre chip's key
+// always matches what AllTracksScreen filters by regardless of casing.
+export function normalizeGenreKey(genre: string): string {
+  return genre.trim().toLowerCase();
+}
+
+// Display label: always capitalized regardless of how it's actually
+// stored, so the UI never shows a lowercase genre even before that data is
+// cleaned up.
+export function formatGenre(genre: string): string {
+  const trimmed = genre.trim();
+  return trimmed.length > 0 ? trimmed.charAt(0).toUpperCase() + trimmed.slice(1) : trimmed;
+}
+
 export function formatDuration(seconds: number | null | undefined): string {
   if (!seconds || !Number.isFinite(seconds) || seconds < 0) return '0:00';
   const total = Math.floor(seconds);
