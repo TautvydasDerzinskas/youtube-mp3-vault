@@ -260,7 +260,8 @@
       "confirmTitle": "Włączyć tryb offline?",
       "confirmMessage": "Utwory z tej playlisty zostaną pobrane na urządzenie.",
       "confirmMessageWithSize": "Zostanie pobrane około {{size}} na urządzenie.",
-      "enable": "Włącz"
+      "enable": "Włącz",
+      "available": "Dostępne offline"
     }
   },
   "serverSetup": {

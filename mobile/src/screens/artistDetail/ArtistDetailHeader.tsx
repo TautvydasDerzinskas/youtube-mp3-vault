@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 6 },
   chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  chip: { height: 26 },
+  chip: { minHeight: 26 },
   bio: { lineHeight: 18 },
   section: { marginTop: 2 },
 });

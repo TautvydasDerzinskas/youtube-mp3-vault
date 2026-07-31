@@ -53,3 +53,11 @@ export interface OfflineProgress {
   syncing: boolean;
   error: string | null;
 }
+
+// Shared by PlaylistRow's badge and Header's offline section — "complete"
+// means every track the last successful manifest fetch knew about is on
+// disk, not just "not currently syncing" (a fresh sync-failed attempt or an
+// empty/never-synced entry shouldn't read as done).
+export function isOfflineSyncComplete(progress: OfflineProgress | undefined): boolean {
+  return !!progress && !progress.syncing && !progress.error && progress.total > 0 && progress.completed >= progress.total;
+}

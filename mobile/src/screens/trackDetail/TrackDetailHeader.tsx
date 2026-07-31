@@ -90,6 +90,6 @@ const styles = StyleSheet.create({
   artworkFallback: { alignItems: 'center', justifyContent: 'center' },
   title: { textAlign: 'center' },
   chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 },
-  chip: { height: 26 },
+  chip: { minHeight: 26 },
   playButton: { marginTop: 16, alignSelf: 'center' },
 });

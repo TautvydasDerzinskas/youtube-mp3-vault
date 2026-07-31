@@ -11,6 +11,7 @@ import { flushPlayQueue } from './playQueue';
 import { OfflinePlaylistEntry, OfflineTrackEntry, OfflineProgress } from './types';
 
 export type { OfflinePlaylistEntry, OfflineTrackEntry, OfflineProgress } from './types';
+export { isOfflineSyncComplete } from './types';
 
 interface OfflineDownloadsContextType {
   // Every playlist the local index currently has an entry for — drives both

@@ -4,7 +4,7 @@ import { Chip, ProgressBar, Switch, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Playlist } from '../../api/playlists';
-import { useOfflineDownloads } from '../../offline/OfflineDownloadsContext';
+import { isOfflineSyncComplete, useOfflineDownloads } from '../../offline/OfflineDownloadsContext';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { displayName, formatBytes } from '../../utils/format';
 
@@ -101,19 +101,30 @@ export function Header({ playlist, canPlayFirst, onPlayFirst }: HeaderProps) {
         <Switch value={offlineEnabled} onValueChange={handleToggleOffline} />
       </View>
       {offlineEnabled && offlineProgress && (
-        <View style={styles.syncStatus}>
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-            {offlineProgress.error === 'sync-failed'
-              ? t('playlists.offline.syncFailed')
-              : offlineProgress.syncing
-              ? t('playlists.offline.downloading', { completed: offlineProgress.completed, total: offlineProgress.total })
-              : t('playlists.offline.downloaded', { completed: offlineProgress.completed, total: offlineProgress.total })}
-          </Text>
-          <ProgressBar
-            progress={offlineProgress.total > 0 ? offlineProgress.completed / offlineProgress.total : 0}
-            style={styles.progress}
-          />
-        </View>
+        isOfflineSyncComplete(offlineProgress) ? (
+          <Chip
+            compact
+            style={[styles.chip, styles.offlineCompleteChip]}
+            textStyle={styles.offlineCompleteChipText}
+            icon={() => <MaterialCommunityIcons name="cloud-check" size={16} color="#ffffff" />}
+          >
+            {t('playlists.offline.available')}
+          </Chip>
+        ) : (
+          <View style={styles.syncStatus}>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {offlineProgress.error === 'sync-failed'
+                ? t('playlists.offline.syncFailed')
+                : offlineProgress.syncing
+                ? t('playlists.offline.downloading', { completed: offlineProgress.completed, total: offlineProgress.total })
+                : t('playlists.offline.downloaded', { completed: offlineProgress.completed, total: offlineProgress.total })}
+            </Text>
+            <ProgressBar
+              progress={offlineProgress.total > 0 ? offlineProgress.completed / offlineProgress.total : 0}
+              style={styles.progress}
+            />
+          </View>
+        )
       )}
 
       <ConfirmDialog
@@ -140,8 +151,10 @@ const styles = StyleSheet.create({
   thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 6 },
   chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  chip: { height: 24 },
+  chip: { minHeight: 24 },
   syncStatus: { marginTop: 10 },
   progress: { height: 3, borderRadius: 2, marginTop: 4 },
   offlineRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+  offlineCompleteChip: { backgroundColor: '#2e7d32', alignSelf: 'flex-start', marginTop: 10 },
+  offlineCompleteChipText: { color: '#ffffff' },
 });

@@ -53,6 +53,6 @@ export function ArtistsFilterBar({ onSortChange, query, onQueryChange }: Artists
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, marginBottom: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, marginTop: 10, marginBottom: 4 },
   search: { flex: 1 },
 });

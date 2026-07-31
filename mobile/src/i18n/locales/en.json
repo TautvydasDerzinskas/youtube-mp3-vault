@@ -236,7 +236,8 @@
       "confirmTitle": "Enable offline?",
       "confirmMessage": "This playlist's tracks will be downloaded to your device.",
       "confirmMessageWithSize": "This will download about {{size}} to your device.",
-      "enable": "Enable"
+      "enable": "Enable",
+      "available": "Available offline"
     }
   },
   "serverSetup": {

@@ -248,7 +248,8 @@
       "confirmTitle": "Įjungti neprisijungus?",
       "confirmMessage": "Šio grojaraščio dainos bus atsisiųstos į jūsų įrenginį.",
       "confirmMessageWithSize": "Bus atsisiųsta apie {{size}} į jūsų įrenginį.",
-      "enable": "Įjungti"
+      "enable": "Įjungti",
+      "available": "Pasiekiama neprisijungus"
     }
   },
   "serverSetup": {

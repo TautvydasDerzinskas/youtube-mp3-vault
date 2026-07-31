@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 4, gap: 6 },
   chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  chip: { height: 24, alignSelf: 'flex-start' },
+  chip: { minHeight: 24, alignSelf: 'flex-start' },
   list: { paddingBottom: 24 },
   empty: { textAlign: 'center', marginTop: 40 },
 });

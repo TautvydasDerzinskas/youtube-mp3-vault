@@ -83,5 +83,5 @@ const styles = StyleSheet.create({
   info: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: 14, fontWeight: '600' },
   chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  chip: { height: 24 },
+  chip: { minHeight: 24 },
 });
