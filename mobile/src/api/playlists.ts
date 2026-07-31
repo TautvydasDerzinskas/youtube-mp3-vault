@@ -164,8 +164,12 @@ export const playlistsApi = {
     return data;
   },
 
+  // Only ever called from the offline-sync background flow (see
+  // OfflineDownloadsContext) — a 404 there (playlist deleted while offline)
+  // is already handled quietly, so it shouldn't also surface client.ts's
+  // generic error toast.
   getManifest: async (id: string): Promise<PlaylistManifest> => {
-    const { data } = await client.get<PlaylistManifest>(`/playlists/${id}/manifest`);
+    const { data } = await client.get<PlaylistManifest>(`/playlists/${id}/manifest`, { suppressErrorToast: true });
     return data;
   },
 
@@ -186,8 +190,12 @@ export const playlistsApi = {
   // through the same queue+flush path, so playCount/lastPlayedAt and Last.fm
   // scrobbles carry the real playedAt instead of "whenever this request
   // happens to land" (see backend/src/routes/youtube.ts's plays/sync route).
+  // Runs after every track finishes (and again on every reconnect/foreground
+  // while anything's still queued) — a toast on each failed attempt would be
+  // constant background noise, so errors here stay silent; the queue itself
+  // (not this toast) is what guarantees nothing gets lost.
   syncPlays: async (plays: PlaySyncEntry[]): Promise<{ synced: number }> => {
-    const { data } = await client.post<{ synced: number }>('/playlists/plays/sync', { plays });
+    const { data } = await client.post<{ synced: number }>('/playlists/plays/sync', { plays }, { suppressErrorToast: true });
     return data;
   },
 

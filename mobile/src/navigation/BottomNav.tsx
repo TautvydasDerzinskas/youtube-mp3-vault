@@ -4,6 +4,7 @@ import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import Svg, { Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -29,14 +30,25 @@ const DISABLED_ROUTE_ORDER = ['Dashboard', 'Playlists', 'Artists', 'Genres'];
 const BAR_HEIGHT = 60;
 const MIDDLE_BUTTON_SIZE = 68;
 const ROUND_BUTTON_SIZE = 52;
-const PROGRESS_BAR_HEIGHT = 16;
-// Tall enough for MiniPlayer's own content (a thumbnail/title row) plus a
-// current-time/duration row at the very bottom, visible only while expanded
-// (see the panel content below) — the seek bar itself moved out (it's the
-// always-on slider pinned just above the tab row, see progressSlider), and
-// the transport row became the pop-up controls in the tab row, so this only
-// needs to fit those two remaining rows, not the old full control stack.
-const PANEL_MAX_HEIGHT = 96;
+// Ring wraps just outside the middle button's own circle (a halo, not an
+// inset stroke over the icon) — width picked from the middle of the
+// requested 4-8px range.
+const RING_STROKE_WIDTH = 6;
+const RING_GAP = 4;
+const RING_SIZE = MIDDLE_BUTTON_SIZE + RING_STROKE_WIDTH + RING_GAP * 2;
+const RING_RADIUS = (RING_SIZE - RING_STROKE_WIDTH) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+// A lighter tint of theme.colors.primary (#ff0000) — the "traveled" arc.
+// The untraveled remainder isn't drawn at all (see strokeDasharray below),
+// so it reads as transparent against the button rather than a dimmed ring.
+const RING_PROGRESS_COLOR = '#ff6666';
+// Tall enough for MiniPlayer's own content (a thumbnail/title row) plus,
+// only while expanded, a current-time/duration row and the seek bar itself
+// (see the panel content below) — while collapsed, playback progress is
+// shown as the ring around the middle button instead (see MiddleButton),
+// and the transport row became the pop-up controls in the tab row, so this
+// only needs to fit MiniPlayer + those two expanded-only rows.
+const PANEL_MAX_HEIGHT = 128;
 // A drag must move at least this far before it's treated as "reveal the
 // panel" rather than a tap — lets Pressable children (the tab buttons)
 // still receive ordinary taps, since PanResponder only claims the gesture
@@ -47,23 +59,52 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-function MiddleButton() {
+// `ringOpacity` is BottomNav's tabsOpacity — playback progress only shows as
+// this ring while the bar is collapsed; once the panel opens, the seek bar
+// inside it (see the panel content below) takes over as the actual
+// interactive progress display, and this fades out in lockstep with the
+// outer tab icons it shares that value with.
+function MiddleButton({ ringOpacity }: { ringOpacity: Animated.AnimatedInterpolation<number> }) {
   const theme = useTheme();
-  const { nowPlaying, isAudioPlaying, togglePlayPause } = usePlayer();
+  const { nowPlaying, isAudioPlaying, currentTime, duration, togglePlayPause } = usePlayer();
+  const progress = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0;
 
   return (
     <Pressable onPress={togglePlayPause} style={styles.middleButtonSlot} hitSlop={8}>
-      <View style={[styles.middleButton, { backgroundColor: theme.colors.primary }]}>
-        {nowPlaying ? (
-          <MaterialCommunityIcons
-            name={isAudioPlaying ? 'pause' : 'play'}
-            size={30}
-            color={theme.colors.onPrimary}
-          />
-        ) : (
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          <Image source={require('../../assets/icon.png')} style={styles.middleButtonLogo} />
+      <View style={styles.middleButtonWrap}>
+        {nowPlaying && (
+          // Purely decorative — pointerEvents="none" so it never intercepts
+          // the tap that's meant for the play/pause button underneath it.
+          <Animated.View style={[styles.progressRing, { opacity: ringOpacity }]} pointerEvents="none">
+            <Svg width={RING_SIZE} height={RING_SIZE}>
+              <Circle
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={RING_RADIUS}
+                stroke={RING_PROGRESS_COLOR}
+                strokeWidth={RING_STROKE_WIDTH}
+                strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                strokeDashoffset={RING_CIRCUMFERENCE * (1 - progress)}
+                strokeLinecap="round"
+                fill="none"
+                rotation={-90}
+                origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
+              />
+            </Svg>
+          </Animated.View>
         )}
+        <View style={[styles.middleButton, { backgroundColor: theme.colors.primary }]}>
+          {nowPlaying ? (
+            <MaterialCommunityIcons
+              name={isAudioPlaying ? 'pause' : 'play'}
+              size={30}
+              color={theme.colors.onPrimary}
+            />
+          ) : (
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            <Image source={require('../../assets/icon.png')} style={styles.middleButtonLogo} />
+          )}
+        </View>
       </View>
     </Pressable>
   );
@@ -133,14 +174,22 @@ function Slot({
 
 // Custom tab bar for the root Tab.Navigator (see RootNavigator.tsx) — fully
 // custom rather than the default react-navigation bar because of what the
-// default bar can't do: a bigger, non-route middle play/pause button, a
-// full-width playback progress bar that doubles as the bar's own top border
-// whenever a track is loaded, and a panel above the bar that reveals on an
-// upward drag — hosting the mini player's track info (see MiniPlayer.tsx)
-// plus, in place of the 4 outer tab icons, prev/next/shuffle/repeat
-// controls, so the bar becomes a full playback control surface while
-// dragged open instead of needing a second set of transport buttons inside
-// the panel itself.
+// default bar can't do: a bigger, non-route middle play/pause button that
+// doubles as a circular progress indicator while collapsed (see
+// MiddleButton), a panel above the bar that reveals on an upward drag —
+// hosting the mini player's track info plus, only while expanded, the actual
+// interactive seek bar and time readout — and, in place of the 4 outer tab
+// icons while that panel is open, prev/next/shuffle/repeat controls, so the
+// bar becomes a full playback control surface while dragged open instead of
+// needing a second set of transport buttons inside the panel itself.
+//
+// Progress is deliberately shown two different ways depending on state
+// rather than one bar that's always present: a full-width bar collapsed
+// would either sit behind the middle button (which pokes up above the rest
+// of the bar) or force the button lower, and neither reads well — so
+// collapsed, progress rides on the button itself as a ring, and expanded
+// (where there's a whole panel's worth of room and the button's height
+// no longer matters as much) it becomes an ordinary draggable seek bar.
 //
 // The drag panel is built on core RN Animated + PanResponder rather than
 // react-native-reanimated/gesture-handler, since neither was already a
@@ -255,12 +304,27 @@ export function BottomNav(props: BottomNavProps) {
           {/* Only meaningful once the panel has actually opened up enough to
               show it — fades in with the same controlsOpacity driving the
               pop-up transport buttons, so it appears/disappears in lockstep
-              with the rest of the "expanded" chrome. */}
+              with the rest of the "expanded" chrome. The panel itself is
+              height:0 + overflow:hidden while collapsed, so this doesn't
+              need its own pointerEvents gating — it's fully clipped/
+              unreachable regardless of this Animated.View's own opacity. */}
           {nowPlaying && (
             <Animated.View style={{ opacity: controlsOpacity }}>
-              <View style={styles.expandedTimeRow}>
-                <Text style={[styles.expandedTimeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(currentTime)}</Text>
-                <Text style={[styles.expandedTimeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(duration)}</Text>
+              <View style={styles.expandedPlaybackInfo}>
+                <View style={styles.expandedTimeRow}>
+                  <Text style={[styles.expandedTimeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(currentTime)}</Text>
+                  <Text style={[styles.expandedTimeText, { color: theme.colors.onSurfaceVariant }]}>{formatDuration(duration)}</Text>
+                </View>
+                <Slider
+                  style={styles.expandedProgressSlider}
+                  minimumValue={0}
+                  maximumValue={duration || 1}
+                  value={currentTime}
+                  minimumTrackTintColor={theme.colors.primary}
+                  maximumTrackTintColor={theme.colors.outline}
+                  thumbTintColor={theme.colors.primary}
+                  onSlidingComplete={seekTo}
+                />
               </View>
             </Animated.View>
           )}
@@ -279,7 +343,7 @@ export function BottomNav(props: BottomNavProps) {
           tab={renderTab(routeNames[1], 1)}
           control={<RoundButton icon="skip-previous" variant="light" disabled={!hasPrevious} onPress={playPrevious} />}
         />
-        <MiddleButton />
+        <MiddleButton ringOpacity={tabsOpacity} />
         <Slot
           {...slotProps}
           tab={renderTab(routeNames[2], 2)}
@@ -291,28 +355,6 @@ export function BottomNav(props: BottomNavProps) {
           control={<RoundButton icon="shuffle" variant="dark" active={isShuffle} onPress={toggleShuffle} />}
         />
       </View>
-
-      {/* Rendered last (so it stacks visually above everything else in the
-          wrapper) and positioned absolutely relative to the wrapper's
-          BOTTOM edge — straddling the seam right above the tab row — rather
-          than its top edge. The tab row's own position never moves as the
-          panel expands/collapses (only the wrapper's top edge does), so
-          anchoring from the bottom is what keeps this fixed in the exact
-          same screen position in both states, overlaying the tab row's top
-          border instead of drifting with the panel. Full width, no label,
-          no padding. */}
-      {nowPlaying && (
-        <Slider
-          style={[styles.progressSlider, { bottom: BAR_HEIGHT + insets.bottom - PROGRESS_BAR_HEIGHT / 2 }]}
-          minimumValue={0}
-          maximumValue={duration || 1}
-          value={currentTime}
-          minimumTrackTintColor={theme.colors.primary}
-          maximumTrackTintColor={theme.colors.outline}
-          thumbTintColor={theme.colors.primary}
-          onSlidingComplete={seekTo}
-        />
-      )}
     </View>
   );
 }
@@ -327,18 +369,24 @@ const styles = StyleSheet.create({
   },
   panelContent: {
     // MiniPlayer's own container is flex:1, so it fills all the space above
-    // this and centers its row within it — expandedTimeRow below just takes
-    // its own intrinsic height, landing at the very bottom of the panel.
+    // this and centers its row within it — expandedPlaybackInfo below just
+    // takes its own intrinsic height, landing at the very bottom of the panel.
     flex: 1,
+  },
+  expandedPlaybackInfo: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
   },
   expandedTimeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 4,
   },
   expandedTimeText: {
     fontSize: 11,
+  },
+  expandedProgressSlider: {
+    width: '100%',
+    height: 20,
   },
   grabHandle: {
     alignSelf: 'center',
@@ -347,13 +395,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.15)',
     marginTop: 6,
-  },
-  progressSlider: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: PROGRESS_BAR_HEIGHT,
-    zIndex: 10,
   },
   tabRow: {
     flexDirection: 'row',
@@ -389,11 +430,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
+  middleButtonWrap: {
+    marginTop: -(MIDDLE_BUTTON_SIZE - BAR_HEIGHT) - 12,
+    width: MIDDLE_BUTTON_SIZE,
+    height: MIDDLE_BUTTON_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressRing: {
+    position: 'absolute',
+    width: RING_SIZE,
+    height: RING_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   middleButton: {
     width: MIDDLE_BUTTON_SIZE,
     height: MIDDLE_BUTTON_SIZE,
     borderRadius: MIDDLE_BUTTON_SIZE / 2,
-    marginTop: -(MIDDLE_BUTTON_SIZE - BAR_HEIGHT) - 12,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
