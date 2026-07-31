@@ -42,6 +42,10 @@
       "autoDeleteNonMusic": {
         "label": "Automatiškai šalinti ne muzikos įrašus",
         "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai, garso knygai arba triukšmui. Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
+      },
+      "serverUrl": {
+        "label": "Serverio adresas",
+        "change": "Keisti"
       }
     },
     "lastfm": {
@@ -111,6 +115,7 @@
     "unreachable": "Nepavyko pasiekti serverio. Patikrinkite adresą ir interneto ryšį.",
     "confirmTitle": "Išsaugoti šį serverį?",
     "confirmBody": "{{url}} bus visam laikui išsaugotas ir naudojamas šioje programėlėje. Tęsti?",
+    "confirmBodyChange": "{{url}} bus išsaugotas ir naudojamas šioje programėlėje. Būsite atjungti ir turėsite prisijungti iš naujo. Tęsti?",
     "cancel": "Atšaukti",
     "confirm": "Patvirtinti"
   },

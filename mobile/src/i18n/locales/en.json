@@ -42,6 +42,10 @@
       "autoDeleteNonMusic": {
         "label": "Auto-delete non-music tracks",
         "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music, an audiobook, or noise. Turning this on removes any tracks like these already in your library."
+      },
+      "serverUrl": {
+        "label": "Server URL",
+        "change": "Change"
       }
     },
     "lastfm": {
@@ -105,6 +109,7 @@
     "unreachable": "Could not reach that server. Check the address and your connection.",
     "confirmTitle": "Save this server?",
     "confirmBody": "{{url}} will be permanently saved and used by this app. Continue?",
+    "confirmBodyChange": "{{url}} will be saved and used by this app. You'll be logged out and need to sign in again. Continue?",
     "cancel": "Cancel",
     "confirm": "Confirm"
   },

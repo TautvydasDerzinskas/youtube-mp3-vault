@@ -3,14 +3,23 @@ import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Dialog, HelperText, Portal, Text, TextInput } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useServerConfig } from '../contexts/ServerConfigContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useServerUrlTest } from '../hooks/useServerUrlTest';
-import { DEFAULT_API_URL } from '../config';
 
-export function ServerSetupScreen() {
+// Reached from SettingsTabContent's "Server URL" row — same connection
+// test as the first-run ServerSetupScreen (see useServerUrlTest), but this
+// one runs while already signed in, so confirming it also logs the user
+// out: the current session's token belongs to the old server and has no
+// meaning against a different one, and there's no server-side session
+// migration to speak of. logout() runs before setServerUrl() so its
+// best-effort audit-log call still hits the server the token is actually
+// valid for.
+export function UpdateServerUrlScreen() {
   const { t } = useTranslation();
-  const { setServerUrl } = useServerConfig();
+  const { serverUrl, setServerUrl } = useServerConfig();
+  const { logout } = useAuth();
   const { testing, error, test } = useServerUrlTest();
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(serverUrl ?? '');
   const [saving, setSaving] = useState(false);
   const [confirmUrl, setConfirmUrl] = useState<string | null>(null);
 
@@ -23,6 +32,7 @@ export function ServerSetupScreen() {
     if (!confirmUrl) return;
     setSaving(true);
     try {
+      await logout();
       await setServerUrl(confirmUrl);
     } finally {
       setSaving(false);
@@ -33,15 +43,9 @@ export function ServerSetupScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
-        <Text variant="headlineMedium" style={styles.title}>{t('auth.appName')}</Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          {t('serverSetup.subtitle')}
-        </Text>
-
         <TextInput
           mode="outlined"
           label={t('serverSetup.urlLabel')}
-          placeholder={`${DEFAULT_API_URL.replace(/\/api$/, '')} or http://192.168.1.50:8065`}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
@@ -63,7 +67,7 @@ export function ServerSetupScreen() {
           <Dialog.Title>{t('serverSetup.confirmTitle')}</Dialog.Title>
           <Dialog.Content>
             <Text>
-              {t('serverSetup.confirmBody', { url: confirmUrl })}
+              {t('serverSetup.confirmBodyChange', { url: confirmUrl })}
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
@@ -79,7 +83,5 @@ export function ServerSetupScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { textAlign: 'center', marginBottom: 8 },
-  subtitle: { textAlign: 'center', marginBottom: 24 },
   input: { marginBottom: 4 },
 });

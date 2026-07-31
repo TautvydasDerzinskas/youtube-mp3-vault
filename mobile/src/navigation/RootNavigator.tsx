@@ -12,6 +12,7 @@ import { GenresScreen } from '../screens/GenresScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ChangeEmailScreen } from '../screens/ChangeEmailScreen';
 import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
+import { UpdateServerUrlScreen } from '../screens/UpdateServerUrlScreen';
 import { AllSongsScreen } from '../screens/AllSongsScreen';
 import { AllArtistsScreen } from '../screens/AllArtistsScreen';
 import { AllGenresScreen } from '../screens/AllGenresScreen';
@@ -75,6 +76,7 @@ export function RootNavigator() {
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: t('profile.title') }} />
           <Stack.Screen name="ChangeEmail" component={ChangeEmailScreen} options={{ title: t('profile.changeEmailTitle') }} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: t('profile.changePassword') }} />
+          <Stack.Screen name="UpdateServerUrl" component={UpdateServerUrlScreen} options={{ title: t('profile.settings.serverUrl.label') }} />
           <Stack.Screen name="AllSongs" component={AllSongsScreen} options={{ title: t('dashboard.songsOnRepeat.title') }} />
           <Stack.Screen name="AllArtists" component={AllArtistsScreen} options={{ title: t('dashboard.topArtists.title') }} />
           <Stack.Screen name="AllGenres" component={AllGenresScreen} options={{ title: t('dashboard.topGenres.title') }} />
