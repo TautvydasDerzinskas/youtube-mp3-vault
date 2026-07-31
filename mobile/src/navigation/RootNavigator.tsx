@@ -16,6 +16,9 @@ import { UpdateServerUrlScreen } from '../screens/UpdateServerUrlScreen';
 import { AllSongsScreen } from '../screens/AllSongsScreen';
 import { AllArtistsScreen } from '../screens/AllArtistsScreen';
 import { AllGenresScreen } from '../screens/AllGenresScreen';
+import { PlaylistDetailScreen } from '../screens/PlaylistDetailScreen';
+import { TrackDetailScreen } from '../screens/TrackDetailScreen';
+import { AllTracksScreen } from '../screens/AllTracksScreen';
 import { TopBar } from './TopBar';
 import { BottomNav } from './BottomNav';
 import { RootStackParamList, TabParamList } from './types';
@@ -80,6 +83,13 @@ export function RootNavigator() {
           <Stack.Screen name="AllSongs" component={AllSongsScreen} options={{ title: t('dashboard.songsOnRepeat.title') }} />
           <Stack.Screen name="AllArtists" component={AllArtistsScreen} options={{ title: t('dashboard.topArtists.title') }} />
           <Stack.Screen name="AllGenres" component={AllGenresScreen} options={{ title: t('dashboard.topGenres.title') }} />
+          {/* Both set their own header title dynamically via
+              navigation.setOptions once their data loads (see each
+              screen) — a playlist/track name isn't known at this level,
+              only the id passed as a route param. */}
+          <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} options={{ title: t('nav.playlists') }} />
+          <Stack.Screen name="TrackDetail" component={TrackDetailScreen} options={{ title: '' }} />
+          <Stack.Screen name="AllTracks" component={AllTracksScreen} options={{ title: t('playlists.allTracks.title') }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PlayerProvider>

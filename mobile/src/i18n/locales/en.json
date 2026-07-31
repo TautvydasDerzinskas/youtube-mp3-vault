@@ -97,7 +97,109 @@
     }
   },
   "common": {
-    "comingSoon": "Coming soon."
+    "comingSoon": "Coming soon.",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "player": {
+    "nothingPlaying": "Nothing playing"
+  },
+  "artists": {
+    "detail": {
+      "totalPlayCount_one": "{{count}} play",
+      "totalPlayCount_other": "{{count}} plays"
+    }
+  },
+  "playlists": {
+    "addPlaylist": "Add Playlist",
+    "rename": "Rename",
+    "remove": "Remove",
+    "scanHq": "Scan for HQ files",
+    "syncNow": "Sync now",
+    "syncing": "Syncing…",
+    "pauseSync": "Pause automatic sync",
+    "resumeSync": "Resume automatic sync",
+    "generatedBadge": "Generated",
+    "allTracks": {
+      "title": "All Tracks",
+      "sourcedFromYoutube": "Sourced from YouTube"
+    },
+    "playbackTime": {
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "mins_one": "{{count}} min",
+      "mins_other": "{{count}} mins",
+      "label": "{{time}} of playback"
+    },
+    "generateSimilar": "Generate similar playlist",
+    "generateSimilarError": "Failed to start generating a similar playlist.",
+    "generatingChip": "Generating…",
+    "downloadedCount": "{{count}}/{{total}} downloaded",
+    "failedCount": "{{count}} failed",
+    "retryFailed_one": "Retry {{count}} failed video",
+    "retryFailed_other": "Retry {{count}} failed videos",
+    "emptyState": "No playlists yet. Tap \"Add Playlist\" and paste a YouTube playlist URL.",
+    "loadError": "Failed to load your playlists.",
+    "offlineBanner": "This service can't reach the internet right now, so syncing is unavailable. Playback of already-downloaded songs still works fine.",
+    "pausingMessage": "Pausing… waiting for \"{{title}}\" to finish syncing",
+    "pausingMessageGeneric": "Pausing… waiting for the current song to finish syncing",
+    "pacingMessage": "Pacing…",
+    "syncingMessage": "Syncing #{{position}}/{{total}} — {{title}}",
+    "metadataPhaseMessage": "Resolving metadata {{current}}/{{total}} — {{title}}",
+    "qualityPhaseMessage": "Searching HQ file for '{{title}}' ({{current}}/{{total}})",
+    "status": {
+      "pending": "pending",
+      "downloading": "downloading",
+      "done": "done",
+      "failed": "failed",
+      "removed": "removed"
+    },
+    "videoList": {
+      "play": "Play",
+      "pause": "Pause"
+    },
+    "deleteConfirm": {
+      "title": "Remove playlist?",
+      "message": "This will permanently delete \"{{name}}\" and all its downloaded files. This can't be undone."
+    },
+    "generateSimilarConfirm": {
+      "title": "Generate a similar playlist?",
+      "message": "This looks for an alternative or similar track for every song in \"{{name}}\" (via Last.fm, falling back to remixes/originals on YouTube) and builds a new playlist from the results. It can take a long time for large playlists, and the result is usually smaller than the source, since not every song has a good alternative."
+    },
+    "addDialog": {
+      "title": "Add Playlist",
+      "urlLabel": "YouTube Playlist URL",
+      "nameLabel": "Custom name (optional)",
+      "namePlaceholder": "Leave blank to use YouTube title",
+      "add": "Add",
+      "genericError": "Failed to add playlist. Check the URL and try again."
+    },
+    "renameDialog": {
+      "title": "Rename Playlist",
+      "displayNameLabel": "Display name",
+      "helperText": "Leave blank to use the YouTube title",
+      "genericError": "Failed to rename"
+    },
+    "detail": {
+      "failedToLoad": "Failed to load this playlist.",
+      "noTracks": "No tracks match the current filters.",
+      "searchPlaceholder": "Search by name or artist…",
+      "trackCount": "{{count}} tracks",
+      "sortImportDesc": "Import order (newest first)",
+      "sortImportAsc": "Import order (oldest first)",
+      "sortNameAsc": "Name (A-Z)",
+      "sortNameDesc": "Name (Z-A)",
+      "sortArtistAsc": "Artist (A-Z)",
+      "sortArtistDesc": "Artist (Z-A)",
+      "sortPlaysDesc": "Plays (High-Low)",
+      "sortPlaysAsc": "Plays (Low-High)"
+    },
+    "trackDetail": {
+      "failedToLoad": "Failed to load this track.",
+      "recommendedTitle": "Similar songs"
+    }
   },
   "serverSetup": {
     "subtitle": "Enter the address of your YoutubeVault service, including the port if it uses a custom one.",

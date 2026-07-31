@@ -109,7 +109,119 @@
     }
   },
   "common": {
-    "comingSoon": "Wkrótce."
+    "comingSoon": "Wkrótce.",
+    "cancel": "Anuluj",
+    "save": "Zapisz"
+  },
+  "player": {
+    "nothingPlaying": "Nic nie jest odtwarzane"
+  },
+  "artists": {
+    "detail": {
+      "totalPlayCount_one": "{{count}} odtworzenie",
+      "totalPlayCount_few": "{{count}} odtworzenia",
+      "totalPlayCount_many": "{{count}} odtworzeń",
+      "totalPlayCount_other": "{{count}} odtworzeń"
+    }
+  },
+  "playlists": {
+    "addPlaylist": "Dodaj playlistę",
+    "rename": "Zmień nazwę",
+    "remove": "Usuń",
+    "scanHq": "Szukaj plików HQ",
+    "syncNow": "Synchronizuj teraz",
+    "syncing": "Synchronizowanie…",
+    "pauseSync": "Wstrzymaj automatyczną synchronizację",
+    "resumeSync": "Wznów automatyczną synchronizację",
+    "generatedBadge": "Wygenerowana",
+    "allTracks": {
+      "title": "Wszystkie utwory",
+      "sourcedFromYoutube": "Źródło: YouTube"
+    },
+    "playbackTime": {
+      "days_one": "{{count}} dzień",
+      "days_few": "{{count}} dni",
+      "days_many": "{{count}} dni",
+      "days_other": "{{count}} dni",
+      "hours_one": "{{count}} godzina",
+      "hours_few": "{{count}} godziny",
+      "hours_many": "{{count}} godzin",
+      "hours_other": "{{count}} godzin",
+      "mins_one": "{{count}} minuta",
+      "mins_few": "{{count}} minuty",
+      "mins_many": "{{count}} minut",
+      "mins_other": "{{count}} minut",
+      "label": "Czas odtwarzania: {{time}}"
+    },
+    "generateSimilar": "Wygeneruj podobną playlistę",
+    "generateSimilarError": "Nie udało się rozpocząć generowania podobnej playlisty.",
+    "generatingChip": "Generowanie…",
+    "downloadedCount": "Pobrano: {{count}}/{{total}}",
+    "failedCount": "Nieudane: {{count}}",
+    "retryFailed_one": "Ponów {{count}} nieudany film",
+    "retryFailed_few": "Ponów {{count}} nieudane filmy",
+    "retryFailed_many": "Ponów {{count}} nieudanych filmów",
+    "retryFailed_other": "Ponów {{count}} nieudanych filmów",
+    "emptyState": "Nie masz jeszcze żadnych playlist. Dotknij „Dodaj playlistę” i wklej link do playlisty YouTube.",
+    "loadError": "Nie udało się załadować Twoich playlist.",
+    "offlineBanner": "Usługa nie ma teraz połączenia z internetem, więc synchronizacja jest niedostępna. Odtwarzanie już pobranych utworów nadal działa normalnie.",
+    "pausingMessage": "Wstrzymywanie… oczekiwanie na zakończenie synchronizacji „{{title}}”",
+    "pausingMessageGeneric": "Wstrzymywanie… oczekiwanie na zakończenie synchronizacji bieżącego utworu",
+    "pacingMessage": "Zwalnianie tempa…",
+    "syncingMessage": "Synchronizowanie #{{position}}/{{total}} — {{title}}",
+    "metadataPhaseMessage": "Ustalanie metadanych {{current}}/{{total}} — {{title}}",
+    "qualityPhaseMessage": "Szukanie pliku HQ dla „{{title}}” ({{current}}/{{total}})",
+    "status": {
+      "pending": "oczekuje",
+      "downloading": "pobieranie",
+      "done": "gotowe",
+      "failed": "nieudane",
+      "removed": "usunięte"
+    },
+    "videoList": {
+      "play": "Odtwórz",
+      "pause": "Wstrzymaj"
+    },
+    "deleteConfirm": {
+      "title": "Usunąć playlistę?",
+      "message": "Spowoduje to trwałe usunięcie „{{name}}” i wszystkich pobranych plików. Tej operacji nie można cofnąć."
+    },
+    "generateSimilarConfirm": {
+      "title": "Wygenerować podobną playlistę?",
+      "message": "Dla każdego utworu w „{{name}}” zostanie wyszukana alternatywa lub podobny utwór (przez Last.fm, a w razie braku wyników — remiksy/oryginały na YouTube) i z wyników zostanie zbudowana nowa playlista. Dla dużych playlist może to potrwać długo, a wynik zwykle jest mniejszy niż źródło, ponieważ nie każdy utwór ma dobry odpowiednik."
+    },
+    "addDialog": {
+      "title": "Dodaj playlistę",
+      "urlLabel": "Link do playlisty YouTube",
+      "nameLabel": "Własna nazwa (opcjonalnie)",
+      "namePlaceholder": "Pozostaw puste, aby użyć nazwy z YouTube",
+      "add": "Dodaj",
+      "genericError": "Nie udało się dodać playlisty. Sprawdź link i spróbuj ponownie."
+    },
+    "renameDialog": {
+      "title": "Zmień nazwę playlisty",
+      "displayNameLabel": "Nazwa wyświetlana",
+      "helperText": "Pozostaw puste, aby użyć nazwy z YouTube",
+      "genericError": "Nie udało się zmienić nazwy"
+    },
+    "detail": {
+      "failedToLoad": "Nie udało się załadować tej playlisty.",
+      "noTracks": "Żaden utwór nie pasuje do wybranych filtrów.",
+      "searchPlaceholder": "Szukaj wg nazwy lub wykonawcy…",
+      "trackCount": "{{count}} utworów",
+      "sortImportDesc": "Kolejności importu (najnowsze najpierw)",
+      "sortImportAsc": "Kolejności importu (najstarsze najpierw)",
+      "sortNameAsc": "Nazwy (A-Z)",
+      "sortNameDesc": "Nazwy (Z-A)",
+      "sortArtistAsc": "Wykonawcy (A-Z)",
+      "sortArtistDesc": "Wykonawcy (Z-A)",
+      "sortPlaysDesc": "Odtworzeń (malejąco)",
+      "sortPlaysAsc": "Odtworzeń (rosnąco)"
+    },
+    "trackDetail": {
+      "failedToLoad": "Nie udało się załadować tego utworu.",
+      "recommendedTitle": "Podobne utwory"
+    }
   },
   "serverSetup": {
     "subtitle": "Podaj adres swojej usługi YoutubeVault, wraz z portem, jeśli używa niestandardowego.",

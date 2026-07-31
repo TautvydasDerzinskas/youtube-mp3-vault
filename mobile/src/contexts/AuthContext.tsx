@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   lastfmScrobblingAvailable: boolean;
+  lastfmDiscoverAvailable: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateLanguage: (language: string) => Promise<void>;
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastfmScrobblingAvailable, setLastfmScrobblingAvailable] = useState(false);
+  const [lastfmDiscoverAvailable, setLastfmDiscoverAvailable] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -39,9 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const { user, lastfmScrobblingAvailable } = await authApi.me();
+        const { user, lastfmScrobblingAvailable, lastfmDiscoverAvailable } = await authApi.me();
         setUser(applyUser(user));
         setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
+        setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
       } catch {
         await tokenStorage.clear();
       } finally {
@@ -54,14 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { user, token } = await authApi.login(email, password);
     await tokenStorage.set(token);
     setUser(applyUser(user));
-    // login's response doesn't include lastfmScrobblingAvailable (only /me
-    // does) — fetch it once right after so the Last.fm tab's gating is
+    // login's response doesn't include lastfm*Available (only /me does) —
+    // fetch it once right after so Last.fm/Generate-Similar gating is
     // correct without waiting for some other trigger to refresh it.
     try {
-      const { lastfmScrobblingAvailable } = await authApi.me();
+      const { lastfmScrobblingAvailable, lastfmDiscoverAvailable } = await authApi.me();
       setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
+      setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
     } catch {
-      // Best-effort — worst case the tab stays hidden until next launch.
+      // Best-effort — worst case these stay hidden until next launch.
     }
   }, []);
 
@@ -108,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user, loading, lastfmScrobblingAvailable, login, logout,
+        user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, login, logout,
         updateLanguage, updateProfile, disconnectLastfm, setScrobbling, setAutoDeleteNonMusic,
       }}
     >

@@ -7,6 +7,9 @@ export type RootStackParamList = {
   AllSongs: undefined;
   AllArtists: undefined;
   AllGenres: undefined;
+  PlaylistDetail: { playlistId: string };
+  TrackDetail: { playlistId: string; trackId: string };
+  AllTracks: undefined;
 };
 
 export type TabParamList = {

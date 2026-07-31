@@ -103,7 +103,114 @@
     }
   },
   "common": {
-    "comingSoon": "Netrukus."
+    "comingSoon": "Netrukus.",
+    "cancel": "Atšaukti",
+    "save": "Išsaugoti"
+  },
+  "player": {
+    "nothingPlaying": "Niekas negrojama"
+  },
+  "artists": {
+    "detail": {
+      "totalPlayCount_one": "{{count}} peržiūra",
+      "totalPlayCount_few": "{{count}} peržiūros",
+      "totalPlayCount_other": "{{count}} peržiūrų"
+    }
+  },
+  "playlists": {
+    "addPlaylist": "Pridėti grojaraštį",
+    "rename": "Pervadinti",
+    "remove": "Pašalinti",
+    "scanHq": "Ieškoti HQ failų",
+    "syncNow": "Sinchronizuoti dabar",
+    "syncing": "Sinchronizuojama…",
+    "pauseSync": "Pristabdyti automatinę sinchronizaciją",
+    "resumeSync": "Tęsti automatinę sinchronizaciją",
+    "generatedBadge": "Sugeneruotas",
+    "allTracks": {
+      "title": "Visos dainos",
+      "sourcedFromYoutube": "Šaltinis: YouTube"
+    },
+    "playbackTime": {
+      "days_one": "{{count}} diena",
+      "days_few": "{{count}} dienos",
+      "days_other": "{{count}} dienų",
+      "hours_one": "{{count}} valanda",
+      "hours_few": "{{count}} valandos",
+      "hours_other": "{{count}} valandų",
+      "mins_one": "{{count}} minutė",
+      "mins_few": "{{count}} minutės",
+      "mins_other": "{{count}} minučių",
+      "label": "Grojimo laikas: {{time}}"
+    },
+    "generateSimilar": "Generuoti panašų grojaraštį",
+    "generateSimilarError": "Nepavyko pradėti generuoti panašaus grojaraščio.",
+    "generatingChip": "Generuojama…",
+    "downloadedCount": "Atsisiųsta: {{count}}/{{total}}",
+    "failedCount": "Nepavyko: {{count}}",
+    "retryFailed_one": "Pakartoti {{count}} nepavykusį vaizdo įrašą",
+    "retryFailed_few": "Pakartoti {{count}} nepavykusius vaizdo įrašus",
+    "retryFailed_other": "Pakartoti {{count}} nepavykusių vaizdo įrašų",
+    "emptyState": "Grojaraščių dar nėra. Bakstelėkite „Pridėti grojaraštį“ ir įklijuokite YouTube grojaraščio nuorodą.",
+    "loadError": "Nepavyko įkelti jūsų grojaraščių.",
+    "offlineBanner": "Šiuo metu paslauga neturi interneto ryšio, todėl sinchronizavimas negalimas. Jau atsisiųstų dainų grojimas veikia įprastai.",
+    "pausingMessage": "Stabdoma… laukiama, kol baigsis „{{title}}“ sinchronizavimas",
+    "pausingMessageGeneric": "Stabdoma… laukiama, kol baigsis dabartinės dainos sinchronizavimas",
+    "pacingMessage": "Lėtinama…",
+    "syncingMessage": "Sinchronizuojama #{{position}}/{{total}} — {{title}}",
+    "metadataPhaseMessage": "Nustatomi metaduomenys {{current}}/{{total}} — {{title}}",
+    "qualityPhaseMessage": "Ieškoma HQ failo „{{title}}“ ({{current}}/{{total}})",
+    "status": {
+      "pending": "laukiama",
+      "downloading": "atsisiunčiama",
+      "done": "atlikta",
+      "failed": "nepavyko",
+      "removed": "pašalinta"
+    },
+    "videoList": {
+      "play": "Groti",
+      "pause": "Pristabdyti"
+    },
+    "deleteConfirm": {
+      "title": "Pašalinti grojaraštį?",
+      "message": "Tai visam laikui ištrins „{{name}}“ ir visus jo atsisiųstus failus. Šio veiksmo atšaukti negalėsite."
+    },
+    "generateSimilarConfirm": {
+      "title": "Generuoti panašų grojaraštį?",
+      "message": "Kiekvienai „{{name}}“ dainai bus ieškoma alternatyvos ar panašaus takelio (per Last.fm, o jei nepavyks — remiksų/originalų iš YouTube) ir iš rezultatų sukuriamas naujas grojaraštis. Dideliems grojaraščiams tai gali užtrukti ilgai, o rezultatas paprastai būna mažesnis už originalą, nes ne kiekvienai dainai atsiranda geras atitikmuo."
+    },
+    "addDialog": {
+      "title": "Pridėti grojaraštį",
+      "urlLabel": "YouTube grojaraščio nuoroda",
+      "nameLabel": "Pasirinktinis pavadinimas (nebūtina)",
+      "namePlaceholder": "Palikite tuščią, kad būtų naudojamas YouTube pavadinimas",
+      "add": "Pridėti",
+      "genericError": "Nepavyko pridėti grojaraščio. Patikrinkite nuorodą ir bandykite dar kartą."
+    },
+    "renameDialog": {
+      "title": "Pervadinti grojaraštį",
+      "displayNameLabel": "Rodomas pavadinimas",
+      "helperText": "Palikite tuščią, kad būtų naudojamas YouTube pavadinimas",
+      "genericError": "Nepavyko pervadinti"
+    },
+    "detail": {
+      "failedToLoad": "Nepavyko įkelti šio grojaraščio.",
+      "noTracks": "Nėra dainų, atitinkančių pasirinktus filtrus.",
+      "searchPlaceholder": "Ieškoti pagal pavadinimą ar atlikėją…",
+      "trackCount": "{{count}} dainų",
+      "sortImportDesc": "Importavimo tvarką (naujausius pirmiau)",
+      "sortImportAsc": "Importavimo tvarką (seniausius pirmiau)",
+      "sortNameAsc": "Pavadinimą (A-Ž)",
+      "sortNameDesc": "Pavadinimą (Ž-A)",
+      "sortArtistAsc": "Atlikėją (A-Ž)",
+      "sortArtistDesc": "Atlikėją (Ž-A)",
+      "sortPlaysDesc": "Peržiūras (nuo didž. iki maž.)",
+      "sortPlaysAsc": "Peržiūras (nuo maž. iki didž.)"
+    },
+    "trackDetail": {
+      "failedToLoad": "Nepavyko įkelti šios dainos.",
+      "recommendedTitle": "Panašios dainos"
+    }
   },
   "serverSetup": {
     "subtitle": "Įveskite savo YoutubeVault serverio adresą, įskaitant prievadą, jei naudojamas nestandartinis.",

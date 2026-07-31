@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { usePlayer } from '../contexts/PlayerContext';
+import { MiniPlayer } from './MiniPlayer';
 
 // Icon + i18n label key per route name — kept here rather than on each
 // Tab.Screen's `options` since this bar is the only thing that reads them
@@ -58,7 +59,7 @@ function MiddleButton() {
 // custom rather than the default react-navigation bar because of the two
 // requirements the default bar can't do: a bigger, non-route middle
 // play/pause button, and a panel above the bar that reveals on an upward
-// drag (empty for now — future home for the mini player).
+// drag, hosting the mini player (see MiniPlayer.tsx).
 //
 // The drag panel is built on core RN Animated + PanResponder rather than
 // react-native-reanimated/gesture-handler, since neither was already a
@@ -131,7 +132,9 @@ export function BottomNav({ state, navigation }: BottomTabBarProps) {
       ]}
       {...panResponder.panHandlers}
     >
-      <Animated.View style={[styles.panel, { height: panelHeight }]} />
+      <Animated.View style={[styles.panel, { height: panelHeight }]}>
+        <MiniPlayer />
+      </Animated.View>
       <View style={styles.grabHandle} />
       <View style={[styles.tabRow, { height: BAR_HEIGHT }]}>
         {renderTab(state.routes[0], 0)}

@@ -19,6 +19,7 @@ interface AuthResponse {
 interface MeResponse {
   user: User;
   lastfmScrobblingAvailable: boolean;
+  lastfmDiscoverAvailable: boolean;
 }
 
 // Mirrors frontend/src/api/auth.ts's subset actually needed on mobile —
