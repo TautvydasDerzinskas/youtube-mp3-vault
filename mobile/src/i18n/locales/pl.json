@@ -117,11 +117,29 @@
     "nothingPlaying": "Nic nie jest odtwarzane"
   },
   "artists": {
+    "title": "Artyści",
+    "searchPlaceholder": "Szukaj artystów lub utworów…",
+    "empty": "Brak artystów — zaimportuj playlistę, aby ich tu zobaczyć.",
+    "noResults": "Brak artystów pasujących do wyszukiwania.",
+    "failedToLoad": "Nie udało się załadować artystów.",
+    "sortBy": "Sortuj według",
+    "sortNameAsc": "Nazwy (A-Z)",
+    "sortNameDesc": "Nazwy (Z-A)",
+    "sortSongCountDesc": "Liczby utworów (malejąco)",
+    "sortSongCountAsc": "Liczby utworów (rosnąco)",
+    "sortPlaysDesc": "Odtworzeń (malejąco)",
+    "sortPlaysAsc": "Odtworzeń (rosnąco)",
     "detail": {
+      "songCount_one": "{{count}} utwór",
+      "songCount_few": "{{count}} utwory",
+      "songCount_many": "{{count}} utworów",
+      "songCount_other": "{{count}} utworów",
       "totalPlayCount_one": "{{count}} odtworzenie",
       "totalPlayCount_few": "{{count}} odtworzenia",
       "totalPlayCount_many": "{{count}} odtworzeń",
-      "totalPlayCount_other": "{{count}} odtworzeń"
+      "totalPlayCount_other": "{{count}} odtworzeń",
+      "appearsIn": "Występuje w playlistach",
+      "failedToLoad": "Nie udało się załadować artysty."
     }
   },
   "playlists": {

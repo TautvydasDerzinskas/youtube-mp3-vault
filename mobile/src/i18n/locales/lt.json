@@ -111,10 +111,27 @@
     "nothingPlaying": "Niekas negrojama"
   },
   "artists": {
+    "title": "Atlikėjai",
+    "searchPlaceholder": "Ieškoti atlikėjų ar dainų…",
+    "empty": "Atlikėjų dar nėra — importuokite grojaraštį, kad juos pamatytumėte.",
+    "noResults": "Pagal paiešką atlikėjų nerasta.",
+    "failedToLoad": "Nepavyko įkelti atlikėjų.",
+    "sortBy": "Rikiuoti pagal",
+    "sortNameAsc": "Pavadinimą (A-Ž)",
+    "sortNameDesc": "Pavadinimą (Ž-A)",
+    "sortSongCountDesc": "Dainų skaičių (nuo didž. iki maž.)",
+    "sortSongCountAsc": "Dainų skaičių (nuo maž. iki didž.)",
+    "sortPlaysDesc": "Peržiūras (nuo didž. iki maž.)",
+    "sortPlaysAsc": "Peržiūras (nuo maž. iki didž.)",
     "detail": {
+      "songCount_one": "{{count}} daina",
+      "songCount_few": "{{count}} dainos",
+      "songCount_other": "{{count}} dainų",
       "totalPlayCount_one": "{{count}} peržiūra",
       "totalPlayCount_few": "{{count}} peržiūros",
-      "totalPlayCount_other": "{{count}} peržiūrų"
+      "totalPlayCount_other": "{{count}} peržiūrų",
+      "appearsIn": "Yra grojaraščiuose",
+      "failedToLoad": "Nepavyko įkelti atlikėjo."
     }
   },
   "playlists": {

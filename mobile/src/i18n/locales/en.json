@@ -105,9 +105,25 @@
     "nothingPlaying": "Nothing playing"
   },
   "artists": {
+    "title": "Artists",
+    "searchPlaceholder": "Search artists or songs…",
+    "empty": "No artists yet — import a playlist to see them here.",
+    "noResults": "No artists match your search.",
+    "failedToLoad": "Failed to load artists.",
+    "sortBy": "Sort by",
+    "sortNameAsc": "Name (A-Z)",
+    "sortNameDesc": "Name (Z-A)",
+    "sortSongCountDesc": "Song count (High-Low)",
+    "sortSongCountAsc": "Song count (Low-High)",
+    "sortPlaysDesc": "Plays (High-Low)",
+    "sortPlaysAsc": "Plays (Low-High)",
     "detail": {
+      "songCount_one": "{{count}} song",
+      "songCount_other": "{{count}} songs",
       "totalPlayCount_one": "{{count}} play",
-      "totalPlayCount_other": "{{count}} plays"
+      "totalPlayCount_other": "{{count}} plays",
+      "appearsIn": "Appears in",
+      "failedToLoad": "Failed to load artist."
     }
   },
   "playlists": {

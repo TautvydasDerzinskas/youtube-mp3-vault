@@ -19,6 +19,7 @@ import { AllGenresScreen } from '../screens/AllGenresScreen';
 import { PlaylistDetailScreen } from '../screens/PlaylistDetailScreen';
 import { TrackDetailScreen } from '../screens/TrackDetailScreen';
 import { AllTracksScreen } from '../screens/AllTracksScreen';
+import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { TopBar } from './TopBar';
 import { BottomNav } from './BottomNav';
 import { RootStackParamList, TabParamList } from './types';
@@ -90,6 +91,7 @@ export function RootNavigator() {
           <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} options={{ title: t('nav.playlists') }} />
           <Stack.Screen name="TrackDetail" component={TrackDetailScreen} options={{ title: '' }} />
           <Stack.Screen name="AllTracks" component={AllTracksScreen} options={{ title: t('playlists.allTracks.title') }} />
+          <Stack.Screen name="ArtistDetail" component={ArtistDetailScreen} options={{ title: t('nav.artists') }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PlayerProvider>

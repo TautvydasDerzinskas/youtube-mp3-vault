@@ -1,6 +1,7 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Chip, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PlaylistVideo } from '../../api/playlists';
 import { usePlayer } from '../../contexts/PlayerContext';
@@ -12,13 +13,16 @@ interface TrackDetailHeaderProps {
 }
 
 // Mirrors frontend/src/pages/TrackDetailPage/Header.tsx — big artwork,
-// title/artist, duration/play-count/release-year/genre chips, and a play
-// button (queue omitted so PlayerContext falls back to the rest of the
-// playlist, same as clicking a track row would). No bitrate/file-size/
-// "appears in" section yet — see useTrackDetail.ts's comment.
+// title/artist (clickable → ArtistDetail, same key-normalization as web's
+// artistUrl: trim+lowercase, matching backend's normalizeKey), duration/
+// play-count/release-year/genre chips, and a play button (queue omitted so
+// PlayerContext falls back to the rest of the playlist, same as clicking a
+// track row would). No bitrate/file-size/"appears in" section yet — see
+// useTrackDetail.ts's comment.
 export function TrackDetailHeader({ video, playlistId }: TrackDetailHeaderProps) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const navigation = useNavigation();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
 
   const isPlayingThis = nowPlaying?.playlistId === playlistId && nowPlaying?.videoId === video.id && isAudioPlaying;
@@ -35,7 +39,9 @@ export function TrackDetailHeader({ video, playlistId }: TrackDetailHeaderProps)
 
       <Text variant="headlineSmall" style={styles.title}>{video.title}</Text>
       {video.artist && (
-        <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant }}>{video.artist}</Text>
+        <Pressable onPress={() => navigation.navigate('ArtistDetail', { key: video.artist!.trim().toLowerCase() })}>
+          <Text variant="titleMedium" style={{ color: theme.colors.primary }}>{video.artist}</Text>
+        </Pressable>
       )}
 
       <View style={styles.chipRow}>

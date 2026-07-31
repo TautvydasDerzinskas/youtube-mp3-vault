@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DashboardArtist, DashboardGenre, DashboardSong } from '../../api/dashboard';
 
 // Shared between each DashboardListCard preview and the corresponding "see
 // more" screen (AllSongsScreen/AllArtistsScreen/AllGenresScreen), so the
-// row layout only exists in one place. Not interactive yet — there's no
-// playlist-track/artist-detail/genre-filtered-tracks screen on mobile yet
-// to navigate to (unlike web's equivalent rows), so these are display-only
-// until those destinations exist.
+// row layout only exists in one place. Song and artist rows navigate to
+// TrackDetail/ArtistDetail respectively, now that those screens exist.
+// GenreRow stays display-only — there's still no genre-filtered-tracks
+// screen on mobile to navigate to (unlike web's equivalent row).
 
 const styles = StyleSheet.create({
   row: {
@@ -52,12 +53,16 @@ const styles = StyleSheet.create({
 export function SongRow({ song, rank }: { song: DashboardSong; rank: number }) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => setImageFailed(false), [song.thumbnailUrl]);
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      style={styles.row}
+      onPress={() => navigation.navigate('TrackDetail', { playlistId: song.playlistId, trackId: song.id })}
+    >
       <Text style={[styles.rank, { color: theme.colors.onSurfaceVariant }]}>{rank}</Text>
       {song.thumbnailUrl && !imageFailed ? (
         <Image source={{ uri: song.thumbnailUrl }} style={styles.thumb} onError={() => setImageFailed(true)} />
@@ -75,21 +80,22 @@ export function SongRow({ song, rank }: { song: DashboardSong; rank: number }) {
       <Text style={[styles.trailing, { color: theme.colors.onSurfaceVariant }]}>
         {t('dashboard.playCount', { count: song.playCount })}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
 export function ArtistRow({ artist, rank }: { artist: DashboardArtist; rank: number }) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const navigation = useNavigation();
   return (
-    <View style={styles.row}>
+    <Pressable style={styles.row} onPress={() => navigation.navigate('ArtistDetail', { key: artist.key })}>
       <Text style={[styles.rank, { color: theme.colors.onSurfaceVariant }]}>{rank}</Text>
       <Text numberOfLines={1} style={[styles.text, styles.title, { color: theme.colors.onBackground }]}>{artist.artist}</Text>
       <Text style={[styles.trailing, { color: theme.colors.onSurfaceVariant }]}>
         {t('dashboard.songCount', { count: artist.songCount })}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 

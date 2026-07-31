@@ -10,6 +10,7 @@ export type RootStackParamList = {
   PlaylistDetail: { playlistId: string };
   TrackDetail: { playlistId: string; trackId: string };
   AllTracks: undefined;
+  ArtistDetail: { key: string };
 };
 
 export type TabParamList = {
