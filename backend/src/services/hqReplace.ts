@@ -8,6 +8,7 @@ import { config } from '../config';
 import { slskdClient, isSlskdConfigured, MAX_PLAUSIBLE_MP3_BITRATE_KBPS, LOSSLESS_EXTENSIONS } from './slskd';
 import { parseArtistAndTitle } from './musicbrainz';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
+import { downloadBestMatchFromQobuz, cleanupQobuzTempFile } from './qobuz/client';
 
 // Generous ceiling for a single track transfer, polled every couple of
 // seconds — with a modified slskd whose "peers" are really the operator's
@@ -364,12 +365,68 @@ async function locateDownloadedFile(candidate: HqCandidate): Promise<string | nu
   return null;
 }
 
+// Shared tail for both downloadAndReplace (slskd) and
+// downloadAndReplaceFromQobuz below: transcodes a lossless source down to a
+// 320kbps mp3 (this app's library is mp3-only throughout — the lossless
+// source file is dropped afterward, never kept alongside it), publishes the
+// result into the shared store, and updates every PlaylistVideo row sharing
+// this mediaFileId (the file is deduplicated across playlists/users by
+// youtubeId — see MediaFile in schema.prisma). `localPath` is left alone on
+// a transcode failure so the caller can clean it up however it originally
+// acquired it (slskd's downloads dir vs. Qobuz's own temp file).
+async function publishReplacementFile(
+  video: { youtubeId: string; mediaFileId: string },
+  localPath: string,
+  format: 'mp3' | 'lossless',
+  mp3Bitrate: number,
+): Promise<boolean> {
+  let publishedSize: number;
+  let publishedBitrate: number;
+
+  if (format === 'lossless') {
+    await ensureSharedDirs();
+    const tmpMp3Path = join(getTmpDir(), `${video.youtubeId}-${randomUUID()}.mp3`);
+    const transcoded = await transcodeToMp3(localPath, tmpMp3Path);
+    if (!transcoded) {
+      console.error(`[hq] ffmpeg transcode failed for ${video.youtubeId} (source: ${localPath})`);
+      await unlink(tmpMp3Path).catch(() => {});
+      return false;
+    }
+    const tmpStats = await stat(tmpMp3Path);
+    await publishToSharedStore(tmpMp3Path, `${video.youtubeId}.mp3`);
+    await unlink(localPath).catch(() => {});
+    publishedSize = tmpStats.size;
+    publishedBitrate = MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
+  } else {
+    const fileStats = await stat(localPath);
+    await publishToSharedStore(localPath, `${video.youtubeId}.mp3`);
+    publishedSize = fileStats.size;
+    publishedBitrate = mp3Bitrate;
+  }
+
+  await prisma.mediaFile.update({
+    where: { id: video.mediaFileId },
+    data: { fileSize: publishedSize, bitrate: publishedBitrate },
+  });
+  await prisma.playlistVideo.updateMany({
+    where: { mediaFileId: video.mediaFileId },
+    data: {
+      hqFileDownloaded: true,
+      betterQualityExists: false,
+      bitrate: publishedBitrate,
+      fileSize: publishedSize,
+      qualityCheckStatus: 'checked',
+      qualityCheckedAt: new Date(),
+    },
+  });
+
+  return true;
+}
+
 // Downloads a matched candidate via slskd and, once complete, replaces the
-// shared mp3 for `video` in place — every PlaylistVideo row sharing the same
-// mediaFileId benefits, since the file is deduplicated across
-// playlists/users by youtubeId (see MediaFile in schema.prisma). Returns
-// false (without throwing) on any failure along the way — the caller treats
-// that as "try again next sync", not a permanent verdict.
+// shared mp3 for `video` in place. Returns false (without throwing) on any
+// failure along the way — the caller treats that as "try again next sync",
+// not a permanent verdict.
 export async function downloadAndReplace(
   video: { id: string; youtubeId: string; mediaFileId: string | null },
   candidate: HqCandidate,
@@ -395,47 +452,59 @@ export async function downloadAndReplace(
   const foundPath = await locateDownloadedFile(candidate);
   if (!foundPath) return false;
 
-  let publishedSize: number;
-  let publishedBitrate: number;
+  return publishReplacementFile(
+    { youtubeId: video.youtubeId, mediaFileId: video.mediaFileId },
+    foundPath,
+    candidate.format,
+    candidate.bitrate,
+  );
+}
 
-  if (candidate.format === 'lossless') {
-    // This app's library is mp3-only throughout — a lossless peer file gets
-    // transcoded down to a 320kbps mp3 before publishing, and the lossless
-    // source is dropped afterward rather than kept around alongside it.
-    await ensureSharedDirs();
-    const tmpMp3Path = join(getTmpDir(), `${video.youtubeId}-${randomUUID()}.mp3`);
-    const transcoded = await transcodeToMp3(foundPath, tmpMp3Path);
-    if (!transcoded) {
-      await unlink(tmpMp3Path).catch(() => {});
-      return false;
-    }
-    const tmpStats = await stat(tmpMp3Path);
-    await publishToSharedStore(tmpMp3Path, `${video.youtubeId}.mp3`);
-    await unlink(foundPath).catch(() => {});
-    publishedSize = tmpStats.size;
-    publishedBitrate = MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
-  } else {
-    const fileStats = await stat(foundPath);
-    await publishToSharedStore(foundPath, `${video.youtubeId}.mp3`);
-    publishedSize = fileStats.size;
-    publishedBitrate = candidate.bitrate;
+// Fallback HQ source, tried only when slskd (findExactMatchCandidate) turns
+// up nothing — see slskdQualityWorker.ts. Unlike slskd's per-file text/
+// duration matching against many peer results, Qobuz's own confidence-scored
+// search (services/qobuz/search.ts's MIN_CONFIDENT_SCORE) already gates what
+// downloadBestMatchFromQobuz will hand back, so there's no separate
+// candidate/match step here — it either has one confident hit or it
+// doesn't. Always a lossless FLAC, so it always goes through the same
+// transcode-to-mp3 path as an slskd lossless candidate.
+//
+// Never throws. downloadBestMatchFromQobuz already never throws on its own
+// (see client.ts); the try/catch below exists for the remaining surface —
+// publishReplacementFile's fs/DB calls — so that *nothing* in the Qobuz
+// fallback, including the community server simply being unreachable, can
+// ever propagate out of this function and take the sync process down with
+// it. Same "never found anything eligible this pass" verdict either way, as
+// far as slskdQualityWorker.ts is concerned.
+export async function downloadAndReplaceFromQobuz(
+  video: { id: string; youtubeId: string; mediaFileId: string | null; artist: string; title: string },
+): Promise<boolean> {
+  if (!video.mediaFileId) return false;
+
+  console.log(`[qobuz] Trying HQ fallback for ${video.youtubeId} ("${video.artist} - ${video.title}")`);
+  const match = await downloadBestMatchFromQobuz(video.artist, video.title);
+  if (!match) {
+    console.log(`[qobuz] No usable Qobuz match for ${video.youtubeId}`);
+    return false;
   }
 
-  await prisma.mediaFile.update({
-    where: { id: video.mediaFileId },
-    data: { fileSize: publishedSize, bitrate: publishedBitrate },
-  });
-  await prisma.playlistVideo.updateMany({
-    where: { mediaFileId: video.mediaFileId },
-    data: {
-      hqFileDownloaded: true,
-      betterQualityExists: false,
-      bitrate: publishedBitrate,
-      fileSize: publishedSize,
-      qualityCheckStatus: 'checked',
-      qualityCheckedAt: new Date(),
-    },
-  });
-
-  return true;
+  try {
+    const replaced = await publishReplacementFile(
+      { youtubeId: video.youtubeId, mediaFileId: video.mediaFileId },
+      match.tempFilePath,
+      'lossless',
+      MAX_PLAUSIBLE_MP3_BITRATE_KBPS,
+    );
+    console.log(
+      replaced
+        ? `[qobuz] Replaced ${video.youtubeId} with Qobuz match "${match.matchedArtist} - ${match.matchedTitle}" (track ${match.trackId}, score ${match.score})`
+        : `[qobuz] Downloaded a Qobuz match for ${video.youtubeId} but failed to publish it (see transcode error above)`,
+    );
+    return replaced;
+  } catch (err) {
+    console.error(`[qobuz] Publishing the Qobuz match for ${video.youtubeId} failed:`, err instanceof Error ? err.message : String(err));
+    return false;
+  } finally {
+    await cleanupQobuzTempFile(match);
+  }
 }

@@ -18,10 +18,18 @@ FROM node:20-alpine AS production
 # openssl   — required by Prisma engine binaries (libssl.so.3)
 # ffmpeg    — required by yt-dlp for audio conversion
 # python3   — required by yt-dlp
-RUN apk add --no-cache openssl ffmpeg python3 py3-pip && \
+# chromium + nss/freetype/harfbuzz/ca-certificates/ttf-freefont — headless
+#   browser for the Qobuz HQ fallback's one-time community verification (see
+#   services/qobuz/session.ts). Alpine's own chromium package, not
+#   Playwright's bundled download — Playwright's own Chromium binaries are
+#   built against glibc and won't run on this musl-based image.
+RUN apk add --no-cache openssl ffmpeg python3 py3-pip \
+    chromium nss freetype freetype-dev harfbuzz ca-certificates ttf-freefont && \
     python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir yt-dlp && \
     ln -s /opt/venv/bin/yt-dlp /usr/local/bin/yt-dlp
+
+ENV QOBUZ_CHROMIUM_PATH=/usr/bin/chromium-browser
 
 WORKDIR /app
 

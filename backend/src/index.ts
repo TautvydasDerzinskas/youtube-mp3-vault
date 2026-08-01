@@ -18,6 +18,7 @@ import { loadSettings } from './services/settings';
 import { isOnline, startConnectivityMonitor } from './services/connectivity';
 import { startAudioAnalysisWorker } from './services/audioAnalysisWorker';
 import { requireAuth } from './middleware/auth';
+import { logQobuzStartupStatus } from './services/qobuz/session';
 
 const app = express();
 
@@ -55,5 +56,6 @@ app.listen(config.port, '0.0.0.0', async () => {
   startScheduler();
   startConnectivityMonitor();
   startAudioAnalysisWorker();
+  await logQobuzStartupStatus();
 });
 

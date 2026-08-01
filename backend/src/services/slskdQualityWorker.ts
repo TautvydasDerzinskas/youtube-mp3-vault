@@ -3,7 +3,7 @@ import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { findBetterQualityMp3, MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
 import { isHqAutoDownloadEnabled } from './settings';
-import { findExactMatchCandidate, downloadAndReplace } from './hqReplace';
+import { findExactMatchCandidate, downloadAndReplace, downloadAndReplaceFromQobuz } from './hqReplace';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
 // playlist. Called at the end of a playlist's download pass (see
@@ -81,28 +81,52 @@ export async function resolvePlaylistQuality(
     try {
       if (isHqAutoDownloadEnabled()) {
         const candidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
-        if (!candidate) {
-          // Search+match concluded there's nothing eligible right now — a
-          // stable, repeatable verdict, same as the free path below.
+        if (candidate) {
+          const replaced = await downloadAndReplace(video, candidate);
+          if (replaced) continue; // downloadAndReplace already updated every flag/status itself
+
+          // A real upgrade exists but downloading/replacing it didn't succeed
+          // this time (transient failure, peer/agent unavailable, file never
+          // showed up on the shared downloads volume in time — see
+          // hqReplace.ts) — flag it as available and leave qualityCheckStatus
+          // pending so the next sync retries the download, rather than a
+          // one-off failure permanently giving up on it.
           await prisma.playlistVideo.update({
             where: { id: video.id },
-            data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() },
+            data: { betterQualityExists: true },
           });
           continue;
         }
 
-        const replaced = await downloadAndReplace(video, candidate);
-        if (replaced) continue; // downloadAndReplace already updated every flag/status itself
+        // Soulseek found nothing — Qobuz is a fallback source, not a second
+        // competing search: only tried once slskd comes up empty, since it
+        // has no per-file text/duration matching of its own the way slskd's
+        // MATCH_TIERS do — its own search is either one confident hit or
+        // nothing (see hqReplace.ts's downloadAndReplaceFromQobuz).
+        try {
+          // Rebuilt as a fresh object (rather than passing `video` as-is) so
+          // TS's narrowing of `video.artist` from the `!video.artist` check
+          // above actually applies — it doesn't propagate to `video`'s own
+          // static type when the whole object is passed by reference.
+          const replacedFromQobuz = await downloadAndReplaceFromQobuz({
+            id: video.id, youtubeId: video.youtubeId, mediaFileId: video.mediaFileId,
+            artist: video.artist, title: video.title,
+          });
+          if (replacedFromQobuz) continue;
+        } catch (err) {
+          // Includes the one-time community verification itself failing —
+          // that now runs fully unattended (a headless browser inside this
+          // same process, see ensureCommunitySession/session.ts), so it's
+          // just another transient failure to retry next sync, not a
+          // distinct "waiting on a human" state to surface differently.
+          console.error(`[qobuz] HQ fallback failed for ${video.youtubeId}:`, (err as Error).message);
+        }
 
-        // A real upgrade exists but downloading/replacing it didn't succeed
-        // this time (transient failure, peer/agent unavailable, file never
-        // showed up on the shared downloads volume in time — see
-        // hqReplace.ts) — flag it as available and leave qualityCheckStatus
-        // pending so the next sync retries the download, rather than a
-        // one-off failure permanently giving up on it.
+        // Neither source found/delivered anything eligible right now — a
+        // stable, repeatable verdict, same as the free path below.
         await prisma.playlistVideo.update({
           where: { id: video.id },
-          data: { betterQualityExists: true },
+          data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() },
         });
         continue;
       }

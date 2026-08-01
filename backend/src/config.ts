@@ -39,6 +39,14 @@ export const config = {
   // container, same pattern as audioAnalysisUrl below.
   slskdUrl: process.env.SLSKD_URL || 'http://localhost:5030',
   slskdApiKey: process.env.SLSKD_API_KEY || '',
+  // Headless Chromium binary used only by services/qobuz/session.ts to
+  // complete the Qobuz HQ fallback's one-time community verification
+  // (a real JS challenge page, not a plain HTTP redirect — see that file).
+  // Set by the Dockerfile (Alpine's own chromium package, not Playwright's
+  // bundled one — that's glibc-only and won't run on this musl image);
+  // undefined in a bare local dev run just means that one feature no-ops
+  // until a real Chromium path is provided.
+  qobuzChromiumPath: process.env.QOBUZ_CHROMIUM_PATH || '',
   // Whichever email registers with this address is marked admin at creation time.
   adminEmail: (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
   smtp: {
