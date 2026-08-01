@@ -194,6 +194,38 @@ export async function removeOfflineTracks(entries: OfflineTrackEntry[]): Promise
   }));
 }
 
+// One-time (per app session) cleanup for Android assets that ended up
+// orphaned in the shared YoutubeVault album — leftovers from either of two
+// past bugs, both now fixed at the source: an HQ-upgraded track's old asset
+// never being deleted (see removeOfflineTracks above), and an interrupted
+// sync (app killed, or network dropped mid-sync) leaving a freshly-created
+// asset whose index entry never got persisted (OfflineDownloadsContext only
+// writes its index every PERSIST_EVERY completions). Anything in the album
+// that isn't referenced by any currently-known assetId is deleted in one
+// batch — one confirmation dialog for however many have piled up, not one
+// per orphan.
+//
+// Must only be called before any sync has started in this app session (see
+// the startup effect in OfflineDownloadsContext) — running it concurrently
+// with an active download could misidentify a just-created-but-not-yet-
+// persisted asset as an orphan and delete it out from under that sync.
+export async function removeAndroidOrphanAssets(knownAssetIds: Set<string>): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    const granted = await ensureAndroidMediaPermission();
+    if (!granted) return;
+    const album = await MediaLibrary.Album.get(ANDROID_ALBUM_NAME);
+    if (!album) return;
+    const assets = await album.getAssets();
+    const orphans = assets.filter(a => !knownAssetIds.has(a.id));
+    if (orphans.length === 0) return;
+    await MediaLibrary.Asset.delete(orphans);
+  } catch {
+    // Permission not granted, user declined the batch confirmation, or some
+    // other transient failure — leave it for a later app session to retry.
+  }
+}
+
 export async function removeOfflinePlaylistDir(playlistId: string): Promise<void> {
   if (Platform.OS === 'android') return; // Nothing playlist-scoped to remove — assets live in the shared album.
   try {

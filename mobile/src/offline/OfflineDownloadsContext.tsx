@@ -4,7 +4,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { playlistsApi, ManifestTrack } from '../api/playlists';
 import { offlineIndex } from './offlineIndex';
 import {
-  downloadTrack, removeOfflineTracks, removeOfflinePlaylistDir, offlineFileExists,
+  downloadTrack, removeOfflineTracks, removeOfflinePlaylistDir, removeAndroidOrphanAssets, offlineFileExists,
   runWithConcurrency, MAX_CONCURRENT_DOWNLOADS,
 } from './downloader';
 import { flushPlayQueue } from './playQueue';
@@ -257,8 +257,23 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
   // or the same account on a replaced phone) gets re-enabled/re-downloaded
   // here automatically — this is the actual "survives losing the phone"
   // behavior, not just the toggle's own on-device state.
+  const orphanCleanupDoneRef = useRef(false);
+
   useEffect(() => {
     const syncAll = async () => {
+      // Only on this effect's very first run (app startup), and strictly
+      // before anything below can create a new asset — see
+      // removeAndroidOrphanAssets for why the ordering matters.
+      if (!orphanCleanupDoneRef.current) {
+        orphanCleanupDoneRef.current = true;
+        const knownAssetIds = new Set<string>();
+        for (const entry of Object.values(entriesRef.current)) {
+          for (const t of entry.tracks) {
+            if (t.assetId) knownAssetIds.add(t.assetId);
+          }
+        }
+        await removeAndroidOrphanAssets(knownAssetIds);
+      }
       try {
         const { playlists } = await playlistsApi.getAll();
         for (const p of playlists) {

@@ -106,6 +106,16 @@ model PlaylistVideo {
   channelName            String?
   downloadStatus         String     @default("pending")
   downloadError          String?
+  // Set the first time a regular sync's YouTube fetch doesn't include this
+  // video, cleared the moment a later sync sees it again — a one-fetch
+  // grace period before refreshPlaylistFromYoutube actually treats it as
+  // removed (GC's the shared file, forces every offline-synced phone to
+  // redownload it). A single video dropping out of one yt-dlp scrape
+  // happens on its own, well under the mass-truncation safety threshold
+  // below, and used to be enough to trigger a full spurious redownload for
+  // a video that never actually changed. Never touched by soft reimport
+  // (skipRemoval) — see reimport.ts.
+  missingSince           DateTime?
   // Counts every download attempt (initial sync and each explicit retry
   // alike) that ended in a non-permanent failure — see downloadPendingVideos
   // in syncService.ts. Once this reaches MAX_DOWNLOAD_ATTEMPTS, the video is

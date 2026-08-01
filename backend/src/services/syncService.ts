@@ -192,7 +192,7 @@ export async function refreshPlaylistFromYoutube(
   // ── 2. Current DB videos (non-removed) ────────────────────────────────────
   const dbVideos = await prisma.playlistVideo.findMany({
     where: { playlistId, downloadStatus: { not: 'removed' } },
-    select: { id: true, youtubeId: true, mediaFileId: true },
+    select: { id: true, youtubeId: true, mediaFileId: true, missingSince: true },
   });
   const dbIds = new Set(dbVideos.map((v) => v.youtubeId));
 
@@ -208,7 +208,10 @@ export async function refreshPlaylistFromYoutube(
     // (clearing mediaFileId and GC-deleting their files) for videos that
     // were never actually removed from the real YouTube playlist, forcing a
     // full redownload. 10% mirrors fetchPlaylist's own threshold so both
-    // layers agree on what's plausible.
+    // layers agree on what's plausible. This guards the catastrophic case;
+    // it does nothing for a single video (or a few) dropping out of one
+    // otherwise-normal fetch, which is what the missingSince grace period
+    // right below handles instead.
     const droppedCount = dbVideos.filter((v) => !freshIds.has(v.youtubeId)).length;
     if (dbVideos.length >= 20 && droppedCount > Math.max(5, dbVideos.length * 0.1)) {
       throw new Error(
@@ -218,17 +221,41 @@ export async function refreshPlaylistFromYoutube(
     }
 
     // ── 3. Remove videos no longer in the playlist ──────────────────────────
+    // Only once a video has been missing across two consecutive real syncs
+    // in a row, not the first time it doesn't show up — a single yt-dlp
+    // scrape undercounting by a handful of videos happens on its own, well
+    // under the mass-truncation threshold above, and used to be enough on
+    // its own to GC a video's shared file and force every offline-synced
+    // phone to fully redownload it once it reappeared, even though nothing
+    // about the video itself ever changed (see missingSince in schema.prisma).
     for (const dbVideo of dbVideos) {
-      if (!freshIds.has(dbVideo.youtubeId)) {
+      const stillMissing = !freshIds.has(dbVideo.youtubeId);
+
+      if (stillMissing && dbVideo.missingSince === null) {
+        // First miss — flag it and wait for the next real sync to confirm
+        // before doing anything destructive.
         await prisma.playlistVideo.update({
           where: { id: dbVideo.id },
-          data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null },
+          data: { missingSince: new Date() },
+        });
+      } else if (stillMissing) {
+        // Missing two syncs running — treat as genuinely removed.
+        await prisma.playlistVideo.update({
+          where: { id: dbVideo.id },
+          data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null, missingSince: null },
         });
         // Break this row's reference before trying to GC the shared file —
         // it only actually deletes once no other playlist_video points at it.
         if (dbVideo.mediaFileId) {
           await tryDeleteMediaFile(dbVideo.mediaFileId);
         }
+      } else if (dbVideo.missingSince !== null) {
+        // Was flagged from a past sync but has reappeared — clear the flag
+        // rather than let a stale grace period linger.
+        await prisma.playlistVideo.update({
+          where: { id: dbVideo.id },
+          data: { missingSince: null },
+        });
       }
     }
   }
