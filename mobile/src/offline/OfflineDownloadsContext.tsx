@@ -89,15 +89,22 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       await Promise.all(toDelete.map(t => removeOfflineTrack(t)));
 
       // A track already on-device is re-downloaded if the underlying media
-      // file actually changed (HQ rescan replaced it — same mediaFileId
-      // means the bytes are identical, no point re-fetching) OR if its file
-      // is simply gone despite the index saying otherwise (deleted by
-      // another app, cleared by the OS, etc. — see offlineFileExists) —
-      // otherwise the index would keep reporting a track as "downloaded"
-      // forever even after it's no longer actually playable.
+      // file actually changed, or if its file is simply gone despite the
+      // index saying otherwise (deleted by another app, cleared by the OS,
+      // etc. — see offlineFileExists) — otherwise the index would keep
+      // reporting a track as "downloaded" forever even after it's no longer
+      // actually playable.
+      //
+      // "Changed" can't be detected from mediaFileId alone: an HQ upgrade
+      // (see backend/src/services/hqReplace.ts's downloadAndReplace)
+      // overwrites the shared mp3 in place — same MediaFile row, same id —
+      // and only its fileSize/bitrate change. Without also comparing
+      // fileSize, an on-device copy that predates an HQ upgrade would never
+      // notice one happened and would stay stuck with the old, lower-
+      // bitrate file indefinitely.
       const sameFileCandidates = existingTracks.filter(t => {
         const server = downloadableById.get(t.trackId);
-        return server !== undefined && server.mediaFileId === t.mediaFileId;
+        return server !== undefined && server.mediaFileId === t.mediaFileId && server.fileSize === t.fileSize;
       });
       const stillExists = await Promise.all(sameFileCandidates.map(t => offlineFileExists(t)));
       const unchanged = sameFileCandidates.filter((_, i) => stillExists[i]);
@@ -106,7 +113,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       const toDownload = [
         ...downloadable.filter(t => {
           const have = existingById.get(t.id);
-          return !have || have.mediaFileId !== t.mediaFileId;
+          return !have || have.mediaFileId !== t.mediaFileId || have.fileSize !== t.fileSize;
         }),
         ...missingLocally.map(t => downloadableById.get(t.trackId)!),
       ];

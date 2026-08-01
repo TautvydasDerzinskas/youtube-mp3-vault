@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,13 @@ export function ArtistsScreen() {
   const theme = useTheme();
   const navigation = useNavigation();
   const { query, setQuery, debouncedQuery, artists, sort, setSort } = useArtists();
+
+  // One stable reference for every card (see ArtistCard's memo()) rather
+  // than a fresh closure per row on every render of this list.
+  const handlePressArtist = useCallback(
+    (key: string) => navigation.navigate('ArtistDetail', { key }),
+    [navigation]
+  );
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
@@ -43,12 +51,18 @@ export function ArtistsScreen() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <ArtistCard
-              artist={item}
-              sort={sort}
-              onPress={() => navigation.navigate('ArtistDetail', { key: item.key })}
-            />
+            <ArtistCard artist={item} sort={sort} onPress={handlePressArtist} />
           )}
+          // Tuned for a grid that can run into the hundreds of tiles on a
+          // large library — smaller window/batch sizes trade a bit more
+          // blank space during a fast fling for meaningfully less work per
+          // frame, which matters most on exactly the slower devices this is
+          // for. removeClippedSubviews detaches off-screen rows from the
+          // native view tree entirely (Android especially benefits).
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={5}
+          removeClippedSubviews
         />
       )}
     </View>

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,14 @@ export function GenresScreen() {
   const theme = useTheme();
   const navigation = useNavigation();
   const { genres, query, setQuery, setSort } = useGenres();
+
+  // One stable reference for every card (see GenreCard's memo()) — search
+  // here is client-side and re-filters on every keystroke, so this is what
+  // actually keeps untouched cards from re-rendering while typing.
+  const handlePressGenre = useCallback(
+    (key: string, label: string) => navigation.navigate('AllTracks', { genreKey: key, genreLabel: label }),
+    [navigation]
+  );
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
@@ -43,11 +52,12 @@ export function GenresScreen() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <GenreCard
-              genre={item}
-              onPress={() => navigation.navigate('AllTracks', { genreKey: item.key, genreLabel: item.genre })}
-            />
+            <GenreCard genre={item} onPress={handlePressGenre} />
           )}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={5}
+          removeClippedSubviews
         />
       )}
     </View>

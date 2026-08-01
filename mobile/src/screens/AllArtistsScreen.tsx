@@ -42,6 +42,10 @@ export function AllArtistsScreen() {
           {t('dashboard.topArtists.empty')}
         </Text>
       }
+      initialNumToRender={16}
+      maxToRenderPerBatch={16}
+      windowSize={5}
+      removeClippedSubviews
     />
   );
 }
