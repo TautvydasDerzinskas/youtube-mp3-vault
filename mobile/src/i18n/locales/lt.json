@@ -326,6 +326,13 @@
       "trigger": "Paleisti švelnų pakartotinį importą",
       "started": "Švelnus pakartotinis importas pradėtas.",
       "genericError": "Nepavyko paleisti švelnaus pakartotinio importo."
+    },
+    "tagRebuild": {
+      "title": "Atkurti ID3 žymes",
+      "description": "Iš naujo įrašo pavadinimo/atlikėjo/albumo/takelio/metų/žanro ID3 žymes visoms jau atsisiųstoms šio grojaraščio dainoms, naudojant duomenų bazėje esančius duomenis. Jokio tinklo naudojimo, jokio pakartotinio atsisiuntimo ar metaduomenų atitikimo.",
+      "trigger": "Atkurti ID3 žymes",
+      "started": "ID3 žymių atkūrimas pradėtas.",
+      "genericError": "Nepavyko pradėti ID3 žymių atkūrimo."
     }
   },
   "logs": {

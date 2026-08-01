@@ -5,6 +5,7 @@ import { getSharedFilePath } from './downloader';
 import { removePlaylistVideo, markVideoRemoved } from './syncService';
 import { bufferToFloat32Array, cosineSimilarity } from './embeddings';
 import { matchingAutoDeleteGenre } from './autoDeleteGenres';
+import { writeTrackTags } from './id3Tags';
 
 const IDLE_POLL_MS = 60_000; // nothing pending, or the analysis service is unreachable
 
@@ -107,6 +108,16 @@ async function loop(): Promise<void> {
       });
       if (result) {
         console.log(`[audio-analysis] ✓ ${video.youtubeId} — ${genres.join(', ')} (${video.title.slice(0, 60)})`);
+
+        // Genre is the one tag field this pass, not metadataWorker.ts,
+        // actually resolves — re-tag with the now-complete set (title/
+        // artist/album/etc are all unchanged by this pass, just carried
+        // through as-is) rather than leaving the file's genre tag blank
+        // until some later metadata rematch happens to touch it too.
+        writeTrackTags(video.mediaFile.filename, {
+          title: video.title, artist: video.artist, album: video.album,
+          trackNumber: video.trackNumber, releaseYear: video.releaseYear, genres,
+        });
 
         // The genre classifier can, correctly, decide a candidate isn't real
         // music at all (spoken word, ASMR, sound effects, an audiobook or

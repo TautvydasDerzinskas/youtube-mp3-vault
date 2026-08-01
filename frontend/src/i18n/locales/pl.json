@@ -327,6 +327,13 @@
       "trigger": "Miękki reimport",
       "started": "Miękki reimport rozpoczęty. Postęp będzie widoczny na stronie playlisty.",
       "genericError": "Nie udało się rozpocząć miękkiego reimportu. Playlista może już być synchronizowana."
+    },
+    "tagRebuild": {
+      "title": "Przebuduj tagi ID3",
+      "description": "Ponownie zapisuje tagi ID3 (tytuł/artysta/album/utwór/rok/gatunek) dla każdego już pobranego pliku mp3 w wybranej playliście, korzystając z metadanych aktualnie w bazie danych. Bez ruchu sieciowego, bez ponownego pobierania, bez ponownego dopasowywania metadanych.",
+      "trigger": "Przebuduj tagi ID3",
+      "started": "Rozpoczęto przebudowę tagów. Postęp będzie widoczny na stronie playlisty.",
+      "genericError": "Nie udało się rozpocząć przebudowy tagów. Playlista może być już synchronizowana."
     }
   },
   "logs": {

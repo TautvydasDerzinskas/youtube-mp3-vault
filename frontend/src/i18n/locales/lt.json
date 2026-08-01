@@ -323,6 +323,13 @@
       "trigger": "Švelnus pakartotinis importas",
       "started": "Pakartotinis importas pradėtas. Eigą matysite grojaraščio puslapyje.",
       "genericError": "Nepavyko pradėti pakartotinio importo. Grojaraštis gali jau būti sinchronizuojamas."
+    },
+    "tagRebuild": {
+      "title": "Atkurti ID3 žymes",
+      "description": "Iš naujo įrašo pavadinimo/atlikėjo/albumo/takelio/metų/žanro ID3 žymes visoms jau atsisiųstoms pasirinkto grojaraščio mp3 daina, naudojant duomenų bazėje esančius duomenis. Jokio tinklo naudojimo, jokio pakartotinio atsisiuntimo ar metaduomenų atitikimo.",
+      "trigger": "Atkurti ID3 žymes",
+      "started": "ID3 žymių atkūrimas pradėtas. Eiga bus matoma grojaraščio puslapyje.",
+      "genericError": "Nepavyko pradėti ID3 žymių atkūrimo. Grojaraštis gali būti jau sinchronizuojamas."
     }
   },
   "logs": {

@@ -1,6 +1,7 @@
 import { prisma } from './prisma';
 import { refreshPlaylistFromYoutube, tryClaimSync, releaseSyncClaim } from './syncService';
 import { resolvePlaylistMetadata } from './metadataWorker';
+import { writeTrackTags } from './id3Tags';
 
 // Admin-triggered "soft reimport" — re-syncs metadata, re-triggers audio
 // analysis (genres included, since those come from that pass), and picks up
@@ -65,6 +66,53 @@ async function softReimportPlaylist(playlistId: string): Promise<void> {
     });
   } catch (err) {
     console.error(`[reimport] Error soft-reimporting playlist ${playlistId}:`, err);
+    await prisma.playlist
+      .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
+      .catch(() => {});
+  }
+}
+
+// Admin-triggered "rebuild ID3 tags" — the narrow sibling of soft reimport
+// above: writes each already-downloaded video's *current* DB metadata
+// (title/artist/album/track/year/genre) into its mp3's ID3 tags, with no
+// network activity at all — no YouTube reconciliation, no MusicBrainz
+// rematch, no audio re-analysis. Useful on its own after, say, a
+// tag-writing bug fix or a manual metadata correction, where a full soft
+// reimport would be unnecessary network/API load for something that's
+// really just "re-apply what's already in the database."
+export function startTagRebuild(playlistId: string): boolean {
+  if (!tryClaimSync(playlistId)) return false;
+
+  rebuildPlaylistTags(playlistId).finally(() => releaseSyncClaim(playlistId));
+  return true;
+}
+
+async function rebuildPlaylistTags(playlistId: string): Promise<void> {
+  try {
+    await prisma.playlist.update({
+      where: { id: playlistId },
+      data: { syncStatus: 'syncing' },
+    });
+
+    const videos = await prisma.playlistVideo.findMany({
+      where: { playlistId, downloadStatus: 'done' },
+      include: { mediaFile: true },
+    });
+
+    for (const video of videos) {
+      if (!video.mediaFile) continue;
+      writeTrackTags(video.mediaFile.filename, {
+        title: video.title, artist: video.artist, album: video.album,
+        trackNumber: video.trackNumber, releaseYear: video.releaseYear, genres: video.genres,
+      });
+    }
+
+    await prisma.playlist.update({
+      where: { id: playlistId },
+      data: { syncStatus: 'idle' },
+    });
+  } catch (err) {
+    console.error(`[reimport] Error rebuilding tags for playlist ${playlistId}:`, err);
     await prisma.playlist
       .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
       .catch(() => {});

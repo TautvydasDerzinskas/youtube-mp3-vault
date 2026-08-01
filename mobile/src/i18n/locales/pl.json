@@ -338,6 +338,13 @@
       "trigger": "Uruchom miękki reimport",
       "started": "Miękki reimport rozpoczęty.",
       "genericError": "Nie udało się uruchomić miękkiego reimportu."
+    },
+    "tagRebuild": {
+      "title": "Przebuduj tagi ID3",
+      "description": "Ponownie zapisuje tagi ID3 (tytuł/artysta/album/utwór/rok/gatunek) dla każdego już pobranego utworu w tej playliście, korzystając z metadanych aktualnie w bazie danych. Bez ruchu sieciowego, bez ponownego pobierania, bez ponownego dopasowywania metadanych.",
+      "trigger": "Przebuduj tagi ID3",
+      "started": "Rozpoczęto przebudowę tagów.",
+      "genericError": "Nie udało się rozpocząć przebudowy tagów."
     }
   },
   "logs": {

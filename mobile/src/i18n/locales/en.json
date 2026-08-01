@@ -314,6 +314,13 @@
       "trigger": "Trigger soft reimport",
       "started": "Soft reimport started.",
       "genericError": "Failed to start soft reimport."
+    },
+    "tagRebuild": {
+      "title": "Rebuild ID3 tags",
+      "description": "Re-writes title/artist/album/track/year/genre ID3 tags on every already-downloaded track in this playlist, using the metadata currently in the database. No network activity, no re-download, no metadata rematch.",
+      "trigger": "Rebuild ID3 tags",
+      "started": "Tag rebuild started.",
+      "genericError": "Failed to start tag rebuild."
     }
   },
   "logs": {

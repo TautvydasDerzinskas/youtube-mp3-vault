@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import { prisma, switchDatabase, buildDatabaseUrl } from '../services/prisma';
 import { withDownloadStats } from '../services/playlistStats';
-import { startSoftReimport } from '../services/reimport';
+import { startSoftReimport, startTagRebuild } from '../services/reimport';
 import {
   getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
   getLastfmSettings, updateLastfmSettings,
@@ -127,6 +127,32 @@ router.post('/playlists/:id/soft-reimport', async (req, res, next) => {
     }
 
     if (!startSoftReimport(playlist.id)) {
+      res.status(409).json({ error: 'Playlist is already syncing' });
+      return;
+    }
+
+    res.json({ started: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/playlists/:id/rebuild-tags
+// Re-writes ID3 tags for every already-downloaded video in the playlist
+// from its current DB metadata — no network activity, no re-download, no
+// metadata/audio-analysis rework. See services/reimport.ts's startTagRebuild.
+router.post('/playlists/:id/rebuild-tags', async (req, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: req.params.id },
+      select: { id: true },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+
+    if (!startTagRebuild(playlist.id)) {
       res.status(409).json({ error: 'Playlist is already syncing' });
       return;
     }

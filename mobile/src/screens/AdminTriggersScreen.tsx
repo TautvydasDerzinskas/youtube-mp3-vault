@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Banner, Button, Menu, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Banner, Button, Divider, Menu, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { adminApi, AdminUser } from '../api/admin';
@@ -13,8 +13,10 @@ interface Result {
 }
 
 // Mirrors web's TriggersPage — pick a user, pick one of their playlists,
-// trigger a soft reimport (re-runs title normalization/MusicBrainz matching/
-// audio analysis against already-downloaded files, no re-download). Web's
+// then trigger either a soft reimport (re-runs title normalization/
+// MusicBrainz matching/audio analysis against already-downloaded files, no
+// re-download) or a narrower ID3 tag rebuild (just re-writes tags from
+// whatever's currently in the database, no network activity at all). Web's
 // two <select> dropdowns become tap-to-open Menus here, the closest mobile
 // equivalent react-native-paper offers.
 export function AdminTriggersScreen() {
@@ -29,8 +31,10 @@ export function AdminTriggersScreen() {
   const [playlistMenuOpen, setPlaylistMenuOpen] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 
-  const [triggering, setTriggering] = useState(false);
-  const [result, setResult] = useState<Result | null>(null);
+  const [reimportTriggering, setReimportTriggering] = useState(false);
+  const [reimportResult, setReimportResult] = useState<Result | null>(null);
+  const [tagRebuildTriggering, setTagRebuildTriggering] = useState(false);
+  const [tagRebuildResult, setTagRebuildResult] = useState<Result | null>(null);
 
   useEffect(() => {
     adminApi.listUsers().then(setUsers).catch(() => setUsers('error'));
@@ -41,25 +45,40 @@ export function AdminTriggersScreen() {
     setSelectedUser(user);
     setSelectedPlaylist(null);
     setPlaylists([]);
-    setResult(null);
+    setReimportResult(null);
+    setTagRebuildResult(null);
     setPlaylistsLoading(true);
     adminApi.getUser(user.id)
       .then(({ playlists }) => setPlaylists(playlists))
-      .catch(() => setResult({ type: 'error', message: t('triggers.loadPlaylistsError') }))
+      .catch(() => setReimportResult({ type: 'error', message: t('triggers.loadPlaylistsError') }))
       .finally(() => setPlaylistsLoading(false));
   };
 
-  const handleTrigger = async () => {
+  const handleTriggerReimport = async () => {
     if (!selectedPlaylist) return;
-    setTriggering(true);
-    setResult(null);
+    setReimportTriggering(true);
+    setReimportResult(null);
     try {
       await adminApi.triggerSoftReimport(selectedPlaylist.id);
-      setResult({ type: 'success', message: t('triggers.softReimport.started') });
+      setReimportResult({ type: 'success', message: t('triggers.softReimport.started') });
     } catch (err: any) {
-      setResult({ type: 'error', message: err?.response?.data?.error ?? t('triggers.softReimport.genericError') });
+      setReimportResult({ type: 'error', message: err?.response?.data?.error ?? t('triggers.softReimport.genericError') });
     } finally {
-      setTriggering(false);
+      setReimportTriggering(false);
+    }
+  };
+
+  const handleTriggerTagRebuild = async () => {
+    if (!selectedPlaylist) return;
+    setTagRebuildTriggering(true);
+    setTagRebuildResult(null);
+    try {
+      await adminApi.triggerTagRebuild(selectedPlaylist.id);
+      setTagRebuildResult({ type: 'success', message: t('triggers.tagRebuild.started') });
+    } catch (err: any) {
+      setTagRebuildResult({ type: 'error', message: err?.response?.data?.error ?? t('triggers.tagRebuild.genericError') });
+    } finally {
+      setTagRebuildTriggering(false);
     }
   };
 
@@ -80,12 +99,7 @@ export function AdminTriggersScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: theme.colors.background }} contentContainerStyle={styles.content}>
-      <Text variant="titleMedium">{t('triggers.softReimport.title')}</Text>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}>
-        {t('triggers.softReimport.description')}
-      </Text>
-
-      <Text variant="labelMedium" style={styles.label}>{t('triggers.selectUser')}</Text>
+      <Text variant="labelMedium" style={styles.labelFirst}>{t('triggers.selectUser')}</Text>
       <Menu
         visible={userMenuOpen}
         onDismiss={() => setUserMenuOpen(false)}
@@ -140,21 +154,48 @@ export function AdminTriggersScreen() {
         </Text>
       )}
 
-      {result && (
-        <Banner visible icon={result.type === 'success' ? 'check-circle-outline' : 'alert-circle-outline'} style={styles.banner}>
-          {result.message}
+      <Divider style={styles.divider} />
+
+      <Text variant="titleMedium">{t('triggers.softReimport.title')}</Text>
+      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}>
+        {t('triggers.softReimport.description')}
+      </Text>
+      {reimportResult && (
+        <Banner visible icon={reimportResult.type === 'success' ? 'check-circle-outline' : 'alert-circle-outline'} style={styles.banner}>
+          {reimportResult.message}
         </Banner>
       )}
-
       <Button
         mode="contained"
         buttonColor={theme.colors.error}
-        disabled={!selectedPlaylist || triggering}
-        loading={triggering}
-        onPress={handleTrigger}
+        disabled={!selectedPlaylist || reimportTriggering}
+        loading={reimportTriggering}
+        onPress={handleTriggerReimport}
         style={styles.triggerButton}
       >
         {t('triggers.softReimport.trigger')}
+      </Button>
+
+      <Divider style={styles.divider} />
+
+      <Text variant="titleMedium">{t('triggers.tagRebuild.title')}</Text>
+      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}>
+        {t('triggers.tagRebuild.description')}
+      </Text>
+      {tagRebuildResult && (
+        <Banner visible icon={tagRebuildResult.type === 'success' ? 'check-circle-outline' : 'alert-circle-outline'} style={styles.banner}>
+          {tagRebuildResult.message}
+        </Banner>
+      )}
+      <Button
+        mode="contained"
+        buttonColor={theme.colors.error}
+        disabled={!selectedPlaylist || tagRebuildTriggering}
+        loading={tagRebuildTriggering}
+        onPress={handleTriggerTagRebuild}
+        style={styles.triggerButton}
+      >
+        {t('triggers.tagRebuild.trigger')}
       </Button>
     </ScrollView>
   );
@@ -163,6 +204,7 @@ export function AdminTriggersScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16 },
+  labelFirst: { marginBottom: 6 },
   label: { marginTop: 16, marginBottom: 6 },
   picker: {
     flexDirection: 'row',
@@ -175,6 +217,7 @@ const styles = StyleSheet.create({
   },
   pickerDisabled: { opacity: 0.5 },
   pickerText: { flex: 1 },
-  banner: { marginTop: 16 },
-  triggerButton: { marginTop: 20, alignSelf: 'flex-start' },
+  divider: { marginVertical: 20 },
+  banner: { marginBottom: 12 },
+  triggerButton: { alignSelf: 'flex-start' },
 });

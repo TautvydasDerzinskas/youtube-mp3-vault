@@ -3,6 +3,7 @@ import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { lookupTrackMetadata, deriveFallbackMetadata } from './musicbrainz';
 import { getTrackCorrection } from './lastfm';
+import { writeTrackTags } from './id3Tags';
 
 // Three-tier fallback once MusicBrainz has no match: local heuristic parse
 // first, then — if that produced an artist to work with — ask Last.fm to
@@ -47,6 +48,7 @@ export async function resolvePlaylistMetadata(
       ? { playlistId, downloadStatus: { not: 'removed' } }
       : { playlistId, metadataStatus: 'pending', downloadStatus: { not: 'removed' } },
     orderBy: { position: 'asc' },
+    include: { mediaFile: true },
   });
 
   for (const [index, video] of videos.entries()) {
@@ -72,6 +74,14 @@ export async function resolvePlaylistMetadata(
             metadataStatus: 'found', metadataFetchedAt: new Date(),
           },
         });
+        // Re-tag the file with our own cleaned-up metadata now that it's
+        // resolved — only meaningful once the mp3 actually exists on disk.
+        if (video.downloadStatus === 'done' && video.mediaFile) {
+          writeTrackTags(video.mediaFile.filename, {
+            title: meta.title, artist: meta.artist, album: meta.album,
+            trackNumber: meta.trackNumber, releaseYear: meta.releaseYear, genres: video.genres,
+          });
+        }
       } else {
         const fallback = await resolveFallbackMetadata(searchTitle, video.channelName);
         // Never regress a known artist to null — a rematch finding less than
@@ -82,6 +92,12 @@ export async function resolvePlaylistMetadata(
           where: { id: video.id },
           data: { artist, title: fallback.title, metadataStatus: 'not_found', metadataFetchedAt: new Date() },
         });
+        if (video.downloadStatus === 'done' && video.mediaFile) {
+          writeTrackTags(video.mediaFile.filename, {
+            title: fallback.title, artist, album: video.album,
+            trackNumber: video.trackNumber, releaseYear: video.releaseYear, genres: video.genres,
+          });
+        }
       }
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') continue;

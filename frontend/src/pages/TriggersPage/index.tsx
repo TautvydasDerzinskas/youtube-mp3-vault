@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, TextField, MenuItem, Button, Alert, CircularProgress } from '@mui/material';
+import { Box, Typography, TextField, MenuItem, Button, Alert, CircularProgress, Divider } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { adminApi, AdminUser } from '../../api/admin';
 import { Playlist } from '../../api/youtube';
@@ -17,8 +17,12 @@ export default function TriggersPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playlistsLoading, setPlaylistsLoading] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
-  const [triggering, setTriggering] = useState(false);
-  const [result, setResult] = useState<Result | null>(null);
+
+  const [reimportTriggering, setReimportTriggering] = useState(false);
+  const [reimportResult, setReimportResult] = useState<Result | null>(null);
+
+  const [tagRebuildTriggering, setTagRebuildTriggering] = useState(false);
+  const [tagRebuildResult, setTagRebuildResult] = useState<Result | null>(null);
 
   useEffect(() => {
     adminApi.listUsers().then(setUsers).catch(() => setUsers('error'));
@@ -28,27 +32,42 @@ export default function TriggersPage() {
     setSelectedUserId(userId);
     setSelectedPlaylistId('');
     setPlaylists([]);
-    setResult(null);
+    setReimportResult(null);
+    setTagRebuildResult(null);
     if (!userId) return;
 
     setPlaylistsLoading(true);
     adminApi.getUser(userId)
       .then(({ playlists }) => setPlaylists(playlists))
-      .catch(() => setResult({ type: 'error', message: t('triggers.loadPlaylistsError') }))
+      .catch(() => setReimportResult({ type: 'error', message: t('triggers.loadPlaylistsError') }))
       .finally(() => setPlaylistsLoading(false));
   };
 
-  const handleTrigger = async () => {
+  const handleTriggerReimport = async () => {
     if (!selectedPlaylistId) return;
-    setTriggering(true);
-    setResult(null);
+    setReimportTriggering(true);
+    setReimportResult(null);
     try {
       await adminApi.triggerSoftReimport(selectedPlaylistId);
-      setResult({ type: 'success', message: t('triggers.softReimport.started') });
+      setReimportResult({ type: 'success', message: t('triggers.softReimport.started') });
     } catch (err: any) {
-      setResult({ type: 'error', message: err.response?.data?.error ?? t('triggers.softReimport.genericError') });
+      setReimportResult({ type: 'error', message: err.response?.data?.error ?? t('triggers.softReimport.genericError') });
     } finally {
-      setTriggering(false);
+      setReimportTriggering(false);
+    }
+  };
+
+  const handleTriggerTagRebuild = async () => {
+    if (!selectedPlaylistId) return;
+    setTagRebuildTriggering(true);
+    setTagRebuildResult(null);
+    try {
+      await adminApi.triggerTagRebuild(selectedPlaylistId);
+      setTagRebuildResult({ type: 'success', message: t('triggers.tagRebuild.started') });
+    } catch (err: any) {
+      setTagRebuildResult({ type: 'error', message: err.response?.data?.error ?? t('triggers.tagRebuild.genericError') });
+    } finally {
+      setTagRebuildTriggering(false);
     }
   };
 
@@ -63,10 +82,7 @@ export default function TriggersPage() {
     <Box sx={{ p: 3, maxWidth: 560 }}>
       <Typography variant="h5" fontWeight={700} mb={1}>{t('triggers.title')}</Typography>
 
-      <Typography variant="subtitle1" fontWeight={600} mt={3} mb={1}>{t('triggers.softReimport.title')}</Typography>
-      <Typography variant="body2" color="text.secondary" mb={2}>{t('triggers.softReimport.description')}</Typography>
-
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
         <TextField
           select
           label={t('triggers.selectUser')}
@@ -92,17 +108,37 @@ export default function TriggersPage() {
             <MenuItem key={p.id} value={p.id}>{displayName(p)}</MenuItem>
           ))}
         </TextField>
+      </Box>
 
-        {result && <Alert severity={result.type}>{result.message}</Alert>}
-
+      <Typography variant="subtitle1" fontWeight={600} mb={1}>{t('triggers.softReimport.title')}</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>{t('triggers.softReimport.description')}</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+        {reimportResult && <Alert severity={reimportResult.type}>{reimportResult.message}</Alert>}
         <Button
           variant="contained"
           color="warning"
-          disabled={!selectedPlaylistId || triggering}
-          onClick={handleTrigger}
+          disabled={!selectedPlaylistId || reimportTriggering}
+          onClick={handleTriggerReimport}
           sx={{ alignSelf: 'flex-start' }}
         >
-          {triggering ? <CircularProgress size={20} color="inherit" /> : t('triggers.softReimport.trigger')}
+          {reimportTriggering ? <CircularProgress size={20} color="inherit" /> : t('triggers.softReimport.trigger')}
+        </Button>
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
+      <Typography variant="subtitle1" fontWeight={600} mb={1}>{t('triggers.tagRebuild.title')}</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>{t('triggers.tagRebuild.description')}</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {tagRebuildResult && <Alert severity={tagRebuildResult.type}>{tagRebuildResult.message}</Alert>}
+        <Button
+          variant="contained"
+          color="warning"
+          disabled={!selectedPlaylistId || tagRebuildTriggering}
+          onClick={handleTriggerTagRebuild}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          {tagRebuildTriggering ? <CircularProgress size={20} color="inherit" /> : t('triggers.tagRebuild.trigger')}
         </Button>
       </Box>
     </Box>
