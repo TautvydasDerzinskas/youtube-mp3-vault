@@ -1,5 +1,12 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
-  Tabs: undefined;
+  // NavigatorScreenParams (rather than plain `undefined`) lets callers
+  // outside the tab navigator jump straight to a specific tab — e.g.
+  // navigate('Tabs', { screen: 'Playlists' }) from BottomNav's "overlay"
+  // mode, used on PlaylistDetail/TrackDetail/AllTracks (see RootNavigator)
+  // to get back to the tab shell while keeping the bar itself visible there.
+  Tabs: NavigatorScreenParams<TabParamList> | undefined;
   Profile: undefined;
   ChangeEmail: undefined;
   ChangePassword: undefined;

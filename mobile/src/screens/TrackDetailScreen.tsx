@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../navigation/types';
 import { useTrackDetail } from './trackDetail/useTrackDetail';
 import { TrackDetailHeader } from './trackDetail/TrackDetailHeader';
@@ -21,7 +20,6 @@ export function TrackDetailScreen() {
   const theme = useTheme();
   const navigation = useNavigation();
   const route = useRoute<TrackDetailRouteProp>();
-  const insets = useSafeAreaInsets();
   const { playlistId, trackId } = route.params;
   const { video, recommendations, discover, remixes, usedIn } = useTrackDetail(playlistId, trackId);
 
@@ -48,8 +46,8 @@ export function TrackDetailScreen() {
 
   return (
     <ScrollView
-      style={{ backgroundColor: theme.colors.background }}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      style={[styles.flex, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={{ paddingBottom: 24 }}
     >
       <TrackDetailHeader video={video} playlistId={playlistId} usedIn={usedIn} />
       {Array.isArray(recommendations) && <RecommendedTracks recommendations={recommendations} />}
@@ -60,5 +58,6 @@ export function TrackDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

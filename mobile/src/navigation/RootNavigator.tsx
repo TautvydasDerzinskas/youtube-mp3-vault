@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -89,9 +90,31 @@ function AppShell() {
               <OfflineStack.Screen name="OfflinePlaylistDetail" component={OfflinePlaylistDetailScreen} />
             </OfflineStack.Navigator>
           </View>
-          <BottomNav disabled />
+          <BottomNav mode="disabled" />
         </>
       )}
+    </View>
+  );
+}
+
+// Wraps a root-stack screen with a persistent BottomNav in `overlay` mode —
+// used only for PlaylistDetail/TrackDetail/AllTracks (see Stack.Navigator
+// below), which live outside the Tab.Navigator and so would otherwise lose
+// both the bar and the MiniPlayer nested inside it (BottomNav is the only
+// place MiniPlayer renders) the moment a user opens one. `activeRouteName`
+// is fixed per screen rather than derived from navigation history, since all
+// three are playlist/track content regardless of which tab they were opened
+// from — tapping a tab here jumps back to "Tabs" and focuses that tab.
+function ScreenWithBottomNav({ activeRouteName, children }: { activeRouteName: keyof TabParamList; children: ReactNode }) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  return (
+    <View style={{ flex: 1 }}>
+      {children}
+      <BottomNav
+        mode="overlay"
+        activeRouteName={activeRouteName}
+        onTabPress={(routeName) => navigation.navigate('Tabs', { screen: routeName as keyof TabParamList })}
+      />
     </View>
   );
 }
@@ -146,9 +169,15 @@ export function RootNavigator() {
                 navigation.setOptions once their data loads (see each
                 screen) — a playlist/track name isn't known at this level,
                 only the id passed as a route param. */}
-            <Stack.Screen name="PlaylistDetail" component={PlaylistDetailScreen} options={{ title: t('nav.playlists') }} />
-            <Stack.Screen name="TrackDetail" component={TrackDetailScreen} options={{ title: '' }} />
-            <Stack.Screen name="AllTracks" component={AllTracksScreen} options={{ title: t('playlists.allTracks.title') }} />
+            <Stack.Screen name="PlaylistDetail" options={{ title: t('nav.playlists') }}>
+              {() => <ScreenWithBottomNav activeRouteName="Playlists"><PlaylistDetailScreen /></ScreenWithBottomNav>}
+            </Stack.Screen>
+            <Stack.Screen name="TrackDetail" options={{ title: '' }}>
+              {() => <ScreenWithBottomNav activeRouteName="Playlists"><TrackDetailScreen /></ScreenWithBottomNav>}
+            </Stack.Screen>
+            <Stack.Screen name="AllTracks" options={{ title: t('playlists.allTracks.title') }}>
+              {() => <ScreenWithBottomNav activeRouteName="Playlists"><AllTracksScreen /></ScreenWithBottomNav>}
+            </Stack.Screen>
             <Stack.Screen name="ArtistDetail" component={ArtistDetailScreen} options={{ title: t('nav.artists') }} />
             <Stack.Screen name="Admin" component={AdminScreen} options={{ title: t('admin.title') }} />
             <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: t('users.title') }} />

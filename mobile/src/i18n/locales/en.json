@@ -165,6 +165,8 @@
     "generateSimilarError": "Failed to start generating a similar playlist.",
     "generatingChip": "Generating…",
     "downloadedCount": "{{count}}/{{total}} downloaded",
+    "songsAndSize_one": "{{count}} song / {{size}}",
+    "songsAndSize_other": "{{count}} songs / {{size}}",
     "failedCount": "{{count}} failed",
     "retryFailed_one": "Retry {{count}} failed video",
     "retryFailed_other": "Retry {{count}} failed videos",

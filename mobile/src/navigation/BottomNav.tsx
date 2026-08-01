@@ -23,9 +23,11 @@ const TAB_META: Record<string, { icon: keyof typeof MaterialCommunityIcons.glyph
   Genres: { icon: 'tag-multiple', labelKey: 'nav.genres' },
 };
 
-// Fixed display order used only in `disabled` mode (see below), where there's
-// no real Tab.Navigator state to read route order from.
-const DISABLED_ROUTE_ORDER = ['Dashboard', 'Playlists', 'Artists', 'Genres'];
+// Fixed display order — used directly in `disabled`/`overlay` modes (see
+// below), where there's no real Tab.Navigator state to read route order
+// from, and matches the Tab.Screen registration order in RootNavigator for
+// the real tab bar mode too.
+const ROUTE_ORDER = Object.keys(TAB_META);
 
 const BAR_HEIGHT = 60;
 const MIDDLE_BUTTON_SIZE = 68;
@@ -204,18 +206,48 @@ function Slot({
 // dependency here and both need native config — this keeps the interaction
 // fully JS-driven with zero new native modules.
 //
-// `disabled` mode: rendered without a real Tab.Navigator behind it, when
-// AppShell swaps in the offline stack for a server-unreachable session (see
-// RootNavigator.tsx) — the 4 route tabs render grayed-out and inert (no
-// `state`/`navigation` props are even available in that mode), but the
-// middle play/pause button and the drag-reveal MiniPlayer panel keep
-// working normally, since both depend only on PlayerContext.
-type BottomNavProps = ({ disabled?: false } & BottomTabBarProps) | { disabled: true };
+// Three modes, all funneling down to the same `activeRouteName`/`onTabPress`/
+// `interactive` contract so the actual bar-rendering code below never needs
+// to know which one it's in:
+//  - real tab bar: passed as Tab.Navigator's `tabBar` prop (AppShell) — tab
+//    press replicates the default bar's cancelable `tabPress` event before
+//    navigating, in case something starts listening for it later.
+//  - `disabled`: rendered without a real Tab.Navigator behind it, when
+//    AppShell swaps in the offline stack for a server-unreachable session —
+//    the 4 route tabs render grayed-out and inert, but the middle play/pause
+//    button and the drag-reveal MiniPlayer panel keep working normally,
+//    since both depend only on PlayerContext.
+//  - `overlay`: rendered by RootNavigator alongside PlaylistDetail/
+//    TrackDetail/AllTracks, which live outside the Tab.Navigator on the root
+//    stack (so a plain tab bar can't reach them) — tapping a tab here jumps
+//    back to that tab on the "Tabs" stack screen instead of emitting a
+//    tabPress event, since there's no live Tab.Navigator state to target.
+type BottomNavProps =
+  | ({ mode?: 'tabBar' } & BottomTabBarProps)
+  | { mode: 'disabled' }
+  | { mode: 'overlay'; activeRouteName: string; onTabPress: (routeName: string) => void };
+
+function resolveBarProps(props: BottomNavProps): { activeRouteName: string | undefined; interactive: boolean; onTabPress: (routeName: string) => void } {
+  if (props.mode === 'disabled') {
+    return { activeRouteName: undefined, interactive: false, onTabPress: () => {} };
+  }
+  if (props.mode === 'overlay') {
+    return { activeRouteName: props.activeRouteName, interactive: true, onTabPress: props.onTabPress };
+  }
+  const { state, navigation } = props;
+  return {
+    activeRouteName: state.routes[state.index].name,
+    interactive: true,
+    onTabPress: (routeName) => {
+      const route = state.routes.find(r => r.name === routeName)!;
+      const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+      if (state.routes[state.index].name !== routeName && !event.defaultPrevented) navigation.navigate(routeName);
+    },
+  };
+}
 
 export function BottomNav(props: BottomNavProps) {
-  const { disabled } = props;
-  const state = disabled ? undefined : props.state;
-  const navigation = disabled ? undefined : props.navigation;
+  const { activeRouteName, interactive, onTabPress } = resolveBarProps(props);
   const theme = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -274,22 +306,13 @@ export function BottomNav(props: BottomNavProps) {
   const controlsOpacity = panelHeight.interpolate({ inputRange: [0, PANEL_MAX_HEIGHT], outputRange: [0, 1], extrapolate: 'clamp' });
   const controlsTranslateY = panelHeight.interpolate({ inputRange: [0, PANEL_MAX_HEIGHT], outputRange: [20, 0], extrapolate: 'clamp' });
 
-  const routeNames = disabled ? DISABLED_ROUTE_ORDER : state!.routes.map(r => r.name);
-
-  const renderTab = (routeName: string, index: number) => {
+  const renderTab = (routeName: string) => {
     const meta = TAB_META[routeName];
-    const isFocused = !disabled && state!.index === index;
-    const color = disabled ? theme.colors.outlineVariant : (isFocused ? theme.colors.primary : theme.colors.onSurfaceVariant);
-
-    const onPress = () => {
-      if (disabled) return;
-      const route = state!.routes[index];
-      const event = navigation!.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-      if (!isFocused && !event.defaultPrevented) navigation!.navigate(route.name);
-    };
+    const isFocused = interactive && activeRouteName === routeName;
+    const color = !interactive ? theme.colors.outlineVariant : (isFocused ? theme.colors.primary : theme.colors.onSurfaceVariant);
 
     return (
-      <Pressable key={routeName} onPress={onPress} disabled={disabled} style={styles.tabButton}>
+      <Pressable key={routeName} onPress={() => onTabPress(routeName)} disabled={!interactive} style={styles.tabButton}>
         <MaterialCommunityIcons name={meta.icon} size={26} color={color} />
         <Text style={[styles.tabLabel, { color }]}>{t(meta.labelKey)}</Text>
       </Pressable>
@@ -343,23 +366,23 @@ export function BottomNav(props: BottomNavProps) {
       <View style={[styles.tabRow, { height: BAR_HEIGHT }]}>
         <Slot
           {...slotProps}
-          tab={renderTab(routeNames[0], 0)}
+          tab={renderTab(ROUTE_ORDER[0])}
           control={<RoundButton icon="repeat" variant="dark" active={isRepeat} onPress={toggleRepeat} />}
         />
         <Slot
           {...slotProps}
-          tab={renderTab(routeNames[1], 1)}
+          tab={renderTab(ROUTE_ORDER[1])}
           control={<RoundButton icon="skip-previous" variant="light" disabled={!hasPrevious} onPress={playPrevious} />}
         />
         <MiddleButton ringOpacity={tabsOpacity} />
         <Slot
           {...slotProps}
-          tab={renderTab(routeNames[2], 2)}
+          tab={renderTab(ROUTE_ORDER[2])}
           control={<RoundButton icon="skip-next" variant="light" disabled={!hasNext} onPress={playNext} />}
         />
         <Slot
           {...slotProps}
-          tab={renderTab(routeNames[3], 3)}
+          tab={renderTab(ROUTE_ORDER[3])}
           control={<RoundButton icon="shuffle" variant="dark" active={isShuffle} onPress={toggleShuffle} />}
         />
       </View>
