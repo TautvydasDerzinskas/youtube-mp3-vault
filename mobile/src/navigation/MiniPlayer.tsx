@@ -54,7 +54,11 @@ export function MiniPlayer() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 },
+  // alignItems: 'flex-end' (rather than 'center') anchors this row to the
+  // bottom of MiniPlayer's flex:1 box — right above the time labels/seek bar
+  // that follow — so paddingBottom alone controls that gap, independent of
+  // however much space ends up above (which no longer has to match it).
+  container: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 16, paddingBottom: 6 },
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   trackInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minWidth: 0 },
   thumb: { width: 44, height: 44, borderRadius: 6 },

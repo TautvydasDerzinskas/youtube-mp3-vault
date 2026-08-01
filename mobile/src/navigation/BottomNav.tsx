@@ -38,10 +38,10 @@ const RING_GAP = 4;
 const RING_SIZE = MIDDLE_BUTTON_SIZE + RING_STROKE_WIDTH + RING_GAP * 2;
 const RING_RADIUS = (RING_SIZE - RING_STROKE_WIDTH) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-// A lighter tint of theme.colors.primary (#ff0000) — the "traveled" arc.
-// The untraveled remainder isn't drawn at all (see strokeDasharray below),
-// so it reads as transparent against the button rather than a dimmed ring.
-const RING_PROGRESS_COLOR = '#ff6666';
+// The untraveled remainder is drawn too (a full white circle underneath —
+// see MiddleButton), rather than left transparent, so it stays visible
+// against the button.
+const RING_REMAINDER_COLOR = '#ffffff';
 // Tall enough for MiniPlayer's own content (a thumbnail/title row) plus,
 // only while expanded, a current-time/duration row and the seek bar itself
 // (see the panel content below) — while collapsed, playback progress is
@@ -81,7 +81,15 @@ function MiddleButton({ ringOpacity }: { ringOpacity: Animated.AnimatedInterpola
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
                 r={RING_RADIUS}
-                stroke={RING_PROGRESS_COLOR}
+                stroke={RING_REMAINDER_COLOR}
+                strokeWidth={RING_STROKE_WIDTH}
+                fill="none"
+              />
+              <Circle
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={RING_RADIUS}
+                stroke={theme.colors.primary}
                 strokeWidth={RING_STROKE_WIDTH}
                 strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
                 strokeDashoffset={RING_CIRCUMFERENCE * (1 - progress)}
@@ -321,7 +329,7 @@ export function BottomNav(props: BottomNavProps) {
                   maximumValue={duration || 1}
                   value={currentTime}
                   minimumTrackTintColor={theme.colors.primary}
-                  maximumTrackTintColor={theme.colors.outline}
+                  maximumTrackTintColor="#ffffff"
                   thumbTintColor={theme.colors.primary}
                   onSlidingComplete={seekTo}
                 />
@@ -375,7 +383,7 @@ const styles = StyleSheet.create({
   },
   expandedPlaybackInfo: {
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 14,
   },
   expandedTimeRow: {
     flexDirection: 'row',
