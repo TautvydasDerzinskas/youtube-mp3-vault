@@ -17,6 +17,13 @@ const SLSKD_FETCH_TIMEOUT_MS = 15_000;
 // higher-quality file, so it's excluded rather than trusted as an upgrade.
 export const MAX_PLAUSIBLE_MP3_BITRATE_KBPS = 320;
 
+// Extensions treated as lossless Soulseek results — always a real quality
+// win over any mp3 we could already have, so they're matched independently
+// of currentBitrate. downloadAndReplace (hqReplace.ts) transcodes these down
+// to a 320kbps mp3 rather than storing them as-is, since this app's library
+// is mp3-only throughout.
+export const LOSSLESS_EXTENSIONS = ['.flac', '.wav'];
+
 export interface SlskdFile {
   filename: string;
   size: number;
@@ -157,16 +164,27 @@ export async function findBetterQualityMp3(
   if (!result) return null;
 
   let bestBitrate = 0;
+  let hasLossless = false;
   for (const response of result.responses) {
     for (const file of response.files ?? []) {
       const filename = file?.filename ?? '';
-      if (!filename.toLowerCase().endsWith('.mp3')) continue;
+      const lower = filename.toLowerCase();
+      if (LOSSLESS_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
+        hasLossless = true;
+        continue;
+      }
+      if (!lower.endsWith('.mp3')) continue;
       const bitrate = Number(file?.bitRate ?? 0);
       if (!Number.isFinite(bitrate) || bitrate <= 0 || bitrate > MAX_PLAUSIBLE_MP3_BITRATE_KBPS) continue;
       if (bitrate > bestBitrate) bestBitrate = bitrate;
     }
   }
 
+  // A lossless peer file always beats whatever mp3 we currently have — an
+  // auto-download would transcode it down to a 320kbps mp3 (hqReplace.ts),
+  // so it's reported as that effective ceiling rather than left out just
+  // because "bitrate" isn't a meaningful concept for a lossless file.
+  if (hasLossless) return MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
   if (bestBitrate === 0) return null;
   if (currentBitrate !== null && bestBitrate <= currentBitrate) return null;
   return bestBitrate;

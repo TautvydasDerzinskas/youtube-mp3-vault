@@ -1,11 +1,13 @@
 import { join } from 'path';
-import { readdir, stat } from 'fs/promises';
+import { randomUUID } from 'crypto';
+import { spawn } from 'child_process';
+import { readdir, stat, unlink } from 'fs/promises';
 import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { config } from '../config';
-import { slskdClient, isSlskdConfigured, MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
+import { slskdClient, isSlskdConfigured, MAX_PLAUSIBLE_MP3_BITRATE_KBPS, LOSSLESS_EXTENSIONS } from './slskd';
 import { parseArtistAndTitle } from './musicbrainz';
-import { publishToSharedStore } from './downloader';
+import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
 
 // Generous ceiling for a single track transfer, polled every couple of
 // seconds — with a modified slskd whose "peers" are really the operator's
@@ -169,6 +171,27 @@ export interface HqCandidate {
   filename: string;
   size: number;
   bitrate: number;
+  // 'lossless' candidates (flac/wav) carry no meaningful peer-reported
+  // bitrate to compare — `bitrate` on those is the effective ceiling they'll
+  // land at once downloadAndReplace transcodes them down to mp3.
+  format: 'mp3' | 'lossless';
+}
+
+function audioFormatOf(filename: string): 'mp3' | 'lossless' | null {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith('.mp3')) return 'mp3';
+  if (LOSSLESS_EXTENSIONS.some((ext) => lower.endsWith(ext))) return 'lossless';
+  return null;
+}
+
+// Lossless always outranks mp3 (it's a strict quality win once transcoded);
+// among two lossless files, file size is the only quality proxy available
+// without actually probing them (a 24-bit/96kHz flac is bigger than a
+// 16-bit/44.1kHz one for the same track); among two mp3s, higher bitrate wins.
+function isBetterCandidate(a: HqCandidate, b: HqCandidate): boolean {
+  if (a.format !== b.format) return a.format === 'lossless';
+  if (a.format === 'lossless') return a.size > b.size;
+  return a.bitrate > b.bitrate;
 }
 
 // Searches our slskd instance for this track and returns the best mp3
@@ -196,11 +219,23 @@ export async function findExactMatchCandidate(
     for (const response of result.responses) {
       for (const file of response.files ?? []) {
         const filename = file?.filename ?? '';
-        if (!filename.toLowerCase().endsWith('.mp3')) continue;
-        const bitrate = Number(file?.bitRate ?? 0);
-        if (!Number.isFinite(bitrate) || bitrate <= 0 || bitrate > MAX_PLAUSIBLE_MP3_BITRATE_KBPS) continue;
-        if (currentBitrate !== null && bitrate <= currentBitrate + tier.minBitrateImprovementKbps) continue;
-        if (best && bitrate <= best.bitrate) continue;
+        const format = audioFormatOf(filename);
+        if (!format) continue;
+
+        let bitrate: number;
+        if (format === 'mp3') {
+          bitrate = Number(file?.bitRate ?? 0);
+          if (!Number.isFinite(bitrate) || bitrate <= 0 || bitrate > MAX_PLAUSIBLE_MP3_BITRATE_KBPS) continue;
+          if (currentBitrate !== null && bitrate <= currentBitrate + tier.minBitrateImprovementKbps) continue;
+        } else {
+          // Lossless is a strict win regardless of currentBitrate or the
+          // tier's mp3-vs-mp3 improvement margin — the confidence gate here
+          // is the text/duration match below, same as for mp3.
+          bitrate = MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
+        }
+
+        const candidate: HqCandidate = { username: response.username, filename, size: Number(file?.size ?? 0), bitrate, format };
+        if (best && !isBetterCandidate(candidate, best)) continue;
 
         const parsed = parseArtistAndTitle(baseNameFromSlskdPath(filename), null);
         if (!parsed.artist) continue;
@@ -209,7 +244,7 @@ export async function findExactMatchCandidate(
         const candidateDurationSec = typeof file?.length === 'number' ? file.length : null;
         if (!isDurationPlausible(candidateDurationSec, videoDurationSec, tier.durationStrictness, tier.requireKnownDuration)) continue;
 
-        best = { username: response.username, filename, size: file.size, bitrate };
+        best = candidate;
       }
     }
     if (best) return best;
@@ -281,6 +316,43 @@ async function findFileByNameAndSize(dir: string, expectedBasename: string, expe
   return null;
 }
 
+// Generous ceiling for transcoding one track locally — CPU-bound, not
+// network-bound, but a stuck/hung ffmpeg process (bad input, disk full)
+// still shouldn't be able to hang the calling sync pass forever, same
+// rationale as DOWNLOAD_MAX_WAIT_MS above.
+const FFMPEG_TIMEOUT_MS = 5 * 60_000;
+
+// Transcodes a lossless Soulseek download to a 320kbps CBR mp3. ffmpeg is
+// already present in the production image for yt-dlp's own audio
+// extraction (see Dockerfile), so this adds no new runtime dependency.
+function transcodeToMp3(inputPath: string, outputPath: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const proc = spawn('ffmpeg', ['-y', '-i', inputPath, '-vn', '-codec:a', 'libmp3lame', '-b:a', '320k', outputPath]);
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      proc.kill('SIGKILL');
+      resolve(false);
+    }, FFMPEG_TIMEOUT_MS);
+
+    proc.on('error', () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(false);
+    });
+
+    proc.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(code === 0);
+    });
+  });
+}
+
 async function locateDownloadedFile(candidate: HqCandidate): Promise<string | null> {
   const expectedBasename = baseNameFromSlskdPath(candidate.filename);
   const root = getSlskdDownloadsDir();
@@ -323,20 +395,43 @@ export async function downloadAndReplace(
   const foundPath = await locateDownloadedFile(candidate);
   if (!foundPath) return false;
 
-  const fileStats = await stat(foundPath);
-  await publishToSharedStore(foundPath, `${video.youtubeId}.mp3`);
+  let publishedSize: number;
+  let publishedBitrate: number;
+
+  if (candidate.format === 'lossless') {
+    // This app's library is mp3-only throughout — a lossless peer file gets
+    // transcoded down to a 320kbps mp3 before publishing, and the lossless
+    // source is dropped afterward rather than kept around alongside it.
+    await ensureSharedDirs();
+    const tmpMp3Path = join(getTmpDir(), `${video.youtubeId}-${randomUUID()}.mp3`);
+    const transcoded = await transcodeToMp3(foundPath, tmpMp3Path);
+    if (!transcoded) {
+      await unlink(tmpMp3Path).catch(() => {});
+      return false;
+    }
+    const tmpStats = await stat(tmpMp3Path);
+    await publishToSharedStore(tmpMp3Path, `${video.youtubeId}.mp3`);
+    await unlink(foundPath).catch(() => {});
+    publishedSize = tmpStats.size;
+    publishedBitrate = MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
+  } else {
+    const fileStats = await stat(foundPath);
+    await publishToSharedStore(foundPath, `${video.youtubeId}.mp3`);
+    publishedSize = fileStats.size;
+    publishedBitrate = candidate.bitrate;
+  }
 
   await prisma.mediaFile.update({
     where: { id: video.mediaFileId },
-    data: { fileSize: fileStats.size, bitrate: candidate.bitrate },
+    data: { fileSize: publishedSize, bitrate: publishedBitrate },
   });
   await prisma.playlistVideo.updateMany({
     where: { mediaFileId: video.mediaFileId },
     data: {
       hqFileDownloaded: true,
       betterQualityExists: false,
-      bitrate: candidate.bitrate,
-      fileSize: fileStats.size,
+      bitrate: publishedBitrate,
+      fileSize: publishedSize,
       qualityCheckStatus: 'checked',
       qualityCheckedAt: new Date(),
     },
