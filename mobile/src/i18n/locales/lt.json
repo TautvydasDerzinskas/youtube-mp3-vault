@@ -280,5 +280,127 @@
     "emptyState": "Kol kas nėra grojaraščių, pasiekiamų neprisijungus. Prisijungę prie serverio, įjunkite neprisijungimo režimą norimam grojaraščiui.",
     "playlistNotFound": "Šis grojaraštis nepasiekiamas neprisijungus.",
     "noTracks": "Šiam grojaraščiui neatsisiųsta jokių dainų."
+  },
+  "admin": {
+    "title": "Administravimas",
+    "users": "Vartotojai",
+    "triggers": "Trigeriai",
+    "logs": "Žurnalai",
+    "settings": "Nustatymai"
+  },
+  "users": {
+    "title": "Vartotojai",
+    "detailsTitle": "Vartotojo informacija",
+    "failedToLoad": "Nepavyko įkelti vartotojų.",
+    "empty": "Vartotojų dar nėra.",
+    "email": "El. paštas",
+    "displayName": "Rodomas vardas",
+    "created": "Sukurta",
+    "verifiedYes": "Patvirtintas",
+    "verifiedNo": "Nepatvirtintas",
+    "adminYes": "Administratorius",
+    "scrobblingYes": "Scrobblinimas",
+    "banned": "Užblokuotas",
+    "active": "Aktyvus",
+    "playlistsCount": "{{count}} grojaraščių",
+    "playlistsTitle": "Grojaraščiai ({{count}})",
+    "noPlaylists": "Šis vartotojas neturi grojaraščių.",
+    "cannotBanAdmin": "Administratorių paskyrų blokuoti negalima",
+    "ban": "Blokuoti",
+    "unban": "Atblokuoti",
+    "banConfirm": {
+      "title": "Blokuoti šį vartotoją?",
+      "message": "{{name}} iškart praras prieigą prie savo paskyros."
+    }
+  },
+  "triggers": {
+    "title": "Trigeriai",
+    "loadUsersError": "Nepavyko įkelti vartotojų.",
+    "loadPlaylistsError": "Nepavyko įkelti šio vartotojo grojaraščių.",
+    "selectUser": "Pasirinkite vartotoją",
+    "selectPlaylist": "Pasirinkite grojaraštį",
+    "noPlaylists": "Šis vartotojas neturi grojaraščių.",
+    "softReimport": {
+      "title": "Švelnus pakartotinis importas",
+      "description": "Iš naujo atlieka pavadinimų tvarkymą, MusicBrainz atitikimą ir garso analizę visoms jau atsisiųstoms šio grojaraščio dainoms — be pakartotinio atsisiuntimo.",
+      "trigger": "Paleisti švelnų pakartotinį importą",
+      "started": "Švelnus pakartotinis importas pradėtas.",
+      "genericError": "Nepavyko paleisti švelnaus pakartotinio importo."
+    }
+  },
+  "logs": {
+    "title": "Žurnalai",
+    "allUsers": "Visi vartotojai",
+    "loadLogsError": "Nepavyko įkelti žurnalų.",
+    "empty": "Pagal šiuos filtrus įrašų nerasta.",
+    "range": {
+      "last7Days": "Paskutinės 7 dienos",
+      "last30Days": "Paskutinės 30 dienų",
+      "allTime": "Visas laikas"
+    },
+    "actions": {
+      "playlist_imported": "Importuota",
+      "playlist_renamed": "Pervadinta",
+      "playlist_deleted": "Ištrinta",
+      "playlist_synced": "Sinchronizuota",
+      "playlist_sync_paused": "Sinchronizacija pristabdyta",
+      "playlist_offline_enabled": "Įjungtas neprisijungimo režimas (Mobili app.)",
+      "generated_playlist_created": "Sugeneruotas grojaraštis sukurtas",
+      "generated_playlist_renamed": "Sugeneruotas grojaraštis pervadintas",
+      "generated_playlist_deleted": "Sugeneruotas grojaraštis ištrintas",
+      "user_logged_in_web": "Prisijungė (Web)",
+      "user_logged_in_mobile": "Prisijungė (Mobili app.)",
+      "user_logged_out_web": "Atsijungė (Web)",
+      "user_logged_out_mobile": "Atsijungė (Mobili app.)"
+    },
+    "detailText": {
+      "playlistImported": "Importuota „{{name}}“ ({{songCount}} dainų)",
+      "renamed": "Pervadinta „{{oldName}}“ → „{{newName}}“",
+      "deleted": "Ištrinta „{{name}}“ ({{songCount}} dainų, {{downloadedCount}} atsisiųsta, {{failedCount}} nepavyko)",
+      "synced": "Sinchronizuota „{{name}}“ ({{downloadedCount}}/{{songCount}} atsisiųsta, {{failedCount}} nepavyko)",
+      "syncPaused": "Pristabdyta automatinė sinchronizacija „{{name}}“",
+      "offlineEnabled": "Įjungtas atsisiuntimas neprisijungus grojaraščiui „{{name}}“",
+      "generatedCreated": "Sugeneruota „{{name}}“ iš „{{sourceName}}“ ({{songCount}} dainų, {{failedCount}} nepavyko)",
+      "loggedIn": "Prisijungė kaip {{email}}",
+      "loggedOut": "Atsijungė"
+    }
+  },
+  "adminSettings": {
+    "title": "Nustatymai",
+    "tabSmtp": "SMTP",
+    "tabLastfm": "Last.fm",
+    "tabHq": "HQ",
+    "tabPostgres": "DB",
+    "failedToLoad": "Nepavyko įkelti nustatymų.",
+    "genericError": "Nepavyko išsaugoti.",
+    "saved": "Išsaugota.",
+    "save": "Išsaugoti",
+    "smtp": {
+      "description": "Naudojama patvirtinimo ir slaptažodžio atkūrimo laiškams siųsti.",
+      "host": "Serveris",
+      "port": "Prievadas",
+      "secure": "Naudoti TLS",
+      "user": "Vartotojo vardas",
+      "pass": "Slaptažodis",
+      "from": "Siuntėjo adresas"
+    },
+    "lastfm": {
+      "description": "Viso serverio Last.fm API prisijungimo duomenys — reikalingi prieš bet kuriam vartotojui prijungiant savo paskyrą.",
+      "apiKey": "API raktas",
+      "apiSecret": "API paslaptis"
+    },
+    "hq": {
+      "description": "Automatiškai ieškoti aukštesnės kokybės atsisiųstų dainų pakaitalų.",
+      "autoDownloadEnabled": "Automatiškai atsisiųsti HQ pakaitalus"
+    },
+    "postgres": {
+      "description": "Pakeičia serverio gyvą duomenų bazės ryšį visiems šio serverio vartotojams. Keiskite tik jei tiksliai žinote, ką darote.",
+      "database": "Duomenų bazė",
+      "user": "Vartotojo vardas",
+      "password": "Slaptažodis",
+      "testAndSave": "Patikrinti ir išsaugoti",
+      "confirmTitle": "Keisti duomenų bazę?",
+      "confirmMessage": "Tai pakeis gyvą duomenų bazės ryšį visiems šio serverio vartotojams. Prieš tęsdami įsitikinkite, kad duomenys teisingi."
+    }
   }
 }

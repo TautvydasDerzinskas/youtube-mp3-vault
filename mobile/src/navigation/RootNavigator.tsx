@@ -1,9 +1,11 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { DarkTheme, NavigationContainer, Theme } from '@react-navigation/native';
+import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { DarkTheme, NavigationContainer, Theme, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme } from '../theme';
+import { useAuth } from '../contexts/AuthContext';
 import { PlayerProvider } from '../contexts/PlayerContext';
 import { OfflineDownloadsProvider } from '../offline/OfflineDownloadsContext';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -23,6 +25,12 @@ import { AllTracksScreen } from '../screens/AllTracksScreen';
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { OfflinePlaylistsScreen } from '../screens/OfflinePlaylistsScreen';
 import { OfflinePlaylistDetailScreen } from '../screens/OfflinePlaylistDetailScreen';
+import { AdminScreen } from '../screens/AdminScreen';
+import { AdminUsersScreen } from '../screens/AdminUsersScreen';
+import { AdminUserDetailScreen } from '../screens/AdminUserDetailScreen';
+import { AdminTriggersScreen } from '../screens/AdminTriggersScreen';
+import { AdminLogsScreen } from '../screens/AdminLogsScreen';
+import { AdminSettingsScreen } from '../screens/AdminSettingsScreen';
 import { useServerReachability } from '../hooks/useServerReachability';
 import { TopBar } from './TopBar';
 import { BottomNav } from './BottomNav';
@@ -88,6 +96,22 @@ function AppShell() {
   );
 }
 
+// Shown in Profile's header, right side, only for admin accounts — the sole
+// entry point into the admin section (Users/Triggers/Logs/Settings, all
+// pushed onto this same root stack — see Admin* screens below). A plain
+// function can't call useAuth() itself, so this has to be its own component
+// rather than an inline options.headerRight callback.
+function ProfileHeaderRight() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user } = useAuth();
+  if (!user?.isAdmin) return null;
+  return (
+    <Pressable onPress={() => navigation.navigate('Admin')} hitSlop={8}>
+      <MaterialCommunityIcons name="shield-account-outline" size={24} color={theme.colors.onBackground} />
+    </Pressable>
+  );
+}
+
 // The authenticated app shell — mounted once a user is signed in (see
 // App.tsx's AuthGate). Profile and the dashboard "see more" screens all
 // live on this outer stack (not as tabs) since they're each reached from
@@ -107,7 +131,11 @@ export function RootNavigator() {
             }}
           >
             <Stack.Screen name="Tabs" component={AppShell} options={{ headerShown: false }} />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: t('profile.title') }} />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ title: t('profile.title'), headerRight: () => <ProfileHeaderRight /> }}
+            />
             <Stack.Screen name="ChangeEmail" component={ChangeEmailScreen} options={{ title: t('profile.changeEmailTitle') }} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: t('profile.changePassword') }} />
             <Stack.Screen name="UpdateServerUrl" component={UpdateServerUrlScreen} options={{ title: t('profile.settings.serverUrl.label') }} />
@@ -122,6 +150,12 @@ export function RootNavigator() {
             <Stack.Screen name="TrackDetail" component={TrackDetailScreen} options={{ title: '' }} />
             <Stack.Screen name="AllTracks" component={AllTracksScreen} options={{ title: t('playlists.allTracks.title') }} />
             <Stack.Screen name="ArtistDetail" component={ArtistDetailScreen} options={{ title: t('nav.artists') }} />
+            <Stack.Screen name="Admin" component={AdminScreen} options={{ title: t('admin.title') }} />
+            <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: t('users.title') }} />
+            <Stack.Screen name="AdminUserDetail" component={AdminUserDetailScreen} options={{ title: t('users.detailsTitle') }} />
+            <Stack.Screen name="AdminTriggers" component={AdminTriggersScreen} options={{ title: t('triggers.title') }} />
+            <Stack.Screen name="AdminLogs" component={AdminLogsScreen} options={{ title: t('logs.title') }} />
+            <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} options={{ title: t('adminSettings.title') }} />
           </Stack.Navigator>
         </NavigationContainer>
       </PlayerProvider>

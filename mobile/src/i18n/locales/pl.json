@@ -292,5 +292,127 @@
     "emptyState": "Żadna playlista nie jest jeszcze dostępna offline. Włącz tryb offline dla playlisty, gdy masz połączenie z serwerem.",
     "playlistNotFound": "Ta playlista nie jest dostępna offline.",
     "noTracks": "Dla tej playlisty nie pobrano żadnych utworów."
+  },
+  "admin": {
+    "title": "Administracja",
+    "users": "Użytkownicy",
+    "triggers": "Wyzwalacze",
+    "logs": "Dzienniki",
+    "settings": "Ustawienia"
+  },
+  "users": {
+    "title": "Użytkownicy",
+    "detailsTitle": "Szczegóły użytkownika",
+    "failedToLoad": "Nie udało się wczytać użytkowników.",
+    "empty": "Brak użytkowników.",
+    "email": "E-mail",
+    "displayName": "Wyświetlana nazwa",
+    "created": "Utworzono",
+    "verifiedYes": "Zweryfikowany",
+    "verifiedNo": "Niezweryfikowany",
+    "adminYes": "Administrator",
+    "scrobblingYes": "Scrobblowanie",
+    "banned": "Zablokowany",
+    "active": "Aktywny",
+    "playlistsCount": "{{count}} playlist",
+    "playlistsTitle": "Playlisty ({{count}})",
+    "noPlaylists": "Ten użytkownik nie ma playlist.",
+    "cannotBanAdmin": "Nie można zablokować konta administratora",
+    "ban": "Zablokuj",
+    "unban": "Odblokuj",
+    "banConfirm": {
+      "title": "Zablokować tego użytkownika?",
+      "message": "{{name}} natychmiast straci dostęp do swojego konta."
+    }
+  },
+  "triggers": {
+    "title": "Wyzwalacze",
+    "loadUsersError": "Nie udało się wczytać użytkowników.",
+    "loadPlaylistsError": "Nie udało się wczytać playlist tego użytkownika.",
+    "selectUser": "Wybierz użytkownika",
+    "selectPlaylist": "Wybierz playlistę",
+    "noPlaylists": "Ten użytkownik nie ma playlist.",
+    "softReimport": {
+      "title": "Miękki reimport",
+      "description": "Ponownie wykonuje czyszczenie tytułów, dopasowanie MusicBrainz i analizę audio dla wszystkich już pobranych utworów tej playlisty — bez ponownego pobierania.",
+      "trigger": "Uruchom miękki reimport",
+      "started": "Miękki reimport rozpoczęty.",
+      "genericError": "Nie udało się uruchomić miękkiego reimportu."
+    }
+  },
+  "logs": {
+    "title": "Dzienniki",
+    "allUsers": "Wszyscy użytkownicy",
+    "loadLogsError": "Nie udało się wczytać dzienników.",
+    "empty": "Brak wpisów pasujących do tych filtrów.",
+    "range": {
+      "last7Days": "Ostatnie 7 dni",
+      "last30Days": "Ostatnie 30 dni",
+      "allTime": "Cały czas"
+    },
+    "actions": {
+      "playlist_imported": "Zaimportowano",
+      "playlist_renamed": "Zmieniono nazwę",
+      "playlist_deleted": "Usunięto",
+      "playlist_synced": "Zsynchronizowano",
+      "playlist_sync_paused": "Wstrzymano synchronizację",
+      "playlist_offline_enabled": "Włączono tryb offline (Mobile)",
+      "generated_playlist_created": "Utworzono wygenerowaną playlistę",
+      "generated_playlist_renamed": "Zmieniono nazwę wygenerowanej playlisty",
+      "generated_playlist_deleted": "Usunięto wygenerowaną playlistę",
+      "user_logged_in_web": "Zalogowano się (Web)",
+      "user_logged_in_mobile": "Zalogowano się (Mobile)",
+      "user_logged_out_web": "Wylogowano się (Web)",
+      "user_logged_out_mobile": "Wylogowano się (Mobile)"
+    },
+    "detailText": {
+      "playlistImported": "Zaimportowano „{{name}}” ({{songCount}} utworów)",
+      "renamed": "Zmieniono nazwę „{{oldName}}” → „{{newName}}”",
+      "deleted": "Usunięto „{{name}}” ({{songCount}} utworów, {{downloadedCount}} pobranych, {{failedCount}} nieudanych)",
+      "synced": "Zsynchronizowano „{{name}}” ({{downloadedCount}}/{{songCount}} pobranych, {{failedCount}} nieudanych)",
+      "syncPaused": "Wstrzymano automatyczną synchronizację „{{name}}”",
+      "offlineEnabled": "Włączono pobieranie offline dla „{{name}}”",
+      "generatedCreated": "Wygenerowano „{{name}}” na podstawie „{{sourceName}}” ({{songCount}} utworów, {{failedCount}} nieudanych)",
+      "loggedIn": "Zalogowano się jako {{email}}",
+      "loggedOut": "Wylogowano się"
+    }
+  },
+  "adminSettings": {
+    "title": "Ustawienia",
+    "tabSmtp": "SMTP",
+    "tabLastfm": "Last.fm",
+    "tabHq": "HQ",
+    "tabPostgres": "DB",
+    "failedToLoad": "Nie udało się wczytać ustawień.",
+    "genericError": "Nie udało się zapisać.",
+    "saved": "Zapisano.",
+    "save": "Zapisz",
+    "smtp": {
+      "description": "Używane do wysyłania e-maili weryfikacyjnych i resetowania hasła.",
+      "host": "Host",
+      "port": "Port",
+      "secure": "Użyj TLS",
+      "user": "Nazwa użytkownika",
+      "pass": "Hasło",
+      "from": "Adres nadawcy"
+    },
+    "lastfm": {
+      "description": "Dane uwierzytelniające API Last.fm dla całej instancji — wymagane, zanim jakikolwiek użytkownik będzie mógł połączyć własne konto.",
+      "apiKey": "Klucz API",
+      "apiSecret": "Sekret API"
+    },
+    "hq": {
+      "description": "Automatycznie wyszukuj zamienniki o wyższej jakości dla pobranych utworów.",
+      "autoDownloadEnabled": "Automatycznie pobieraj zamienniki HQ"
+    },
+    "postgres": {
+      "description": "Zmienia aktywne połączenie z bazą danych serwera dla wszystkich użytkowników tej instancji. Zmieniaj tylko, jeśli wiesz, co robisz.",
+      "database": "Baza danych",
+      "user": "Nazwa użytkownika",
+      "password": "Hasło",
+      "testAndSave": "Przetestuj i zapisz",
+      "confirmTitle": "Zmienić bazę danych?",
+      "confirmMessage": "To zmieni aktywne połączenie z bazą danych dla wszystkich na tym serwerze. Upewnij się, że dane są poprawne, zanim przejdziesz dalej."
+    }
   }
 }

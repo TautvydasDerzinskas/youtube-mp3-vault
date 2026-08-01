@@ -268,5 +268,127 @@
     "emptyState": "No playlists are available offline yet. Enable offline on a playlist while connected to your server.",
     "playlistNotFound": "This playlist isn't available offline.",
     "noTracks": "No tracks downloaded for this playlist."
+  },
+  "admin": {
+    "title": "Administration",
+    "users": "Users",
+    "triggers": "Triggers",
+    "logs": "Logs",
+    "settings": "Settings"
+  },
+  "users": {
+    "title": "Users",
+    "detailsTitle": "User details",
+    "failedToLoad": "Failed to load users.",
+    "empty": "No users yet.",
+    "email": "Email",
+    "displayName": "Display name",
+    "created": "Created",
+    "verifiedYes": "Verified",
+    "verifiedNo": "Not verified",
+    "adminYes": "Admin",
+    "scrobblingYes": "Scrobbling",
+    "banned": "Banned",
+    "active": "Active",
+    "playlistsCount": "{{count}} playlists",
+    "playlistsTitle": "Playlists ({{count}})",
+    "noPlaylists": "This user has no playlists.",
+    "cannotBanAdmin": "Admin accounts can't be banned",
+    "ban": "Ban",
+    "unban": "Unban",
+    "banConfirm": {
+      "title": "Ban this user?",
+      "message": "{{name}} will immediately lose access to their account."
+    }
+  },
+  "triggers": {
+    "title": "Triggers",
+    "loadUsersError": "Failed to load users.",
+    "loadPlaylistsError": "Failed to load this user's playlists.",
+    "selectUser": "Select a user",
+    "selectPlaylist": "Select a playlist",
+    "noPlaylists": "This user has no playlists.",
+    "softReimport": {
+      "title": "Soft reimport",
+      "description": "Re-runs title cleanup, MusicBrainz matching, and audio analysis for every track already downloaded in this playlist — no re-download.",
+      "trigger": "Trigger soft reimport",
+      "started": "Soft reimport started.",
+      "genericError": "Failed to start soft reimport."
+    }
+  },
+  "logs": {
+    "title": "Logs",
+    "allUsers": "All users",
+    "loadLogsError": "Failed to load logs.",
+    "empty": "No logs match these filters.",
+    "range": {
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "allTime": "All time"
+    },
+    "actions": {
+      "playlist_imported": "Imported",
+      "playlist_renamed": "Renamed",
+      "playlist_deleted": "Deleted",
+      "playlist_synced": "Synced",
+      "playlist_sync_paused": "Sync paused",
+      "playlist_offline_enabled": "Offline enabled (Mobile)",
+      "generated_playlist_created": "Generated playlist created",
+      "generated_playlist_renamed": "Generated playlist renamed",
+      "generated_playlist_deleted": "Generated playlist deleted",
+      "user_logged_in_web": "Logged in (Web)",
+      "user_logged_in_mobile": "Logged in (Mobile)",
+      "user_logged_out_web": "Logged out (Web)",
+      "user_logged_out_mobile": "Logged out (Mobile)"
+    },
+    "detailText": {
+      "playlistImported": "Imported \"{{name}}\" ({{songCount}} songs)",
+      "renamed": "Renamed \"{{oldName}}\" → \"{{newName}}\"",
+      "deleted": "Deleted \"{{name}}\" ({{songCount}} songs, {{downloadedCount}} downloaded, {{failedCount}} failed)",
+      "synced": "Synced \"{{name}}\" ({{downloadedCount}}/{{songCount}} downloaded, {{failedCount}} failed)",
+      "syncPaused": "Paused automatic sync for \"{{name}}\"",
+      "offlineEnabled": "Enabled offline downloads for \"{{name}}\"",
+      "generatedCreated": "Generated \"{{name}}\" from \"{{sourceName}}\" ({{songCount}} songs, {{failedCount}} failed)",
+      "loggedIn": "Logged in as {{email}}",
+      "loggedOut": "Logged out"
+    }
+  },
+  "adminSettings": {
+    "title": "Settings",
+    "tabSmtp": "SMTP",
+    "tabLastfm": "Last.fm",
+    "tabHq": "HQ",
+    "tabPostgres": "DB",
+    "failedToLoad": "Failed to load settings.",
+    "genericError": "Failed to save.",
+    "saved": "Saved.",
+    "save": "Save",
+    "smtp": {
+      "description": "Used to send verification and password-reset emails.",
+      "host": "Host",
+      "port": "Port",
+      "secure": "Use TLS",
+      "user": "Username",
+      "pass": "Password",
+      "from": "From address"
+    },
+    "lastfm": {
+      "description": "Instance-wide Last.fm API credentials — needed before any user can connect their own account.",
+      "apiKey": "API key",
+      "apiSecret": "API secret"
+    },
+    "hq": {
+      "description": "Automatically look for higher-quality replacements for downloaded tracks.",
+      "autoDownloadEnabled": "Auto-download HQ replacements"
+    },
+    "postgres": {
+      "description": "Switches the server's live database connection for every user on this instance. Only change this if you know what you're doing.",
+      "database": "Database",
+      "user": "Username",
+      "password": "Password",
+      "testAndSave": "Test & save",
+      "confirmTitle": "Switch database?",
+      "confirmMessage": "This changes the live database connection for everyone on this server. Make sure these details are correct before continuing."
+    }
   }
 }

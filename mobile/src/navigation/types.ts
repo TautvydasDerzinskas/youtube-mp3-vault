@@ -18,6 +18,17 @@ export type RootStackParamList = {
   // AllTracksScreen falls back to formatGenre(genreKey).
   AllTracks: { genreKey?: string; genreLabel?: string } | undefined;
   ArtistDetail: { key: string };
+  // Admin section — reached via an icon in Profile's header, shown only to
+  // admin users (see RootNavigator). All pushed onto the same root stack as
+  // Profile/ChangeEmail/etc. rather than their own nested navigator, since
+  // there's no bottom-tab presence for any of these (mirrors how the web
+  // admin pages are just more routes, not a separate app shell).
+  Admin: undefined;
+  AdminUsers: undefined;
+  AdminUserDetail: { userId: string };
+  AdminTriggers: undefined;
+  AdminLogs: undefined;
+  AdminSettings: undefined;
 };
 
 export type TabParamList = {
