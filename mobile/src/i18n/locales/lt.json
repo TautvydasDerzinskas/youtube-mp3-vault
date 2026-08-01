@@ -238,7 +238,10 @@
     },
     "trackDetail": {
       "failedToLoad": "Nepavyko įkelti šios dainos.",
-      "recommendedTitle": "Panašios dainos"
+      "recommendedTitle": "Panašios dainos",
+      "discoverTitle": "Atraskite",
+      "remixesTitle": "Remiksai YouTube",
+      "openInSpotify": "Ieškoti Spotify"
     },
     "offline": {
       "toggleLabel": "Įjungti neprisijungus",

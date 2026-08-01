@@ -118,9 +118,34 @@ export interface RecommendedTrack {
   similarity: number;
 }
 
+// A YouTube search result, never downloaded — just a link out. See
+// searchRemixes in backend/src/services/youtube.ts for the dedup logic.
+export interface RemixResult {
+  id: string;
+  title: string;
+  channelName: string | null;
+  thumbnailUrl: string | null;
+  duration: number | null;
+}
+
+export interface DiscoverResult {
+  artist: string;
+  title: string;
+  matchScore: number;
+  youtubeId: string | null;
+  thumbnailUrl: string | null;
+  duration: number | null;
+  spotifySearchUrl: string;
+}
+
+export interface UsedInPlaylist {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+}
+
 // Mirrors frontend/src/api/youtube.ts's playlistsApi — same endpoints/shapes
-// (see backend/src/routes/youtube.ts). discover/remixes/usedIn are ported
-// for type parity but have no mobile UI yet (see TrackDetailScreen).
+// (see backend/src/routes/youtube.ts).
 export const playlistsApi = {
   getAll: async (): Promise<{ playlists: Playlist[] }> => {
     const { data } = await client.get<{ playlists: Playlist[] }>('/playlists');
@@ -187,6 +212,26 @@ export const playlistsApi = {
     const { data } = await client.get<{ recommendations: RecommendedTrack[] }>(
       `/playlists/${playlistId}/videos/${videoId}/recommendations`
     );
+    return data;
+  },
+
+  getRemixes: async (playlistId: string, videoId: string): Promise<{ remixes: RemixResult[] }> => {
+    const { data } = await client.get<{ remixes: RemixResult[] }>(`/playlists/${playlistId}/videos/${videoId}/remixes`);
+    return data;
+  },
+
+  // `enabled` reflects the per-user Last.fm Discover flag (see AuthContext's
+  // lastfmDiscoverAvailable) — the backend still gates this itself, this
+  // isn't just a client-side check.
+  getDiscover: async (playlistId: string, videoId: string): Promise<{ enabled: boolean; discover: DiscoverResult[] }> => {
+    const { data } = await client.get<{ enabled: boolean; discover: DiscoverResult[] }>(
+      `/playlists/${playlistId}/videos/${videoId}/discover`
+    );
+    return data;
+  },
+
+  getUsedIn: async (playlistId: string, videoId: string): Promise<{ usedIn: UsedInPlaylist[] }> => {
+    const { data } = await client.get<{ usedIn: UsedInPlaylist[] }>(`/playlists/${playlistId}/videos/${videoId}/used-in`);
     return data;
   },
 

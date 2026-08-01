@@ -250,7 +250,10 @@
     },
     "trackDetail": {
       "failedToLoad": "Nie udało się załadować tego utworu.",
-      "recommendedTitle": "Podobne utwory"
+      "recommendedTitle": "Podobne utwory",
+      "discoverTitle": "Odkrywaj",
+      "remixesTitle": "Remiksy na YouTube",
+      "openInSpotify": "Szukaj na Spotify"
     },
     "offline": {
       "toggleLabel": "Włącz tryb offline",

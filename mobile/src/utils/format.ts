@@ -17,6 +17,10 @@ export function formatGenre(genre: string): string {
   return trimmed.length > 0 ? trimmed.charAt(0).toUpperCase() + trimmed.slice(1) : trimmed;
 }
 
+export function youtubeWatchUrl(youtubeId: string): string {
+  return `https://www.youtube.com/watch?v=${youtubeId}`;
+}
+
 export function formatDuration(seconds: number | null | undefined): string {
   if (!seconds || !Number.isFinite(seconds) || seconds < 0) return '0:00';
   const total = Math.floor(seconds);

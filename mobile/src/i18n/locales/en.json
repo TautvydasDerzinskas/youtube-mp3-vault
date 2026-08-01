@@ -226,7 +226,10 @@
     },
     "trackDetail": {
       "failedToLoad": "Failed to load this track.",
-      "recommendedTitle": "Similar songs"
+      "recommendedTitle": "Similar songs",
+      "discoverTitle": "Discover",
+      "remixesTitle": "Remixes on YouTube",
+      "openInSpotify": "Search on Spotify"
     },
     "offline": {
       "toggleLabel": "Enable offline",
