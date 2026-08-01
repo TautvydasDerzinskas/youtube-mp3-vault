@@ -43,6 +43,10 @@
         "label": "Automatycznie usuwaj utwory niebędące muzyką",
         "description": "Automatycznie usuwa wpis i plik audio dla każdego utworu, który analiza dźwięku zaklasyfikuje jako niebędący muzyką, audiobook lub szum. Włączenie tej opcji usunie również takie utwory już znajdujące się w Twojej bibliotece."
       },
+      "qobuzHq": {
+        "label": "Wyszukiwanie HQ w Qobuz",
+        "description": "Gdy nasze zwykłe wyszukiwanie wysokiej jakości nic nie znajdzie, spróbujemy dodatkowo w Qobuz. Qobuz od czasu do czasu wymaga szybkiej weryfikacji — wtedy zobaczysz krótkie powiadomienie z prośbą o potwierdzenie, zwykle wystarczy jedno dotknięcie."
+      },
       "serverUrl": {
         "label": "Adres serwera",
         "change": "Zmień"
@@ -284,6 +288,10 @@
     "confirmBodyChange": "{{url}} zostanie zapisany i używany przez tę aplikację. Zostaniesz wylogowany i będziesz musiał zalogować się ponownie. Kontynuować?",
     "cancel": "Anuluj",
     "confirm": "Potwierdź"
+  },
+  "qobuzVerification": {
+    "message": "Wyszukiwanie HQ w Qobuz wymaga szybkiej weryfikacji, aby dalej wyszukiwać utwory wyższej jakości.",
+    "verify": "Zweryfikuj teraz"
   },
   "update": {
     "available": "Dostępna jest nowsza wersja YoutubeVault.",

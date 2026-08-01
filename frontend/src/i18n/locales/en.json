@@ -219,6 +219,10 @@
       "autoDeleteNonMusic": {
         "label": "Auto-delete non-music tracks",
         "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music, an audiobook, or noise. Turning this on removes any tracks like these already in your library."
+      },
+      "qobuzHq": {
+        "label": "Qobuz HQ music discovery",
+        "description": "When our regular high-quality search finds nothing, try Qobuz as a fallback source. Qobuz occasionally needs a quick human verification — when it does, you'll see a short popup asking you to verify, usually just a single click."
       }
     },
     "lastfm": {
@@ -232,6 +236,11 @@
       "connectedAlert": "Connected to Last.fm.",
       "errorAlert": "Couldn't connect to Last.fm. Please try again."
     }
+  },
+  "qobuzVerification": {
+    "message": "Qobuz HQ discovery needs a quick verification to continue finding higher-quality tracks.",
+    "verify": "Verify now",
+    "dismiss": "Later"
   },
   "downloads": {
     "title": "Downloads",

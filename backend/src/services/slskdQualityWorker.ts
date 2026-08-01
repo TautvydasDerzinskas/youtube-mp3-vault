@@ -45,6 +45,16 @@ export async function resolvePlaylistQuality(
     orderBy: { position: 'asc' },
   });
 
+  // Qobuz is opt-in per playlist owner (see User.qobuzHqEnabled) — its
+  // verification step needs a real human occasionally (see
+  // services/qobuz/session.ts), so it's never attempted for a user who
+  // hasn't turned it on. Looked up once per playlist, not per video.
+  const playlistOwner = await prisma.playlist.findUnique({
+    where: { id: playlistId },
+    select: { user: { select: { qobuzHqEnabled: true } } },
+  });
+  const qobuzEnabledForOwner = playlistOwner?.user.qobuzHqEnabled ?? false;
+
   for (const [index, video] of videos.entries()) {
     if (!isOnline()) return;
     onProgress?.(index + 1, videos.length, video.artist ? `${video.artist} - ${video.title}` : video.title);
@@ -102,24 +112,26 @@ export async function resolvePlaylistQuality(
         // competing search: only tried once slskd comes up empty, since it
         // has no per-file text/duration matching of its own the way slskd's
         // MATCH_TIERS do — its own search is either one confident hit or
-        // nothing (see hqReplace.ts's downloadAndReplaceFromQobuz).
-        try {
-          // Rebuilt as a fresh object (rather than passing `video` as-is) so
-          // TS's narrowing of `video.artist` from the `!video.artist` check
-          // above actually applies — it doesn't propagate to `video`'s own
-          // static type when the whole object is passed by reference.
-          const replacedFromQobuz = await downloadAndReplaceFromQobuz({
-            id: video.id, youtubeId: video.youtubeId, mediaFileId: video.mediaFileId,
-            artist: video.artist, title: video.title,
-          });
-          if (replacedFromQobuz) continue;
-        } catch (err) {
-          // Includes the one-time community verification itself failing —
-          // that now runs fully unattended (a headless browser inside this
-          // same process, see ensureCommunitySession/session.ts), so it's
-          // just another transient failure to retry next sync, not a
-          // distinct "waiting on a human" state to surface differently.
-          console.error(`[qobuz] HQ fallback failed for ${video.youtubeId}:`, (err as Error).message);
+        // nothing (see hqReplace.ts's downloadAndReplaceFromQobuz). Also
+        // opt-in per playlist owner — see qobuzEnabledForOwner above.
+        if (qobuzEnabledForOwner) {
+          try {
+            // Rebuilt as a fresh object (rather than passing `video` as-is) so
+            // TS's narrowing of `video.artist` from the `!video.artist` check
+            // above actually applies — it doesn't propagate to `video`'s own
+            // static type when the whole object is passed by reference.
+            const replacedFromQobuz = await downloadAndReplaceFromQobuz({
+              id: video.id, youtubeId: video.youtubeId, mediaFileId: video.mediaFileId,
+              artist: video.artist, title: video.title,
+            });
+            if (replacedFromQobuz) continue;
+          } catch (err) {
+            // Includes verification itself not being complete yet — that now
+            // needs a real user to click through a popup (see
+            // ensureCommunitySession/session.ts), so this is just another
+            // "nothing available this time" outcome to retry next sync.
+            console.error(`[qobuz] HQ fallback failed for ${video.youtubeId}:`, (err as Error).message);
+          }
         }
 
         // Neither source found/delivered anything eligible right now — a

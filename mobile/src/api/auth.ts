@@ -10,6 +10,7 @@ export interface User {
   lastfmUsername: string | null;
   scrobblingEnabled: boolean;
   autoDeleteNonMusicEnabled: boolean;
+  qobuzHqEnabled: boolean;
 }
 
 interface AuthResponse {
@@ -70,6 +71,23 @@ export const authApi = {
 
   setAutoDeleteNonMusic: async (enabled: boolean): Promise<AuthResponse> => {
     const { data } = await client.patch<AuthResponse>('/auth/settings/auto-delete-non-music', { enabled });
+    return data;
+  },
+
+  setQobuzHqEnabled: async (enabled: boolean): Promise<AuthResponse> => {
+    const { data } = await client.patch<AuthResponse>('/auth/settings/qobuz-hq', { enabled });
+    return data;
+  },
+};
+
+export interface QobuzVerificationStatus {
+  needed: boolean;
+  challengeUrl: string | null;
+}
+
+export const hqApi = {
+  getQobuzVerificationStatus: async (): Promise<QobuzVerificationStatus> => {
+    const { data } = await client.get<QobuzVerificationStatus>('/hq/qobuz/status');
     return data;
   },
 };

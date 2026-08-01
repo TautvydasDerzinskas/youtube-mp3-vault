@@ -4,48 +4,49 @@
 // whole fallback source's protocol is ported from). Neither of those is part
 // of this repo.
 //
-// Architecture change from that source: the verify step isn't a plain HTTP
-// redirect — the challenge page runs its own JS (a polling animation) before
-// navigating to the `cb` callback URL with the grant, so it needs something
-// that can actually execute that JS. SpotiFLAC's Go app handles this by
-// shelling out to the OS's real browser and blocking on a *localhost* HTTP
-// callback; the prototype this was ported from does the same via the
-// admin's own browser (window.open + polling). Neither works unattended:
-// this backend runs in a container with no human sitting in front of it, so
-// there'd be nobody to open a browser at all, let alone click through one.
-// Instead, this launches a real (headless) Chromium itself — see
-// extractGrantViaHeadlessBrowser below — navigates it to the challenge page, and
-// intercepts *that browser's own* outgoing request to a synthetic `cb` URL
-// (playwright-core's request routing, never an actual network call) to pull
-// the grant out, mirroring exactly what a real callback server would've
-// caught, just inside the same process instead of a human's machine. No
-// admin interaction, no new port, no public route.
+// Architecture: the community backend's one-time verification step is a real
+// Cloudflare Turnstile challenge (a live, actively-maintained anti-bot
+// product) that a headless, unattended browser cannot reliably pass — this
+// was tried (see git history / demo-page/) and Turnstile's risk engine
+// consistently declined the automated session even after clicking the
+// checkbox. There's no way around that other than a real human completing it
+// in a real browser, so this backend doesn't attempt automation at all:
+// instead it hands the challenge URL to an opted-in user's own browser (see
+// routes/hq.ts's /status endpoint, polled by the frontend/mobile) and waits
+// for that real browser to complete the challenge and hit the real callback
+// route (/api/hq/qobuz/callback, also in routes/hq.ts) with the resulting
+// grant. This is why Qobuz HQ discovery is an opt-in per-user setting
+// (User.qobuzHqEnabled) rather than a silent background feature — completing
+// it needs a live person occasionally.
+//
+// Nothing here ever blocks a background job on that human interaction:
+// ensureCommunitySession() kicks off the (fast) bootstrap call to obtain a
+// fresh challenge URL if needed and then throws immediately — the current
+// HQ scan attempt just skips Qobuz for this track, and a later attempt
+// (next track, next sync) succeeds once verification completes.
 //
 // The actual cryptographic protocol against the community backend (HMAC
 // request signing, rolling session keys, the bootstrap/exchange calls) is
-// unchanged.
+// unchanged from the prototype.
 import crypto from 'crypto';
-import { access, constants, readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { chromium } from 'playwright-core';
 import { config } from '../../config';
 import { ensureQobuzDataDir } from './appDir';
 import { getCommunityVerifyURL } from './communityEndpoints';
+import { QOBUZ_USER_AGENT } from './credentials';
 
 const COMMUNITY_SESSION_SKEW_MS = 5 * 60 * 1000;
-const COMMUNITY_VERIFY_TIMEOUT_MS = 2 * 60 * 1000;
+// How long a challenge URL stays valid for a user to click through before a
+// fresh one is requested instead — generous, since "a human notices the
+// popup and clicks it" is a much slower clock than any browser-automation
+// timeout ever needed to be.
+const PENDING_VERIFICATION_TTL_MS = 10 * 60 * 1000;
 
 // Mirrors SpotiFLAC's wails.json productVersion, same as the prototype this
 // was ported from — bump if SpotiFLAC's own release version moves on and
 // requests start failing (the community backend may pin behavior to it).
 export const APP_VERSION = '7.2.0';
-
-// Never actually dialed — playwright-core intercepts any request starting
-// with this prefix and resolves the grant from it before the request would
-// otherwise go out over the (nonexistent) network. Just needs to be a
-// syntactically valid https URL the community backend will accept as a
-// redirect target.
-const SYNTHETIC_CALLBACK_URL = 'https://qobuz-verify.ympv.internal/callback';
 
 interface SessionRecord {
   install_id: string;
@@ -101,138 +102,100 @@ export async function clearCommunitySessionCredentials(): Promise<void> {
   await saveSession(record);
 }
 
-// Called once at backend startup (see index.ts) so a missing/broken headless
-// Chromium shows up immediately in `docker logs` rather than only surfacing
+// Called once at backend startup (see index.ts) so a broken verify-endpoint
+// decrypt shows up immediately in `docker logs` rather than only surfacing
 // days later when a weekly sync's HQ fallback first needs it.
 export async function logQobuzStartupStatus(): Promise<void> {
-  if (!config.qobuzChromiumPath) {
-    console.warn(
-      '[qobuz] QOBUZ_CHROMIUM_PATH is not set — the Qobuz HQ fallback will fail verification (and silently ' +
-      'contribute nothing) whenever slskd has no match. Expected in a bare local dev run; should always be ' +
-      'set in the Docker image (see Dockerfile).',
-    );
+  if (!getCommunityVerifyURL()) {
+    console.warn('[qobuz] Community verify endpoint is unavailable (decrypt failure?) — Qobuz HQ discovery will not work.');
     return;
   }
-  try {
-    await access(config.qobuzChromiumPath, constants.X_OK);
-    console.log(`[qobuz] Headless Chromium found at ${config.qobuzChromiumPath} — HQ fallback ready.`);
-  } catch {
-    console.warn(
-      `[qobuz] QOBUZ_CHROMIUM_PATH is set to "${config.qobuzChromiumPath}" but that path isn't an executable ` +
-      'file — the Qobuz HQ fallback will fail verification until this is fixed (check the installed chromium ' +
-      'package/binary name matches).',
-    );
-  }
+  console.log('[qobuz] HQ fallback ready — verification (when needed) is completed by an opted-in user in their own browser.');
 }
 
-// Launches headless Chromium, navigates it to the community verify site's
-// challenge page, and waits for that page's own JS (the polling "bubble
-// turns green" animation) to finish and navigate to SYNTHETIC_CALLBACK_URL
-// with the grant — caught via playwright-core's request routing before it
-// would otherwise try (and fail) to actually dial that host. Closes the
-// browser unconditionally afterward either way.
-async function extractGrantViaHeadlessBrowser(challengeUrl: string): Promise<string> {
-  if (!config.qobuzChromiumPath) {
-    console.error('[qobuz] Cannot run headless verification — QOBUZ_CHROMIUM_PATH is not set');
-    throw new Error('Headless Chromium is not configured (QOBUZ_CHROMIUM_PATH) — cannot complete Qobuz verification');
-  }
-
-  console.log(`[qobuz] Launching headless Chromium (${config.qobuzChromiumPath})`);
-  let browser;
-  try {
-    browser = await chromium.launch({
-      executablePath: config.qobuzChromiumPath,
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-  } catch (err) {
-    console.error(
-      `[qobuz] Failed to launch headless Chromium at "${config.qobuzChromiumPath}" — check the binary exists ` +
-      'and the image has its runtime deps installed (nss/freetype/harfbuzz/ca-certificates/ttf-freefont):',
-      (err as Error).message,
-    );
-    throw err;
-  }
-
-  try {
-    const page = await browser.newPage();
-
-    let grantResolve!: (grant: string) => void;
-    let grantReject!: (err: Error) => void;
-    const grantPromise = new Promise<string>((resolve, reject) => {
-      grantResolve = resolve;
-      grantReject = reject;
-    });
-
-    await page.route(
-      (url) => url.href.startsWith(SYNTHETIC_CALLBACK_URL),
-      async (route) => {
-        const grant = new URL(route.request().url()).searchParams.get('grant');
-        console.log(`[qobuz] Verification callback intercepted — grant ${grant ? 'received' : 'MISSING'}`);
-        // Respond instead of aborting so the page's own JS doesn't see a
-        // network error and retry/loop — matches the "Verified" page the
-        // real callback used to serve.
-        await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Verified</title>' });
-        if (grant) grantResolve(grant);
-        else grantReject(new Error('verification callback carried no grant'));
-      },
-    );
-
-    console.log(`[qobuz] Navigating headless browser to challenge page: ${challengeUrl}`);
-    // Only waits for the challenge page's *initial* load — the later
-    // navigation to SYNTHETIC_CALLBACK_URL (once its own JS finishes
-    // polling) is caught by the route handler above, not by this call.
-    page.goto(challengeUrl, { waitUntil: 'domcontentloaded', timeout: COMMUNITY_VERIFY_TIMEOUT_MS }).catch((err) => {
-      // A failure loading the initial page doesn't necessarily mean
-      // verification failed outright — the timeout race below is the real
-      // guard either way — but it's worth logging in case it's the actual
-      // root cause (e.g. DNS failure reaching the challenge host at all).
-      console.warn('[qobuz] Challenge page navigation reported an error (may be harmless):', (err as Error).message);
-    });
-
-    const grant = await Promise.race([
-      grantPromise,
-      new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error(`verification timed out after ${COMMUNITY_VERIFY_TIMEOUT_MS / 1000}s waiting for the challenge page to complete`)), COMMUNITY_VERIFY_TIMEOUT_MS),
-      ),
-    ]);
-    console.log('[qobuz] Headless verification page completed successfully');
-    return grant;
-  } catch (err) {
-    console.error('[qobuz] Headless verification failed:', (err as Error).message);
-    throw err;
-  } finally {
-    await browser.close().catch(() => {});
-  }
+interface PendingVerification {
+  state: string;
+  challengeUrl: string;
+  record: SessionRecord;
+  createdAt: number;
 }
 
-async function performVerification(record: SessionRecord): Promise<CommunitySession> {
+let pendingVerification: PendingVerification | null = null;
+let bootstrapInFlight: Promise<void> | null = null;
+
+function pendingIsFresh(p: PendingVerification | null): p is PendingVerification {
+  return !!p && Date.now() - p.createdAt < PENDING_VERIFICATION_TTL_MS;
+}
+
+function buildCallbackUrl(state: string): string {
+  return `${config.frontendUrl}/api/hq/qobuz/callback?state=${state}`;
+}
+
+// Fetches a fresh challenge URL from the community backend (a plain, fast
+// HTTP round-trip — no browser involved) and stores it as the pending
+// verification any opted-in user's client can pick up via /api/hq/qobuz/status.
+// No-ops if a still-fresh pending challenge already exists, or if a bootstrap
+// request is already in flight (concurrent callers share it).
+async function startVerificationIfNeeded(record: SessionRecord): Promise<void> {
+  if (pendingIsFresh(pendingVerification)) return;
+  if (bootstrapInFlight) return bootstrapInFlight;
+
+  bootstrapInFlight = (async () => {
+    try {
+      const verifyBaseURL = getCommunityVerifyURL();
+      if (!verifyBaseURL) throw new Error('verification endpoint is unavailable');
+
+      const bootstrapURL = new URL(verifyBaseURL + '/bootstrap');
+      bootstrapURL.searchParams.set('install_id', record.install_id);
+      bootstrapURL.searchParams.set('app_version', APP_VERSION);
+      bootstrapURL.searchParams.set('platform', 'desktop');
+
+      console.log(`[qobuz] Requesting a verification challenge (install_id=${record.install_id})`);
+      const resp = await fetch(bootstrapURL, {
+        headers: { 'User-Agent': QOBUZ_USER_AGENT },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!resp.ok) throw new Error(`verification bootstrap returned HTTP ${resp.status}`);
+      const body = (await resp.json()) as { challenge_url?: string };
+      const parsed = body.challenge_url ? new URL(body.challenge_url) : null;
+      if (!parsed || parsed.protocol !== 'https:') {
+        throw new Error('verification service returned an invalid challenge URL');
+      }
+
+      const state = randomHex(8);
+      parsed.searchParams.set('cb', buildCallbackUrl(state));
+      pendingVerification = { state, challengeUrl: parsed.toString(), record, createdAt: Date.now() };
+      console.log('[qobuz] Verification challenge ready — waiting for an opted-in user to complete it in their browser');
+    } catch (err) {
+      console.error('[qobuz] Failed to request a verification challenge:', err instanceof Error ? err.message : String(err));
+    } finally {
+      bootstrapInFlight = null;
+    }
+  })();
+
+  return bootstrapInFlight;
+}
+
+// Returns the currently pending challenge URL, if any (and not expired) —
+// used by routes/hq.ts's /status endpoint to hand it to an opted-in user's
+// client for display. Null when nothing needs verifying right now.
+export function getPendingVerificationChallengeUrl(): string | null {
+  return pendingIsFresh(pendingVerification) ? pendingVerification.challengeUrl : null;
+}
+
+// Called by routes/hq.ts's public /callback route once a real user's browser
+// has completed the Turnstile challenge and been redirected here with a
+// grant. Exchanges it for a session and persists it — after this,
+// ensureCommunitySession() below starts succeeding again.
+export async function completeVerification(state: string, grant: string): Promise<void> {
+  if (!pendingIsFresh(pendingVerification) || pendingVerification.state !== state) {
+    throw new Error('no matching pending verification (it may have expired, or already been completed)');
+  }
+  const record = pendingVerification.record;
+  pendingVerification = null;
+
   const verifyBaseURL = getCommunityVerifyURL();
-  if (!verifyBaseURL) {
-    console.error('[qobuz] Community verify endpoint is unavailable (decrypt failure?) — cannot verify');
-    throw new Error('verification endpoint is unavailable');
-  }
-
-  const bootstrapURL = new URL(verifyBaseURL + '/bootstrap');
-  bootstrapURL.searchParams.set('install_id', record.install_id);
-  bootstrapURL.searchParams.set('app_version', APP_VERSION);
-  bootstrapURL.searchParams.set('platform', 'desktop');
-
-  console.log(`[qobuz] Requesting verification challenge (install_id=${record.install_id})`);
-  const bootstrapResp = await fetch(bootstrapURL, { signal: AbortSignal.timeout(15_000) });
-  if (!bootstrapResp.ok) {
-    console.error(`[qobuz] Bootstrap request failed: HTTP ${bootstrapResp.status}`);
-    throw new Error(`verification bootstrap returned HTTP ${bootstrapResp.status}`);
-  }
-  const bootstrapBody = (await bootstrapResp.json()) as { challenge_url?: string };
-  const parsed = bootstrapBody.challenge_url ? new URL(bootstrapBody.challenge_url) : null;
-  if (!parsed || parsed.protocol !== 'https:') {
-    console.error('[qobuz] Bootstrap response had no usable challenge_url:', JSON.stringify(bootstrapBody));
-    throw new Error('verification service returned an invalid challenge URL');
-  }
-  parsed.searchParams.set('cb', SYNTHETIC_CALLBACK_URL);
-
-  const grant = await extractGrantViaHeadlessBrowser(parsed.toString());
+  if (!verifyBaseURL) throw new Error('verification endpoint is unavailable');
 
   console.log('[qobuz] Exchanging grant for a session');
   const exchangeResp = await fetch(verifyBaseURL + '/session/exchange', {
@@ -247,7 +210,6 @@ async function performVerification(record: SessionRecord): Promise<CommunitySess
     signal: AbortSignal.timeout(15_000),
   });
   if (!exchangeResp.ok) {
-    console.error(`[qobuz] Session exchange failed: HTTP ${exchangeResp.status}`);
     throw new Error(`session exchange returned HTTP ${exchangeResp.status}`);
   }
   const exchanged = (await exchangeResp.json()) as {
@@ -256,7 +218,6 @@ async function performVerification(record: SessionRecord): Promise<CommunitySess
     expires_at?: string;
   };
   if (!exchanged.session_id || !exchanged.session_secret || !exchanged.expires_at) {
-    console.error('[qobuz] Session exchange response was incomplete:', JSON.stringify(exchanged));
     throw new Error('session exchange response is incomplete');
   }
 
@@ -265,34 +226,21 @@ async function performVerification(record: SessionRecord): Promise<CommunitySess
   record.expires_at = exchanged.expires_at;
   await saveSession(record);
   console.log(`[qobuz] Verification succeeded — session valid until ${exchanged.expires_at}`);
-  return { sessionId: exchanged.session_id, sessionSecret: exchanged.session_secret };
 }
 
-let pending: Promise<CommunitySession> | null = null;
-
-// Transparently completes the full headless verification inline the first
-// time it's needed (or whenever a past session has expired/been revoked —
-// see clearCommunitySessionCredentials) and returns the now-valid session.
-// Concurrent callers (e.g. several tracks in the same HQ scan pass) share
-// the one in-flight attempt rather than each launching their own browser.
-// Blocks for however long the headless verification takes (up to
-// COMMUNITY_VERIFY_TIMEOUT_MS) only on that first call — every call after a
-// session is cached returns near-instantly.
+// Returns the cached session if still valid. Otherwise kicks off (or reuses)
+// a pending verification challenge and throws — never blocks waiting for a
+// human. Callers (see client.ts) already treat any failure here as "skip
+// Qobuz for this track, try again next time", which is exactly right: the
+// next call after a user completes the popup will succeed.
 export async function ensureCommunitySession(): Promise<CommunitySession> {
   const record = await loadSession();
   if (isSessionValid(record)) {
     return { sessionId: record.session_id, sessionSecret: record.session_secret };
   }
 
-  if (!pending) {
-    console.log('[qobuz] Session missing or expired — starting headless verification');
-    pending = performVerification(record).finally(() => {
-      pending = null;
-    });
-  } else {
-    console.log('[qobuz] Verification already in progress — reusing the in-flight attempt');
-  }
-  return pending;
+  await startVerificationIfNeeded(record);
+  throw new Error('Qobuz verification required — waiting for an opted-in user to complete it');
 }
 
 function communityUserAgent(): string {

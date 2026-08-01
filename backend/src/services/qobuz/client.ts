@@ -1,8 +1,12 @@
 // Public surface of the Qobuz fallback source — the only file the rest of
 // the backend (hqReplace.ts) should import from this directory. Everything
 // else in services/qobuz/ is plumbing ported from qobuz_module (see that
-// port's own file-level comments for what changed and why). Verification is
-// fully unattended (see session.ts) — nothing here is admin-facing.
+// port's own file-level comments for what changed and why). Callers must
+// already have confirmed the playlist owner opted in (User.qobuzHqEnabled)
+// before calling this — see slskdQualityWorker.ts. Verification itself is
+// completed by that opted-in user in their own browser when needed (see
+// session.ts + routes/hq.ts), never blocking this call for more than a fast
+// bootstrap round-trip.
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { stat, unlink } from 'fs/promises';
@@ -68,8 +72,8 @@ async function resolveDownloadURL(trackId: number, qualityCode: string): Promise
  *
  * Never throws — same contract as slskd.ts's findBetterQualityMp3/
  * findExactMatchCandidate. Everything from "not online" to "nothing
- * confident enough" to a hard failure (community backend down, headless
- * verification broken, network error, anything at all) degrades to null,
+ * confident enough" to a hard failure (community backend down, verification
+ * not completed yet, network error, anything at all) degrades to null,
  * logged along the way. This is a best-effort fallback source; nothing
  * about it — including the Qobuz community server being unreachable —
  * should ever be able to take the sync process down with it.

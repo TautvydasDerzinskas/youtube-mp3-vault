@@ -227,6 +227,10 @@
       "autoDeleteNonMusic": {
         "label": "Automatycznie usuwaj utwory niebędące muzyką",
         "description": "Automatycznie usuwa wpis i plik audio dla każdego utworu, który analiza dźwięku zaklasyfikuje jako niebędący muzyką, audiobook lub szum. Włączenie tej opcji usunie również takie utwory już znajdujące się w Twojej bibliotece."
+      },
+      "qobuzHq": {
+        "label": "Wyszukiwanie HQ w Qobuz",
+        "description": "Gdy nasze zwykłe wyszukiwanie wysokiej jakości nic nie znajdzie, spróbujemy dodatkowo w Qobuz. Qobuz od czasu do czasu wymaga szybkiej weryfikacji — wtedy zobaczysz krótkie okienko z prośbą o potwierdzenie, zwykle wystarczy jedno kliknięcie."
       }
     },
     "lastfm": {
@@ -240,6 +244,11 @@
       "connectedAlert": "Połączono z Last.fm.",
       "errorAlert": "Nie udało się połączyć z Last.fm. Spróbuj ponownie."
     }
+  },
+  "qobuzVerification": {
+    "message": "Wyszukiwanie HQ w Qobuz wymaga szybkiej weryfikacji, aby dalej wyszukiwać utwory wyższej jakości.",
+    "verify": "Zweryfikuj teraz",
+    "dismiss": "Później"
   },
   "downloads": {
     "title": "Pobieranie",

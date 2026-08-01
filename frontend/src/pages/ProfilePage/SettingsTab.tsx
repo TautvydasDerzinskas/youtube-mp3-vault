@@ -6,8 +6,9 @@ import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, SupportedLanguage } from '../../i
 
 export function SettingsTab() {
   const { t } = useTranslation();
-  const { user, updateLanguage, setAutoDeleteNonMusic } = useAuth();
+  const { user, updateLanguage, setAutoDeleteNonMusic, setQobuzHqEnabled } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [qobuzLoading, setQobuzLoading] = useState(false);
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     updateLanguage(e.target.value as SupportedLanguage);
@@ -19,6 +20,15 @@ export function SettingsTab() {
       await setAutoDeleteNonMusic(enabled);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQobuzToggle = async (enabled: boolean) => {
+    setQobuzLoading(true);
+    try {
+      await setQobuzHqEnabled(enabled);
+    } finally {
+      setQobuzLoading(false);
     }
   };
 
@@ -51,6 +61,22 @@ export function SettingsTab() {
       />
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
         {t('profile.settings.autoDeleteNonMusic.description')}
+      </Typography>
+
+      <Divider sx={{ my: 2 }} />
+
+      <FormControlLabel
+        control={
+          <Switch
+            checked={user?.qobuzHqEnabled ?? false}
+            disabled={qobuzLoading}
+            onChange={(e) => handleQobuzToggle(e.target.checked)}
+          />
+        }
+        label={t('profile.settings.qobuzHq.label')}
+      />
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        {t('profile.settings.qobuzHq.description')}
       </Typography>
     </Box>
   );

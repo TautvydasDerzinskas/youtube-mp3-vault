@@ -223,6 +223,10 @@
       "autoDeleteNonMusic": {
         "label": "Automatiškai šalinti ne muzikos įrašus",
         "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai, garso knygai arba triukšmui. Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
+      },
+      "qobuzHq": {
+        "label": "Qobuz HQ muzikos paieška",
+        "description": "Kai įprasta aukštos kokybės paieška nieko neranda, papildomai pabandoma per Qobuz. Retkarčiais Qobuz reikalauja greito patvirtinimo — tokiu atveju pamatysite trumpą iššokantį langą, dažniausiai užtenka vieno paspaudimo."
       }
     },
     "lastfm": {
@@ -236,6 +240,11 @@
       "connectedAlert": "Prisijungta prie Last.fm.",
       "errorAlert": "Nepavyko prisijungti prie Last.fm. Bandykite dar kartą."
     }
+  },
+  "qobuzVerification": {
+    "message": "Qobuz HQ paieškai reikia greito patvirtinimo, kad būtų galima toliau ieškoti aukštesnės kokybės įrašų.",
+    "verify": "Patvirtinti dabar",
+    "dismiss": "Vėliau"
   },
   "downloads": {
     "title": "Atsisiuntimai",

@@ -35,6 +35,13 @@ model User {
   // checked per-track and syncService.ts's removeExistingNonMusicVideos for
   // the one-time sweep run when this flips from off to on (routes/auth.ts).
   autoDeleteNonMusicEnabled Boolean    @default(true)
+  // Opt-in: Qobuz HQ discovery is a fallback source tried when slskd (see
+  // services/hqReplace.ts) finds nothing. Its one-time verification step is
+  // a real Cloudflare Turnstile challenge that only a real human in a real
+  // browser can pass (see services/qobuz/session.ts) — enabling this means
+  // this user may occasionally be shown a "verify" popup when an HQ scan
+  // needs it. Default off so nobody sees that prompt unless they asked for it.
+  qobuzHqEnabled            Boolean    @default(false)
   createdAt                 DateTime   @default(now())
   updatedAt                 DateTime   @updatedAt
   playlists                 Playlist[]

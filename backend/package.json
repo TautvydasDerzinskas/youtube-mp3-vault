@@ -26,7 +26,6 @@
     "nodemailer": "^9.0.3",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "playwright-core": "^1.62.1",
     "prisma": "^5.22.0"
   },
   "devDependencies": {

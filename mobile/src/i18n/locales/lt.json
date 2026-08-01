@@ -43,6 +43,10 @@
         "label": "Automatiškai šalinti ne muzikos įrašus",
         "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai, garso knygai arba triukšmui. Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
       },
+      "qobuzHq": {
+        "label": "Qobuz HQ muzikos paieška",
+        "description": "Kai įprasta aukštos kokybės paieška nieko neranda, papildomai pabandoma per Qobuz. Retkarčiais Qobuz reikalauja greito patvirtinimo — tokiu atveju pamatysite trumpą iššokantį pranešimą, dažniausiai užtenka vieno palietimo."
+      },
       "serverUrl": {
         "label": "Serverio adresas",
         "change": "Keisti"
@@ -271,6 +275,10 @@
     "confirmBodyChange": "{{url}} bus išsaugotas ir naudojamas šioje programėlėje. Būsite atjungti ir turėsite prisijungti iš naujo. Tęsti?",
     "cancel": "Atšaukti",
     "confirm": "Patvirtinti"
+  },
+  "qobuzVerification": {
+    "message": "Qobuz HQ paieškai reikia greito patvirtinimo, kad būtų galima toliau ieškoti aukštesnės kokybės įrašų.",
+    "verify": "Patvirtinti dabar"
   },
   "update": {
     "available": "Yra naujesnė YoutubeVault versija.",

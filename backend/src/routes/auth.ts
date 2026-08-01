@@ -44,6 +44,7 @@ function toSafeUser(user: {
   lastfmUsername: string | null;
   scrobblingEnabled: boolean;
   autoDeleteNonMusicEnabled: boolean;
+  qobuzHqEnabled: boolean;
 }) {
   return {
     id: user.id,
@@ -55,6 +56,7 @@ function toSafeUser(user: {
     lastfmUsername: user.lastfmUsername,
     scrobblingEnabled: user.scrobblingEnabled,
     autoDeleteNonMusicEnabled: user.autoDeleteNonMusicEnabled,
+    qobuzHqEnabled: user.qobuzHqEnabled,
   };
 }
 
@@ -284,7 +286,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       where: { id: req.userId },
       select: {
         id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true,
-        lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true,
+        lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true, qobuzHqEnabled: true,
       },
     });
     if (!user) {
@@ -339,6 +341,24 @@ router.patch('/settings/auto-delete-non-music', requireAuth, async (req: AuthReq
         console.error(`[auth] Non-music sweep failed for user ${req.userId}:`, err)
       );
     }
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/auth/settings/qobuz-hq
+router.patch('/settings/qobuz-hq', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { enabled } = req.body as { enabled?: unknown };
+    if (typeof enabled !== 'boolean') {
+      res.status(400).json({ error: 'enabled must be a boolean' });
+      return;
+    }
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { qobuzHqEnabled: enabled },
+    });
     res.json({ user: toSafeUser(user) });
   } catch (err) {
     next(err);

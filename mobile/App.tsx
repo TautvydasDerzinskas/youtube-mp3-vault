@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { ActivityIndicator, PaperProvider, Snackbar } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +9,7 @@ import { theme } from './src/theme';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { ServerConfigProvider, useServerConfig } from './src/contexts/ServerConfigContext';
 import { useUpdateCheck } from './src/hooks/useUpdateCheck';
+import { useQobuzVerification } from './src/hooks/useQobuzVerification';
 import { registerToastListener } from './src/utils/toast';
 import { ServerSetupScreen } from './src/screens/ServerSetupScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -18,6 +20,7 @@ function AuthGate() {
   const { user, loading } = useAuth();
   const { available, releaseUrl } = useUpdateCheck();
   const [dismissed, setDismissed] = useState(false);
+  const { challengeUrl, snooze } = useQobuzVerification();
 
   useEffect(() => {
     if (!available) setDismissed(false);
@@ -40,6 +43,19 @@ function AuthGate() {
         action={releaseUrl ? { label: t('update.view'), onPress: () => Linking.openURL(releaseUrl) } : undefined}
       >
         {t('update.available')}
+      </Snackbar>
+      <Snackbar
+        visible={!!challengeUrl}
+        onDismiss={snooze}
+        action={{
+          label: t('qobuzVerification.verify'),
+          onPress: () => {
+            if (challengeUrl) WebBrowser.openBrowserAsync(challengeUrl);
+            snooze();
+          },
+        }}
+      >
+        {t('qobuzVerification.message')}
       </Snackbar>
     </>
   );

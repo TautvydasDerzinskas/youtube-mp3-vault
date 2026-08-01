@@ -8,6 +8,7 @@ import {
 } from 'react';
 import i18next from 'i18next';
 import { authApi, User, RegisterResponse } from '../api/auth';
+import { QobuzVerificationPrompt } from '../components/QobuzVerificationPrompt';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,7 @@ interface AuthContextType {
   disconnectLastfm: () => Promise<void>;
   setScrobbling: (enabled: boolean) => Promise<void>;
   setAutoDeleteNonMusic: (enabled: boolean) => Promise<void>;
+  setQobuzHqEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -107,15 +109,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(applyUser(user));
   };
 
+  const setQobuzHqEnabled = async (enabled: boolean) => {
+    const { user } = await authApi.setQobuzHqEnabled(enabled);
+    setUser(applyUser(user));
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, login, register, verifyEmail,
         resendVerification, logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
-        setAutoDeleteNonMusic,
+        setAutoDeleteNonMusic, setQobuzHqEnabled,
       }}
     >
       {children}
+      {user && <QobuzVerificationPrompt />}
     </AuthContext.Provider>
   );
 }

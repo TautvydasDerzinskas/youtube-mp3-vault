@@ -43,6 +43,10 @@
         "label": "Auto-delete non-music tracks",
         "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music, an audiobook, or noise. Turning this on removes any tracks like these already in your library."
       },
+      "qobuzHq": {
+        "label": "Qobuz HQ music discovery",
+        "description": "When our regular high-quality search finds nothing, try Qobuz as a fallback source. Qobuz occasionally needs a quick human verification — when it does, you'll see a short popup asking you to verify, usually just a single tap."
+      },
       "serverUrl": {
         "label": "Server URL",
         "change": "Change"
@@ -262,6 +266,10 @@
   "update": {
     "available": "A newer version of YoutubeVault is available.",
     "view": "View"
+  },
+  "qobuzVerification": {
+    "message": "Qobuz HQ discovery needs a quick verification to continue finding higher-quality tracks.",
+    "verify": "Verify now"
   },
   "network": {
     "notFound": "Service not found at this server address (404). Check the saved address.",

@@ -18,9 +18,10 @@ export function SettingsTabContent() {
   const { t } = useTranslation();
   const theme = useTheme();
   const navigation = useNavigation();
-  const { user, updateLanguage, setAutoDeleteNonMusic } = useAuth();
+  const { user, updateLanguage, setAutoDeleteNonMusic, setQobuzHqEnabled } = useAuth();
   const { serverUrl } = useServerConfig();
   const [autoDeleteLoading, setAutoDeleteLoading] = useState(false);
+  const [qobuzLoading, setQobuzLoading] = useState(false);
 
   const handleToggleAutoDelete = async (enabled: boolean) => {
     setAutoDeleteLoading(true);
@@ -28,6 +29,15 @@ export function SettingsTabContent() {
       await setAutoDeleteNonMusic(enabled);
     } finally {
       setAutoDeleteLoading(false);
+    }
+  };
+
+  const handleToggleQobuz = async (enabled: boolean) => {
+    setQobuzLoading(true);
+    try {
+      await setQobuzHqEnabled(enabled);
+    } finally {
+      setQobuzLoading(false);
     }
   };
 
@@ -57,6 +67,22 @@ export function SettingsTabContent() {
       </View>
       <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
         {t('profile.settings.autoDeleteNonMusic.description')}
+      </Text>
+
+      <Divider style={styles.divider2} />
+
+      <View style={styles.switchRow}>
+        <Text variant="bodyLarge" style={styles.switchLabel}>
+          {t('profile.settings.qobuzHq.label')}
+        </Text>
+        <Switch
+          value={user?.qobuzHqEnabled ?? false}
+          disabled={qobuzLoading}
+          onValueChange={handleToggleQobuz}
+        />
+      </View>
+      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+        {t('profile.settings.qobuzHq.description')}
       </Text>
 
       <Divider style={styles.divider2} />
