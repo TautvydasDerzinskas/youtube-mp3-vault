@@ -133,6 +133,15 @@ export async function downloadVideo(
   const tempFilePath = join(tmpDir, `${attemptId}.mp3`);
 
   const args = [
+    // Without an explicit selector, yt-dlp's default format is a combined
+    // video+audio stream, and -x then extracts whatever audio track happened
+    // to be muxed into that — typically a lower-bitrate progressive-mp4
+    // track (~128kbps AAC), not YouTube's actual best audio, which only
+    // exists as a separate DASH audio-only stream (~160kbps Opus, usually).
+    // Selecting bestaudio explicitly ensures that's the source getting
+    // transcoded; /best is only a fallback for the rare video that has no
+    // standalone audio stream at all.
+    '-f', 'bestaudio/best',
     '-x',
     '--audio-format', 'mp3',
     '--audio-quality', '0',      // VBR ~245kbps — best quality

@@ -294,7 +294,11 @@ export async function refreshPlaylistFromYoutube(
 // playlist-generation flows can await the same download-then-metadata pass
 // directly, instead of going through the fire-and-forget
 // startBackgroundDownload wrapper meant for HTTP handlers that can't block.
-export async function downloadPendingVideos(playlistId: string): Promise<void> {
+// `rescanAll` is threaded straight through to resolvePlaylistQuality below —
+// see that function's own doc comment (slskdQualityWorker.ts) for what it
+// changes; only scanForHqUpgrades sets it.
+export async function downloadPendingVideos(playlistId: string, options: { rescanAll?: boolean } = {}): Promise<void> {
+  const { rescanAll = false } = options;
   try {
     // Based on how many videos this pass is actually about to attempt, not
     // the playlist's total size — a retry-failed pass on a huge playlist
@@ -444,6 +448,7 @@ export async function downloadPendingVideos(playlistId: string): Promise<void> {
     });
     await resolvePlaylistQuality(playlistId, {
       onProgress: (current, total, title) => syncPhases.set(playlistId, { phase: 'quality', current, total, title }),
+      rescanAll,
     });
 
     await prisma.playlist.update({
@@ -551,11 +556,21 @@ export function retryFailedVideos(playlistId: string): void {
 // stays 'pending' on failure — see resolvePlaylistQuality) would stay stuck
 // that way forever. Works the same for a regular playlist too, as a
 // lighter-weight alternative to a full Sync when all you want is to
-// recheck slskd for upgrades. Uses the regular 'syncing' status (not a
-// distinct one) since it's still a genuine download-pending-videos pass,
-// just one that happens to find nothing pending to download most of the
-// time — the frontend's syncPhase reporting already makes the
-// metadata/quality-check work visible regardless.
+// recheck slskd for upgrades.
+//
+// Passes rescanAll: true — unlike a regular sync's automatic quality check
+// (incremental, newly-downloaded videos only), this is a deliberate,
+// user-initiated "check again" action, so it re-searches every video that
+// doesn't already have a real HQ file on disk, even ones a past check found
+// nothing for. slskd's peer pool changes throughout the day, so a track
+// with no match last time isn't a permanent verdict the way "we already
+// downloaded the upgrade" is.
+//
+// Uses the regular 'syncing' status (not a distinct one) since it's still a
+// genuine download-pending-videos pass, just one that happens to find
+// nothing pending to download most of the time — the frontend's syncPhase
+// reporting already makes the metadata/quality-check work visible
+// regardless.
 export function scanForHqUpgrades(playlistId: string): void {
   if (activeSyncs.has(playlistId)) return;
   activeSyncs.add(playlistId);
@@ -566,7 +581,7 @@ export function scanForHqUpgrades(playlistId: string): void {
         where: { id: playlistId },
         data: { syncStatus: 'syncing' },
       });
-      await downloadPendingVideos(playlistId);
+      await downloadPendingVideos(playlistId, { rescanAll: true });
       // downloadPendingVideos sets syncStatus → idle / error
     } catch (err) {
       console.error(`[sync] Error scanning for HQ upgrades for playlist ${playlistId}:`, err);

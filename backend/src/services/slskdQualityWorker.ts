@@ -1,16 +1,27 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { isOnline } from './connectivity';
-import { findBetterQualityMp3 } from './slskd';
+import { findBetterQualityMp3, MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
 import { isHqAutoDownloadEnabled } from './settings';
 import { findExactMatchCandidate, downloadAndReplace } from './hqReplace';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
-// playlist still awaiting a first check. Called at the end of a playlist's
-// download pass (see downloadPendingVideos in syncService.ts), same as
-// resolvePlaylistMetadata right before it — deliberately after metadata
-// resolution, not before, so `video.artist` is already populated by whatever
-// MusicBrainz/the local fallback found for it by the time this runs.
+// playlist. Called at the end of a playlist's download pass (see
+// downloadPendingVideos in syncService.ts), same as resolvePlaylistMetadata
+// right before it — deliberately after metadata resolution, not before, so
+// `video.artist` is already populated by whatever MusicBrainz/the local
+// fallback found for it by the time this runs.
+//
+// By default only checks videos still awaiting a first check
+// (`qualityCheckStatus: 'pending'`) — this is what every regular sync's
+// automatic follow-up pass uses, so routine syncs don't re-search slskd for
+// tracks already checked. Pass `rescanAll: true` (used by the admin-facing
+// "Scan for HQ" trigger — see scanForHqUpgrades in syncService.ts) to
+// instead recheck every video that doesn't already have a real HQ file on
+// disk (`hqFileDownloaded: false`), regardless of what a past check found —
+// slskd's peer pool changes constantly (different users online at different
+// times of day), so "no match last time" is never a permanent verdict the
+// way it's currently treated; only "we already have the upgraded file" is.
 //
 // When the "auto-download HQ upgrades" admin toggle is on (see
 // services/hqReplace.ts — meant to pair with a modified, purchaser-IP-gated
@@ -24,17 +35,35 @@ import { findExactMatchCandidate, downloadAndReplace } from './hqReplace';
 // live progress instead of this looking indistinguishable from stuck.
 export async function resolvePlaylistQuality(
   playlistId: string,
-  options: { onProgress?: (current: number, total: number, title: string) => void } = {}
+  options: { onProgress?: (current: number, total: number, title: string) => void; rescanAll?: boolean } = {}
 ): Promise<void> {
-  const { onProgress } = options;
+  const { onProgress, rescanAll = false } = options;
   const videos = await prisma.playlistVideo.findMany({
-    where: { playlistId, downloadStatus: 'done', qualityCheckStatus: 'pending' },
+    where: rescanAll
+      ? { playlistId, downloadStatus: 'done', hqFileDownloaded: false }
+      : { playlistId, downloadStatus: 'done', qualityCheckStatus: 'pending' },
     orderBy: { position: 'asc' },
   });
 
   for (const [index, video] of videos.entries()) {
     if (!isOnline()) return;
     onProgress?.(index + 1, videos.length, video.artist ? `${video.artist} - ${video.title}` : video.title);
+
+    // Already at (or somehow above) the ceiling this app treats as the
+    // highest plausible real mp3 bitrate — slskd.ts's own search discards
+    // any peer file reporting a higher bitrate as bogus data, so no search
+    // here could ever legitimately find something better. Skip it outright
+    // rather than spending a slskd round-trip to prove that. Standard
+    // YouTube audio-only streams don't actually reach this on their own
+    // (topping out around 128–256kbps depending on what's available for a
+    // given video) — this mostly matters for a track already carrying a
+    // genuinely maxed-out bitrate from some other source.
+    if (video.bitrate !== null && video.bitrate >= MAX_PLAUSIBLE_MP3_BITRATE_KBPS) {
+      await prisma.playlistVideo
+        .update({ where: { id: video.id }, data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() } })
+        .catch(() => {});
+      continue;
+    }
 
     if (!video.artist) {
       // metadataStatus 'pending' means a future sync's metadata pass might
