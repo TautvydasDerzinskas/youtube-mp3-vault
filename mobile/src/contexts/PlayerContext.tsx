@@ -1,8 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { createAudioPlayer, useAudioPlayerStatus, setAudioModeAsync, AudioPlayer } from 'expo-audio';
+import { AppState } from 'react-native';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { playlistsApi, getStreamSource, PlaylistVideo } from '../api/playlists';
 import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
 import { enqueuePlay, flushPlayQueue } from '../offline/playQueue';
+
+interface PlaybackStatus {
+  playing: boolean;
+  isBuffering: boolean;
+  currentTime: number;
+  duration: number;
+}
+const INITIAL_PLAYBACK_STATUS: PlaybackStatus = { playing: false, isBuffering: false, currentTime: 0, duration: 0 };
 
 export type QueueTrack = PlaylistVideo & { playlistId?: string };
 
@@ -70,8 +79,35 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     playerRef.current = createAudioPlayer(null, { updateInterval: 500 });
   }
   const player = playerRef.current;
-  const status = useAudioPlayerStatus(player);
   const { getLocalUri } = useOfflineDownloads();
+
+  // Deliberately not expo-audio's useAudioPlayerStatus hook — that would
+  // push a React state update (and, through context, re-render every single
+  // usePlayer() consumer in the app) on every native tick, unconditionally.
+  // shouldPlayInBackground below means Android/iOS keep this whole JS engine
+  // alive while backgrounded so playback can continue, so an unconditional
+  // 500ms re-render cascade would keep running the entire time the phone is
+  // locked with music playing, for a screen nobody can see. This tracks the
+  // same data via a manual listener instead (folded into the existing
+  // playbackStatusUpdate subscription below, replacing what used to be two
+  // separate subscriptions to the same event), and only actually pushes it
+  // into React state while the app is foregrounded — see isForegroundRef.
+  const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>(INITIAL_PLAYBACK_STATUS);
+  const latestPlaybackStatusRef = useRef<PlaybackStatus>(INITIAL_PLAYBACK_STATUS);
+  const isForegroundRef = useRef(AppState.currentState === 'active');
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      const resumed = next === 'active' && !isForegroundRef.current;
+      isForegroundRef.current = next === 'active';
+      // Catch up in one shot the moment the app comes back — lock-screen
+      // controls stayed accurate natively the whole time regardless (see
+      // setActiveForLockScreen), only this in-app UI (seek bar, play/pause
+      // icons, etc.) was stale.
+      if (resumed) setPlaybackStatus(latestPlaybackStatusRef.current);
+    });
+    return () => subscription.remove();
+  }, []);
 
   const [current, setCurrentState] = useState<CurrentTrack | null>(null);
   const [queue, setQueueState] = useState<QueueTrack[]>([]);
@@ -181,6 +217,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const subscription = player.addListener('playbackStatusUpdate', (s) => {
+      latestPlaybackStatusRef.current = {
+        playing: s.playing, isBuffering: s.isBuffering, currentTime: s.currentTime, duration: s.duration,
+      };
+      if (isForegroundRef.current) {
+        setPlaybackStatus(latestPlaybackStatusRef.current);
+      }
       if (s.didJustFinish) handleTrackEndedRef.current();
     });
     return () => subscription.remove();
@@ -275,10 +317,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       value={{
         nowPlaying: current ? { playlistId: current.playlistId, videoId: current.video.id } : null,
         nowPlayingVideo: current?.video,
-        isAudioPlaying: status.playing,
-        isBuffering: status.isBuffering,
-        currentTime: status.currentTime,
-        duration: status.duration,
+        isAudioPlaying: playbackStatus.playing,
+        isBuffering: playbackStatus.isBuffering,
+        currentTime: playbackStatus.currentTime,
+        duration: playbackStatus.duration,
         hasNext, hasPrevious, isRepeat, isShuffle,
         toggleRepeat, toggleShuffle, togglePlayPause,
         handleTogglePlay, playNext, playPrevious, seekTo,
