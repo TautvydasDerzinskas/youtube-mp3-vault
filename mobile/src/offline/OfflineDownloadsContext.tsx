@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { playlistsApi, ManifestTrack } from '../api/playlists';
 import { offlineIndex } from './offlineIndex';
@@ -124,6 +124,19 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       let completed = unchanged.length;
       let sinceLastPersist = 0;
       let failures = 0;
+      // Android only: a re-download (HQ upgrade, or any other server-side
+      // file change) always lands as a brand-new MediaLibrary asset with its
+      // own assetId — the old asset is never implicitly replaced or freed,
+      // it just falls out of the index once `downloaded` below replaces it.
+      // Collected here and deleted in one batch after the loop, same reason
+      // as removeOfflineTracks itself: deleting one-by-one as each track
+      // finishes would mean one system delete-confirmation dialog per track.
+      // Only collected on a *successful* re-download, so a failed one still
+      // leaves the old, playable copy in place instead of a gap.
+      // iOS doesn't need this — downloadTrack there writes to the same
+      // fixed `${track.id}.mp3` path every time, so the old file is already
+      // overwritten in place by the time this runs.
+      const replacedOldAssets: OfflineTrackEntry[] = [];
 
       const flush = () => {
         persistEntry({
@@ -140,6 +153,12 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
         try {
           const entry = await downloadTrack(playlistId, track);
           downloaded.push(entry);
+          if (Platform.OS === 'android') {
+            const have = existingById.get(track.id);
+            if (have && (have.mediaFileId !== track.mediaFileId || have.fileSize !== track.fileSize)) {
+              replacedOldAssets.push(have);
+            }
+          }
         } catch {
           failures += 1;
         } finally {
@@ -153,6 +172,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
         }
       });
 
+      await removeOfflineTracks(replacedOldAssets);
       flush();
       setPlaylistProgress(playlistId, {
         syncing: false,
