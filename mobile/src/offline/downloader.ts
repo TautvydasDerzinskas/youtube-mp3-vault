@@ -153,22 +153,45 @@ export async function offlineFileExists(entry: OfflineTrackEntry): Promise<boole
   }
 }
 
-// Removes one previously-downloaded track's local file/asset. Swallows
-// errors — the file may already be gone (user deleted it via a file manager
-// or gallery app, since Android's copy is genuinely shared/writable by
-// other apps), and a reconcile pass should still be able to drop the index
-// entry regardless.
-export async function removeOfflineTrack(entry: OfflineTrackEntry): Promise<void> {
-  try {
-    if (Platform.OS === 'android' && entry.assetId) {
-      await MediaLibrary.Asset.delete([new MediaLibrary.Asset(entry.assetId)]);
-    } else {
+// Removes previously-downloaded tracks' local files/assets. Swallows errors
+// — a file may already be gone (user deleted it via a file manager or
+// gallery app, since Android's copy is genuinely shared/writable by other
+// apps), and a reconcile pass should still be able to drop the index entry
+// regardless.
+//
+// Android assets are deleted in a single batched MediaLibrary.Asset.delete
+// call rather than one call per track: each call to that API (or the legacy
+// deleteAssetsAsync) surfaces its own system delete-consent dialog, so doing
+// it per-track — as this used to, called from a Promise.all(tracks.map(...))
+// at every call site below — meant one confirmation prompt per track (1200
+// prompts for a 1200-track playlist). Batching gets it down to one dialog
+// for the whole removal, which is what these APIs are actually meant for.
+export async function removeOfflineTracks(entries: OfflineTrackEntry[]): Promise<void> {
+  if (entries.length === 0) return;
+
+  if (Platform.OS === 'android') {
+    const assets = entries.filter(e => e.assetId).map(e => new MediaLibrary.Asset(e.assetId!));
+    if (assets.length === 0) return;
+    try {
+      await MediaLibrary.Asset.delete(assets);
+    } catch {
+      // Already gone, or the user declined the batch confirmation — the
+      // index entry may go stale, but offlineFileExists reconciles that on
+      // the next sync rather than leaving playback pointed at nothing.
+    }
+    return;
+  }
+
+  // iOS: plain app-sandboxed files, no OS confirmation either way, so
+  // parallel per-file deletes are fine.
+  await Promise.all(entries.map(async (entry) => {
+    try {
       const file = new File(entry.localUri);
       if (file.exists) file.delete();
+    } catch {
+      // Already gone or inaccessible — nothing more to do.
     }
-  } catch {
-    // Already gone or inaccessible — nothing more to do.
-  }
+  }));
 }
 
 export async function removeOfflinePlaylistDir(playlistId: string): Promise<void> {

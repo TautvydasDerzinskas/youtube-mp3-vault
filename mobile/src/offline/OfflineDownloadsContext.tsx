@@ -4,7 +4,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { playlistsApi, ManifestTrack } from '../api/playlists';
 import { offlineIndex } from './offlineIndex';
 import {
-  downloadTrack, removeOfflineTrack, removeOfflinePlaylistDir, offlineFileExists,
+  downloadTrack, removeOfflineTracks, removeOfflinePlaylistDir, offlineFileExists,
   runWithConcurrency, MAX_CONCURRENT_DOWNLOADS,
 } from './downloader';
 import { flushPlayQueue } from './playQueue';
@@ -86,7 +86,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       // server-side) gets deleted before anything new is fetched, freeing
       // space up front rather than after.
       const toDelete = existingTracks.filter(t => !downloadableById.has(t.trackId));
-      await Promise.all(toDelete.map(t => removeOfflineTrack(t)));
+      await removeOfflineTracks(toDelete);
 
       // A track already on-device is re-downloaded if the underlying media
       // file actually changed, or if its file is simply gone despite the
@@ -163,7 +163,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
         // Playlist no longer exists for this account — nothing sensible to
         // keep synced, so drop it from offline entirely.
         const existing = entriesRef.current[playlistId];
-        if (existing) await Promise.all(existing.tracks.map(t => removeOfflineTrack(t)));
+        if (existing) await removeOfflineTracks(existing.tracks);
         await removeOfflinePlaylistDir(playlistId);
         offlineIndex.removePlaylist(playlistId);
         setEntries(prev => {
@@ -203,7 +203,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
   const disableOffline = useCallback(async (playlistId: string) => {
     const existing = entriesRef.current[playlistId];
     if (existing) {
-      await Promise.all(existing.tracks.map(t => removeOfflineTrack(t)));
+      await removeOfflineTracks(existing.tracks);
     }
     await removeOfflinePlaylistDir(playlistId);
     offlineIndex.removePlaylist(playlistId);
