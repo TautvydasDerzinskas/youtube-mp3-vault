@@ -3,7 +3,8 @@ import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { findBetterQualityMp3, MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
 import { isHqAutoDownloadEnabled } from './settings';
-import { findExactMatchCandidate, downloadAndReplace } from './hqReplace';
+import { findExactMatchCandidate, downloadAndReplace as downloadAndReplaceViaSlskd } from './hqReplace';
+import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSaavn } from './jiosaavnReplace';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
 // playlist. Called at the end of a playlist's download pass (see
@@ -27,12 +28,17 @@ import { findExactMatchCandidate, downloadAndReplace } from './hqReplace';
 // services/hqReplace.ts — meant to pair with a modified, purchaser-IP-gated
 // slskd image), this does more than the plain search-only path: an exact
 // artist+title match gets downloaded and used to replace the local file
-// outright, not just flagged as available. That path in particular can take
-// a while per video (a real slskd search plus, when a match is found, an
-// actual file transfer) — onProgress (only syncService.ts's
-// downloadPendingVideos passes one) reports this video's 1-indexed position
-// and running total before each one is processed, so the caller can surface
-// live progress instead of this looking indistinguishable from stuck.
+// outright, not just flagged as available. slskd is tried first (it's
+// generally the better/more current source when it has a match); if it
+// comes up empty, JioSaavn (services/jiosaavnReplace.ts) is tried as a
+// fallback — a free public catalog with no peer pool to wait on, so it
+// costs one extra search rather than a real wait when slskd has nothing.
+// That path in particular can take a while per video (a real slskd search
+// plus, when a match is found, an actual file transfer) — onProgress (only
+// syncService.ts's downloadPendingVideos passes one) reports this video's
+// 1-indexed position and running total before each one is processed, so the
+// caller can surface live progress instead of this looking indistinguishable
+// from stuck.
 export async function resolvePlaylistQuality(
   playlistId: string,
   options: { onProgress?: (current: number, total: number, title: string) => void; rescanAll?: boolean } = {}
@@ -80,10 +86,41 @@ export async function resolvePlaylistQuality(
 
     try {
       if (isHqAutoDownloadEnabled()) {
-        const candidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
-        if (!candidate) {
-          // Search+match concluded there's nothing eligible right now — a
-          // stable, repeatable verdict, same as the free path below.
+        let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
+        let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
+        let replaced = false;
+
+        // Each source is isolated in its own try/catch — an unexpected
+        // failure on one (a slskd daemon hiccup, a JioSaavn API error) is
+        // logged and treated the same as "this source found nothing", not
+        // something that aborts the whole quality check for this video or
+        // stops the other source from still being tried. Every function
+        // called here is already designed not to throw for the ordinary
+        // "no match"/"download failed" cases (see hqReplace.ts and
+        // jiosaavnReplace.ts) — this is a backstop for the unexpected case.
+        try {
+          slskdCandidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
+          if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
+        } catch (err) {
+          console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+        }
+
+        if (!replaced && !slskdCandidate) {
+          // slskd came up empty (or errored) — fall back to JioSaavn's free
+          // public catalog before giving up on this video for this pass.
+          try {
+            jioSaavnCandidate = await findJioSaavnCandidate(video.artist, video.title, video.bitrate, video.duration);
+            if (jioSaavnCandidate) replaced = await downloadAndReplaceViaJioSaavn(video, jioSaavnCandidate);
+          } catch (err) {
+            console.error(`[jiosaavn] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          }
+        }
+
+        if (replaced) continue; // downloadAndReplace* already updated every flag/status itself
+
+        if (!slskdCandidate && !jioSaavnCandidate) {
+          // Neither source found anything eligible right now — a stable,
+          // repeatable verdict, same as the free path below.
           await prisma.playlistVideo.update({
             where: { id: video.id },
             data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() },
@@ -91,15 +128,13 @@ export async function resolvePlaylistQuality(
           continue;
         }
 
-        const replaced = await downloadAndReplace(video, candidate);
-        if (replaced) continue; // downloadAndReplace already updated every flag/status itself
-
-        // A real upgrade exists but downloading/replacing it didn't succeed
-        // this time (transient failure, peer/agent unavailable, file never
-        // showed up on the shared downloads volume in time — see
-        // hqReplace.ts) — flag it as available and leave qualityCheckStatus
-        // pending so the next sync retries the download, rather than a
-        // one-off failure permanently giving up on it.
+        // A real upgrade exists (on one source or the other) but
+        // downloading/replacing it didn't succeed this time (transient
+        // failure, peer/agent unavailable, file never showed up on the
+        // shared downloads volume in time — see hqReplace.ts) — flag it as
+        // available and leave qualityCheckStatus pending so the next sync
+        // retries the download, rather than a one-off failure permanently
+        // giving up on it.
         await prisma.playlistVideo.update({
           where: { id: video.id },
           data: { betterQualityExists: true },
