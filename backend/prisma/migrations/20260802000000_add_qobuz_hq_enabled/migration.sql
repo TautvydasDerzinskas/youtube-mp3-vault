@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "qobuzHqEnabled" BOOLEAN NOT NULL DEFAULT false;
