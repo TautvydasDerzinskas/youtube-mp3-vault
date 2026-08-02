@@ -30,13 +30,18 @@ import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSa
 // slskd image), this does more than the plain search-only path: an exact
 // artist+title match gets downloaded and used to replace the local file
 // outright, not just flagged as available. Three sources are tried in order,
-// each only attempted once the one before it comes up empty: slskd first
-// (generally the better/more current source when it has a match), then HiFi
+// each only attempted once the one before it comes up empty: HiFi first
 // (services/hifiReplace.ts — a free, Tidal-backed catalog via public hifi-api
-// instances), then JioSaavn (services/jiosaavnReplace.ts) last, since its
-// catalog mostly turns up karaoke/cover versions rather than the real
-// recording. None of them have a peer pool to wait on the way slskd does, so
-// falling through costs only extra searches, not a real wait.
+// instances, hit with one fast JSON search rather than a peer-search settle
+// wait, and in practice has a larger catalog than slskd — so putting it
+// first resolves the common case quickly, without paying slskd's own several
+// second search-settle cost on tracks it wouldn't have had anyway), then
+// slskd for whatever HiFi doesn't have (findHiFiCandidate is bounded by its
+// own short search-timeout — see HIFI_SEARCH_TIMEOUT_MS in hifiReplace.ts —
+// so an unreachable/slow HiFi instance pool falls through to slskd quickly
+// rather than stalling the whole check), then JioSaavn
+// (services/jiosaavnReplace.ts) last, since its catalog mostly turns up
+// karaoke/cover versions rather than the real recording.
 // That path in particular can take a while per video (a real slskd search
 // plus, when a match is found, an actual file transfer) — onProgress (only
 // syncService.ts's downloadPendingVideos passes one) reports this video's
@@ -90,8 +95,8 @@ export async function resolvePlaylistQuality(
 
     try {
       if (isHqAutoDownloadEnabled()) {
-        let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
         let hifiCandidate: Awaited<ReturnType<typeof findHiFiCandidate>> = null;
+        let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
         let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
         let replaced = false;
 
@@ -105,25 +110,26 @@ export async function resolvePlaylistQuality(
         // hifiReplace.ts, jiosaavnReplace.ts) — this is a backstop for the
         // unexpected case.
         try {
-          slskdCandidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
-          if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
+          hifiCandidate = await findHiFiCandidate(video.artist, video.title, video.bitrate, video.duration);
+          if (hifiCandidate) replaced = await downloadAndReplaceViaHiFi(video, hifiCandidate);
         } catch (err) {
-          console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          console.error(`[hifi] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
         }
 
-        if (!replaced && !slskdCandidate) {
-          // slskd came up empty (or errored) — fall back to HiFi's free,
-          // Tidal-backed catalog before trying JioSaavn.
+        if (!replaced && !hifiCandidate) {
+          // HiFi came up empty (or errored/timed out — see
+          // HIFI_SEARCH_TIMEOUT_MS) — fall back to slskd before trying
+          // JioSaavn.
           try {
-            hifiCandidate = await findHiFiCandidate(video.artist, video.title, video.bitrate, video.duration);
-            if (hifiCandidate) replaced = await downloadAndReplaceViaHiFi(video, hifiCandidate);
+            slskdCandidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
+            if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
           } catch (err) {
-            console.error(`[hifi] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+            console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
           }
         }
 
-        if (!replaced && !slskdCandidate && !hifiCandidate) {
-          // Neither slskd nor HiFi found anything — last resort: JioSaavn's
+        if (!replaced && !hifiCandidate && !slskdCandidate) {
+          // Neither HiFi nor slskd found anything — last resort: JioSaavn's
           // free public catalog (mostly karaoke/covers, so tried last).
           try {
             jioSaavnCandidate = await findJioSaavnCandidate(video.artist, video.title, video.bitrate, video.duration);

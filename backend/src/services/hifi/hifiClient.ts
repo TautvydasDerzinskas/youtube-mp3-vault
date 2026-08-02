@@ -69,16 +69,21 @@ export class HiFiClient {
   // Search / metadata
   // ---------------------------------------------------------------------
 
-  async searchTracks(params: SearchTracksParams): Promise<ParsedTrack[]> {
+  async searchTracks(params: SearchTracksParams, signal?: AbortSignal): Promise<ParsedTrack[]> {
     const { title, artist, album, limit = 20 } = params;
     if (!title && !artist && !album) return [];
 
-    const data = await this.http.apiGet<unknown>('/search/', {
-      limit,
-      s: title,
-      a: artist,
-      al: album,
-    });
+    const data = await this.http.apiGet<unknown>(
+      '/search/',
+      {
+        limit,
+        s: title,
+        a: artist,
+        al: album,
+      },
+      undefined,
+      signal,
+    );
     if (!data) return [];
 
     let items: unknown[] = [];

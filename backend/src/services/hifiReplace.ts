@@ -11,13 +11,28 @@ import { HiFiClient } from './hifi/hifiClient';
 import { HiFiPreviewOnlyError } from './hifi/errors';
 import type { ParsedTrack } from './hifi/types';
 
-// Second HQ fallback, tried only after slskd (see hqReplace.ts) — before
-// JioSaavn (jiosaavnReplace.ts), which mostly holds karaoke/cover versions
-// and is the least reliable of the three. HiFi is a free, Tidal-backed
-// catalog reached through public, unauthenticated hifi-api instances — no
-// peer pool to wait on, but the instances themselves are flaky/rate-limited,
-// which is what HiFiClient's own instance failover exists to absorb.
+// HQ source, tried first (see slskdQualityWorker.ts) — HiFi is a free,
+// Tidal-backed catalog reached through public, unauthenticated hifi-api
+// instances, hit via a single fast JSON search call rather than slskd's
+// several-second peer-search settle wait, so putting it first resolves the
+// common case quickly. slskd is still tried next for whatever HiFi doesn't
+// have, then JioSaavn last (mostly karaoke/cover versions).
 const HIFI_SEARCH_LIMIT = 20;
+
+// Ceiling for the *search* call specifically — HiFiHttpClient.apiGet cycles
+// through every configured instance (currently 7) at up to requestTimeoutMs
+// (15s) each on its own, so an instance pool that's technically reachable
+// but just slow (not cleanly refusing connections) could otherwise take well
+// over a minute before this gives up — directly undercutting the reason
+// HiFi is tried first at all (finding the common case fast). Passed as
+// searchTracks' AbortSignal, which bounds the whole pool-cycling loop, not
+// just one request — see hifi/httpClient.ts's apiGet. An outright-down
+// instance fails near-instantly (connection refused, not a timeout), so this
+// mainly caps how long we tolerate an instance that's up but hanging — set
+// to roughly 1.5x a single request's own timeout, enough room for one slow
+// attempt plus a couple of fast failures around it, without approaching the
+// full multi-minute worst case of exhausting the whole pool.
+const HIFI_SEARCH_TIMEOUT_MS = 22_000;
 
 // Generous ceiling for one track's whole download attempt — same rationale
 // as every other per-track network timeout in this app (see slskd.ts's
@@ -27,8 +42,9 @@ const HIFI_SEARCH_LIMIT = 20;
 // segment-by-segment download with its own retries, against public
 // instances that are known to be flaky. Passed straight through as
 // downloadTrack's AbortSignal, so it bounds the segment-download phase
-// specifically — search/manifest lookups are already bounded by their own
-// tighter per-request timeouts inside hifi/httpClient.ts regardless.
+// specifically — by the time this runs, findHiFiCandidate above has already
+// confirmed HiFi is reachable and has a match, so a long ceiling here is
+// about tolerating a slow transfer, not about detecting "HiFi is down."
 const HIFI_DOWNLOAD_TIMEOUT_MS = 8 * 60_000;
 
 const hifiClient = new HiFiClient({ downloadPath: getTmpDir() });
@@ -64,7 +80,7 @@ export async function findHiFiCandidate(
 
   let tracks: ParsedTrack[];
   try {
-    tracks = await hifiClient.searchTracks({ artist, title, limit: HIFI_SEARCH_LIMIT });
+    tracks = await hifiClient.searchTracks({ artist, title, limit: HIFI_SEARCH_LIMIT }, AbortSignal.timeout(HIFI_SEARCH_TIMEOUT_MS));
   } catch {
     return null;
   }

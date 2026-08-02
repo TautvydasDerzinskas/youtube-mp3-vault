@@ -51,12 +51,20 @@ export class HiFiHttpClient {
 
   /** GET `path` against the active instance, rotating and retrying on
    * instance-level failures until either a response comes back or the whole pool
-   * has been tried. Returns null on total failure or an API-reported error. */
-  async apiGet<T = unknown>(path: string, params?: QueryParams, timeoutMs?: number): Promise<T | null> {
+   * has been tried. Returns null on total failure or an API-reported error.
+   *
+   * `externalSignal`, when given, bounds the *whole* call (every instance
+   * attempt combined), not just one request — cycling the full pool at
+   * `timeoutMs` each could otherwise take minutes if every instance is up but
+   * slow, which defeats the purpose of a caller-imposed ceiling (e.g. "give up
+   * on HiFi and fall back to another source" — see hifiReplace.ts). */
+  async apiGet<T = unknown>(path: string, params?: QueryParams, timeoutMs?: number, externalSignal?: AbortSignal): Promise<T | null> {
     const timeout = timeoutMs ?? this.config.requestTimeoutMs;
     const tried = new Set<string>();
 
     for (;;) {
+      if (externalSignal?.aborted) return null;
+
       const instance = this.pool.getCurrent();
       if (!instance || tried.has(instance)) {
         return null;
@@ -68,10 +76,11 @@ export class HiFiHttpClient {
 
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
+      const signal = externalSignal ? AbortSignal.any([controller.signal, externalSignal]) : controller.signal;
 
       try {
         const response = await fetch(url, {
-          signal: controller.signal,
+          signal,
           headers: {
             'User-Agent': this.config.userAgent,
             Accept: 'application/json',
@@ -93,7 +102,12 @@ export class HiFiHttpClient {
         }
         return data as T;
       } catch {
-        // Timeout (AbortError) or network/connection error — try the next instance.
+        // externalSignal firing surfaces here too (AbortSignal.any trips the
+        // same catch) — in that case give up outright rather than rotating
+        // into another attempt the caller's own deadline has already passed.
+        if (externalSignal?.aborted) return null;
+        // Otherwise a per-request timeout (AbortError) or network/connection
+        // error — try the next instance.
         this.pool.rotate(instance);
       } finally {
         clearTimeout(timer);
