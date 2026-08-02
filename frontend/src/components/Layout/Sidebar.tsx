@@ -10,6 +10,7 @@ import {
 import { Logout as LogoutIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useGravatarUrl } from '../../hooks/useGravatarUrl';
+import { useLogout } from '../../hooks/useLogout';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { SidebarAudioGlow } from './SidebarAudioGlow';
@@ -22,15 +23,15 @@ interface SidebarProps {
 
 export default function Sidebar({ width }: SidebarProps) {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const avatarUrl = useGravatarUrl(user?.email, 128);
   const navigate = useNavigate();
   const navItems = useNavItems();
+  const logout = useLogout();
 
-  const handleLogout = async (e: React.MouseEvent) => {
+  const handleLogout = (e: React.MouseEvent) => {
     e.stopPropagation();
-    await logout();
-    navigate('/login');
+    logout();
   };
 
   return (

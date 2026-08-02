@@ -21,6 +21,7 @@
     "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
+    "music-metadata": "^11.14.0",
     "node-cron": "^3.0.3",
     "node-forge": "^1.4.0",
     "node-id3": "^0.2.9",

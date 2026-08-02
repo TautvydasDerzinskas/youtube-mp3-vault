@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Typography, Button, Alert, Stack, Switch, FormControlLabel } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { authApi } from '../../api/auth';
 import { useOnlineStatus } from '../PlaylistsPage/hooks/useOnlineStatus';
 
@@ -12,6 +13,7 @@ interface LastfmTabProps {
 export function LastfmTab({ result }: LastfmTabProps) {
   const { t } = useTranslation();
   const { user, disconnectLastfm, setScrobbling } = useAuth();
+  const { showSuccess, showError } = useToast();
   const online = useOnlineStatus();
   const [scrobblingLoading, setScrobblingLoading] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -20,6 +22,8 @@ export function LastfmTab({ result }: LastfmTabProps) {
     setScrobblingLoading(true);
     try {
       await setScrobbling(enabled);
+    } catch {
+      showError(t('profile.genericError'));
     } finally {
       setScrobblingLoading(false);
     }
@@ -29,6 +33,9 @@ export function LastfmTab({ result }: LastfmTabProps) {
     setDisconnecting(true);
     try {
       await disconnectLastfm();
+      showSuccess(t('profile.lastfm.disconnected'));
+    } catch {
+      showError(t('profile.genericError'));
     } finally {
       setDisconnecting(false);
     }

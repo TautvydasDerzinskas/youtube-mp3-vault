@@ -1,8 +1,7 @@
 import { Stack, Typography, IconButton, Tooltip, Button } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useLogout } from '../../hooks/useLogout';
 
 interface ProfileHeaderProps {
   title: string;
@@ -11,13 +10,7 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ title, onBack }: ProfileHeaderProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const handleLogout = useLogout();
 
   return (
     <Stack direction="row" alignItems="center" gap={1} mb={3}>

@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Box, TextField, Button, Alert } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { ProfileHeader } from './ProfileHeader';
 
 export default function ChangeEmailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
+  const { showSuccess } = useToast();
 
   const [email, setEmail] = useState(user?.email ?? '');
   const [password, setPassword] = useState('');
@@ -22,6 +24,7 @@ export default function ChangeEmailPage() {
     try {
       await updateProfile({ currentPassword: password, email: email.trim() });
       setPassword('');
+      showSuccess(t('profile.pendingEmailShort', { email: email.trim() }));
     } catch (err: any) {
       setError(err.response?.data?.error ?? t('profile.genericError'));
     } finally {

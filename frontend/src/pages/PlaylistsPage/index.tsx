@@ -95,9 +95,11 @@ export default function PlaylistsPage() {
     if (!deleting) return;
     setDeleteLoading(true);
     try {
-      await rawHandleDelete(deleting);
-      stopIfPlaylist(deleting.id);
-      setDeleting(null);
+      const deleted = await rawHandleDelete(deleting);
+      if (deleted) {
+        stopIfPlaylist(deleting.id);
+        setDeleting(null);
+      }
     } finally {
       setDeleteLoading(false);
     }

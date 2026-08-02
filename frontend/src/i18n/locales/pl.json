@@ -4,7 +4,8 @@
     "confirm": "Potwierdź",
     "save": "Zapisz",
     "close": "Zamknij",
-    "loading": "Ładowanie…"
+    "loading": "Ładowanie…",
+    "logoutError": "Nie udało się wylogować. Spróbuj ponownie."
   },
   "mobileGate": {
     "downloadCta": "Pobierz aplikację na Androida",
@@ -79,20 +80,27 @@
     "qualityPhaseMessage": "Szukanie pliku HQ dla „{{title}}” ({{current}}/{{total}})",
     "rename": "Zmień nazwę",
     "syncNow": "Synchronizuj teraz",
+    "syncError": "Nie udało się rozpocząć synchronizacji.",
     "offlineUnavailable": "Niedostępne — usługa jest offline",
     "retryFailed_one": "Ponów {{count}} nieudany film",
     "retryFailed_few": "Ponów {{count}} nieudane filmy",
     "retryFailed_many": "Ponów {{count}} nieudanych filmów",
     "retryFailed_other": "Ponów {{count}} nieudanych filmów",
+    "retryError": "Nie udało się ponowić nieudanych pobrań.",
     "scanHq": "Szukaj plików HQ",
+    "scanHqError": "Nie udało się rozpocząć skanowania HQ.",
     "resumeSync": "Wznów automatyczną synchronizację",
     "pauseSync": "Wstrzymaj automatyczną synchronizację",
+    "togglePauseError": "Nie udało się zaktualizować statusu synchronizacji.",
     "remove": "Usuń",
+    "deleted": "Usunięto „{{name}}”.",
+    "deleteError": "Nie udało się usunąć tej playlisty.",
     "unavailableWhileSyncing": "Niedostępne podczas synchronizacji",
     "unavailableWhileGenerating": "Niedostępne, dopóki generowana jest podobna playlista na podstawie tej",
     "openPlaylist": "Otwórz playlistę",
     "moreActions": "Więcej opcji",
     "generateSimilar": "Wygeneruj podobną playlistę",
+    "generateSimilarStarted": "Generowanie podobnej playlisty… może to chwilę potrwać w przypadku dużych playlist.",
     "generateSimilarError": "Nie udało się rozpocząć generowania podobnej playlisty.",
     "generatingChip": "Generowanie…",
     "generatedBadge": "Wygenerowana",
@@ -125,13 +133,15 @@
       "namePlaceholder": "Pozostaw puste, aby użyć nazwy z YouTube",
       "fetching": "Pobieranie playlisty… duże playlisty mogą chwilę potrwać.",
       "add": "Dodaj",
-      "genericError": "Nie udało się dodać playlisty. Sprawdź link i spróbuj ponownie."
+      "genericError": "Nie udało się dodać playlisty. Sprawdź link i spróbuj ponownie.",
+      "added": "Dodano „{{name}}”."
     },
     "renameDialog": {
       "title": "Zmień nazwę playlisty",
       "displayNameLabel": "Nazwa wyświetlana",
       "helperText": "Pozostaw puste, aby użyć nazwy z YouTube",
-      "genericError": "Nie udało się zmienić nazwy"
+      "genericError": "Nie udało się zmienić nazwy",
+      "renamed": "Zmieniono nazwę na „{{name}}”."
     },
     "videoList": {
       "failedToLoad": "Nie udało się załadować filmów.",
@@ -237,6 +247,7 @@
       "connectedAs": "Połączono jako {{username}}",
       "enableScrobbling": "Zapisuj utwory, których wysłucham do końca",
       "disconnect": "Rozłącz",
+      "disconnected": "Rozłączono z Last.fm.",
       "connectedAlert": "Połączono z Last.fm.",
       "errorAlert": "Nie udało się połączyć z Last.fm. Spróbuj ponownie."
     }
@@ -305,6 +316,9 @@
     "viewDetails": "Zobacz szczegóły",
     "ban": "Zbanuj",
     "unban": "Odbanuj",
+    "banSuccess": "Użytkownik „{{name}}” został zbanowany.",
+    "unbanSuccess": "Użytkownik „{{name}}” został odbanowany.",
+    "banError": "Nie udało się zaktualizować statusu bana tego użytkownika.",
     "cannotBanAdmin": "Kont administratorów nie można zbanować",
     "banConfirm": {
       "title": "Zbanować tego użytkownika?",

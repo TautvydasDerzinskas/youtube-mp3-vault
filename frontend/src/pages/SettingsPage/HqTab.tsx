@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Typography, Button, Alert, Switch, FormControlLabel } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { adminApi, HqSettings } from '../../api/admin';
+import { useToast } from '../../contexts/ToastContext';
 
 interface HqTabProps {
   hq: HqSettings;
@@ -10,21 +11,20 @@ interface HqTabProps {
 
 export function HqTab({ hq, onSaved }: HqTabProps) {
   const { t } = useTranslation();
+  const { showSuccess } = useToast();
   const [draft, setDraft] = useState(hq);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaved(false);
     setSaving(true);
     try {
       const updated = await adminApi.updateHqSettings(draft);
       setDraft(updated);
       onSaved(updated);
-      setSaved(true);
+      showSuccess(t('settings.saved'));
     } catch (err: any) {
       setError(err.response?.data?.error ?? t('settings.genericError'));
     } finally {
@@ -41,7 +41,6 @@ export function HqTab({ hq, onSaved }: HqTabProps) {
           label={t('settings.hq.autoDownloadEnabled')}
         />
         {error && <Alert severity="error">{error}</Alert>}
-        {saved && <Alert severity="success">{t('settings.saved')}</Alert>}
         <Button type="submit" variant="contained" disabled={saving} sx={{ alignSelf: 'flex-start' }}>
           {t('settings.save')}
         </Button>

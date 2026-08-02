@@ -5,11 +5,14 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, Playlist } from '../../api/youtube';
+import { useToast } from '../../contexts/ToastContext';
+import { displayName } from './utils';
 
 export function AddPlaylistDialog({ open, onClose, onAdded }: {
   open: boolean; onClose: () => void; onAdded: (p: Playlist) => void;
 }) {
   const { t } = useTranslation();
+  const { showSuccess } = useToast();
   const [url, setUrl] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,6 +30,7 @@ export function AddPlaylistDialog({ open, onClose, onAdded }: {
       reset();
       onAdded(playlist);
       onClose();
+      showSuccess(t('playlists.addDialog.added', { name: displayName(playlist) }));
     } catch (err: any) {
       setError(err.response?.data?.error ?? t('playlists.addDialog.genericError'));
     } finally {

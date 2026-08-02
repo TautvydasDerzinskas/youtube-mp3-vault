@@ -4,11 +4,14 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, Playlist } from '../../api/youtube';
+import { useToast } from '../../contexts/ToastContext';
+import { displayName } from './utils';
 
 export function RenameDialog({ playlist, onClose, onRenamed }: {
   playlist: Playlist; onClose: () => void; onRenamed: (p: Playlist) => void;
 }) {
   const { t } = useTranslation();
+  const { showSuccess } = useToast();
   const [value, setValue] = useState(playlist.customName ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +23,7 @@ export function RenameDialog({ playlist, onClose, onRenamed }: {
       const { playlist: updated } = await playlistsApi.rename(playlist.id, value.trim() || null);
       onRenamed(updated);
       onClose();
+      showSuccess(t('playlists.renameDialog.renamed', { name: displayName(updated) }));
     } catch (err: any) {
       setError(err.response?.data?.error ?? t('playlists.renameDialog.genericError'));
     } finally {

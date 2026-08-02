@@ -4,7 +4,8 @@
     "confirm": "Patvirtinti",
     "save": "Išsaugoti",
     "close": "Uždaryti",
-    "loading": "Kraunama…"
+    "loading": "Kraunama…",
+    "logoutError": "Nepavyko atsijungti. Bandykite dar kartą."
   },
   "mobileGate": {
     "downloadCta": "Atsisiųskite Android programėlę",
@@ -79,19 +80,26 @@
     "qualityPhaseMessage": "Ieškoma HQ failo „{{title}}“ ({{current}}/{{total}})",
     "rename": "Pervadinti",
     "syncNow": "Sinchronizuoti dabar",
+    "syncError": "Nepavyko pradėti sinchronizavimo.",
     "offlineUnavailable": "Negalima — paslauga neprisijungusi prie interneto",
     "retryFailed_one": "Pakartoti {{count}} nepavykusį vaizdo įrašą",
     "retryFailed_few": "Pakartoti {{count}} nepavykusius vaizdo įrašus",
     "retryFailed_other": "Pakartoti {{count}} nepavykusių vaizdo įrašų",
+    "retryError": "Nepavyko pakartoti nepavykusių atsisiuntimų.",
     "scanHq": "Ieškoti HQ failų",
+    "scanHqError": "Nepavyko pradėti HQ paieškos.",
     "resumeSync": "Tęsti automatinę sinchronizaciją",
     "pauseSync": "Pristabdyti automatinę sinchronizaciją",
+    "togglePauseError": "Nepavyko atnaujinti sinchronizavimo būsenos.",
     "remove": "Pašalinti",
+    "deleted": "Pašalinta „{{name}}“.",
+    "deleteError": "Nepavyko pašalinti šio grojaraščio.",
     "unavailableWhileSyncing": "Negalima sinchronizavimo metu",
     "unavailableWhileGenerating": "Negalima, kol iš šio grojaraščio generuojamas panašus grojaraštis",
     "openPlaylist": "Atidaryti grojaraštį",
     "moreActions": "Daugiau veiksmų",
     "generateSimilar": "Generuoti panašų grojaraštį",
+    "generateSimilarStarted": "Kuriamas panašus grojaraštis… tai gali užtrukti, jei grojaraštis didelis.",
     "generateSimilarError": "Nepavyko pradėti generuoti panašaus grojaraščio.",
     "generatingChip": "Generuojama…",
     "generatedBadge": "Sugeneruotas",
@@ -121,13 +129,15 @@
       "namePlaceholder": "Palikite tuščią, kad būtų naudojamas YouTube pavadinimas",
       "fetching": "Gaunamas grojaraštis… dideli grojaraščiai gali užtrukti.",
       "add": "Pridėti",
-      "genericError": "Nepavyko pridėti grojaraščio. Patikrinkite nuorodą ir bandykite dar kartą."
+      "genericError": "Nepavyko pridėti grojaraščio. Patikrinkite nuorodą ir bandykite dar kartą.",
+      "added": "Pridėta „{{name}}“."
     },
     "renameDialog": {
       "title": "Pervadinti grojaraštį",
       "displayNameLabel": "Rodomas pavadinimas",
       "helperText": "Palikite tuščią, kad būtų naudojamas YouTube pavadinimas",
-      "genericError": "Nepavyko pervadinti"
+      "genericError": "Nepavyko pervadinti",
+      "renamed": "Pervadinta į „{{name}}“."
     },
     "videoList": {
       "failedToLoad": "Nepavyko įkelti vaizdo įrašų.",
@@ -233,6 +243,7 @@
       "connectedAs": "Prisijungta kaip {{username}}",
       "enableScrobbling": "Fiksuoti dainas, kurias išklausau iki galo",
       "disconnect": "Atsijungti",
+      "disconnected": "Atsijungta nuo Last.fm.",
       "connectedAlert": "Prisijungta prie Last.fm.",
       "errorAlert": "Nepavyko prisijungti prie Last.fm. Bandykite dar kartą."
     }
@@ -301,6 +312,9 @@
     "viewDetails": "Peržiūrėti informaciją",
     "ban": "Blokuoti",
     "unban": "Atblokuoti",
+    "banSuccess": "„{{name}}“ užblokuotas.",
+    "unbanSuccess": "„{{name}}“ atblokuotas.",
+    "banError": "Nepavyko atnaujinti naudotojo blokavimo būsenos.",
     "cannotBanAdmin": "Administratorių paskyrų blokuoti negalima",
     "banConfirm": {
       "title": "Blokuoti šį naudotoją?",

@@ -4,7 +4,8 @@
     "confirm": "Confirm",
     "save": "Save",
     "close": "Close",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "logoutError": "Failed to log out. Please try again."
   },
   "mobileGate": {
     "downloadCta": "Get the Android app",
@@ -79,18 +80,25 @@
     "qualityPhaseMessage": "Searching HQ file for '{{title}}' ({{current}}/{{total}})",
     "rename": "Rename",
     "syncNow": "Sync now",
+    "syncError": "Failed to start sync.",
     "offlineUnavailable": "Unavailable — service is offline",
     "retryFailed_one": "Retry {{count}} failed video",
     "retryFailed_other": "Retry {{count}} failed videos",
+    "retryError": "Failed to retry failed downloads.",
     "scanHq": "Scan for HQ files",
+    "scanHqError": "Failed to start HQ scan.",
     "resumeSync": "Resume automatic sync",
     "pauseSync": "Pause automatic sync",
+    "togglePauseError": "Failed to update sync status.",
     "remove": "Remove",
+    "deleted": "Removed \"{{name}}\".",
+    "deleteError": "Failed to remove this playlist.",
     "unavailableWhileSyncing": "Unavailable while syncing",
     "unavailableWhileGenerating": "Unavailable while a similar playlist is being generated from this one",
     "openPlaylist": "Open playlist",
     "moreActions": "More actions",
     "generateSimilar": "Generate similar playlist",
+    "generateSimilarStarted": "Generating a similar playlist… this can take a while for large playlists.",
     "generateSimilarError": "Failed to start generating a similar playlist.",
     "generatingChip": "Generating…",
     "generatedBadge": "Generated",
@@ -117,13 +125,15 @@
       "namePlaceholder": "Leave blank to use YouTube title",
       "fetching": "Fetching playlist… large playlists may take a moment.",
       "add": "Add",
-      "genericError": "Failed to add playlist. Check the URL and try again."
+      "genericError": "Failed to add playlist. Check the URL and try again.",
+      "added": "Added \"{{name}}\"."
     },
     "renameDialog": {
       "title": "Rename Playlist",
       "displayNameLabel": "Display name",
       "helperText": "Leave blank to use the YouTube title",
-      "genericError": "Failed to rename"
+      "genericError": "Failed to rename",
+      "renamed": "Renamed to \"{{name}}\"."
     },
     "videoList": {
       "failedToLoad": "Failed to load videos.",
@@ -229,6 +239,7 @@
       "connectedAs": "Connected as {{username}}",
       "enableScrobbling": "Scrobble songs I finish listening to",
       "disconnect": "Disconnect",
+      "disconnected": "Disconnected from Last.fm.",
       "connectedAlert": "Connected to Last.fm.",
       "errorAlert": "Couldn't connect to Last.fm. Please try again."
     }
@@ -297,6 +308,9 @@
     "viewDetails": "View details",
     "ban": "Ban",
     "unban": "Unban",
+    "banSuccess": "\"{{name}}\" has been banned.",
+    "unbanSuccess": "\"{{name}}\" has been unbanned.",
+    "banError": "Failed to update this user's ban status.",
     "cannotBanAdmin": "Admin accounts can't be banned",
     "banConfirm": {
       "title": "Ban this user?",

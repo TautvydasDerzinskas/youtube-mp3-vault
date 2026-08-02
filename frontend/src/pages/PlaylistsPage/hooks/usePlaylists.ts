@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, Playlist } from '../../../api/youtube';
+import { useToast } from '../../../contexts/ToastContext';
 import { VideoState } from '../types';
+import { displayName } from '../utils';
 
 export function usePlaylists() {
   const { t } = useTranslation();
+  const { showSuccess, showError } = useToast();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +75,8 @@ export function usePlaylists() {
     try {
       const { playlist } = await playlistsApi.sync(id);
       updatePlaylist(playlist);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.syncError'));
     } finally {
       setSyncing(prev => { const s = new Set(prev); s.delete(id); return s; });
     }
@@ -84,6 +89,8 @@ export function usePlaylists() {
     try {
       const { playlist } = await playlistsApi.retryFailed(id);
       updatePlaylist(playlist);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.retryError'));
     } finally {
       setSyncing(prev => { const s = new Set(prev); s.delete(id); return s; });
       setRetrying(prev => { const s = new Set(prev); s.delete(id); return s; });
@@ -96,6 +103,8 @@ export function usePlaylists() {
     try {
       const { playlist } = await playlistsApi.scanHq(id);
       updatePlaylist(playlist);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.scanHqError'));
     } finally {
       setSyncing(prev => { const s = new Set(prev); s.delete(id); return s; });
     }
@@ -103,24 +112,42 @@ export function usePlaylists() {
 
   const handleTogglePause = async (e: React.MouseEvent, playlist: Playlist) => {
     e.stopPropagation();
-    const { playlist: updated } = playlist.syncPaused
-      ? await playlistsApi.resume(playlist.id)
-      : await playlistsApi.pause(playlist.id);
-    updatePlaylist(updated);
+    try {
+      const { playlist: updated } = playlist.syncPaused
+        ? await playlistsApi.resume(playlist.id)
+        : await playlistsApi.pause(playlist.id);
+      updatePlaylist(updated);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.togglePauseError'));
+    }
   };
 
-  const handleDelete = async (playlist: Playlist) => {
-    await playlistsApi.remove(playlist.id);
-    setPlaylists(prev => prev.filter(p => p.id !== playlist.id));
-    if (expanded === playlist.id) setExpanded(false);
+  // Returns whether the delete actually succeeded — the caller (the confirm
+  // dialog's onConfirm) uses this to decide whether it's safe to close the
+  // dialog and stop playback, rather than assuming success just because the
+  // await returned (a thrown error here used to leave the confirm dialog
+  // stuck open with no feedback at all).
+  const handleDelete = async (playlist: Playlist): Promise<boolean> => {
+    try {
+      await playlistsApi.remove(playlist.id);
+      setPlaylists(prev => prev.filter(p => p.id !== playlist.id));
+      if (expanded === playlist.id) setExpanded(false);
+      showSuccess(t('playlists.deleted', { name: displayName(playlist) }));
+      return true;
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.deleteError'));
+      return false;
+    }
   };
 
   // Throws on failure (e.g. one's already been generated for this source) —
-  // the caller shows the error, since unlike the actions above this creates
-  // a whole new playlist rather than updating an existing one.
+  // the caller shows the error inline in its own confirm dialog, since
+  // unlike the actions above this creates a whole new playlist rather than
+  // updating an existing one.
   const handleGenerateSimilar = async (id: string): Promise<void> => {
     const { playlist } = await playlistsApi.generateSimilar(id);
     handleAdded(playlist);
+    showSuccess(t('playlists.generateSimilarStarted'));
   };
 
   return {

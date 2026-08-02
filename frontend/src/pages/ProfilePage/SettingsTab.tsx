@@ -2,21 +2,29 @@ import { useState } from 'react';
 import { Box, Typography, Switch, FormControlLabel, TextField, MenuItem, Divider } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, SupportedLanguage } from '../../i18n';
 
 export function SettingsTab() {
   const { t } = useTranslation();
   const { user, updateLanguage, setAutoDeleteNonMusic } = useAuth();
+  const { showError } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateLanguage(e.target.value as SupportedLanguage);
+  const handleLanguageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      await updateLanguage(e.target.value as SupportedLanguage);
+    } catch {
+      showError(t('profile.genericError'));
+    }
   };
 
   const handleToggle = async (enabled: boolean) => {
     setLoading(true);
     try {
       await setAutoDeleteNonMusic(enabled);
+    } catch {
+      showError(t('profile.genericError'));
     } finally {
       setLoading(false);
     }

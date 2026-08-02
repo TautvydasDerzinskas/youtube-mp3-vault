@@ -22,15 +22,17 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLogout } from '../../hooks/useLogout';
 import { useNavItems } from './useNavItems';
 import { NavList } from './NavList';
 import { MOBILE_TOPBAR_HEIGHT } from './constants';
 
 export default function MobileTopBar() {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const navItems = useNavItems();
+  const logout = useLogout();
   const [open, setOpen] = useState(false);
 
   const handleNavigate = (path: string) => {
@@ -38,10 +40,9 @@ export default function MobileTopBar() {
     navigate(path);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setOpen(false);
-    await logout();
-    navigate('/login');
+    logout();
   };
 
   return (

@@ -10,9 +10,11 @@ import { useTranslation } from 'react-i18next';
 import { adminApi, AdminUser } from '../../api/admin';
 import { UserDetailDialog } from './UserDetailDialog';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function UsersPage() {
   const { t } = useTranslation();
+  const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState<AdminUser[] | 'loading' | 'error'>('loading');
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
@@ -30,6 +32,9 @@ export default function UsersPage() {
     try {
       const updated = user.isBanned ? await adminApi.unbanUser(user.id) : await adminApi.banUser(user.id);
       setUsers(prev => (Array.isArray(prev) ? prev.map(u => (u.id === updated.id ? updated : u)) : prev));
+      showSuccess(t(updated.isBanned ? 'users.banSuccess' : 'users.unbanSuccess', { name: updated.displayName }));
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('users.banError'));
     } finally {
       setActioningId(null);
     }
