@@ -4,7 +4,6 @@ import { isOnline } from './connectivity';
 import { findBetterQualityMp3, MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
 import { isHqAutoDownloadEnabled } from './settings';
 import { findExactMatchCandidate, downloadAndReplace as downloadAndReplaceViaSlskd } from './hqReplace';
-import { findHiFiCandidate, downloadAndReplace as downloadAndReplaceViaHiFi } from './hifiReplace';
 import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSaavn } from './jiosaavnReplace';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
@@ -29,19 +28,11 @@ import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSa
 // services/hqReplace.ts — meant to pair with a modified, purchaser-IP-gated
 // slskd image), this does more than the plain search-only path: an exact
 // artist+title match gets downloaded and used to replace the local file
-// outright, not just flagged as available. Three sources are tried in order,
-// each only attempted once the one before it comes up empty: HiFi first
-// (services/hifiReplace.ts — a free, Tidal-backed catalog via public hifi-api
-// instances, hit with one fast JSON search rather than a peer-search settle
-// wait, and in practice has a larger catalog than slskd — so putting it
-// first resolves the common case quickly, without paying slskd's own several
-// second search-settle cost on tracks it wouldn't have had anyway), then
-// slskd for whatever HiFi doesn't have (findHiFiCandidate is bounded by its
-// own short search-timeout — see HIFI_SEARCH_TIMEOUT_MS in hifiReplace.ts —
-// so an unreachable/slow HiFi instance pool falls through to slskd quickly
-// rather than stalling the whole check), then JioSaavn
-// (services/jiosaavnReplace.ts) last, since its catalog mostly turns up
-// karaoke/cover versions rather than the real recording.
+// outright, not just flagged as available. slskd is tried first (it's
+// generally the better/more current source when it has a match); if it
+// comes up empty, JioSaavn (services/jiosaavnReplace.ts) is tried as a
+// fallback — a free public catalog with no peer pool to wait on, so it
+// costs one extra search rather than a real wait when slskd has nothing.
 // That path in particular can take a while per video (a real slskd search
 // plus, when a match is found, an actual file transfer) — onProgress (only
 // syncService.ts's downloadPendingVideos passes one) reports this video's
@@ -95,42 +86,28 @@ export async function resolvePlaylistQuality(
 
     try {
       if (isHqAutoDownloadEnabled()) {
-        let hifiCandidate: Awaited<ReturnType<typeof findHiFiCandidate>> = null;
         let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
         let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
         let replaced = false;
 
         // Each source is isolated in its own try/catch — an unexpected
-        // failure on one (a slskd daemon hiccup, a hifi-api/JioSaavn API
-        // error) is logged and treated the same as "this source found
-        // nothing", not something that aborts the whole quality check for
-        // this video or stops the next source from still being tried. Every
-        // function called here is already designed not to throw for the
-        // ordinary "no match"/"download failed" cases (see hqReplace.ts,
-        // hifiReplace.ts, jiosaavnReplace.ts) — this is a backstop for the
-        // unexpected case.
+        // failure on one (a slskd daemon hiccup, a JioSaavn API error) is
+        // logged and treated the same as "this source found nothing", not
+        // something that aborts the whole quality check for this video or
+        // stops the other source from still being tried. Every function
+        // called here is already designed not to throw for the ordinary
+        // "no match"/"download failed" cases (see hqReplace.ts and
+        // jiosaavnReplace.ts) — this is a backstop for the unexpected case.
         try {
-          hifiCandidate = await findHiFiCandidate(video.artist, video.title, video.bitrate, video.duration);
-          if (hifiCandidate) replaced = await downloadAndReplaceViaHiFi(video, hifiCandidate);
+          slskdCandidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
+          if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
         } catch (err) {
-          console.error(`[hifi] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
         }
 
-        if (!replaced && !hifiCandidate) {
-          // HiFi came up empty (or errored/timed out — see
-          // HIFI_SEARCH_TIMEOUT_MS) — fall back to slskd before trying
-          // JioSaavn.
-          try {
-            slskdCandidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
-            if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
-          } catch (err) {
-            console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
-          }
-        }
-
-        if (!replaced && !hifiCandidate && !slskdCandidate) {
-          // Neither HiFi nor slskd found anything — last resort: JioSaavn's
-          // free public catalog (mostly karaoke/covers, so tried last).
+        if (!replaced && !slskdCandidate) {
+          // slskd came up empty (or errored) — fall back to JioSaavn's free
+          // public catalog before giving up on this video for this pass.
           try {
             jioSaavnCandidate = await findJioSaavnCandidate(video.artist, video.title, video.bitrate, video.duration);
             if (jioSaavnCandidate) replaced = await downloadAndReplaceViaJioSaavn(video, jioSaavnCandidate);
@@ -141,8 +118,8 @@ export async function resolvePlaylistQuality(
 
         if (replaced) continue; // downloadAndReplace* already updated every flag/status itself
 
-        if (!slskdCandidate && !hifiCandidate && !jioSaavnCandidate) {
-          // No source found anything eligible right now — a stable,
+        if (!slskdCandidate && !jioSaavnCandidate) {
+          // Neither source found anything eligible right now — a stable,
           // repeatable verdict, same as the free path below.
           await prisma.playlistVideo.update({
             where: { id: video.id },
@@ -151,7 +128,7 @@ export async function resolvePlaylistQuality(
           continue;
         }
 
-        // A real upgrade exists (on one source or another) but
+        // A real upgrade exists (on one source or the other) but
         // downloading/replacing it didn't succeed this time (transient
         // failure, peer/agent unavailable, file never showed up on the
         // shared downloads volume in time — see hqReplace.ts) — flag it as

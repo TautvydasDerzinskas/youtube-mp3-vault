@@ -86,6 +86,7 @@ export async function findJioSaavnCandidate(
     }
 
     if (best) {
+      console.log(`[jiosaavn] Found: "${artist} - ${title}" -> "${best.track.artist} - ${best.track.title}" (${best.bitrate}kbps)`);
       return { id: best.track.id, title: best.track.title, artist: best.track.artist, mediaUrl: best.media.url, bitrate: best.bitrate };
     }
   }
@@ -112,6 +113,8 @@ export async function downloadAndReplace(
   candidate: JioSaavnHqCandidate,
 ): Promise<boolean> {
   if (!video.mediaFileId) return false;
+
+  console.log(`[jiosaavn] Download started: ${video.youtubeId} ("${candidate.artist} - ${candidate.title}")`);
 
   const tmpDir = getTmpDir();
   const attemptId = `${video.youtubeId}-${randomUUID()}`;
@@ -154,6 +157,7 @@ export async function downloadAndReplace(
       },
     });
 
+    console.log(`[jiosaavn] Download completed: ${video.youtubeId} (${tmpStats.size} bytes)`);
     return true;
   } catch (err) {
     console.error(`[jiosaavn] HQ download/replace failed for ${video.youtubeId}:`, (err as Error).message);

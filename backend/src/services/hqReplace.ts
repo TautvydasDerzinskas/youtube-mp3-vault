@@ -113,7 +113,10 @@ export async function findExactMatchCandidate(
         best = candidate;
       }
     }
-    if (best) return best;
+    if (best) {
+      console.log(`[slskd] Found: "${artist} - ${title}" -> "${best.filename}" from ${best.username}`);
+      return best;
+    }
   }
   return null;
 }
@@ -205,6 +208,8 @@ export async function downloadAndReplace(
 ): Promise<boolean> {
   if (!video.mediaFileId) return false;
 
+  console.log(`[slskd] Download started: ${video.youtubeId} ("${candidate.filename}" from ${candidate.username})`);
+
   const enqueued = await slskdClient.enqueueDownload(
     candidate.username,
     [{ filename: candidate.filename, size: candidate.size }],
@@ -266,5 +271,6 @@ export async function downloadAndReplace(
     },
   });
 
+  console.log(`[slskd] Download completed: ${video.youtubeId} (${publishedSize} bytes, ${publishedBitrate}kbps)`);
   return true;
 }

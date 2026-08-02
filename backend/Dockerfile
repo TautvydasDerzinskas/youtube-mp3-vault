@@ -17,7 +17,7 @@ FROM node:20-alpine AS production
 
 # openssl   — required by Prisma engine binaries (libssl.so.3)
 # ffmpeg    — required by yt-dlp for audio conversion, and by audioTranscode.ts
-#             for normalizing Soulseek/JioSaavn/HiFi HQ downloads to mp3
+#             for normalizing Soulseek/JioSaavn HQ downloads to mp3
 # python3   — required by yt-dlp
 RUN apk add --no-cache openssl ffmpeg python3 py3-pip && \
     python3 -m venv /opt/venv && \
