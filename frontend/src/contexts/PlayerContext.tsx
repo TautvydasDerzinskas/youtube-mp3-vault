@@ -20,6 +20,10 @@ const MAX_HISTORY = 50;
 // beats don't make a still-playing track look stopped.
 const NOW_PLAYING_HEARTBEAT_MS = 25 * 1000;
 
+// Persists the shuffle toggle across sessions so it comes back pre-selected
+// next time the app loads — mirrors mobile's shuffleStorage.ts.
+const SHUFFLE_STORAGE_KEY = 'shuffle_mode';
+
 interface PlayerContextType {
   nowPlaying: NowPlaying | null;
   nowPlayingVideo: PlaylistVideo | undefined;
@@ -49,7 +53,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const [isRepeat, setIsRepeat] = useState(false);
-  const [isShuffle, setIsShuffle] = useState(false);
+  const [isShuffle, setIsShuffle] = useState(() => localStorage.getItem(SHUFFLE_STORAGE_KEY) === 'true');
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentRef = useRef(current);
   currentRef.current = current;
@@ -223,7 +227,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [isRepeat, pickNextTrack]);
 
   const toggleRepeat = useCallback(() => setIsRepeat(v => !v), []);
-  const toggleShuffle = useCallback(() => setIsShuffle(v => !v), []);
+  const toggleShuffle = useCallback(() => setIsShuffle(v => {
+    const next = !v;
+    localStorage.setItem(SHUFFLE_STORAGE_KEY, String(next));
+    return next;
+  }), []);
 
   const stopIfPlaylist = useCallback((playlistId: string) => {
     setCurrent(prev => (prev?.playlistId === playlistId ? null : prev));

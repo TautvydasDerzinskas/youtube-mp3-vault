@@ -5,6 +5,7 @@ import { playlistsApi, getStreamSource, PlaylistVideo } from '../api/playlists';
 import { nowPlayingApi } from '../api/nowPlaying';
 import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
 import { enqueuePlay, flushPlayQueue } from '../offline/playQueue';
+import { shuffleStorage } from '../storage/shuffleStorage';
 
 // How often to refresh the "now playing" heartbeat (see api/nowPlaying.ts)
 // while a track is actively playing — comfortably under the backend's
@@ -149,6 +150,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const setQueue = useCallback((next: QueueTrack[]) => {
     queueRef.current = next;
     setQueueState(next);
+  }, []);
+
+  // Restores the shuffle toggle from the last session so it comes back
+  // pre-selected — SecureStore is async, so this can only update state after
+  // the initial (false) render, same as loading any other persisted value.
+  useEffect(() => {
+    shuffleStorage.get().then(value => {
+      if (value === 'true') {
+        isShuffleRef.current = true;
+        setIsShuffle(true);
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -338,6 +351,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setIsShuffle(prev => {
       const next = !prev;
       isShuffleRef.current = next;
+      shuffleStorage.set(next).catch(() => {});
       return next;
     });
   }, []);
