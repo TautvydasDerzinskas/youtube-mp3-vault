@@ -3,6 +3,7 @@ import { mkdir, unlink, rename, stat } from 'fs/promises';
 import { join } from 'path';
 import { config } from '../config';
 import { runYtDlp } from './ytdlpProcess';
+import { prisma } from './prisma';
 
 /** Cross-platform safe filename — works on Windows, macOS, Android. */
 export function sanitizeFilename(raw: string): string {
@@ -41,6 +42,36 @@ export async function removeSharedFile(filename: string): Promise<void> {
   } catch {
     // file may already be gone — ignore
   }
+}
+
+/** Renames a file already in the shared store, in place — no-op if the name isn't actually changing. */
+export async function renameSharedFile(oldFilename: string, newFilename: string): Promise<void> {
+  if (oldFilename === newFilename) return;
+  await rename(getSharedFilePath(oldFilename), getSharedFilePath(newFilename));
+}
+
+// Human-readable on-disk filename ("Artist - Title.mp3") instead of the raw
+// youtubeId — lets users copy files onto an MP3 player or share them without
+// the name being meaningless. `artist` is expected to always be set in
+// practice (see musicbrainz.ts's channel-name fallback), but a null/blank
+// one still falls back to just the title rather than throwing, since a
+// MediaFile can outlive whatever resolved its metadata.
+export async function buildCleanFilename(artist: string | null, title: string, youtubeId: string): Promise<string> {
+  const cleanArtist = artist ? sanitizeFilename(artist) : '';
+  const cleanTitle = sanitizeFilename(title);
+  const base = cleanArtist ? `${cleanArtist} - ${cleanTitle}` : cleanTitle;
+
+  // MediaFile.filename is unique across the whole library (see schema.prisma)
+  // — two different videos that happen to resolve to the same "Artist -
+  // Title" need to be disambiguated. youtubeId is already a stable, unique
+  // per-video identifier, so a short fragment of it is a deterministic
+  // disambiguator that never collides with itself on a re-run.
+  const collision = await prisma.mediaFile.findFirst({
+    where: { filename: `${base}.mp3`, youtubeId: { not: youtubeId } },
+    select: { id: true },
+  });
+  if (!collision) return `${base}.mp3`;
+  return `${base} (${youtubeId.slice(-6)}).mp3`;
 }
 
 const PERMANENT_UNAVAILABILITY_PATTERNS = [

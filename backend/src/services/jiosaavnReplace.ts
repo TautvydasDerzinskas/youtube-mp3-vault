@@ -114,6 +114,11 @@ export async function downloadAndReplace(
 ): Promise<boolean> {
   if (!video.mediaFileId) return false;
 
+  // Publishes back to the file's *current* name — see hqReplace.ts's
+  // downloadAndReplace for why this can't just reconstruct `${youtubeId}.mp3`.
+  const mediaFile = await prisma.mediaFile.findUnique({ where: { id: video.mediaFileId }, select: { filename: true } });
+  if (!mediaFile) return false;
+
   console.log(`[jiosaavn] Download started: ${video.youtubeId} ("${candidate.artist} - ${candidate.title}")`);
 
   const tmpDir = getTmpDir();
@@ -139,7 +144,7 @@ export async function downloadAndReplace(
     }
 
     const tmpStats = await stat(tmpMp3Path);
-    await publishToSharedStore(tmpMp3Path, `${video.youtubeId}.mp3`);
+    await publishToSharedStore(tmpMp3Path, mediaFile.filename);
 
     await prisma.mediaFile.update({
       where: { id: video.mediaFileId },

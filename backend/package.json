@@ -9,7 +9,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "backfill:filenames": "node dist/scripts/renameLibraryFiles.js",
+    "backfill:filenames:dev": "ts-node-dev --transpile-only src/scripts/renameLibraryFiles.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

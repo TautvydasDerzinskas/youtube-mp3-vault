@@ -208,6 +208,13 @@ export async function downloadAndReplace(
 ): Promise<boolean> {
   if (!video.mediaFileId) return false;
 
+  // Publishes back to the file's *current* name (not a reconstructed
+  // `${youtubeId}.mp3`) — the shared file may already carry a clean
+  // "Artist - Title.mp3" name from metadataWorker.ts's rename step, and
+  // resetting it here would orphan that name and leave a stray duplicate.
+  const mediaFile = await prisma.mediaFile.findUnique({ where: { id: video.mediaFileId }, select: { filename: true } });
+  if (!mediaFile) return false;
+
   console.log(`[slskd] Download started: ${video.youtubeId} ("${candidate.filename}" from ${candidate.username})`);
 
   const enqueued = await slskdClient.enqueueDownload(
@@ -244,13 +251,13 @@ export async function downloadAndReplace(
       return false;
     }
     const tmpStats = await stat(tmpMp3Path);
-    await publishToSharedStore(tmpMp3Path, `${video.youtubeId}.mp3`);
+    await publishToSharedStore(tmpMp3Path, mediaFile.filename);
     await unlink(foundPath).catch(() => {});
     publishedSize = tmpStats.size;
     publishedBitrate = MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
   } else {
     const fileStats = await stat(foundPath);
-    await publishToSharedStore(foundPath, `${video.youtubeId}.mp3`);
+    await publishToSharedStore(foundPath, mediaFile.filename);
     publishedSize = fileStats.size;
     publishedBitrate = candidate.bitrate;
   }

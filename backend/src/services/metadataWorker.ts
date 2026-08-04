@@ -4,6 +4,30 @@ import { isOnline } from './connectivity';
 import { lookupTrackMetadata, deriveFallbackMetadata } from './musicbrainz';
 import { getTrackCorrection } from './lastfm';
 import { writeTrackTags } from './id3Tags';
+import { buildCleanFilename, renameSharedFile } from './downloader';
+
+// Renames the shared mp3 to match freshly-resolved (or corrected) artist/
+// title, keeping the on-disk name in sync every time metadata changes —
+// both the first resolution and a later admin-forced reimport correction go
+// through here. Best-effort: a rename failure just leaves the file under its
+// previous (still valid) name rather than aborting metadata resolution.
+async function renameToCleanFilename(
+  mediaFile: { id: string; filename: string; youtubeId: string },
+  artist: string | null,
+  title: string,
+): Promise<string> {
+  const desired = await buildCleanFilename(artist, title, mediaFile.youtubeId);
+  if (desired === mediaFile.filename) return mediaFile.filename;
+
+  try {
+    await renameSharedFile(mediaFile.filename, desired);
+  } catch (err) {
+    console.error(`[metadata] Failed to rename ${mediaFile.filename} -> ${desired}:`, (err as Error).message);
+    return mediaFile.filename;
+  }
+  await prisma.mediaFile.update({ where: { id: mediaFile.id }, data: { filename: desired } }).catch(() => {});
+  return desired;
+}
 
 // Three-tier fallback once MusicBrainz has no match: local heuristic parse
 // first, then — if that produced an artist to work with — ask Last.fm to
@@ -77,7 +101,8 @@ export async function resolvePlaylistMetadata(
         // Re-tag the file with our own cleaned-up metadata now that it's
         // resolved — only meaningful once the mp3 actually exists on disk.
         if (video.downloadStatus === 'done' && video.mediaFile) {
-          writeTrackTags(video.mediaFile.filename, {
+          const filename = await renameToCleanFilename(video.mediaFile, meta.artist, meta.title);
+          writeTrackTags(filename, {
             title: meta.title, artist: meta.artist, album: meta.album,
             trackNumber: meta.trackNumber, releaseYear: meta.releaseYear, genres: video.genres,
           });
@@ -93,7 +118,8 @@ export async function resolvePlaylistMetadata(
           data: { artist, title: fallback.title, metadataStatus: 'not_found', metadataFetchedAt: new Date() },
         });
         if (video.downloadStatus === 'done' && video.mediaFile) {
-          writeTrackTags(video.mediaFile.filename, {
+          const filename = await renameToCleanFilename(video.mediaFile, artist, fallback.title);
+          writeTrackTags(filename, {
             title: fallback.title, artist, album: video.album,
             trackNumber: video.trackNumber, releaseYear: video.releaseYear, genres: video.genres,
           });

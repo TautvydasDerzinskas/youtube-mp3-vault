@@ -282,7 +282,7 @@ model Log {
 model MediaFile {
   id        String          @id @default(uuid())
   youtubeId String          @unique
-  filename  String
+  filename  String          @unique
   fileSize  Int
   bitrate   Int?
   createdAt DateTime        @default(now())
