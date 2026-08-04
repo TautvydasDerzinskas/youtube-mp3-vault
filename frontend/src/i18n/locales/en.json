@@ -229,6 +229,12 @@
       "autoDeleteNonMusic": {
         "label": "Auto-delete non-music tracks",
         "description": "Automatically remove and delete the audio file for any track that audio analysis classifies as non-music, an audiobook, or noise. Turning this on removes any tracks like these already in your library."
+      },
+      "nowPlayingPublic": {
+        "label": "Share \"now playing\" status",
+        "description": "Lets a small public API endpoint report the artist and song you're currently listening to — useful for building your own status badge, stream overlay, or bot. It only reports a track while it's actively playing (not paused), and automatically stops reporting shortly after you pause, close the app, or lose connection. Anyone who knows your account email can query it while this is on, so only enable it if you're fine with that.",
+        "usage": "Query it with a GET request to:",
+        "exampleResponse": "Responds with {\"playing\": true, \"artist\": \"...\", \"title\": \"...\"} while something's playing, or {\"playing\": false} otherwise."
       }
     },
     "lastfm": {

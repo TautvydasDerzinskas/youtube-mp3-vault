@@ -3,6 +3,7 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
+import { nowPlayingApi } from '../api/nowPlaying';
 import { NowPlaying } from '../pages/PlaylistsPage/types';
 
 export type QueueTrack = PlaylistVideo & { playlistId?: string };
@@ -12,6 +13,12 @@ export type QueueTrack = PlaylistVideo & { playlistId?: string };
 // derives "previous" from position in `queue` directly), bounded so a very
 // long listening session doesn't grow this unboundedly.
 const MAX_HISTORY = 50;
+
+// How often to refresh the "now playing" heartbeat (see api/nowPlaying.ts)
+// while a track is actively playing — comfortably under the backend's
+// NOW_PLAYING_STALE_MS (60s, routes/nowPlaying.ts) so a couple of missed
+// beats don't make a still-playing track look stopped.
+const NOW_PLAYING_HEARTBEAT_MS = 25 * 1000;
 
 interface PlayerContextType {
   nowPlaying: NowPlaying | null;
@@ -65,6 +72,31 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current.src = playlistsApi.streamUrl(current.playlistId, current.video.id);
     audioRef.current.play().catch(() => {});
   }, [current]);
+
+  // Broadcasts "now playing" (see api/nowPlaying.ts) only while genuinely
+  // playing, not merely loaded/paused — isAudioPlaying only flips true once
+  // the <audio> element's own 'play' DOM event fires (see AppLayout.tsx),
+  // so this can't report a track that's still buffering or that errored out
+  // before playback actually started. Re-runs (clearing, then immediately
+  // re-reporting) on every track change since `current` gets a new object
+  // identity each time, and on pause/close since isAudioPlaying or `current`
+  // itself changes — the cleanup below is what calls clear() in both cases,
+  // so there's exactly one place that does. Repeat mode is the one case
+  // that does neither: handleTrackEnded restarts the same audio element
+  // in place without changing `current`, so this effect (and its interval)
+  // just keeps running uninterrupted through the loop, correctly.
+  useEffect(() => {
+    if (!current || !isAudioPlaying) return;
+    const { playlistId, video } = current;
+    nowPlayingApi.set(playlistId, video.id).catch(() => {});
+    const interval = setInterval(() => {
+      nowPlayingApi.set(playlistId, video.id).catch(() => {});
+    }, NOW_PLAYING_HEARTBEAT_MS);
+    return () => {
+      clearInterval(interval);
+      nowPlayingApi.clear().catch(() => {});
+    };
+  }, [current, isAudioPlaying]);
 
   const isPlayingSession = Boolean(current);
   useEffect(() => {

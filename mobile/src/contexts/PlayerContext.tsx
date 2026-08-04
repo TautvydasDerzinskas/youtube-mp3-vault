@@ -2,8 +2,14 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, Re
 import { AppState } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { playlistsApi, getStreamSource, PlaylistVideo } from '../api/playlists';
+import { nowPlayingApi } from '../api/nowPlaying';
 import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
 import { enqueuePlay, flushPlayQueue } from '../offline/playQueue';
+
+// How often to refresh the "now playing" heartbeat (see api/nowPlaying.ts)
+// while a track is actively playing — comfortably under the backend's
+// NOW_PLAYING_STALE_MS (60s, backend/src/routes/nowPlaying.ts).
+const NOW_PLAYING_HEARTBEAT_MS = 25 * 1000;
 
 interface PlaybackStatus {
   playing: boolean;
@@ -123,6 +129,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const isRepeatRef = useRef(false);
   const isShuffleRef = useRef(false);
   const historyRef = useRef<PlaylistVideo[]>([]);
+  // "Now playing" broadcast state — deliberately driven off the
+  // playbackStatusUpdate listener below rather than a React-state effect
+  // (the pattern web's PlayerContext.tsx uses), since that listener is the
+  // one thing here that keeps firing even while backgrounded (see
+  // isForegroundRef above); a React-state-keyed effect would miss a pause
+  // that happens via lock-screen controls while backgrounded, since
+  // playbackStatus itself is only pushed into React state in the
+  // foreground. nowPlayingKeyRef tracks which track (if any) was last
+  // successfully reported, so a track change forces an immediate re-report
+  // instead of waiting out the rest of the heartbeat interval.
+  const nowPlayingKeyRef = useRef<string | null>(null);
+  const nowPlayingHeartbeatAtRef = useRef(0);
 
   const setCurrent = useCallback((next: CurrentTrack | null) => {
     currentRef.current = next;
@@ -223,6 +241,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (isForegroundRef.current) {
         setPlaybackStatus(latestPlaybackStatusRef.current);
       }
+
+      const track = currentRef.current;
+      const trackKey = track ? `${track.playlistId}:${track.video.id}` : null;
+      if (s.playing && track) {
+        const now = Date.now();
+        const trackChanged = nowPlayingKeyRef.current !== trackKey;
+        if (trackChanged || now - nowPlayingHeartbeatAtRef.current >= NOW_PLAYING_HEARTBEAT_MS) {
+          nowPlayingHeartbeatAtRef.current = now;
+          nowPlayingKeyRef.current = trackKey;
+          nowPlayingApi.set(track.playlistId, track.video.id).catch(() => {});
+        }
+      } else if (!s.playing && nowPlayingKeyRef.current !== null) {
+        nowPlayingKeyRef.current = null;
+        nowPlayingApi.clear().catch(() => {});
+      }
+
       if (s.didJustFinish) handleTrackEndedRef.current();
     });
     return () => subscription.remove();

@@ -10,6 +10,7 @@ export interface User {
   lastfmUsername: string | null;
   scrobblingEnabled: boolean;
   autoDeleteNonMusicEnabled: boolean;
+  nowPlayingPublic: boolean;
 }
 
 interface AuthResponse {
@@ -99,6 +100,11 @@ export const authApi = {
 
   setAutoDeleteNonMusic: async (enabled: boolean): Promise<AuthResponse> => {
     const { data } = await client.patch<AuthResponse>('/auth/settings/auto-delete-non-music', { enabled });
+    return data;
+  },
+
+  setNowPlayingPublic: async (enabled: boolean): Promise<AuthResponse> => {
+    const { data } = await client.patch<AuthResponse>('/auth/settings/now-playing-public', { enabled });
     return data;
   },
 };

@@ -237,6 +237,12 @@
       "autoDeleteNonMusic": {
         "label": "Automatycznie usuwaj utwory niebędące muzyką",
         "description": "Automatycznie usuwa wpis i plik audio dla każdego utworu, który analiza dźwięku zaklasyfikuje jako niebędący muzyką, audiobook lub szum. Włączenie tej opcji usunie również takie utwory już znajdujące się w Twojej bibliotece."
+      },
+      "nowPlayingPublic": {
+        "label": "Udostępniaj status „teraz odtwarzane”",
+        "description": "Umożliwia niewielkiemu publicznemu punktowi API zgłaszanie wykonawcy i utworu, którego aktualnie słuchasz — przydatne do własnej odznaki statusu, nakładki na transmisji lub bota. Zgłaszany jest tylko utwór aktualnie odtwarzany (nie wstrzymany), a zgłaszanie automatycznie ustaje wkrótce po pauzie, zamknięciu aplikacji lub utracie połączenia. Dopóki ta opcja jest włączona, każdy, kto zna adres e-mail Twojego konta, może odpytać ten status — włącz tylko, jeśli Ci to odpowiada.",
+        "usage": "Wykonaj zapytanie GET pod adresem:",
+        "exampleResponse": "Odpowiada {\"playing\": true, \"artist\": \"...\", \"title\": \"...\"}, gdy coś gra, lub {\"playing\": false} w przeciwnym razie."
       }
     },
     "lastfm": {

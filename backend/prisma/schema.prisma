@@ -35,6 +35,23 @@ model User {
   // checked per-track and syncService.ts's removeExistingNonMusicVideos for
   // the one-time sweep run when this flips from off to on (routes/auth.ts).
   autoDeleteNonMusicEnabled Boolean    @default(true)
+  // "Now playing" broadcast — opt-in (default off), toggled from Profile ->
+  // Settings. Lets GET /api/now-playing?email=... report what this user is
+  // currently listening to, unauthenticated (see routes/nowPlaying.ts) — so
+  // this is only ever populated/returned for a user who has explicitly
+  // turned it on. Artist/title are a denormalized snapshot (same philosophy
+  // as PlaylistVideo.originalTitle) rather than a foreign key to
+  // PlaylistVideo, so they survive the track being deleted mid-playback.
+  // nowPlayingHeartbeatAt is refreshed by the client every ~25s while a
+  // track is actively playing (not paused) — routes/nowPlaying.ts treats a
+  // heartbeat older than NOW_PLAYING_STALE_MS as "nothing playing" even
+  // though these fields are technically still populated, which is what
+  // clears a stale value once the app is closed/backgrounded without a
+  // chance to call the clear endpoint, without needing a cron sweep.
+  nowPlayingPublic          Boolean    @default(false)
+  nowPlayingArtist          String?
+  nowPlayingTitle           String?
+  nowPlayingHeartbeatAt     DateTime?
   createdAt                 DateTime   @default(now())
   updatedAt                 DateTime   @updatedAt
   playlists                 Playlist[]

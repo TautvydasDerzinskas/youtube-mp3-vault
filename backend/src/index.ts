@@ -10,6 +10,7 @@ import playlistsRouter from './routes/youtube';
 import adminRouter from './routes/admin';
 import dashboardRouter from './routes/dashboard';
 import artistsRouter from './routes/artists';
+import nowPlayingRouter from './routes/nowPlaying';
 import { errorHandler } from './middleware/errorHandler';
 import { resetStuckSyncs } from './services/syncService';
 import { startScheduler } from './services/scheduler';
@@ -40,6 +41,7 @@ app.use('/api/playlists', playlistsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/artists', artistsRouter);
+app.use('/api/now-playing', nowPlayingRouter);
 
 app.use(errorHandler);
 

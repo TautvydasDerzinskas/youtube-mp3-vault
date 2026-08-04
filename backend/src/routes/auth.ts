@@ -44,6 +44,7 @@ function toSafeUser(user: {
   lastfmUsername: string | null;
   scrobblingEnabled: boolean;
   autoDeleteNonMusicEnabled: boolean;
+  nowPlayingPublic: boolean;
 }) {
   return {
     id: user.id,
@@ -55,6 +56,7 @@ function toSafeUser(user: {
     lastfmUsername: user.lastfmUsername,
     scrobblingEnabled: user.scrobblingEnabled,
     autoDeleteNonMusicEnabled: user.autoDeleteNonMusicEnabled,
+    nowPlayingPublic: user.nowPlayingPublic,
   };
 }
 
@@ -284,7 +286,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       where: { id: req.userId },
       select: {
         id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true,
-        lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true,
+        lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true, nowPlayingPublic: true,
       },
     });
     if (!user) {
@@ -339,6 +341,33 @@ router.patch('/settings/auto-delete-non-music', requireAuth, async (req: AuthReq
         console.error(`[auth] Non-music sweep failed for user ${req.userId}:`, err)
       );
     }
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/auth/settings/now-playing-public — see routes/nowPlaying.ts for
+// what turning this on actually exposes.
+router.patch('/settings/now-playing-public', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { enabled } = req.body as { enabled?: unknown };
+    if (typeof enabled !== 'boolean') {
+      res.status(400).json({ error: 'enabled must be a boolean' });
+      return;
+    }
+    const data: { nowPlayingPublic: boolean; nowPlayingArtist?: null; nowPlayingTitle?: null; nowPlayingHeartbeatAt?: null } = {
+      nowPlayingPublic: enabled,
+    };
+    // Turning it off should also stop reporting whatever was last playing —
+    // otherwise a stale value could still be visible for up to
+    // NOW_PLAYING_STALE_MS if the toggle flips mid-playback.
+    if (!enabled) {
+      data.nowPlayingArtist = null;
+      data.nowPlayingTitle = null;
+      data.nowPlayingHeartbeatAt = null;
+    }
+    const user = await prisma.user.update({ where: { id: req.userId }, data });
     res.json({ user: toSafeUser(user) });
   } catch (err) {
     next(err);
