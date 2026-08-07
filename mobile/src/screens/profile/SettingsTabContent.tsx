@@ -7,20 +7,21 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useServerConfig } from '../../contexts/ServerConfigContext';
 import { SUPPORTED_LANGUAGES } from '../../i18n';
 
-// Mirrors web's SettingsTab.tsx — same two sections (language, auto-delete
-// non-music), but the language picker uses SegmentedButtons instead of
-// web's dropdown <select>: there are only 3 fixed options, so a segmented
-// control reads faster on a touch screen than opening a picker menu. The
-// server URL row has no web equivalent — mobile-only, since only mobile
-// points at a configurable, self-hosted backend address (see
-// ServerConfigContext/UpdateServerUrlScreen).
+// Mirrors web's SettingsTab.tsx — same sections (language, auto-delete
+// non-music, share now-playing status), but the language picker uses
+// SegmentedButtons instead of web's dropdown <select>: there are only 3
+// fixed options, so a segmented control reads faster on a touch screen than
+// opening a picker menu. The server URL row has no web equivalent —
+// mobile-only, since only mobile points at a configurable, self-hosted
+// backend address (see ServerConfigContext/UpdateServerUrlScreen).
 export function SettingsTabContent() {
   const { t } = useTranslation();
   const theme = useTheme();
   const navigation = useNavigation();
-  const { user, updateLanguage, setAutoDeleteNonMusic } = useAuth();
+  const { user, updateLanguage, setAutoDeleteNonMusic, setNowPlayingPublic } = useAuth();
   const { serverUrl } = useServerConfig();
   const [autoDeleteLoading, setAutoDeleteLoading] = useState(false);
+  const [nowPlayingLoading, setNowPlayingLoading] = useState(false);
 
   const handleToggleAutoDelete = async (enabled: boolean) => {
     setAutoDeleteLoading(true);
@@ -30,6 +31,21 @@ export function SettingsTabContent() {
       setAutoDeleteLoading(false);
     }
   };
+
+  const handleToggleNowPlaying = async (enabled: boolean) => {
+    setNowPlayingLoading(true);
+    try {
+      await setNowPlayingPublic(enabled);
+    } finally {
+      setNowPlayingLoading(false);
+    }
+  };
+
+  // serverUrl (see ServerConfigContext/normalizeServerUrl) already ends in
+  // `/api`, matching how web builds the same URL off window.location.origin.
+  const nowPlayingUrl = user && serverUrl
+    ? `${serverUrl}/now-playing?email=${encodeURIComponent(user.email)}`
+    : '';
 
   return (
     <View>
@@ -61,6 +77,39 @@ export function SettingsTabContent() {
 
       <Divider style={styles.divider2} />
 
+      <View style={styles.switchRow}>
+        <Text variant="bodyLarge" style={styles.switchLabel}>
+          {t('profile.settings.nowPlayingPublic.label')}
+        </Text>
+        <Switch
+          value={user?.nowPlayingPublic ?? false}
+          disabled={nowPlayingLoading}
+          onValueChange={handleToggleNowPlaying}
+        />
+      </View>
+      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+        {t('profile.settings.nowPlayingPublic.description')}
+      </Text>
+      {user?.nowPlayingPublic && (
+        <View style={styles.nowPlayingUsage}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            {t('profile.settings.nowPlayingPublic.usage')}
+          </Text>
+          <Text
+            variant="bodySmall"
+            selectable
+            style={[styles.nowPlayingUrl, { backgroundColor: theme.colors.surfaceVariant, color: theme.colors.onSurfaceVariant }]}
+          >
+            {nowPlayingUrl}
+          </Text>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            {t('profile.settings.nowPlayingPublic.exampleResponse')}
+          </Text>
+        </View>
+      )}
+
+      <Divider style={styles.divider2} />
+
       <View style={styles.actionRow}>
         <View style={styles.actionText}>
           <Text variant="bodyLarge">{t('profile.settings.serverUrl.label')}</Text>
@@ -83,6 +132,8 @@ const styles = StyleSheet.create({
   divider2: { marginTop: 20, marginBottom: 8 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   switchLabel: { flex: 1 },
+  nowPlayingUsage: { marginTop: 10, gap: 6 },
+  nowPlayingUrl: { padding: 10, borderRadius: 6, fontFamily: 'monospace' },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',

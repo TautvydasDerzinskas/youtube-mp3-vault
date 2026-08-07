@@ -43,6 +43,12 @@
         "label": "Automatiškai šalinti ne muzikos įrašus",
         "description": "Automatiškai pašalinti ir ištrinti garso failą bet kuriam įrašui, kurį garso analizė priskiria ne muzikai, garso knygai arba triukšmui. Įjungus šią parinktį, iš bibliotekos bus pašalinti ir jau esami tokie įrašai."
       },
+      "nowPlayingPublic": {
+        "label": "Rodyti „dabar grojama“ būseną",
+        "description": "Leidžia nedidelei viešai API atkarpai rodyti, kokį atlikėją ir dainą šiuo metu klausotės — naudinga norint sukurti savo būsenos ženkliuką, transliacijos overlay ar botą. Pranešama tik apie realiai grojantį (ne pristabdytą) takelį, o pranešimas automatiškai išnyksta netrukus po pristabdymo, programos uždarymo ar ryšio praradimo. Kol ši parinktis įjungta, bet kas, žinantis jūsų el. paštą, gali užklausti šią būseną — įjunkite tik jei jums tai priimtina.",
+        "usage": "Užklauskite GET metodu adresu:",
+        "exampleResponse": "Atsako {\"playing\": true, \"artist\": \"...\", \"title\": \"...\"}, kai kažkas grojama, arba {\"playing\": false}, kai negrojama."
+      },
       "serverUrl": {
         "label": "Serverio adresas",
         "change": "Keisti"

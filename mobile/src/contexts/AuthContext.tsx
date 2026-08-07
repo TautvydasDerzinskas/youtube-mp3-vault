@@ -16,6 +16,7 @@ interface AuthContextType {
   disconnectLastfm: () => Promise<void>;
   setScrobbling: (enabled: boolean) => Promise<void>;
   setAutoDeleteNonMusic: (enabled: boolean) => Promise<void>;
+  setNowPlayingPublic: (enabled: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -150,11 +151,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistUserCache(user);
   }, [persistUserCache]);
 
+  const setNowPlayingPublic = useCallback(async (enabled: boolean) => {
+    const { user } = await authApi.setNowPlayingPublic(enabled);
+    setUser(applyUser(user));
+    persistUserCache(user);
+  }, [persistUserCache]);
+
   return (
     <AuthContext.Provider
       value={{
         user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, login, logout,
-        updateLanguage, updateProfile, disconnectLastfm, setScrobbling, setAutoDeleteNonMusic,
+        updateLanguage, updateProfile, disconnectLastfm, setScrobbling, setAutoDeleteNonMusic, setNowPlayingPublic,
       }}
     >
       {children}
