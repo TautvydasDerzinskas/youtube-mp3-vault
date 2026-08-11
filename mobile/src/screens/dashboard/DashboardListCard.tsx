@@ -9,7 +9,10 @@ interface DashboardListCardProps<T> {
   title: string;
   items: T[];
   emptyText: string;
-  onSeeMore: () => void;
+  // Omitted by the recently-added card — unlike Songs on Repeat/Top
+  // Artists/Top Genres, there's no dedicated "all recently added" screen to
+  // push, so it just shows its fixed preview list with no see-more link.
+  onSeeMore?: () => void;
   keyExtractor: (item: T) => string;
   renderItem: (item: T, index: number) => ReactNode;
 }
@@ -38,9 +41,11 @@ export function DashboardListCard<T>({ icon, title, items, emptyText, onSeeMore,
         items.map((item, index) => <View key={keyExtractor(item)}>{renderItem(item, index)}</View>)
       )}
 
-      <Pressable onPress={onSeeMore} style={styles.seeMore}>
-        <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>{t('dashboard.seeMore')}</Text>
-      </Pressable>
+      {onSeeMore && (
+        <Pressable onPress={onSeeMore} style={styles.seeMore}>
+          <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>{t('dashboard.seeMore')}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

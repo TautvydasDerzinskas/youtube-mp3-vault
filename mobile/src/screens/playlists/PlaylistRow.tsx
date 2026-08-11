@@ -4,7 +4,7 @@ import { ActivityIndicator, Chip, IconButton, Menu, ProgressBar, Text, useTheme 
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Playlist } from '../../api/playlists';
-import { isOfflineSyncComplete, useOfflineDownloads } from '../../offline/OfflineDownloadsContext';
+import { isDiffEmpty, isOfflineSyncComplete, useOfflineDownloads } from '../../offline/OfflineDownloadsContext';
 import { displayName, formatBytes } from '../../utils/format';
 
 interface PlaylistRowProps {
@@ -22,6 +22,7 @@ interface PlaylistRowProps {
   onRename: () => void;
   onDelete: () => void;
   onGenerateSimilar: () => void;
+  onSyncOffline: () => void;
 }
 
 // Mirrors frontend/src/pages/PlaylistsPage/PlaylistRow/{index,Info,Actions,Thumbnail}.tsx
@@ -30,17 +31,23 @@ interface PlaylistRowProps {
 // Sync and Generate Similar both live in the "⋮" menu instead of being
 // always-visible icons, since a standalone sync button plus the play button,
 // thumbnail, and menu button don't leave much room for longer titles on a
-// phone-width row.
+// phone-width row. "Sync offline stored files" lives there too, mobile-only
+// (web has no offline-download feature) — see OfflineSyncDiffModal.tsx.
 export function PlaylistRow({
   playlist, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
   onOpen, onPlayFirst, onSync, onRetryFailed, onScanHq, onTogglePause, onRename, onDelete, onGenerateSimilar,
+  onSyncOffline,
 }: PlaylistRowProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
-  const { isEnabled: isOfflineEnabled, progress: offlineProgressMap } = useOfflineDownloads();
+  const { isEnabled: isOfflineEnabled, progress: offlineProgressMap, diffs: offlineDiffs } = useOfflineDownloads();
   const offlineEnabled = isOfflineEnabled(playlist.id);
   const offlineComplete = isOfflineSyncComplete(offlineProgressMap[playlist.id]);
+  // Only true once a read-only diff check (see OfflineDownloadsContext's
+  // refreshDiff) has actually found something to review — the menu item
+  // this drives is the only way any of it gets applied now.
+  const hasOfflineDiff = offlineEnabled && !isDiffEmpty(offlineDiffs[playlist.id]);
 
   const isRetrying = playlist.syncStatus === 'retrying';
   const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isRetrying;
@@ -165,6 +172,14 @@ export function PlaylistRow({
             disabled={isPausing || !online}
             title={playlist.syncPaused ? t('playlists.resumeSync') : t('playlists.pauseSync')}
             onPress={() => { closeMenu(); onTogglePause(); }}
+          />
+        )}
+        {hasOfflineDiff && (
+          <Menu.Item
+            leadingIcon="cloud-sync-outline"
+            disabled={!online || offlineProgressMap[playlist.id]?.syncing}
+            title={t('playlists.offline.menuAction')}
+            onPress={() => { closeMenu(); onSyncOffline(); }}
           />
         )}
         <Menu.Item leadingIcon="delete-outline" disabled={deleteDisabled} title={t('playlists.remove')}

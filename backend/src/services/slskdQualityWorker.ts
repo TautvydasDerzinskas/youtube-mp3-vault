@@ -41,9 +41,18 @@ import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSa
 // from stuck.
 export async function resolvePlaylistQuality(
   playlistId: string,
-  options: { onProgress?: (current: number, total: number, title: string) => void; rescanAll?: boolean } = {}
+  options: {
+    onProgress?: (current: number, total: number, title: string) => void;
+    // Fired once per video that gets a *new* upgrade this pass — either
+    // actually downloaded (auto-download mode) or just newly flagged
+    // available — never for a video whose upgrade was already known from a
+    // past check, even under rescanAll. Only syncService.ts's
+    // downloadPendingVideos passes one, to accumulate SyncStats.newHqCount.
+    onHqFound?: () => void;
+    rescanAll?: boolean;
+  } = {}
 ): Promise<void> {
-  const { onProgress, rescanAll = false } = options;
+  const { onProgress, onHqFound, rescanAll = false } = options;
   const videos = await prisma.playlistVideo.findMany({
     where: rescanAll
       ? { playlistId, downloadStatus: 'done', hqFileDownloaded: false }
@@ -116,7 +125,13 @@ export async function resolvePlaylistQuality(
           }
         }
 
-        if (replaced) continue; // downloadAndReplace* already updated every flag/status itself
+        if (replaced) {
+          // hqFileDownloaded was false going into this pass (the query above
+          // filters on it) — an actual replacement is always a genuinely new
+          // find, never a re-affirmation of one already known.
+          onHqFound?.();
+          continue; // downloadAndReplace* already updated every flag/status itself
+        }
 
         if (!slskdCandidate && !jioSaavnCandidate) {
           // Neither source found anything eligible right now — a stable,
@@ -135,6 +150,7 @@ export async function resolvePlaylistQuality(
         // available and leave qualityCheckStatus pending so the next sync
         // retries the download, rather than a one-off failure permanently
         // giving up on it.
+        if (!video.betterQualityExists) onHqFound?.(); // wasn't already known before this pass
         await prisma.playlistVideo.update({
           where: { id: video.id },
           data: { betterQualityExists: true },
@@ -143,6 +159,7 @@ export async function resolvePlaylistQuality(
       }
 
       const betterBitrate = await findBetterQualityMp3(video.artist, video.title, video.bitrate);
+      if (betterBitrate !== null && !video.betterQualityExists) onHqFound?.(); // wasn't already known before this pass
       await prisma.playlistVideo.update({
         where: { id: video.id },
         data: {

@@ -106,6 +106,10 @@
     "topGenres": {
       "title": "Populiariausi žanrai",
       "empty": "Žanrų dar nėra — jie atsiras, kai jūsų dainos bus išanalizuotos."
+    },
+    "recentlyAdded": {
+      "title": "Neseniai pridėta",
+      "empty": "Kol kas nieko nepridėta — importuotos ir sinchronizuotos dainos atsiras čia."
     }
   },
   "common": {
@@ -217,6 +221,55 @@
       "title": "Generuoti panašų grojaraštį?",
       "message": "Kiekvienai „{{name}}“ dainai bus ieškoma alternatyvos ar panašaus takelio (per Last.fm, o jei nepavyks — remiksų/originalų iš YouTube) ir iš rezultatų sukuriamas naujas grojaraštis. Dideliems grojaraščiams tai gali užtrukti ilgai, o rezultatas paprastai būna mažesnis už originalą, nes ne kiekvienai dainai atsiranda geras atitikmuo."
     },
+    "justNow": "Ką tik",
+    "minutesAgo": "prieš {{count}} min",
+    "hoursAgo": "prieš {{count}} val",
+    "daysAgo": "prieš {{count}} d.",
+    "syncReport": {
+      "actionTitle": {
+        "sync": "Sinchronizavimas baigtas",
+        "retry_failed": "Pakartojimas baigtas",
+        "scan_hq": "HQ paieška baigta"
+      },
+      "progress": "{{current}} iš {{total}}",
+      "durationSeconds_one": "truko {{count}} sekundę",
+      "durationSeconds_few": "truko {{count}} sekundes",
+      "durationSeconds_other": "truko {{count}} sekundžių",
+      "durationMinutes_one": "truko {{count}} minutę",
+      "durationMinutes_few": "truko {{count}} minutes",
+      "durationMinutes_other": "truko {{count}} minučių",
+      "durationHours_one": "truko {{count}} valandą",
+      "durationHours_few": "truko {{count}} valandas",
+      "durationHours_other": "truko {{count}} valandų",
+      "added_one": "{{count}} daina pridėta",
+      "added_few": "{{count}} dainos pridėtos",
+      "added_other": "{{count}} dainų pridėta",
+      "removed_one": "{{count}} daina pašalinta",
+      "removed_few": "{{count}} dainos pašalintos",
+      "removed_other": "{{count}} dainų pašalinta",
+      "downloaded_one": "{{count}} daina atsisiųsta",
+      "downloaded_few": "{{count}} dainos atsisiųstos",
+      "downloaded_other": "{{count}} dainų atsisiųsta",
+      "recovered_one": "{{count}} daina atkurta",
+      "recovered_few": "{{count}} dainos atkurtos",
+      "recovered_other": "{{count}} dainų atkurta",
+      "failed_one": "{{count}} daina nepavyko",
+      "failed_few": "{{count}} dainos nepavyko",
+      "failed_other": "{{count}} dainų nepavyko",
+      "newHq_one": "rasta {{count}} nauja HQ versija",
+      "newHq_few": "rastos {{count}} naujos HQ versijos",
+      "newHq_other": "rasta {{count}} naujų HQ versijų",
+      "failureReason": {
+        "age_restricted": "Amžiaus apribojimas",
+        "sign_in_required": "Reikalingas prisijungimas",
+        "unavailable": "Nepasiekiama",
+        "rate_limited": "Apribotas greitis",
+        "other": "Kita"
+      },
+      "nothingChanged": "Šį kartą pokyčių nebuvo.",
+      "next": "Toliau",
+      "done": "Atlikta"
+    },
     "addDialog": {
       "title": "Pridėti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",
@@ -261,7 +314,21 @@
       "confirmMessage": "Šio grojaraščio dainos bus atsisiųstos į jūsų įrenginį.",
       "confirmMessageWithSize": "Bus atsisiųsta apie {{size}} į jūsų įrenginį.",
       "enable": "Įjungti",
-      "available": "Pasiekiama neprisijungus"
+      "available": "Pasiekiama neprisijungus",
+      "menuAction": "Sinchronizuoti neprisijungus saugomus failus",
+      "diffModal": {
+        "title": "Sinchronizuoti neprisijungus saugomus failus",
+        "added_one": "{{count}} failas bus pridėtas",
+        "added_few": "{{count}} failai bus pridėti",
+        "added_other": "{{count}} failų bus pridėta",
+        "removed_one": "{{count}} failas bus pašalintas",
+        "removed_few": "{{count}} failai bus pašalinti",
+        "removed_other": "{{count}} failų bus pašalinta",
+        "updated_one": "{{count}} failą reikia atnaujinti",
+        "updated_few": "{{count}} failus reikia atnaujinti",
+        "updated_other": "{{count}} failų reikia atnaujinti",
+        "proceed": "Tęsti"
+      }
     }
   },
   "serverSetup": {

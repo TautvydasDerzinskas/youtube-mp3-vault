@@ -54,6 +54,84 @@ function isForeignKeyRestrictViolation(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003';
 }
 
+// The three user-triggerable actions that produce a SyncReport (see below) —
+// deliberately excludes the playlist-generation and soft-reimport flows,
+// which already have their own admin-log entries and aren't what the
+// Playlists page's stats modal is for.
+export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq';
+
+// Accumulated across a single run of downloadPendingVideos (and, for a full
+// sync, refreshPlaylistFromYoutube right before it) and written out as one
+// SyncReport row once the run finishes — see finalizeSyncReport. Mutated in
+// place rather than rebuilt, since it's threaded through several functions
+// that each only know about their own slice of the run.
+export interface SyncStats {
+  addedCount: number;
+  removedCount: number;
+  downloadedCount: number;
+  recoveredCount: number;
+  failedCount: number;
+  failureReasons: Record<string, number>;
+  newHqCount: number;
+}
+
+function createSyncStats(): SyncStats {
+  return {
+    addedCount: 0, removedCount: 0, downloadedCount: 0, recoveredCount: 0,
+    failedCount: 0, failureReasons: {}, newHqCount: 0,
+  };
+}
+
+// Buckets a download failure message into a stable, translatable category
+// for the stats modal — mirrors the same message-sniffing helpers
+// downloadPendingVideos already uses to decide pacing/permanence, just
+// grouped for display instead of for retry logic.
+function categorizeFailure(message: string): string {
+  if (isAgeRestricted(message)) return 'age_restricted';
+  if (isSignInRequired(message)) return 'sign_in_required';
+  if (isPermanentlyUnavailable(message)) return 'unavailable';
+  if (isLikelyRateLimited(message)) return 'rate_limited';
+  return 'other';
+}
+
+// Writes the one SyncReport row for a completed run — called from
+// downloadPendingVideos' finally block so it fires exactly once whether the
+// run finished cleanly or hit its outer catch (a report with partial stats
+// and a failedCount is still useful; the alternative is silently dropping
+// it). Fire-and-forget from the caller's perspective: a failure to write the
+// report must never be mistaken for the sync itself having failed, so
+// errors are swallowed here rather than propagated.
+async function finalizeSyncReport(params: {
+  playlistId: string;
+  actionType: SyncActionType;
+  startedAt: number;
+  stats: SyncStats;
+}): Promise<void> {
+  const { playlistId, actionType, startedAt, stats } = params;
+  try {
+    const playlist = await prisma.playlist.findUnique({ where: { id: playlistId }, select: { userId: true } });
+    if (!playlist) return; // playlist was deleted mid-run — nothing to attach the report to
+    await prisma.syncReport.create({
+      data: {
+        userId: playlist.userId,
+        playlistId,
+        actionType,
+        startedAt: new Date(startedAt),
+        durationMs: Date.now() - startedAt,
+        addedCount: stats.addedCount,
+        removedCount: stats.removedCount,
+        downloadedCount: stats.downloadedCount,
+        recoveredCount: stats.recoveredCount,
+        failedCount: stats.failedCount,
+        failureReasons: stats.failureReasons,
+        newHqCount: stats.newHqCount,
+      },
+    });
+  } catch (err) {
+    console.error(`[sync] Failed to write sync report for playlist ${playlistId}:`, err);
+  }
+}
+
 async function resolveMediaFile(youtubeId: string) {
   const existing = await prisma.mediaFile.findUnique({ where: { youtubeId } });
   if (existing) return existing;
@@ -170,16 +248,19 @@ export async function resetStuckSyncs(): Promise<void> {
 export async function refreshPlaylistFromYoutube(
   playlistId: string,
   options: { skipRemoval?: boolean } = {}
-): Promise<void> {
+): Promise<{ addedCount: number; removedCount: number }> {
+  let addedCount = 0;
+  let removedCount = 0;
+
   const playlist = await prisma.playlist.findUniqueOrThrow({
     where: { id: playlistId },
     select: { id: true, youtubeId: true },
   });
   if (!playlist.youtubeId) {
     // Generated playlists have no real YouTube counterpart to refresh from —
-    // this should never actually be reachable for one (see syncAllPlaylists'
-    // filter and Actions.tsx hiding Sync), but fail loudly rather than
-    // silently building a broken fetch URL if it ever is.
+    // this should never actually be reachable for one (Actions.tsx hides the
+    // Sync button for them), but fail loudly rather than silently building a
+    // broken fetch URL if it ever is.
     throw new Error(`Playlist ${playlistId} has no youtubeId — cannot sync a generated playlist`);
   }
 
@@ -244,6 +325,7 @@ export async function refreshPlaylistFromYoutube(
           where: { id: dbVideo.id },
           data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null, missingSince: null },
         });
+        removedCount++;
         // Break this row's reference before trying to GC the shared file —
         // it only actually deletes once no other playlist_video points at it.
         if (dbVideo.mediaFileId) {
@@ -278,10 +360,12 @@ export async function refreshPlaylistFromYoutube(
       where: { id: removedVideo.id },
       data: { downloadStatus: 'pending', downloadError: null, position: fresh.position, isAvailable: true },
     });
+    addedCount++;
   }
 
   // ── 4. Add new videos ─────────────────────────────────────────────────────
   const newVideos = info.videos.filter((v) => !dbIds.has(v.id));
+  addedCount += newVideos.length;
   if (newVideos.length > 0) {
     await prisma.playlistVideo.createMany({
       data: newVideos.map((v) => ({
@@ -315,6 +399,8 @@ export async function refreshPlaylistFromYoutube(
     where: { id: playlistId },
     data: { title: info.title, thumbnailUrl: info.thumbnailUrl, videoCount: actualVideoCount },
   });
+
+  return { addedCount, removedCount };
 }
 
 // Exported (not just used internally) so the admin soft-reimport and
@@ -324,8 +410,23 @@ export async function refreshPlaylistFromYoutube(
 // `rescanAll` is threaded straight through to resolvePlaylistQuality below —
 // see that function's own doc comment (slskdQualityWorker.ts) for what it
 // changes; only scanForHqUpgrades sets it.
-export async function downloadPendingVideos(playlistId: string, options: { rescanAll?: boolean } = {}): Promise<void> {
-  const { rescanAll = false } = options;
+//
+// `report` is how syncPlaylist/retryFailedVideos/scanForHqUpgrades opt into
+// a SyncReport for this run (see finalizeSyncReport) — omitted entirely by
+// callers that don't want one (soft reimport, playlist generation, and the
+// pause/resume continuation in startBackgroundDownload, none of which map
+// onto a single well-defined SyncActionType). `priorFailedIds` lets
+// retryFailedVideos tell "recovered from a past failure" apart from
+// "downloaded for the first time" in the stats below, since both look
+// identical from inside this loop (downloadStatus: 'pending' either way).
+export async function downloadPendingVideos(
+  playlistId: string,
+  options: {
+    rescanAll?: boolean;
+    report?: { actionType: SyncActionType; startedAt: number; stats: SyncStats; priorFailedIds?: Set<string> };
+  } = {}
+): Promise<void> {
+  const { rescanAll = false, report } = options;
   try {
     // Based on how many videos this pass is actually about to attempt, not
     // the playlist's total size — a retry-failed pass on a huge playlist
@@ -399,6 +500,10 @@ export async function downloadPendingVideos(playlistId: string, options: { resca
           },
         });
         console.log(`[sync] ✓ ${video.youtubeId} — ${video.title.slice(0, 60)}`);
+        if (report) {
+          if (report.priorFailedIds?.has(video.id)) report.stats.recoveredCount++;
+          else report.stats.downloadedCount++;
+        }
 
         consecutiveFailures = 0;
         consecutiveSuccesses++;
@@ -410,6 +515,11 @@ export async function downloadPendingVideos(playlistId: string, options: { resca
       } catch (err) {
         const message = (err as Error).message;
         console.error(`[sync] ✗ ${video.youtubeId}:`, message);
+        if (report) {
+          report.stats.failedCount++;
+          const reason = categorizeFailure(message);
+          report.stats.failureReasons[reason] = (report.stats.failureReasons[reason] ?? 0) + 1;
+        }
         const permanentlyUnavailable = isAgeRestricted(message) || isSignInRequired(message) || isPermanentlyUnavailable(message);
 
         if (permanentlyUnavailable) {
@@ -475,6 +585,7 @@ export async function downloadPendingVideos(playlistId: string, options: { resca
     });
     await resolvePlaylistQuality(playlistId, {
       onProgress: (current, total, title) => syncPhases.set(playlistId, { phase: 'quality', current, total, title }),
+      onHqFound: report ? () => report.stats.newHqCount++ : undefined,
       rescanAll,
     });
 
@@ -493,6 +604,13 @@ export async function downloadPendingVideos(playlistId: string, options: { resca
     // between the two.
     pacingPlaylists.delete(playlistId);
     syncPhases.delete(playlistId);
+
+    // Always written once the run is over, whether it finished cleanly or
+    // hit the catch above — a report with a nonzero failedCount is still
+    // exactly what the stats modal is for.
+    if (report) {
+      await finalizeSyncReport({ playlistId, actionType: report.actionType, startedAt: report.startedAt, stats: report.stats });
+    }
   }
 }
 
@@ -523,16 +641,28 @@ export async function syncPlaylist(playlistId: string): Promise<void> {
     data: { syncStatus: 'syncing' },
   });
 
+  const startedAt = Date.now();
+  const stats = createSyncStats();
   try {
-    await refreshPlaylistFromYoutube(playlistId);
-    await downloadPendingVideos(playlistId);
-    // downloadPendingVideos sets syncStatus → idle / error
+    const { addedCount, removedCount } = await refreshPlaylistFromYoutube(playlistId);
+    stats.addedCount = addedCount;
+    stats.removedCount = removedCount;
+    await downloadPendingVideos(playlistId, { report: { actionType: 'sync', startedAt, stats } });
+    // downloadPendingVideos sets syncStatus → idle / error, and (since
+    // `report` was passed) writes the SyncReport itself once it's done —
+    // even if refreshPlaylistFromYoutube's own added/removed counts are all
+    // this run ends up reporting.
 
   } catch (err) {
     console.error(`[sync] Error syncing playlist ${playlistId}:`, err);
     await prisma.playlist
       .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
       .catch(() => {});
+    // refreshPlaylistFromYoutube itself failed (e.g. the fetchPlaylist call)
+    // before downloadPendingVideos — and its `report` — ever got a chance
+    // to run, so this is the one path where a report has to be written here
+    // instead of there.
+    await finalizeSyncReport({ playlistId, actionType: 'sync', startedAt, stats });
   } finally {
     activeSyncs.delete(playlistId);
   }
@@ -550,22 +680,31 @@ export function retryFailedVideos(playlistId: string): void {
   activeSyncs.add(playlistId);
 
   (async () => {
+    const startedAt = Date.now();
+    const stats = createSyncStats();
     try {
       await prisma.playlist.update({
         where: { id: playlistId },
         data: { syncStatus: 'retrying' },
       });
+      const failedVideos = await prisma.playlistVideo.findMany({
+        where: { playlistId, downloadStatus: 'failed', isAvailable: true },
+        select: { id: true },
+      });
+      const priorFailedIds = new Set(failedVideos.map((v) => v.id));
       await prisma.playlistVideo.updateMany({
         where: { playlistId, downloadStatus: 'failed', isAvailable: true },
         data: { downloadStatus: 'pending', downloadError: null },
       });
-      await downloadPendingVideos(playlistId);
-      // downloadPendingVideos sets syncStatus → idle / error
+      await downloadPendingVideos(playlistId, { report: { actionType: 'retry_failed', startedAt, stats, priorFailedIds } });
+      // downloadPendingVideos sets syncStatus → idle / error and writes the
+      // SyncReport itself (see `report` above).
     } catch (err) {
       console.error(`[sync] Error retrying failed videos for playlist ${playlistId}:`, err);
       await prisma.playlist
         .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
         .catch(() => {});
+      await finalizeSyncReport({ playlistId, actionType: 'retry_failed', startedAt, stats });
     } finally {
       activeSyncs.delete(playlistId);
     }
@@ -577,11 +716,11 @@ export function retryFailedVideos(playlistId: string): void {
 // downloadPendingVideos rather than through refreshPlaylistFromYoutube.
 // This is the only way to retry a failed/skipped HQ download for a
 // generated playlist: it has no youtubeId for refreshPlaylistFromYoutube to
-// fetch from, and generated playlists are deliberately excluded from both
-// the Sync button and the weekly cron (see syncAllPlaylists below) — so
-// without this, a video whose HQ download failed once (qualityCheckStatus
-// stays 'pending' on failure — see resolvePlaylistQuality) would stay stuck
-// that way forever. Works the same for a regular playlist too, as a
+// fetch from, and generated playlists deliberately have no Sync button at
+// all (see Actions.tsx) — so without this, a video whose HQ download failed
+// once (qualityCheckStatus stays 'pending' on failure — see
+// resolvePlaylistQuality) would stay stuck that way forever. Works the same
+// for a regular playlist too, as a
 // lighter-weight alternative to a full Sync when all you want is to
 // recheck slskd for upgrades.
 //
@@ -603,39 +742,29 @@ export function scanForHqUpgrades(playlistId: string): void {
   activeSyncs.add(playlistId);
 
   (async () => {
+    const startedAt = Date.now();
+    const stats = createSyncStats();
     try {
       await prisma.playlist.update({
         where: { id: playlistId },
         data: { syncStatus: 'syncing' },
       });
-      await downloadPendingVideos(playlistId, { rescanAll: true });
-      // downloadPendingVideos sets syncStatus → idle / error
+      await downloadPendingVideos(playlistId, {
+        rescanAll: true,
+        report: { actionType: 'scan_hq', startedAt, stats },
+      });
+      // downloadPendingVideos sets syncStatus → idle / error and writes the
+      // SyncReport itself (see `report` above).
     } catch (err) {
       console.error(`[sync] Error scanning for HQ upgrades for playlist ${playlistId}:`, err);
       await prisma.playlist
         .update({ where: { id: playlistId }, data: { syncStatus: 'error' } })
         .catch(() => {});
+      await finalizeSyncReport({ playlistId, actionType: 'scan_hq', startedAt, stats });
     } finally {
       activeSyncs.delete(playlistId);
     }
   })();
-}
-
-export async function syncAllPlaylists(): Promise<void> {
-  const playlists = await prisma.playlist.findMany({
-    select: { id: true },
-    // Generated playlists (youtubeId null) have no real playlist to sync
-    // against — syncPlaylist would just error out on them.
-    where: { syncStatus: { notIn: ['syncing', 'retrying'] }, syncPaused: false, youtubeId: { not: null } },
-  });
-  console.log(`[scheduler] Syncing ${playlists.length} playlist(s)`);
-  for (const { id } of playlists) {
-    try {
-      await syncPlaylist(id);
-    } catch (err) {
-      console.error(`[scheduler] Failed playlist ${id}:`, err);
-    }
-  }
 }
 
 export async function setSyncPaused(playlistId: string, paused: boolean) {

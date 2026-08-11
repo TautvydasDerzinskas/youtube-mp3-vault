@@ -56,6 +56,7 @@ model User {
   updatedAt                 DateTime   @updatedAt
   playlists                 Playlist[]
   logs                      Log[]
+  syncReports               SyncReport[]
 
   @@map("users")
 }
@@ -84,6 +85,7 @@ model Playlist {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   videos       PlaylistVideo[]
+  syncReports  SyncReport[]
 
   // Marks this playlist as generated ("similar/alternative playlist") from
   // another one, rather than imported from a real YouTube playlist. @unique
@@ -272,6 +274,55 @@ model Log {
   @@index([userId, createdAt])
   @@index([createdAt])
   @@map("logs")
+}
+
+/// One row per completed sync / retry-failed / scan-hq run — the source for
+/// the stats modal shown on the Playlists page (see the /sync-reports
+/// endpoints in routes/youtube.ts and the writer in syncService.ts, which
+/// creates one of these when syncPlaylist/retryFailedVideos/scanForHqUpgrades
+/// finishes). Distinct from Log above: Log is an admin-only audit trail with
+/// a handful of summary fields; this is the user-facing, per-run detail
+/// report, keyed to a specific playlist rather than a generic action feed.
+/// seenAt stays null until the user actually dismisses the modal for it, so
+/// a run that finished right after they closed the app is still waiting the
+/// next time they open the Playlists page — even weeks later.
+model SyncReport {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  actionType String   // sync | retry_failed | scan_hq — see SyncActionType in syncService.ts
+  startedAt  DateTime
+  durationMs Int
+
+  // Only ever non-zero for actionType 'sync' — the only pass that touches
+  // YouTube's own playlist listing (see refreshPlaylistFromYoutube).
+  addedCount   Int @default(0)
+  removedCount Int @default(0)
+
+  // downloadedCount is a video that was pending and succeeded; recoveredCount
+  // is one that was specifically failed before this run and succeeded now
+  // (only meaningfully distinct for actionType 'retry_failed' — see
+  // priorFailedIds in downloadPendingVideos).
+  downloadedCount Int @default(0)
+  recoveredCount  Int @default(0)
+  failedCount     Int @default(0)
+  // Bucketed by categorizeFailure in syncService.ts, e.g.
+  // {"rate_limited": 2, "unavailable": 1} — only buckets that actually
+  // occurred this run are present.
+  failureReasons  Json @default("{}")
+
+  // A slskd/JioSaavn upgrade newly found (or, with HQ auto-download on,
+  // newly downloaded) this run — see onHqFound in slskdQualityWorker.ts.
+  // Never counts a video whose upgrade was already known from a past run.
+  newHqCount Int @default(0)
+
+  seenAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, seenAt])
+  @@map("sync_reports")
 }
 
 /// Single shared, content-addressed copy of a downloaded YouTube video's MP3,

@@ -4,7 +4,8 @@ import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { DashboardArtist, DashboardGenre, DashboardSong } from '../../api/dashboard';
+import { DashboardArtist, DashboardGenre, DashboardRecentTrack, DashboardSong } from '../../api/dashboard';
+import { timeAgo } from '../../utils/format';
 
 // Shared between each DashboardListCard preview and the corresponding "see
 // more" screen (AllSongsScreen/AllArtistsScreen/AllGenresScreen), so the
@@ -93,6 +94,39 @@ export function ArtistRow({ artist, rank }: { artist: DashboardArtist; rank: num
       <Text style={[styles.trailing, { color: theme.colors.onSurfaceVariant }]}>
         {t('dashboard.songCount', { count: artist.songCount })}
       </Text>
+    </Pressable>
+  );
+}
+
+// No rank column — unlike the ranked lists above, recency order is
+// self-explanatory without a number.
+export function RecentTrackRow({ track }: { track: DashboardRecentTrack }) {
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const navigation = useNavigation();
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => setImageFailed(false), [track.thumbnailUrl]);
+
+  return (
+    <Pressable
+      style={styles.row}
+      onPress={() => navigation.navigate('TrackDetail', { playlistId: track.playlistId, trackId: track.id })}
+    >
+      {track.thumbnailUrl && !imageFailed ? (
+        <Image source={{ uri: track.thumbnailUrl }} style={styles.thumb} onError={() => setImageFailed(true)} />
+      ) : (
+        <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: theme.colors.elevation.level3 }]}>
+          <MaterialCommunityIcons name="music-note" size={18} color={theme.colors.onSurfaceVariant} />
+        </View>
+      )}
+      <View style={styles.text}>
+        <Text numberOfLines={1} style={[styles.title, { color: theme.colors.onBackground }]}>{track.title}</Text>
+        <Text numberOfLines={1} style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>
+          {[track.artist, track.playlistName].filter(Boolean).join(' · ')}
+        </Text>
+      </View>
+      <Text style={[styles.trailing, { color: theme.colors.onSurfaceVariant }]}>{timeAgo(track.addedAt, t)}</Text>
     </Pressable>
   );
 }

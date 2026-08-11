@@ -9,6 +9,7 @@ import { GenreCountCard } from './GenreCountCard';
 import { SongsOnRepeatCard } from './SongsOnRepeatCard';
 import { TopArtistsCard } from './TopArtistsCard';
 import { TopGenresCard } from './TopGenresCard';
+import { RecentlyAddedCard } from './RecentlyAddedCard';
 import { AllSongsDialog } from './AllSongsDialog';
 import { AllArtistsDialog } from './AllArtistsDialog';
 import { AllGenresDialog } from './AllGenresDialog';
@@ -54,6 +55,10 @@ export default function DashboardPage() {
           <TopArtistsCard artists={summary.topArtists} onSeeMore={() => setShowAllArtists(true)} />
           <TopGenresCard genres={summary.topGenres} onSeeMore={() => setShowAllGenres(true)} />
         </Box>
+      </Box>
+
+      <Box sx={{ mt: 2 }}>
+        <RecentlyAddedCard tracks={summary.recentlyAdded} />
       </Box>
 
       {showAllSongs && <AllSongsDialog onClose={() => setShowAllSongs(false)} />}

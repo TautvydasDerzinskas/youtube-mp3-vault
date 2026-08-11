@@ -46,9 +46,8 @@ async function resolveFallbackMetadata(title: string, channelName: string | null
 // Resolves metadata (MusicBrainz, falling back to the local parser + Last.fm
 // correction) for videos in this playlist. Called at the end of a playlist's
 // download pass (see _downloadPending in syncService.ts) — i.e. only
-// alongside sync activity a user or the cron scheduler actually triggered,
-// rather than an independent background loop polling continuously regardless
-// of activity.
+// alongside sync activity a user actually triggered, rather than an
+// independent background loop polling continuously regardless of activity.
 //
 // By default only processes videos still awaiting a first attempt
 // (`metadataStatus: 'pending'`). Pass `force: true` (used by the admin soft

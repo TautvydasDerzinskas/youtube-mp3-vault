@@ -23,6 +23,17 @@ export interface DashboardGenre {
   count: number;
 }
 
+export interface DashboardRecentTrack {
+  id: string;
+  playlistId: string;
+  youtubeId: string;
+  title: string;
+  artist: string | null;
+  thumbnailUrl: string | null;
+  addedAt: string;
+  playlistName: string;
+}
+
 export interface DashboardSummary {
   playlistCount: number;
   totalSongCount: number;
@@ -31,6 +42,7 @@ export interface DashboardSummary {
   topSongs: DashboardSong[];
   topArtists: DashboardArtist[];
   topGenres: DashboardGenre[];
+  recentlyAdded: DashboardRecentTrack[];
 }
 
 // Mirrors frontend/src/api/dashboard.ts — same endpoints, same response

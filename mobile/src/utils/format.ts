@@ -41,6 +41,18 @@ export function formatBytes(bytes: number | null | undefined): string {
   return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+// Mirrors frontend/src/pages/PlaylistsPage/utils.tsx's timeAgo — single
+// largest applicable unit, floored. Used by the dashboard's recently-added
+// row (addedAt is never null there, unlike web's lastSyncedAt use of this
+// same pattern, so no "never" case is needed here).
+export function timeAgo(d: string, t: (key: string, options?: Record<string, unknown>) => string): string {
+  const min = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+  if (min < 1) return t('playlists.justNow');
+  if (min < 60) return t('playlists.minutesAgo', { count: min });
+  const h = Math.floor(min / 60);
+  return h < 24 ? t('playlists.hoursAgo', { count: h }) : t('playlists.daysAgo', { count: Math.floor(h / 24) });
+}
+
 // Mirrors frontend/src/pages/PlaylistsPage/utils.tsx's formatPlaybackTime —
 // a "3 hours 24 mins of playback"-style total, distinct from formatDuration
 // above (a single track's mm:ss).

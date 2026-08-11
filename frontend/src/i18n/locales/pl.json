@@ -172,6 +172,60 @@
       "title": "Wygenerować podobną playlistę?",
       "message": "Dla każdego utworu w „{{name}}” zostanie wyszukana alternatywa lub podobny utwór (przez Last.fm, a w razie braku wyników — remiksy/oryginały na YouTube) i z wyników zostanie zbudowana nowa playlista. Dla dużych playlist może to potrwać długo, a wynik zwykle jest mniejszy niż źródło, ponieważ nie każdy utwór ma dobry odpowiednik."
     },
+    "syncReport": {
+      "actionTitle": {
+        "sync": "Synchronizacja zakończona",
+        "retry_failed": "Ponowienie zakończone",
+        "scan_hq": "Skanowanie HQ zakończone"
+      },
+      "progress": "{{current}} z {{total}}",
+      "durationSeconds_one": "trwało {{count}} sekundę",
+      "durationSeconds_few": "trwało {{count}} sekundy",
+      "durationSeconds_many": "trwało {{count}} sekund",
+      "durationSeconds_other": "trwało {{count}} sekundy",
+      "durationMinutes_one": "trwało {{count}} minutę",
+      "durationMinutes_few": "trwało {{count}} minuty",
+      "durationMinutes_many": "trwało {{count}} minut",
+      "durationMinutes_other": "trwało {{count}} minuty",
+      "durationHours_one": "trwało {{count}} godzinę",
+      "durationHours_few": "trwało {{count}} godziny",
+      "durationHours_many": "trwało {{count}} godzin",
+      "durationHours_other": "trwało {{count}} godziny",
+      "added_one": "dodano {{count}} utwór",
+      "added_few": "dodano {{count}} utwory",
+      "added_many": "dodano {{count}} utworów",
+      "added_other": "dodano {{count}} utworów",
+      "removed_one": "usunięto {{count}} utwór",
+      "removed_few": "usunięto {{count}} utwory",
+      "removed_many": "usunięto {{count}} utworów",
+      "removed_other": "usunięto {{count}} utworów",
+      "downloaded_one": "pobrano {{count}} utwór",
+      "downloaded_few": "pobrano {{count}} utwory",
+      "downloaded_many": "pobrano {{count}} utworów",
+      "downloaded_other": "pobrano {{count}} utworów",
+      "recovered_one": "odzyskano {{count}} utwór",
+      "recovered_few": "odzyskano {{count}} utwory",
+      "recovered_many": "odzyskano {{count}} utworów",
+      "recovered_other": "odzyskano {{count}} utworów",
+      "failed_one": "{{count}} utwór nie powiódł się",
+      "failed_few": "{{count}} utwory nie powiodły się",
+      "failed_many": "{{count}} utworów nie powiodło się",
+      "failed_other": "{{count}} utworów nie powiodło się",
+      "newHq_one": "znaleziono {{count}} nową wersję HQ",
+      "newHq_few": "znaleziono {{count}} nowe wersje HQ",
+      "newHq_many": "znaleziono {{count}} nowych wersji HQ",
+      "newHq_other": "znaleziono {{count}} nowych wersji HQ",
+      "failureReason": {
+        "age_restricted": "Ograniczenie wiekowe",
+        "sign_in_required": "Wymagane logowanie",
+        "unavailable": "Niedostępny",
+        "rate_limited": "Ograniczenie limitu",
+        "other": "Inne"
+      },
+      "nothingChanged": "Brak zmian w tym przebiegu.",
+      "next": "Dalej",
+      "done": "Gotowe"
+    },
     "status": {
       "pending": "oczekuje",
       "downloading": "pobieranie",
@@ -442,6 +496,10 @@
     "topGenres": {
       "title": "Najpopularniejsze gatunki",
       "empty": "Brak gatunków — pojawią się tutaj, gdy Twoje utwory zostaną przeanalizowane."
+    },
+    "recentlyAdded": {
+      "title": "Ostatnio dodane",
+      "empty": "Nic jeszcze nie dodano — zaimportowane i zsynchronizowane utwory pojawią się tutaj."
     }
   },
   "genres": {

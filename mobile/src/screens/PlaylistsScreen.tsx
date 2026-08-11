@@ -1,25 +1,30 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Banner, FAB, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { playlistsApi, Playlist } from '../api/playlists';
+import { SyncReport, syncReportsApi } from '../api/syncReports';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { usePlaylists } from './playlists/usePlaylists';
 import { PlaylistRow } from './playlists/PlaylistRow';
 import { AddPlaylistDialog } from './playlists/AddPlaylistDialog';
 import { RenameDialog } from './playlists/RenameDialog';
 import { AllTracksListItem } from './playlists/AllTracksListItem';
+import { SyncReportModal } from './playlists/SyncReportModal';
+import { OfflineSyncDiffModal } from './playlists/OfflineSyncDiffModal';
 import { displayName } from '../utils/format';
 
 // Mirrors frontend/src/pages/PlaylistsPage/index.tsx — see PlaylistRow.tsx
 // for what's adapted for mobile (no accordion, sync stays the one visible
 // icon, Generate Similar folded into the "⋮" menu). "All Tracks" isn't
-// ported yet (no mobile screen for it).
+// ported yet (no mobile screen for it). The sync-report stats modal is,
+// though — see SyncReportModal.tsx and the unseenReports fetch below.
 export function PlaylistsScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -39,8 +44,19 @@ export function PlaylistsScreen() {
   const [generating, setGenerating] = useState<Playlist | null>(null);
   const [generateLoading, setGenerateLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [syncingOffline, setSyncingOffline] = useState<Playlist | null>(null);
+  const { diffs: offlineDiffs } = useOfflineDownloads();
 
   const canGenerateSimilar = online && lastfmDiscoverAvailable;
+
+  // Fetched once on mount — whatever's unseen at that point is shown as a
+  // queue in SyncReportModal; a run that finishes while the screen is
+  // already open doesn't retroactively pop the modal, it just waits for the
+  // next visit like any other unseen report (mirrors web's PlaylistsPage).
+  const [unseenReports, setUnseenReports] = useState<SyncReport[]>([]);
+  useEffect(() => {
+    syncReportsApi.listUnseen().then(setUnseenReports).catch(() => {});
+  }, []);
 
   const generatedSourceIds = useMemo(() => {
     const set = new Set<string>();
@@ -139,6 +155,7 @@ export function PlaylistsScreen() {
               onRename={() => setRenaming(item)}
               onDelete={() => setDeleting(item)}
               onGenerateSimilar={() => { setGenerateError(null); setGenerating(item); }}
+              onSyncOffline={() => setSyncingOffline(item)}
             />
           )}
           ListEmptyComponent={
@@ -184,6 +201,18 @@ export function PlaylistsScreen() {
           onConfirm={handleConfirmGenerate}
           onCancel={() => setGenerating(null)}
         />
+      )}
+
+      {syncingOffline && offlineDiffs[syncingOffline.id] && (
+        <OfflineSyncDiffModal
+          playlistId={syncingOffline.id}
+          diff={offlineDiffs[syncingOffline.id]}
+          onClose={() => setSyncingOffline(null)}
+        />
+      )}
+
+      {unseenReports.length > 0 && (
+        <SyncReportModal reports={unseenReports} onDone={() => setUnseenReports([])} />
       )}
     </View>
   );

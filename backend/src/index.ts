@@ -13,7 +13,6 @@ import artistsRouter from './routes/artists';
 import nowPlayingRouter from './routes/nowPlaying';
 import { errorHandler } from './middleware/errorHandler';
 import { resetStuckSyncs } from './services/syncService';
-import { startScheduler } from './services/scheduler';
 import { ensureDemoUser } from './services/demoUser';
 import { loadSettings } from './services/settings';
 import { isOnline, startConnectivityMonitor } from './services/connectivity';
@@ -54,7 +53,6 @@ app.listen(config.port, '0.0.0.0', async () => {
   } else {
     console.log(`[seed] Skipping demo user creation (APP_ENV=${config.appEnv})`);
   }
-  startScheduler();
   startConnectivityMonitor();
   startAudioAnalysisWorker();
 });

@@ -100,6 +100,10 @@
     "topGenres": {
       "title": "Top Genres",
       "empty": "No genres yet — genres appear here once your songs are analyzed."
+    },
+    "recentlyAdded": {
+      "title": "Recently Added",
+      "empty": "Nothing added yet — imported and synced songs will show up here."
     }
   },
   "common": {
@@ -204,6 +208,46 @@
       "title": "Generate a similar playlist?",
       "message": "This looks for an alternative or similar track for every song in \"{{name}}\" (via Last.fm, falling back to remixes/originals on YouTube) and builds a new playlist from the results. It can take a long time for large playlists, and the result is usually smaller than the source, since not every song has a good alternative."
     },
+    "justNow": "Just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "syncReport": {
+      "actionTitle": {
+        "sync": "Sync complete",
+        "retry_failed": "Retry complete",
+        "scan_hq": "HQ scan complete"
+      },
+      "progress": "{{current}} of {{total}}",
+      "durationSeconds_one": "took {{count}} second",
+      "durationSeconds_other": "took {{count}} seconds",
+      "durationMinutes_one": "took {{count}} minute",
+      "durationMinutes_other": "took {{count}} minutes",
+      "durationHours_one": "took {{count}} hour",
+      "durationHours_other": "took {{count}} hours",
+      "added_one": "{{count}} song added",
+      "added_other": "{{count}} songs added",
+      "removed_one": "{{count}} song removed",
+      "removed_other": "{{count}} songs removed",
+      "downloaded_one": "{{count}} song downloaded",
+      "downloaded_other": "{{count}} songs downloaded",
+      "recovered_one": "{{count}} song recovered",
+      "recovered_other": "{{count}} songs recovered",
+      "failed_one": "{{count}} song failed",
+      "failed_other": "{{count}} songs failed",
+      "newHq_one": "{{count}} new HQ upgrade found",
+      "newHq_other": "{{count}} new HQ upgrades found",
+      "failureReason": {
+        "age_restricted": "Age restricted",
+        "sign_in_required": "Sign-in required",
+        "unavailable": "Unavailable",
+        "rate_limited": "Rate limited",
+        "other": "Other"
+      },
+      "nothingChanged": "No changes this run.",
+      "next": "Next",
+      "done": "Done"
+    },
     "addDialog": {
       "title": "Add Playlist",
       "urlLabel": "YouTube Playlist URL",
@@ -248,7 +292,18 @@
       "confirmMessage": "This playlist's tracks will be downloaded to your device.",
       "confirmMessageWithSize": "This will download about {{size}} to your device.",
       "enable": "Enable",
-      "available": "Available offline"
+      "available": "Available offline",
+      "menuAction": "Sync offline stored files",
+      "diffModal": {
+        "title": "Sync offline stored files",
+        "added_one": "{{count}} file added",
+        "added_other": "{{count}} files added",
+        "removed_one": "{{count}} file removed",
+        "removed_other": "{{count}} files removed",
+        "updated_one": "{{count}} file needs updating",
+        "updated_other": "{{count}} files need updating",
+        "proceed": "Proceed"
+      }
     }
   },
   "serverSetup": {

@@ -183,6 +183,48 @@ router.post('/plays/sync', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
+// ─── GET /api/playlists/sync-reports/unseen & POST .../:id/seen ──────────────
+// Declared before /:id for the same reason as plays/sync above. Backs the
+// Playlists page's stats modal — every sync/retry-failed/scan-hq run writes
+// one SyncReport on completion (see finalizeSyncReport in syncService.ts),
+// and it stays unseen until the user actually dismisses the modal for it, so
+// a run that finished while the page was closed is still waiting the next
+// time they open it, even weeks later.
+
+router.get('/sync-reports/unseen', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const reports = await prisma.syncReport.findMany({
+      where: { userId: req.userId, seenAt: null },
+      orderBy: { createdAt: 'asc' },
+      include: { playlist: { select: { title: true, customName: true } } },
+    });
+    res.json({
+      reports: reports.map(({ playlist, ...report }) => ({
+        ...report,
+        playlistName: playlist.customName ?? playlist.title,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/sync-reports/:id/seen', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { count } = await prisma.syncReport.updateMany({
+      where: { id: req.params.id, userId: req.userId },
+      data: { seenAt: new Date() },
+    });
+    if (count === 0) {
+      res.status(404).json({ error: 'Sync report not found' });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── GET /api/playlists/:id — single playlist ─────────────────────────────────
 
 router.get('/:id', requireAuth, async (req: AuthRequest, res, next) => {
@@ -695,9 +737,8 @@ router.post('/:id/sync', requireAuth, async (req: AuthRequest, res, next) => {
     const [enriched] = await withDownloadStats([{ ...playlist, syncStatus: 'syncing' }]);
     res.json({ playlist: enriched });
 
-    // Full sync in background — logged on completion (not by the cron-driven
-    // syncAllPlaylists path, which never calls this route) so the counts
-    // reflect the finished pass, not the moment it was kicked off.
+    // Full sync in background — logged on completion so the counts reflect
+    // the finished pass, not the moment it was kicked off.
     const userId = req.userId!;
     void syncPlaylist(playlist.id).then(async () => {
       const final = await prisma.playlist.findUnique({ where: { id: playlist.id } });
@@ -795,7 +836,7 @@ router.post('/:id/scan-hq', requireAuth, async (req: AuthRequest, res, next) => 
   }
 });
 
-// ─── POST /api/playlists/:id/pause & /resume — toggle cron auto-sync ──────────
+// ─── POST /api/playlists/:id/pause & /resume — pause/resume an in-progress sync ──
 
 router.post('/:id/pause', requireAuth, async (req: AuthRequest, res, next) => {
   try {
@@ -840,7 +881,7 @@ router.post('/:id/resume', requireAuth, async (req: AuthRequest, res, next) => {
     await setSyncPaused(playlist.id, false);
 
     // Immediately continue downloading any videos left pending from before the
-    // pause, rather than waiting for the next manual sync or cron tick.
+    // pause, rather than waiting for the next manually-triggered sync.
     const shouldResume = !isSyncing(playlist.id);
     if (shouldResume) {
       await prisma.playlist.update({ where: { id: playlist.id }, data: { syncStatus: 'syncing' } });

@@ -11,6 +11,7 @@ router.use(requireAuth);
 const TOP_SONGS_PREVIEW = 10;
 const TOP_ARTISTS_PREVIEW = 10;
 const TOP_GENRES_PREVIEW = 5;
+const RECENTLY_ADDED_PREVIEW = 10;
 // Defensive ceilings for the "see more" lists — songs are already bounded to
 // ones actually listened to at least once, artists per the product decision
 // to cap this at 20-50 rather than every distinct artist in a large library.
@@ -24,6 +25,29 @@ const SONG_SELECT = {
   id: true, playlistId: true, youtubeId: true, title: true, artist: true,
   thumbnailUrl: true, playCount: true, lastPlayedAt: true,
 } as const;
+
+// Last N tracks added to the library across every playlist, newest first —
+// addedAt is set once at row creation and never touched again (see its doc
+// comment in schema.prisma), so this reflects literal import order rather
+// than anything download-status-dependent. playlistName lets the card show
+// "added to <playlist>" without a second round trip per row.
+async function recentlyAddedTracks(userId: string, limit: number) {
+  const videos = await prisma.playlistVideo.findMany({
+    where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
+    orderBy: { addedAt: 'desc' },
+    take: limit,
+    select: {
+      id: true, playlistId: true, youtubeId: true, title: true, artist: true,
+      thumbnailUrl: true, addedAt: true,
+      playlist: { select: { title: true, customName: true } },
+    },
+  });
+
+  return videos.map(({ playlist, ...video }) => ({
+    ...video,
+    playlistName: playlist.customName ?? playlist.title,
+  }));
+}
 
 // Ranked by track count in the user's library, not by listen count — a
 // deliberately different metric from the "songs on repeat" card above it.
@@ -69,7 +93,7 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
   try {
     const userId = req.userId!;
 
-    const [playlistCount, totalSongCount, totalArtistCount, totalGenreCount, topSongs, topArtists, topGenres] = await Promise.all([
+    const [playlistCount, totalSongCount, totalArtistCount, totalGenreCount, topSongs, topArtists, topGenres, recentlyAdded] = await Promise.all([
       prisma.playlist.count({ where: { userId } }),
       prisma.playlistVideo.count({
         where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' } },
@@ -89,9 +113,10 @@ router.get('/summary', async (req: AuthRequest, res, next) => {
       }),
       topArtistsByTrackCount(userId, TOP_ARTISTS_PREVIEW),
       topGenresByTrackCount(userId, TOP_GENRES_PREVIEW),
+      recentlyAddedTracks(userId, RECENTLY_ADDED_PREVIEW),
     ]);
 
-    res.json({ playlistCount, totalSongCount, totalArtistCount, totalGenreCount, topSongs, topArtists, topGenres });
+    res.json({ playlistCount, totalSongCount, totalArtistCount, totalGenreCount, topSongs, topArtists, topGenres, recentlyAdded });
   } catch (err) {
     next(err);
   }

@@ -61,3 +61,35 @@ export interface OfflineProgress {
 export function isOfflineSyncComplete(progress: OfflineProgress | undefined): boolean {
   return !!progress && !progress.syncing && !progress.error && progress.total > 0 && progress.completed >= progress.total;
 }
+
+// A single track named in one bucket of an OfflineDiff — just enough to
+// render a compact list (see OfflineSyncDiffModal), not the full manifest/
+// index shape either side of the comparison actually carries.
+export interface OfflineDiffEntry {
+  trackId: string;
+  title: string;
+}
+
+// Read-only comparison of a playlist's on-device tracks against the
+// server's current manifest — computed by OfflineDownloadsContext's
+// computeDiff, purely for preview (see OfflineSyncDiffModal). Nothing is
+// downloaded/deleted until the user reviews this and taps Proceed, which is
+// the whole point: offline sync used to apply automatically on every app
+// foreground/reconnect with no review step at all.
+export interface OfflineDiff {
+  // In the manifest but not on-device yet.
+  added: OfflineDiffEntry[];
+  // On-device but no longer in the manifest (removed from the playlist, or
+  // marked unavailable server-side).
+  removed: OfflineDiffEntry[];
+  // On-device and still in the manifest, but the underlying file changed
+  // (an HQ upgrade overwrote it — same mediaFileId, different fileSize; or
+  // rarely a genuinely different mediaFileId) — or the on-device copy is
+  // simply gone (deleted by the OS/another app) despite the index still
+  // listing it. Either way the needed action is the same: fetch it again.
+  updated: OfflineDiffEntry[];
+}
+
+export function isDiffEmpty(diff: OfflineDiff | undefined): boolean {
+  return !diff || (diff.added.length === 0 && diff.removed.length === 0 && diff.updated.length === 0);
+}

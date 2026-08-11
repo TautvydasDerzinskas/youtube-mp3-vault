@@ -39,8 +39,8 @@ async function softReimportPlaylist(playlistId: string): Promise<void> {
     // file, even if that video genuinely isn't in the source playlist
     // anymore. Any brand-new videos are still inserted as `pending` (that
     // part's non-destructive), but since this flow never calls
-    // _downloadPending, they're left for the next real sync (cron or
-    // manual) to actually download. Skipped entirely for a generated
+    // _downloadPending, they're left for the next real (manually-triggered)
+    // sync to actually download. Skipped entirely for a generated
     // playlist — it has no real YouTube playlist to reconcile against, so
     // this just re-runs the metadata/audio-analysis passes on what's there.
     if (!playlist.sourcePlaylistId) {

@@ -112,6 +112,10 @@
     "topGenres": {
       "title": "Najpopularniejsze gatunki",
       "empty": "Brak gatunków — pojawią się tutaj, gdy Twoje utwory zostaną przeanalizowane."
+    },
+    "recentlyAdded": {
+      "title": "Ostatnio dodane",
+      "empty": "Nic jeszcze nie dodano — zaimportowane i zsynchronizowane utwory pojawią się tutaj."
     }
   },
   "common": {
@@ -230,6 +234,64 @@
       "title": "Wygenerować podobną playlistę?",
       "message": "Dla każdego utworu w „{{name}}” zostanie wyszukana alternatywa lub podobny utwór (przez Last.fm, a w razie braku wyników — remiksy/oryginały na YouTube) i z wyników zostanie zbudowana nowa playlista. Dla dużych playlist może to potrwać długo, a wynik zwykle jest mniejszy niż źródło, ponieważ nie każdy utwór ma dobry odpowiednik."
     },
+    "justNow": "Przed chwilą",
+    "minutesAgo": "{{count}} min temu",
+    "hoursAgo": "{{count}} godz. temu",
+    "daysAgo": "{{count}} dni temu",
+    "syncReport": {
+      "actionTitle": {
+        "sync": "Synchronizacja zakończona",
+        "retry_failed": "Ponowienie zakończone",
+        "scan_hq": "Skanowanie HQ zakończone"
+      },
+      "progress": "{{current}} z {{total}}",
+      "durationSeconds_one": "trwało {{count}} sekundę",
+      "durationSeconds_few": "trwało {{count}} sekundy",
+      "durationSeconds_many": "trwało {{count}} sekund",
+      "durationSeconds_other": "trwało {{count}} sekundy",
+      "durationMinutes_one": "trwało {{count}} minutę",
+      "durationMinutes_few": "trwało {{count}} minuty",
+      "durationMinutes_many": "trwało {{count}} minut",
+      "durationMinutes_other": "trwało {{count}} minuty",
+      "durationHours_one": "trwało {{count}} godzinę",
+      "durationHours_few": "trwało {{count}} godziny",
+      "durationHours_many": "trwało {{count}} godzin",
+      "durationHours_other": "trwało {{count}} godziny",
+      "added_one": "dodano {{count}} utwór",
+      "added_few": "dodano {{count}} utwory",
+      "added_many": "dodano {{count}} utworów",
+      "added_other": "dodano {{count}} utworów",
+      "removed_one": "usunięto {{count}} utwór",
+      "removed_few": "usunięto {{count}} utwory",
+      "removed_many": "usunięto {{count}} utworów",
+      "removed_other": "usunięto {{count}} utworów",
+      "downloaded_one": "pobrano {{count}} utwór",
+      "downloaded_few": "pobrano {{count}} utwory",
+      "downloaded_many": "pobrano {{count}} utworów",
+      "downloaded_other": "pobrano {{count}} utworów",
+      "recovered_one": "odzyskano {{count}} utwór",
+      "recovered_few": "odzyskano {{count}} utwory",
+      "recovered_many": "odzyskano {{count}} utworów",
+      "recovered_other": "odzyskano {{count}} utworów",
+      "failed_one": "{{count}} utwór nie powiódł się",
+      "failed_few": "{{count}} utwory nie powiodły się",
+      "failed_many": "{{count}} utworów nie powiodło się",
+      "failed_other": "{{count}} utworów nie powiodło się",
+      "newHq_one": "znaleziono {{count}} nową wersję HQ",
+      "newHq_few": "znaleziono {{count}} nowe wersje HQ",
+      "newHq_many": "znaleziono {{count}} nowych wersji HQ",
+      "newHq_other": "znaleziono {{count}} nowych wersji HQ",
+      "failureReason": {
+        "age_restricted": "Ograniczenie wiekowe",
+        "sign_in_required": "Wymagane logowanie",
+        "unavailable": "Niedostępny",
+        "rate_limited": "Ograniczenie limitu",
+        "other": "Inne"
+      },
+      "nothingChanged": "Brak zmian w tym przebiegu.",
+      "next": "Dalej",
+      "done": "Gotowe"
+    },
     "addDialog": {
       "title": "Dodaj playlistę",
       "urlLabel": "Link do playlisty YouTube",
@@ -274,7 +336,24 @@
       "confirmMessage": "Utwory z tej playlisty zostaną pobrane na urządzenie.",
       "confirmMessageWithSize": "Zostanie pobrane około {{size}} na urządzenie.",
       "enable": "Włącz",
-      "available": "Dostępne offline"
+      "available": "Dostępne offline",
+      "menuAction": "Synchronizuj pliki offline",
+      "diffModal": {
+        "title": "Synchronizuj pliki offline",
+        "added_one": "{{count}} plik zostanie dodany",
+        "added_few": "{{count}} pliki zostaną dodane",
+        "added_many": "{{count}} plików zostanie dodanych",
+        "added_other": "{{count}} pliku zostanie dodane",
+        "removed_one": "{{count}} plik zostanie usunięty",
+        "removed_few": "{{count}} pliki zostaną usunięte",
+        "removed_many": "{{count}} plików zostanie usuniętych",
+        "removed_other": "{{count}} pliku zostanie usunięte",
+        "updated_one": "{{count}} plik wymaga aktualizacji",
+        "updated_few": "{{count}} pliki wymagają aktualizacji",
+        "updated_many": "{{count}} plików wymaga aktualizacji",
+        "updated_other": "{{count}} pliku wymaga aktualizacji",
+        "proceed": "Kontynuuj"
+      }
     }
   },
   "serverSetup": {

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Box, Typography, Button, Alert, CircularProgress, Stack, Divider } from '@mui/material';
 import { Add as AddIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Playlist, playlistsApi } from '../../api/youtube';
+import { SyncReport, syncReportsApi } from '../../api/syncReports';
 import { usePlaylists } from './hooks/usePlaylists';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { usePlayer } from '../../contexts/PlayerContext';
@@ -13,6 +14,7 @@ import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
 import { AllTracksListItem } from './AllTracksListItem';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { SyncReportModal } from './SyncReportModal';
 import { displayName } from './utils';
 
 export default function PlaylistsPage() {
@@ -28,6 +30,15 @@ export default function PlaylistsPage() {
   const online = useOnlineStatus();
   const { lastfmDiscoverAvailable } = useAuth();
   const canGenerateSimilar = online && lastfmDiscoverAvailable;
+
+  // Fetched once on mount — whatever's unseen at that point is shown as a
+  // queue in SyncReportModal; a run that finishes while the page is already
+  // open doesn't retroactively pop the modal (would be jarring mid-browse),
+  // it just waits for the next visit like any other unseen report.
+  const [unseenReports, setUnseenReports] = useState<SyncReport[]>([]);
+  useEffect(() => {
+    syncReportsApi.listUnseen().then(setUnseenReports).catch(() => {});
+  }, []);
 
   const {
     playlists, loading, error, syncing, retrying, videoCache, setVideoCache,
@@ -193,6 +204,9 @@ export default function PlaylistsPage() {
           onConfirm={handleConfirmGenerate}
           onCancel={() => setGenerating(null)}
         />
+      )}
+      {unseenReports.length > 0 && (
+        <SyncReportModal reports={unseenReports} onDone={() => setUnseenReports([])} />
       )}
     </Box>
   );

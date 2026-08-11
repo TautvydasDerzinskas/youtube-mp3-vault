@@ -6,17 +6,18 @@ import { useNavigation } from '@react-navigation/native';
 import { dashboardApi, DashboardSummary } from '../api/dashboard';
 import { StatCard } from './dashboard/StatCard';
 import { DashboardListCard } from './dashboard/DashboardListCard';
-import { SongRow, ArtistRow, GenreRow } from './dashboard/rows';
+import { SongRow, ArtistRow, GenreRow, RecentTrackRow } from './dashboard/rows';
 
 const GRID_GAP = 12;
 
 // Mirrors web's frontend/src/pages/DashboardPage, but laid out for mobile:
 // a 2x2 square grid of the 4 stat panes up top (web spreads them down a
-// side column instead), then Songs on Repeat / Top Artists / Top Genres
-// stacked full-width below, in that order. "See more" pushes a dedicated
-// screen rather than web's modal dialogs — see AllSongsScreen and friends.
-// All copy reuses the exact same i18n keys as frontend/src/i18n's
-// "dashboard"/"nav" namespaces.
+// side column instead), then Songs on Repeat / Top Artists / Top Genres /
+// Recently Added stacked full-width below, in that order. "See more" pushes
+// a dedicated screen rather than web's modal dialogs — see AllSongsScreen
+// and friends (Recently Added has no such screen, same as web). All copy
+// reuses the exact same i18n keys as frontend/src/i18n's "dashboard"/"nav"
+// namespaces.
 export function DashboardScreen() {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -124,6 +125,15 @@ export function DashboardScreen() {
         onSeeMore={() => navigation.navigate('AllGenres')}
         keyExtractor={(genre) => genre.key}
         renderItem={(genre, index) => <GenreRow genre={genre} rank={index + 1} />}
+      />
+
+      <DashboardListCard
+        icon="new-box"
+        title={t('dashboard.recentlyAdded.title')}
+        items={summary.recentlyAdded}
+        emptyText={t('dashboard.recentlyAdded.empty')}
+        keyExtractor={(track) => track.id}
+        renderItem={(track) => <RecentTrackRow track={track} />}
       />
     </ScrollView>
   );
