@@ -80,9 +80,21 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
               )}
             </Box>
             <ListItemAvatar sx={{ minWidth: 48 }}>
-              <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 38, height: 26, borderRadius: 1 }}>
-                <MusicNoteIcon sx={{ fontSize: 14 }} />
-              </Avatar>
+              <Box sx={{ position: 'relative' }}>
+                <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 38, height: 26, borderRadius: 1 }}>
+                  <MusicNoteIcon sx={{ fontSize: 14 }} />
+                </Avatar>
+                {(v.hqFileDownloaded || v.betterQualityExists) && (
+                  <Tooltip title={v.hqFileDownloaded ? t('playlists.videoList.hqDownloaded') : t('playlists.videoList.hqAvailable')}>
+                    <Box sx={{
+                      position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      bgcolor: 'rgba(0,0,0,0.45)', borderRadius: 1,
+                    }}>
+                      <HqIcon sx={{ fontSize: 16, color: v.hqFileDownloaded ? 'success.main' : 'grey.300' }} />
+                    </Box>
+                  </Tooltip>
+                )}
+              </Box>
             </ListItemAvatar>
             <ListItemText
               primary={v.title}
@@ -91,10 +103,15 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
                   fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' } }}
               secondary={
                 <Typography variant="caption" color="text.secondary">
-                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.genres.length > 0 ? ` · ${v.genres.map(formatGenre).join(', ')}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}{v.playCount > 0 ? ` · ${t('artists.detail.totalPlayCount', { count: v.playCount })}` : ''}
+                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{v.genres.length > 0 ? ` · ${v.genres.map(formatGenre).join(', ')}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
                 </Typography>
               }
             />
+            {v.playCount > 0 && (
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ flexShrink: 0, textAlign: 'left', ml: 1 }}>
+                {t('artists.detail.totalPlayCount', { count: v.playCount })}
+              </Typography>
+            )}
             <Stack direction="row" alignItems="center" gap={0.5} sx={{ flexShrink: 0, ml: 1 }}>
               <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
                 <Box sx={{ display: 'flex' }}>{STATUS_ICON[v.downloadStatus] ?? null}</Box>
@@ -102,16 +119,6 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
               {v.downloadStatus === 'done' && isLowBitrate(v.bitrate) && (
                 <Tooltip title={t('playlists.videoList.lowQuality', { bitrate: v.bitrate })}>
                   <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-                </Tooltip>
-              )}
-              {v.hqFileDownloaded && (
-                <Tooltip title={t('playlists.videoList.hqDownloaded')}>
-                  <HqIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                </Tooltip>
-              )}
-              {!v.hqFileDownloaded && v.betterQualityExists && (
-                <Tooltip title={t('playlists.videoList.hqAvailable')}>
-                  <HqIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
                 </Tooltip>
               )}
               {v.duration && (

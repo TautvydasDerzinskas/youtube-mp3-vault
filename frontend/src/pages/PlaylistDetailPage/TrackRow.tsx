@@ -51,9 +51,21 @@ export function TrackRow({
         )}
       </Box>
 
-      <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1, flexShrink: 0 }}>
-        <MusicNoteIcon sx={{ fontSize: 16 }} />
-      </Avatar>
+      <Box sx={{ position: 'relative', flexShrink: 0 }}>
+        <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1 }}>
+          <MusicNoteIcon sx={{ fontSize: 16 }} />
+        </Avatar>
+        {(v.hqFileDownloaded || v.betterQualityExists) && (
+          <Tooltip title={v.hqFileDownloaded ? t('playlists.videoList.hqDownloaded') : t('playlists.videoList.hqAvailable')}>
+            <Box sx={{
+              position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              bgcolor: 'rgba(0,0,0,0.45)', borderRadius: 1,
+            }}>
+              <HqIcon sx={{ fontSize: 18, color: v.hqFileDownloaded ? 'success.main' : 'grey.300' }} />
+            </Box>
+          </Tooltip>
+        )}
+      </Box>
 
       <Box sx={{ minWidth: 0, flexGrow: 1 }}>
         <Typography variant="body2" noWrap
@@ -67,9 +79,10 @@ export function TrackRow({
         )}
       </Box>
 
-      {v.genres.length > 0 && (
-        <Typography variant="caption" color="text.secondary" noWrap sx={{ width: 110, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
-          {v.genres.map(formatGenre).join(', ')}
+      {v.playCount > 0 && (
+        <Typography variant="caption" color="text.secondary" noWrap
+          sx={{ width: 70, flexShrink: 0, textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
+          {t('artists.detail.totalPlayCount', { count: v.playCount })}
         </Typography>
       )}
 
@@ -77,26 +90,17 @@ export function TrackRow({
         {v.releaseYear ?? ''}
       </Typography>
 
+      {v.genres.length > 0 && (
+        <Typography variant="caption" color="text.secondary" noWrap sx={{ width: 110, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
+          {v.genres.map(formatGenre).join(', ')}
+        </Typography>
+      )}
+
       <Typography variant="caption" color="text.secondary" sx={{ width: 44, flexShrink: 0, textAlign: 'right' }}>
         {formatDuration(v.duration)}
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-        {v.playCount > 0 && (
-          <Typography variant="caption" color="text.secondary" noWrap sx={{ mr: 0.5, display: { xs: 'none', sm: 'block' } }}>
-            {t('artists.detail.totalPlayCount', { count: v.playCount })}
-          </Typography>
-        )}
-        {v.hqFileDownloaded && (
-          <Tooltip title={t('playlists.videoList.hqDownloaded')}>
-            <HqIcon sx={{ fontSize: 18, color: 'success.main' }} />
-          </Tooltip>
-        )}
-        {!v.hqFileDownloaded && v.betterQualityExists && (
-          <Tooltip title={t('playlists.videoList.hqAvailable')}>
-            <HqIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-          </Tooltip>
-        )}
         {v.downloadStatus !== 'done' && (
           <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
             <Box sx={{ display: 'flex' }}>{STATUS_ICON[v.downloadStatus] ?? null}</Box>
