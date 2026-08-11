@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { mkdir, unlink, rename, stat } from 'fs/promises';
 import { join } from 'path';
 import { config } from '../config';
-import { runYtDlp } from './ytdlpProcess';
+import { runYtDlp, potProviderExtractorArgs } from './ytdlpProcess';
 import { prisma } from './prisma';
 
 /** Cross-platform safe filename — works on Windows, macOS, Android. */
@@ -121,7 +121,16 @@ const RATE_LIMIT_PATTERNS = [
   /handshake operation timed out/i,
   /\b429\b/,
   /too many requests/i,
-  /confirm you'?re not a bot/i,
+  // Deliberately anchored on "not a bot" rather than the full "confirm
+  // you're not a bot" phrase — yt-dlp/YouTube's actual wording uses a curly
+  // apostrophe (U+2019 "'", not the ASCII "'" this file's source is written
+  // in), which silently broke a literal-apostrophe match here and let real
+  // bot-check responses fall through to SIGN_IN_REQUIRED_PATTERN below,
+  // wrongly treating a transient, IP-level block as a permanent per-video
+  // one (isAvailable: false, hidden everywhere, never retried). "not a bot"
+  // has no punctuation to get this wrong about and is specific enough on
+  // its own not to false-positive on anything else.
+  /not a bot/i,
 ];
 
 export function isLikelyRateLimited(message: string): boolean {
@@ -181,6 +190,7 @@ export async function downloadVideo(
     '--embed-thumbnail',
     '--add-metadata',
     '--extractor-args', 'youtube:player_client=default,android,-tv',
+    ...potProviderExtractorArgs(),
     '--http-chunk-size', '10M',
     '--retries', '20',
     '--fragment-retries', '20',

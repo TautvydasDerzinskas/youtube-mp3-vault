@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Stack } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Stack, Tooltip } from '@mui/material';
 import { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { SyncReport, syncReportsApi } from '../../api/syncReports';
+
+// Capped so a run with a lot of failures doesn't turn the dialog into a
+// full-screen list — scrolls independently within this height instead.
+const FAILURE_LIST_MAX_HEIGHT = 140;
 
 interface Props {
   // Queue of unseen reports, oldest first — shown one at a time so a burst
@@ -93,6 +97,18 @@ export function SyncReportModal({ reports, onDone }: Props) {
                     </Typography>
                   ))}
                 </Box>
+                {current.failureDetails.length > 0 && (
+                  <Box sx={{ pl: 2.5, mt: 0.5, maxHeight: FAILURE_LIST_MAX_HEIGHT, overflowY: 'auto' }}>
+                    {current.failureDetails.map((f, i) => (
+                      <Tooltip key={`${f.title}-${i}`} title={f.message} placement="top" arrow enterTouchDelay={0}>
+                        <Typography variant="caption" color="text.secondary" noWrap
+                          sx={{ display: 'block', cursor: 'help', textDecoration: 'underline dotted' }}>
+                          {f.title} — {t(`playlists.syncReport.failureReason.${f.reason}`)}
+                        </Typography>
+                      </Tooltip>
+                    ))}
+                  </Box>
+                )}
               </>
             )}
           </Stack>

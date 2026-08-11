@@ -60,6 +60,20 @@ function isForeignKeyRestrictViolation(err: unknown): boolean {
 // Playlists page's stats modal is for.
 export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq';
 
+export interface SyncFailureDetail {
+  title: string;
+  reason: string;
+  message: string;
+}
+
+// Defensive ceiling on SyncStats.failures below — a playlist whose sync run
+// fails on hundreds/thousands of videos at once (a real yt-dlp outage, say)
+// shouldn't turn one SyncReport row into an unbounded JSON blob just because
+// failureReasons' bucket counts already summarize the total either way; the
+// modal's own detail list is for "which specific videos, and why" on an
+// ordinary run, not a full incident log.
+const MAX_FAILURE_DETAILS = 50;
+
 // Accumulated across a single run of downloadPendingVideos (and, for a full
 // sync, refreshPlaylistFromYoutube right before it) and written out as one
 // SyncReport row once the run finishes — see finalizeSyncReport. Mutated in
@@ -72,13 +86,17 @@ export interface SyncStats {
   recoveredCount: number;
   failedCount: number;
   failureReasons: Record<string, number>;
+  // Per-video detail behind those bucket counts — capped at
+  // MAX_FAILURE_DETAILS (failedCount itself is never capped, so the two can
+  // diverge on a very large run; see the modal, which surfaces both).
+  failures: SyncFailureDetail[];
   newHqCount: number;
 }
 
 function createSyncStats(): SyncStats {
   return {
     addedCount: 0, removedCount: 0, downloadedCount: 0, recoveredCount: 0,
-    failedCount: 0, failureReasons: {}, newHqCount: 0,
+    failedCount: 0, failureReasons: {}, failures: [], newHqCount: 0,
   };
 }
 
@@ -124,6 +142,7 @@ async function finalizeSyncReport(params: {
         recoveredCount: stats.recoveredCount,
         failedCount: stats.failedCount,
         failureReasons: stats.failureReasons,
+        failureDetails: stats.failures as unknown as Prisma.InputJsonValue,
         newHqCount: stats.newHqCount,
       },
     });
@@ -519,6 +538,13 @@ export async function downloadPendingVideos(
           report.stats.failedCount++;
           const reason = categorizeFailure(message);
           report.stats.failureReasons[reason] = (report.stats.failureReasons[reason] ?? 0) + 1;
+          if (report.stats.failures.length < MAX_FAILURE_DETAILS) {
+            // Same 500-char truncation as the downloadError column this
+            // mirrors (see the playlistVideo.update calls below) — plenty
+            // for a human to actually read the cause, short of storing
+            // yt-dlp's full (sometimes very long) stderr verbatim.
+            report.stats.failures.push({ title: video.title, reason, message: message.slice(0, 500) });
+          }
         }
         const permanentlyUnavailable = isAgeRestricted(message) || isSignInRequired(message) || isPermanentlyUnavailable(message);
 

@@ -1,9 +1,22 @@
 import { spawn } from 'child_process';
+import { config } from '../config';
 
 export interface YtDlpResult {
   code: number | null;
   stdout: string;
   stderr: string;
+}
+
+// Extra `--extractor-args` pair pointing yt-dlp's youtubepot-bgutilhttp
+// plugin at the bgutil-ytdlp-pot-provider sidecar (see docker-compose.yml
+// and config.ts's bgutilProviderUrl) — shared so both yt-dlp call sites
+// (downloader.ts's downloadVideo, youtube.ts's fetchPlaylist) stay in sync
+// rather than each hand-rolling the same conditional. Returns an empty
+// array when unconfigured, so spreading this into an args array is always
+// safe regardless of whether the sidecar is actually running.
+export function potProviderExtractorArgs(): string[] {
+  if (!config.bgutilProviderUrl) return [];
+  return ['--extractor-args', `youtubepot-bgutilhttp:base_url=${config.bgutilProviderUrl}`];
 }
 
 // yt-dlp has no built-in ceiling of its own — a stalled network read or a

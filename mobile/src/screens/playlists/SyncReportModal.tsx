@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, Portal, Text, useTheme } from 'react-native-paper';
 import { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,10 @@ interface Props {
   // Called once every report in the queue has been acknowledged.
   onDone: () => void;
 }
+
+// Capped so a run with a lot of failures doesn't turn the dialog into a
+// full-screen list — scrolls independently within this height instead.
+const FAILURE_LIST_MAX_HEIGHT = 140;
 
 // Single largest applicable unit, same minimal style as timeAgo in
 // utils/format.ts — a run this modal reports on is usually seconds to a few
@@ -34,6 +38,10 @@ export function SyncReportModal({ reports, onDone }: Props) {
   const theme = useTheme();
   const [index, setIndex] = useState(0);
   const [acknowledging, setAcknowledging] = useState(false);
+  // No hover on touch, so a failure row's full error message (see web's
+  // Tooltip equivalent) is revealed by tapping instead — index into the
+  // current report's failureDetails, reset whenever the report changes.
+  const [expandedFailure, setExpandedFailure] = useState<number | null>(null);
   const current = reports[index];
 
   const handleAcknowledge = async () => {
@@ -46,6 +54,7 @@ export function SyncReportModal({ reports, onDone }: Props) {
     } finally {
       setAcknowledging(false);
     }
+    setExpandedFailure(null);
     if (index + 1 < reports.length) setIndex(index + 1);
     else onDone();
   };
@@ -90,6 +99,28 @@ export function SyncReportModal({ reports, onDone }: Props) {
                       <Text key={text} style={[styles.reason, { color: theme.colors.onSurfaceVariant }]}>{text}</Text>
                     ))}
                   </View>
+                  {current.failureDetails.length > 0 && (
+                    <ScrollView style={[styles.reasons, styles.failureList]} nestedScrollEnabled>
+                      {current.failureDetails.map((f, i) => (
+                        <Pressable
+                          key={`${f.title}-${i}`}
+                          onPress={() => setExpandedFailure(expandedFailure === i ? null : i)}
+                        >
+                          <Text
+                            numberOfLines={expandedFailure === i ? undefined : 1}
+                            style={[styles.failureTitle, { color: theme.colors.onSurfaceVariant }]}
+                          >
+                            {f.title} — {t(`playlists.syncReport.failureReason.${f.reason}`)}
+                          </Text>
+                          {expandedFailure === i && (
+                            <Text style={[styles.failureMessage, { color: theme.colors.onSurfaceVariant }]}>
+                              {f.message}
+                            </Text>
+                          )}
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  )}
                 </>
               )}
             </View>
@@ -111,4 +142,7 @@ const styles = StyleSheet.create({
   row: { paddingVertical: 2, fontSize: 14 },
   reasons: { paddingLeft: 14 },
   reason: { fontSize: 12, paddingVertical: 1 },
+  failureList: { maxHeight: FAILURE_LIST_MAX_HEIGHT, marginTop: 4 },
+  failureTitle: { fontSize: 12, paddingVertical: 2, textDecorationLine: 'underline', textDecorationStyle: 'dotted' },
+  failureMessage: { fontSize: 11, paddingBottom: 4, fontStyle: 'italic' },
 });

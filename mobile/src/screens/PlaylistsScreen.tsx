@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Banner, FAB, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
@@ -50,13 +50,43 @@ export function PlaylistsScreen() {
   const canGenerateSimilar = online && lastfmDiscoverAvailable;
 
   // Fetched once on mount — whatever's unseen at that point is shown as a
-  // queue in SyncReportModal; a run that finishes while the screen is
-  // already open doesn't retroactively pop the modal, it just waits for the
-  // next visit like any other unseen report (mirrors web's PlaylistsPage).
+  // queue in SyncReportModal. Also re-checked below whenever a playlist
+  // that was busy stops being busy, so a run that finishes while the user
+  // is still sitting on this screen pops the modal too, not just ones from
+  // before the screen was opened (mirrors web's PlaylistsPage).
   const [unseenReports, setUnseenReports] = useState<SyncReport[]>([]);
   useEffect(() => {
     syncReportsApi.listUnseen().then(setUnseenReports).catch(() => {});
   }, []);
+
+  // usePlaylists already polls the playlist list every ~3s while anything is
+  // syncing/retrying/generating (see its schedulePoll) — this piggybacks on
+  // that same polled data rather than running its own timer. Whenever a
+  // playlist id that was mid-run on the previous check is no longer mid-run
+  // now, that's a sync/retry/scan-hq pass finishing — syncStatus flips back
+  // to idle/error a moment before its SyncReport row is actually written
+  // (see downloadPendingVideos's finally block in backend/syncService.ts),
+  // but that gap is milliseconds against a 3s poll interval, so by the time
+  // this fetch lands the report is already there. New reports are appended
+  // rather than replacing the array, so this can't disrupt a queue the
+  // modal is already partway through showing.
+  const previouslyBusyIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const busyIds = new Set(
+      playlists.filter(p => p.syncStatus === 'syncing' || p.syncStatus === 'retrying').map(p => p.id)
+    );
+    const justFinished = [...previouslyBusyIdsRef.current].some(id => !busyIds.has(id));
+    previouslyBusyIdsRef.current = busyIds;
+    if (!justFinished) return;
+
+    syncReportsApi.listUnseen().then(fresh => {
+      setUnseenReports(prev => {
+        const knownIds = new Set(prev.map(r => r.id));
+        const additions = fresh.filter(r => !knownIds.has(r.id));
+        return additions.length > 0 ? [...prev, ...additions] : prev;
+      });
+    }).catch(() => {});
+  }, [playlists]);
 
   const generatedSourceIds = useMemo(() => {
     const set = new Set<string>();

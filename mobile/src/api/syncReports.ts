@@ -2,6 +2,12 @@ import client from './client';
 
 export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq';
 
+export interface SyncFailureDetail {
+  title: string;
+  reason: string;
+  message: string;
+}
+
 export interface SyncReport {
   id: string;
   playlistId: string;
@@ -18,6 +24,10 @@ export interface SyncReport {
   // sign_in_required, unavailable, rate_limited, other) — only buckets that
   // actually occurred this run are present.
   failureReasons: Record<string, number>;
+  // Per-video detail behind those bucket counts — capped server-side (see
+  // MAX_FAILURE_DETAILS in syncService.ts), so this can be shorter than
+  // failedCount on a run with a lot of failures.
+  failureDetails: SyncFailureDetail[];
   newHqCount: number;
   createdAt: string;
 }

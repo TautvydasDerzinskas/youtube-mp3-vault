@@ -1,4 +1,4 @@
-import { runYtDlp } from './ytdlpProcess';
+import { runYtDlp, potProviderExtractorArgs } from './ytdlpProcess';
 
 export interface VideoEntry {
   id: string;
@@ -77,6 +77,7 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
     // checks partway through (see downloader.ts's downloadVideo, which
     // hit the same thing) — the android client avoids that requirement.
     '--extractor-args', 'youtube:player_client=default,android,-tv',
+    ...potProviderExtractorArgs(),
     playlistUrl,
   ];
 
@@ -178,7 +179,16 @@ async function runYtDlpSearch(searchQuery: string): Promise<Record<string, unkno
     // authoritative playlist contents, so partial/incomplete output is still
     // useful rather than something to reject.
     const { stdout: raw } = await runYtDlp(
-      ['--flat-playlist', '--dump-json', '--no-warnings', '--ignore-errors', searchQuery],
+      [
+        '--flat-playlist', '--dump-json', '--no-warnings', '--ignore-errors',
+        // Same bot-check mitigation as fetchPlaylist/downloadVideo above —
+        // this call site never had it, which was just an oversight, not a
+        // deliberate omission (a search is exactly as exposed to the same
+        // player_client/PO-token requirements as those are).
+        '--extractor-args', 'youtube:player_client=default,android,-tv',
+        ...potProviderExtractorArgs(),
+        searchQuery,
+      ],
       SEARCH_TIMEOUT_MS,
     );
     return raw

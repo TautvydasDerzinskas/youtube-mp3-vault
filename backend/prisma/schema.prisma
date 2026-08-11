@@ -312,6 +312,14 @@ model SyncReport {
   // {"rate_limited": 2, "unavailable": 1} — only buckets that actually
   // occurred this run are present.
   failureReasons  Json @default("{}")
+  // Per-video detail behind those bucket counts — [{title, reason, message}],
+  // capped at MAX_FAILURE_DETAILS in syncService.ts so one run's failures
+  // can't turn into an unbounded JSON blob; failedCount above is the
+  // uncapped total. Lets the stats modal show the actual yt-dlp error per
+  // video instead of just a bucket count, since a video that ends up here
+  // (isAvailable: false) is hidden everywhere else in the app with no other
+  // way to see why.
+  failureDetails Json @default("[]")
 
   // A slskd/JioSaavn upgrade newly found (or, with HQ auto-download on,
   // newly downloaded) this run — see onHqFound in slskdQualityWorker.ts.
