@@ -22,7 +22,7 @@ export function PlaylistDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<PlaylistDetailRouteProp>();
   const { playlistId } = route.params;
-  const { handleTogglePlay } = usePlayer();
+  const { handleTogglePlay, isShuffle } = usePlayer();
 
   const {
     playlist, videos, filteredTracks, orderedPlayableTracks, firstPlayableTrack,
@@ -38,7 +38,11 @@ export function PlaylistDetailScreen() {
   const playableQueue = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
   const handlePlayFirst = () => {
-    if (firstPlayableTrack) handleTogglePlay(playlistId, firstPlayableTrack, orderedPlayableTracks);
+    if (orderedPlayableTracks.length === 0) return;
+    const startTrack = isShuffle
+      ? orderedPlayableTracks[Math.floor(Math.random() * orderedPlayableTracks.length)]
+      : firstPlayableTrack;
+    if (startTrack) handleTogglePlay(playlistId, startTrack, orderedPlayableTracks);
   };
 
   if (playlist === 'loading' || videos === 'loading') {

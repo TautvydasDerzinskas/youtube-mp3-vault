@@ -77,7 +77,7 @@ export default function PlaylistsPage() {
     }).catch(() => {});
   }, [playlists]);
 
-  const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist } = usePlayer();
+  const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist, isShuffle } = usePlayer();
 
   // A generated playlist's own row already shows this in its own list entry
   // (via sourcePlaylistId/sourcePlaylistName) — derived here from the same
@@ -103,14 +103,18 @@ export default function PlaylistsPage() {
   // background once the video list resolves — same queue-building logic
   // handleTogglePlay would do on its own, done here up front so the very
   // first track played is deterministically the playlist's first (by
-  // position), not whatever the queue fetch happens to put first.
+  // position), not whatever the queue fetch happens to put first — unless
+  // shuffle is on, in which case starting on track 1 every time would defeat
+  // the point, so a random track is picked instead.
   const handlePlayFirst = async (e: React.MouseEvent, playlist: Playlist) => {
     e.stopPropagation();
     navigate(`/playlists/${playlist.id}`);
     try {
       const { videos } = await playlistsApi.getVideos(playlist.id);
       const playable = videos.filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position);
-      if (playable.length > 0) handleTogglePlay(playlist.id, playable[0], playable);
+      if (playable.length === 0) return;
+      const startTrack = isShuffle ? playable[Math.floor(Math.random() * playable.length)] : playable[0];
+      handleTogglePlay(playlist.id, startTrack, playable);
     } catch {
       // navigation already happened — nothing else to do
     }

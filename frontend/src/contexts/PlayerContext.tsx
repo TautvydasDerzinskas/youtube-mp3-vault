@@ -77,6 +77,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current.play().catch(() => {});
   }, [current]);
 
+  useEffect(() => {
+    if (!current) {
+      document.title = 'YoutubeVault';
+      return;
+    }
+    const { title, artist } = current.video;
+    document.title = `YoutubeVault :: ${artist ? `${artist} - ${title}` : title}`;
+  }, [current]);
+
   // Broadcasts "now playing" (see api/nowPlaying.ts) only while genuinely
   // playing, not merely loaded/paused — isAudioPlaying only flips true once
   // the <audio> element's own 'play' DOM event fires (see AppLayout.tsx),

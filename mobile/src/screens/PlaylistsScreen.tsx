@@ -31,7 +31,7 @@ export function PlaylistsScreen() {
   const navigation = useNavigation();
   const online = useOnlineStatus();
   const { lastfmDiscoverAvailable } = useAuth();
-  const { handleTogglePlay, stopIfPlaylist } = usePlayer();
+  const { handleTogglePlay, stopIfPlaylist, isShuffle } = usePlayer();
   const {
     playlists, loading, error,
     handleAdded, handleSync, handleRetryFailed, handleScanHq, handleTogglePause, handleRename, handleDelete, handleGenerateSimilar,
@@ -109,7 +109,9 @@ export function PlaylistsScreen() {
     try {
       const { videos } = await playlistsApi.getVideos(playlist.id);
       const playable = videos.filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position);
-      if (playable.length > 0) handleTogglePlay(playlist.id, playable[0], playable);
+      if (playable.length === 0) return;
+      const startTrack = isShuffle ? playable[Math.floor(Math.random() * playable.length)] : playable[0];
+      handleTogglePlay(playlist.id, startTrack, playable);
     } catch {
       // Navigation already happened — nothing else to do.
     }

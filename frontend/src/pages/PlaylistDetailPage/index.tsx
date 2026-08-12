@@ -16,9 +16,13 @@ export default function PlaylistDetailPage() {
     sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks, orderedPlayableTracks, firstPlayableTrack,
   } = usePlaylistDetail();
-  const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
+  const { nowPlaying, isAudioPlaying, handleTogglePlay, isShuffle } = usePlayer();
   const handlePlayFirst = () => {
-    if (firstPlayableTrack) handleTogglePlay(playlistId, firstPlayableTrack, orderedPlayableTracks);
+    if (orderedPlayableTracks.length === 0) return;
+    const startTrack = isShuffle
+      ? orderedPlayableTracks[Math.floor(Math.random() * orderedPlayableTracks.length)]
+      : firstPlayableTrack;
+    if (startTrack) handleTogglePlay(playlistId, startTrack, orderedPlayableTracks);
   };
   const location = useLocation();
   const listRef = useRef<ListImperativeAPI>(null);
