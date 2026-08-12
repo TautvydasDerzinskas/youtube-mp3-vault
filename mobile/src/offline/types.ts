@@ -39,6 +39,14 @@ export interface OfflinePlaylistEntry {
   // the server's manifest (tracks added → downloaded, tracks removed/no
   // longer available → deleted from disk and dropped from this array).
   tracks: OfflineTrackEntry[];
+  // False from the moment a playlist is enabled/seeded until syncPlaylist's
+  // download loop actually finishes (see OfflineDownloadsContext) — lets the
+  // app-start reconciliation tell "first sync got interrupted by the app
+  // being killed" apart from "fully synced, nothing changed since." Missing
+  // entirely on entries written before this field existed, which is treated
+  // as true (see OfflineDownloadsContext's isEntryComplete) since those were
+  // all written by a version that only ever persisted a finished sync.
+  syncComplete?: boolean;
 }
 
 export interface OfflineIndexData {

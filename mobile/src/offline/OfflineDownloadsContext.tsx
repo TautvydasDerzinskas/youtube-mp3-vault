@@ -249,7 +249,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       // overwritten in place by the time this runs.
       const replacedOldAssets: OfflineTrackEntry[] = [];
 
-      const flush = () => {
+      const flush = (complete: boolean) => {
         persistEntry({
           playlistId,
           title: manifest.playlist.title,
@@ -257,6 +257,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
           thumbnailUrl: manifest.playlist.thumbnailUrl,
           lastSyncedAt: manifest.playlist.lastSyncedAt,
           tracks: [...downloaded].sort((a, b) => a.position - b.position),
+          syncComplete: complete,
         });
       };
 
@@ -278,13 +279,18 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
           setPlaylistProgress(playlistId, { completed });
           if (sinceLastPersist >= PERSIST_EVERY) {
             sinceLastPersist = 0;
-            flush();
+            flush(false);
           }
         }
       });
 
       await removeOfflineTracks(replacedOldAssets);
-      flush();
+      // The loop above ran to completion (as opposed to the app being killed
+      // partway through) — mark the entry complete regardless of any
+      // per-track failures, which surface via `error` instead; see
+      // isEntryComplete/the startup reconciliation effect below for what
+      // this gates.
+      flush(true);
       setPlaylistProgress(playlistId, {
         syncing: false,
         error: failures > 0 ? `${failures} track(s) failed to download` : null,
@@ -328,6 +334,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
     // "on" state right away, before the first sync has fetched anything.
     persistEntry({
       playlistId, title: '', customName: null, thumbnailUrl: null, lastSyncedAt: null, tracks: [],
+      syncComplete: false,
     });
     // Persists the toggle server-side (so a reinstall can restore it — see
     // the reconciliation effect below) and writes the admin-log entry;
@@ -394,6 +401,10 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
             if (t.assetId) knownAssetIds.add(t.assetId);
           }
         }
+        // Assets created just before a previous session was killed mid-sync
+        // may not have made it into any entry's tracks above yet — see
+        // PENDING_ASSETS_FILE in offlineIndex.ts.
+        for (const id of offlineIndex.getPendingAssetIds()) knownAssetIds.add(id);
         await removeAndroidOrphanAssets(knownAssetIds);
       }
       try {
@@ -408,7 +419,20 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
         // whatever's already in the local index below still gets diffed.
       }
       for (const playlistId of Object.keys(entriesRef.current)) {
-        refreshDiff(playlistId).catch(() => {});
+        const entry = entriesRef.current[playlistId];
+        // syncComplete === false means this entry's sync was still running
+        // when the app last stopped (killed mid-download, not a normal
+        // background/quit) — resume it directly rather than just diffing,
+        // otherwise it sits "enabled" with no further progress forever (the
+        // diff against its own incomplete track list would undercount what's
+        // actually missing, and nothing else ever re-invokes syncPlaylist for
+        // an entry that already exists). Missing entirely (entries written
+        // before this field existed) reads as complete — see types.ts.
+        if (entry && entry.syncComplete === false) {
+          syncPlaylist(playlistId).catch(() => {});
+        } else {
+          refreshDiff(playlistId).catch(() => {});
+        }
       }
       flushPlayQueue().catch(() => {});
     };

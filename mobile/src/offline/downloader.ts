@@ -3,6 +3,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import { getDownloadSource, ManifestTrack } from '../api/playlists';
 import { OfflineTrackEntry } from './types';
+import { offlineIndex } from './offlineIndex';
 
 // Android: saved into the device's shared Music library via
 // expo-media-library, so any other music app/file manager can see and play
@@ -103,6 +104,10 @@ export async function downloadTrack(
 
     const asset = await MediaLibrary.Asset.create(temp.uri);
     await addToAndroidAlbum(asset);
+    // Recorded immediately, well before syncPlaylist's own (batched) index
+    // flush — see PENDING_ASSETS_FILE in offlineIndex.ts for why this can't
+    // just wait for that flush.
+    offlineIndex.addPendingAsset(asset.id);
     try {
       if (temp.exists) temp.delete();
     } catch {
@@ -195,15 +200,17 @@ export async function removeOfflineTracks(entries: OfflineTrackEntry[]): Promise
 }
 
 // One-time (per app session) cleanup for Android assets that ended up
-// orphaned in the shared YoutubeVault album — leftovers from either of two
-// past bugs, both now fixed at the source: an HQ-upgraded track's old asset
-// never being deleted (see removeOfflineTracks above), and an interrupted
-// sync (app killed, or network dropped mid-sync) leaving a freshly-created
-// asset whose index entry never got persisted (OfflineDownloadsContext only
-// writes its index every PERSIST_EVERY completions). Anything in the album
-// that isn't referenced by any currently-known assetId is deleted in one
-// batch — one confirmation dialog for however many have piled up, not one
-// per orphan.
+// orphaned in the shared YoutubeVault album — mainly an HQ-upgraded track's
+// old asset never being deleted (see removeOfflineTracks above). `knownAssetIds`
+// must be the union of the main index's assetIds *and*
+// offlineIndex.getPendingAssetIds() (see the caller in OfflineDownloadsContext,
+// and PENDING_ASSETS_FILE in offlineIndex.ts) — otherwise an asset created
+// just before the app was killed mid-sync, but not yet covered by the main
+// index's own batched flush, would be misidentified as an orphan and deleted
+// (with the user prompted to confirm) on the very next launch even though
+// it's a perfectly good, already-synced file. Anything in the album that
+// isn't referenced by any currently-known assetId is deleted in one batch —
+// one confirmation dialog for however many have piled up, not one per orphan.
 //
 // Must only be called before any sync has started in this app session (see
 // the startup effect in OfflineDownloadsContext) — running it concurrently
