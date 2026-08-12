@@ -22,7 +22,7 @@ export function PlaylistDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<PlaylistDetailRouteProp>();
   const { playlistId } = route.params;
-  const { handleTogglePlay, isShuffle } = usePlayer();
+  const { nowPlaying, isAudioPlaying, handleTogglePlay, isShuffle } = usePlayer();
 
   const {
     playlist, videos, filteredTracks, orderedPlayableTracks, firstPlayableTrack,
@@ -37,8 +37,18 @@ export function PlaylistDetailScreen() {
 
   const playableQueue = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
+  const isPlaylistPlaying = nowPlaying?.playlistId === playlistId && isAudioPlaying;
+
   const handlePlayFirst = () => {
     if (orderedPlayableTracks.length === 0) return;
+    // Already playing this playlist — the header button acts as pause/resume
+    // on the current track rather than jumping to a new (possibly random)
+    // one.
+    if (nowPlaying?.playlistId === playlistId) {
+      const current = orderedPlayableTracks.find(t => t.id === nowPlaying.videoId) ?? firstPlayableTrack;
+      if (current) handleTogglePlay(playlistId, current, orderedPlayableTracks);
+      return;
+    }
     const startTrack = isShuffle
       ? orderedPlayableTracks[Math.floor(Math.random() * orderedPlayableTracks.length)]
       : firstPlayableTrack;
@@ -62,7 +72,7 @@ export function PlaylistDetailScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
-      <Header playlist={playlist} canPlayFirst={firstPlayableTrack !== null} onPlayFirst={handlePlayFirst} />
+      <Header playlist={playlist} canPlayFirst={firstPlayableTrack !== null} onPlayFirst={handlePlayFirst} isPlaying={isPlaylistPlaying} />
       <FilterBar sort={sort} onSortChange={setSort} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} />
       <FlatList
         data={filteredTracks}

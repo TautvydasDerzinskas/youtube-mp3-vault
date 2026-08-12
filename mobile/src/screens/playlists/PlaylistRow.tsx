@@ -13,6 +13,7 @@ interface PlaylistRowProps {
   canGenerateSimilar: boolean;
   hasGeneratedPlaylist: boolean;
   isLockedBySource: boolean;
+  isPlaying: boolean;
   onOpen: () => void;
   onPlayFirst: () => void;
   onSync: () => void;
@@ -34,7 +35,7 @@ interface PlaylistRowProps {
 // phone-width row. "Sync offline stored files" lives there too, mobile-only
 // (web has no offline-download feature) — see OfflineSyncDiffModal.tsx.
 export function PlaylistRow({
-  playlist, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
+  playlist, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource, isPlaying,
   onOpen, onPlayFirst, onSync, onRetryFailed, onScanHq, onTogglePause, onRename, onDelete, onGenerateSimilar,
   onSyncOffline,
 }: PlaylistRowProps) {
@@ -83,7 +84,7 @@ export function PlaylistRow({
       ) : (
         <Pressable onPress={onPlayFirst} disabled={playlist.downloadedCount === 0} hitSlop={8} style={styles.playSlot}>
           <MaterialCommunityIcons
-            name="play-circle"
+            name={isPlaying ? 'pause-circle' : 'play-circle'}
             size={32}
             color={playlist.downloadedCount === 0 ? theme.colors.outlineVariant : theme.colors.primary}
           />

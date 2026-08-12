@@ -17,8 +17,17 @@ export default function PlaylistDetailPage() {
     filteredTracks, playableTracks, orderedPlayableTracks, firstPlayableTrack,
   } = usePlaylistDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay, isShuffle } = usePlayer();
+  const isPlaylistPlaying = nowPlaying?.playlistId === playlistId && isAudioPlaying;
   const handlePlayFirst = () => {
     if (orderedPlayableTracks.length === 0) return;
+    // Already playing this playlist — the header button acts as pause/resume
+    // on the current track rather than jumping to a new (possibly random)
+    // one.
+    if (nowPlaying?.playlistId === playlistId) {
+      const current = orderedPlayableTracks.find(t => t.id === nowPlaying.videoId) ?? firstPlayableTrack;
+      if (current) handleTogglePlay(playlistId, current, orderedPlayableTracks);
+      return;
+    }
     const startTrack = isShuffle
       ? orderedPlayableTracks[Math.floor(Math.random() * orderedPlayableTracks.length)]
       : firstPlayableTrack;
@@ -89,6 +98,7 @@ export default function PlaylistDetailPage() {
         onSearchQueryChange={setSearchQuery}
         onPlayFirst={handlePlayFirst}
         canPlayFirst={firstPlayableTrack !== null}
+        isPlaying={isPlaylistPlaying}
       />
       {/* Takes whatever height Header didn't use — TrackList's own virtualized
           list is what actually scrolls, Header stays pinned above it. */}

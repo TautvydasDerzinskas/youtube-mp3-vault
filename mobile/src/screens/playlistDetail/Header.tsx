@@ -12,6 +12,7 @@ interface HeaderProps {
   playlist: Playlist;
   canPlayFirst: boolean;
   onPlayFirst: () => void;
+  isPlaying: boolean;
 }
 
 // Mirrors frontend/src/pages/PlaylistDetailPage/Header.tsx (thumbnail,
@@ -21,7 +22,7 @@ interface HeaderProps {
 // than a separate in-progress screen/dialog, the detail screen itself
 // (reached by tapping any row, busy or not) shows this banner up top when
 // relevant, right above the same track list.
-export function Header({ playlist, canPlayFirst, onPlayFirst }: HeaderProps) {
+export function Header({ playlist, canPlayFirst, onPlayFirst, isPlaying }: HeaderProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const { isEnabled, enableOffline, disableOffline, progress: offlineProgressMap } = useOfflineDownloads();
@@ -58,7 +59,7 @@ export function Header({ playlist, canPlayFirst, onPlayFirst }: HeaderProps) {
       <View style={styles.topRow}>
         <Pressable onPress={onPlayFirst} disabled={!canPlayFirst} hitSlop={8}>
           <MaterialCommunityIcons
-            name="play-circle"
+            name={isPlaying ? 'pause-circle' : 'play-circle'}
             size={40}
             color={canPlayFirst ? theme.colors.primary : theme.colors.outlineVariant}
           />

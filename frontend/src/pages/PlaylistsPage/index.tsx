@@ -113,7 +113,12 @@ export default function PlaylistsPage() {
       const { videos } = await playlistsApi.getVideos(playlist.id);
       const playable = videos.filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position);
       if (playable.length === 0) return;
-      const startTrack = isShuffle ? playable[Math.floor(Math.random() * playable.length)] : playable[0];
+      // Already playing this playlist — toggle pause/resume on the current
+      // track instead of jumping to a new (possibly random) one.
+      const isCurrentPlaylist = nowPlaying?.playlistId === playlist.id;
+      const startTrack = isCurrentPlaylist
+        ? (playable.find(v => v.id === nowPlaying!.videoId) ?? playable[0])
+        : (isShuffle ? playable[Math.floor(Math.random() * playable.length)] : playable[0]);
       handleTogglePlay(playlist.id, startTrack, playable);
     } catch {
       // navigation already happened — nothing else to do

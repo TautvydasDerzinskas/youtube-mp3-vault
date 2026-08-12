@@ -1,5 +1,5 @@
 import { Accordion, AccordionSummary, AccordionDetails, Paper, Tooltip, IconButton, Box } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, PlayArrow as PlayArrowIcon } from '@mui/icons-material';
+import { ExpandMore as ExpandMoreIcon, PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Playlist, PlaylistVideo } from '../../../api/youtube';
@@ -50,13 +50,14 @@ export function PlaylistRow({
   // once candidate discovery finishes) — expanding would just show a
   // confusing "no videos found" empty state, so don't offer it at all.
   const isGenerating = playlist.syncStatus === 'generating';
+  const isRowPlaying = nowPlaying?.playlistId === playlist.id && isAudioPlaying;
 
   const playButton = (
-    <Tooltip title={t('playlists.videoList.play')}>
+    <Tooltip title={isRowPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
       <span>
         <IconButton size="small" disabled={playlist.downloadedCount === 0}
           onClick={e => onPlayFirst(e, playlist)} sx={{ color: 'primary.main', flexShrink: 0 }}>
-          <PlayArrowIcon />
+          {isRowPlaying ? <PauseIcon /> : <PlayArrowIcon />}
         </IconButton>
       </span>
     </Tooltip>

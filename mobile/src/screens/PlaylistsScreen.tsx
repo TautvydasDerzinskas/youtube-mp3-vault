@@ -31,7 +31,7 @@ export function PlaylistsScreen() {
   const navigation = useNavigation();
   const online = useOnlineStatus();
   const { lastfmDiscoverAvailable } = useAuth();
-  const { handleTogglePlay, stopIfPlaylist, isShuffle } = usePlayer();
+  const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist, isShuffle } = usePlayer();
   const {
     playlists, loading, error,
     handleAdded, handleSync, handleRetryFailed, handleScanHq, handleTogglePause, handleRename, handleDelete, handleGenerateSimilar,
@@ -110,7 +110,12 @@ export function PlaylistsScreen() {
       const { videos } = await playlistsApi.getVideos(playlist.id);
       const playable = videos.filter(v => v.downloadStatus === 'done').sort((a, b) => a.position - b.position);
       if (playable.length === 0) return;
-      const startTrack = isShuffle ? playable[Math.floor(Math.random() * playable.length)] : playable[0];
+      // Already playing this playlist — toggle pause/resume on the current
+      // track instead of jumping to a new (possibly random) one.
+      const isCurrentPlaylist = nowPlaying?.playlistId === playlist.id;
+      const startTrack = isCurrentPlaylist
+        ? (playable.find(v => v.id === nowPlaying!.videoId) ?? playable[0])
+        : (isShuffle ? playable[Math.floor(Math.random() * playable.length)] : playable[0]);
       handleTogglePlay(playlist.id, startTrack, playable);
     } catch {
       // Navigation already happened — nothing else to do.
@@ -178,6 +183,7 @@ export function PlaylistsScreen() {
               canGenerateSimilar={canGenerateSimilar}
               hasGeneratedPlaylist={generatedSourceIds.has(item.id)}
               isLockedBySource={busyGeneratedSourceIds.has(item.id)}
+              isPlaying={nowPlaying?.playlistId === item.id && isAudioPlaying}
               onOpen={() => navigation.navigate('PlaylistDetail', { playlistId: item.id })}
               onPlayFirst={() => handlePlayFirst(item)}
               onSync={() => handleSync(item.id)}
