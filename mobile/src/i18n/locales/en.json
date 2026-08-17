@@ -333,7 +333,8 @@
     "trackCount": "{{count}} tracks",
     "emptyState": "No playlists are available offline yet. Enable offline on a playlist while connected to your server.",
     "playlistNotFound": "This playlist isn't available offline.",
-    "noTracks": "No tracks downloaded for this playlist."
+    "noTracks": "No tracks downloaded for this playlist.",
+    "noTracksAtAll": "No tracks downloaded yet."
   },
   "admin": {
     "title": "Administration",

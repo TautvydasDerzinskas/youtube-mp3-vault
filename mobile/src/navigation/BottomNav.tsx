@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, PanResponder, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,9 +7,12 @@ import Slider from '@react-native-community/slider';
 import Svg, { Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { usePlayer } from '../contexts/PlayerContext';
 import { formatDuration } from '../utils/format';
 import { MiniPlayer } from './MiniPlayer';
+import { RootStackParamList } from './types';
+import { OfflineStackParamList } from './offlineTypes';
 
 // Icon + i18n label key per route name — kept here rather than on each
 // Tab.Screen's `options` since this bar is the only thing that reads them
@@ -66,13 +69,31 @@ function clamp(value: number, min: number, max: number): number {
 // inside it (see the panel content below) takes over as the actual
 // interactive progress display, and this fades out in lockstep with the
 // outer tab icons it shares that value with.
-function MiddleButton({ ringOpacity }: { ringOpacity: Animated.AnimatedInterpolation<number> }) {
+//
+// `offline` picks which "browse everything" route the button opens when
+// idle (see handlePress below) — OfflineAllTracks (nested in AppShell's
+// OfflineStack) vs. the root stack's AllTracks, since the two live in
+// entirely separate, isolated navigator trees (see offlineTypes.ts).
+function MiddleButton({ ringOpacity, offline }: { ringOpacity: Animated.AnimatedInterpolation<number>; offline: boolean }) {
   const theme = useTheme();
+  const navigation = useNavigation<NavigationProp<RootStackParamList & OfflineStackParamList>>();
   const { nowPlaying, isAudioPlaying, currentTime, duration, togglePlayPause } = usePlayer();
   const progress = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0;
 
+  // Idle (nothing loaded) the button doubles as a shortcut into "all
+  // tracks" instead of toggling playback, which would otherwise be a no-op
+  // (see PlayerContext's togglePlayPause, which does nothing without a
+  // current track) — a dead tap where a useful action fits naturally.
+  const handlePress = useCallback(() => {
+    if (nowPlaying) {
+      togglePlayPause();
+      return;
+    }
+    navigation.navigate(offline ? 'OfflineAllTracks' : 'AllTracks');
+  }, [nowPlaying, togglePlayPause, navigation, offline]);
+
   return (
-    <Pressable onPress={togglePlayPause} style={styles.middleButtonSlot} hitSlop={8}>
+    <Pressable onPress={handlePress} style={styles.middleButtonSlot} hitSlop={8}>
       <View style={styles.middleButtonWrap}>
         {nowPlaying && (
           // Purely decorative — pointerEvents="none" so it never intercepts
@@ -104,16 +125,19 @@ function MiddleButton({ ringOpacity }: { ringOpacity: Animated.AnimatedInterpola
           </Animated.View>
         )}
         <View style={[styles.middleButton, { backgroundColor: theme.colors.primary }]}>
-          {nowPlaying ? (
-            <MaterialCommunityIcons
-              name={isAudioPlaying ? 'pause' : 'play'}
-              size={30}
-              color={theme.colors.onPrimary}
-            />
-          ) : (
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            <Image source={require('../../assets/icon.png')} style={styles.middleButtonLogo} />
-          )}
+          {/* Idle state used to show assets/icon.png here — a leftover
+              unbranded placeholder (blue, with its own light-blue
+              background baked in) that clashed with the app's actual
+              red/black identity (theme.colors.primary/background, which
+              already match the real brand mark — see frontend/public/
+              favicon.svg). A plain onPrimary-colored glyph on this same red
+              circle stays consistent with the play/pause icon it swaps
+              with, instead of pasting in a mismatched square image. */}
+          <MaterialCommunityIcons
+            name={nowPlaying ? (isAudioPlaying ? 'pause' : 'play') : 'music-note'}
+            size={30}
+            color={theme.colors.onPrimary}
+          />
         </View>
       </View>
     </Pressable>
@@ -248,6 +272,7 @@ function resolveBarProps(props: BottomNavProps): { activeRouteName: string | und
 
 export function BottomNav(props: BottomNavProps) {
   const { activeRouteName, interactive, onTabPress } = resolveBarProps(props);
+  const offline = props.mode === 'disabled';
   const theme = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -374,7 +399,7 @@ export function BottomNav(props: BottomNavProps) {
           tab={renderTab(ROUTE_ORDER[1])}
           control={<RoundButton icon="skip-previous" variant="light" disabled={!hasPrevious} onPress={playPrevious} />}
         />
-        <MiddleButton ringOpacity={tabsOpacity} />
+        <MiddleButton ringOpacity={tabsOpacity} offline={offline} />
         <Slot
           {...slotProps}
           tab={renderTab(ROUTE_ORDER[2])}
@@ -486,10 +511,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
-  },
-  middleButtonLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
   },
 });

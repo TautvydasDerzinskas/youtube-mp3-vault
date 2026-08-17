@@ -7,4 +7,9 @@
 export type OfflineStackParamList = {
   OfflinePlaylists: undefined;
   OfflinePlaylistDetail: { playlistId: string };
+  // Offline counterpart of the root stack's AllTracks — every downloaded
+  // track across every offline-synced playlist, flattened (see
+  // OfflineAllTracksScreen). Kept in this isolated stack rather than on
+  // RootStackParamList for the same reason as the other two routes here.
+  OfflineAllTracks: undefined;
 };

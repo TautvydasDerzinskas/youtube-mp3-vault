@@ -26,6 +26,7 @@ import { AllTracksScreen } from '../screens/AllTracksScreen';
 import { ArtistDetailScreen } from '../screens/ArtistDetailScreen';
 import { OfflinePlaylistsScreen } from '../screens/OfflinePlaylistsScreen';
 import { OfflinePlaylistDetailScreen } from '../screens/OfflinePlaylistDetailScreen';
+import { OfflineAllTracksScreen } from '../screens/OfflineAllTracksScreen';
 import { AdminScreen } from '../screens/AdminScreen';
 import { AdminUsersScreen } from '../screens/AdminUsersScreen';
 import { AdminUserDetailScreen } from '../screens/AdminUserDetailScreen';
@@ -63,12 +64,18 @@ const OfflineStack = createNativeStackNavigator<OfflineStackParamList>();
 //
 // When the configured server can't be reached (useServerReachability),
 // the normal tab content is swapped for a small nested stack of
-// offline-only screens (OfflinePlaylists/OfflinePlaylistDetail — see
-// offlineTypes.ts), TopBar is hidden (its content — search, avatar, sync
-// status — is all online-only), and BottomNav renders in `disabled` mode:
-// tabs are visible but grayed out/inert, while the middle play/pause button
-// and the drag-reveal MiniPlayer keep working, since playback of already
-// -downloaded tracks doesn't depend on the server at all.
+// offline-only screens (OfflinePlaylists/OfflinePlaylistDetail/
+// OfflineAllTracks — see offlineTypes.ts), TopBar is hidden (its content —
+// search, avatar, sync status — is all online-only), and each of those
+// screens renders its own BottomNav in `disabled` mode via
+// OfflineScreenWithBottomNav below (mirroring ScreenWithBottomNav's own
+// per-screen bar for the online root-stack screens) — tabs are visible but
+// grayed out/inert, while the middle play/pause button and the drag-reveal
+// MiniPlayer keep working, since playback of already-downloaded tracks
+// doesn't depend on the server at all. Nesting the bar inside the stack
+// (rather than as a fixed sibling of OfflineStack.Navigator) is what lets
+// its middle button reach OfflineAllTracks — a route that only exists
+// inside this isolated stack, unreachable from outside it.
 function AppShell({ isReachable }: { isReachable: boolean }) {
   return (
     <View style={{ flex: 1 }}>
@@ -81,16 +88,29 @@ function AppShell({ isReachable }: { isReachable: boolean }) {
           <Tab.Screen name="Genres" component={GenresScreen} />
         </Tab.Navigator>
       ) : (
-        <>
-          <View style={{ flex: 1 }}>
-            <OfflineStack.Navigator screenOptions={{ headerShown: false }}>
-              <OfflineStack.Screen name="OfflinePlaylists" component={OfflinePlaylistsScreen} />
-              <OfflineStack.Screen name="OfflinePlaylistDetail" component={OfflinePlaylistDetailScreen} />
-            </OfflineStack.Navigator>
-          </View>
-          <BottomNav mode="disabled" />
-        </>
+        <OfflineStack.Navigator screenOptions={{ headerShown: false }}>
+          <OfflineStack.Screen name="OfflinePlaylists">
+            {() => <OfflineScreenWithBottomNav><OfflinePlaylistsScreen /></OfflineScreenWithBottomNav>}
+          </OfflineStack.Screen>
+          <OfflineStack.Screen name="OfflinePlaylistDetail">
+            {() => <OfflineScreenWithBottomNav><OfflinePlaylistDetailScreen /></OfflineScreenWithBottomNav>}
+          </OfflineStack.Screen>
+          <OfflineStack.Screen name="OfflineAllTracks">
+            {() => <OfflineScreenWithBottomNav><OfflineAllTracksScreen /></OfflineScreenWithBottomNav>}
+          </OfflineStack.Screen>
+        </OfflineStack.Navigator>
       )}
+    </View>
+  );
+}
+
+// Offline-stack counterpart to ScreenWithBottomNav below — same reasoning,
+// just for OfflineStack.Navigator's screens instead of the root stack's.
+function OfflineScreenWithBottomNav({ children }: { children: ReactNode }) {
+  return (
+    <View style={{ flex: 1 }}>
+      {children}
+      <BottomNav mode="disabled" />
     </View>
   );
 }

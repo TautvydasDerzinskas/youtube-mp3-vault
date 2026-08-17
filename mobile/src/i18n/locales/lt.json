@@ -358,7 +358,8 @@
     "trackCount": "{{count}} dainų",
     "emptyState": "Kol kas nėra grojaraščių, pasiekiamų neprisijungus. Prisijungę prie serverio, įjunkite neprisijungimo režimą norimam grojaraščiui.",
     "playlistNotFound": "Šis grojaraštis nepasiekiamas neprisijungus.",
-    "noTracks": "Šiam grojaraščiui neatsisiųsta jokių dainų."
+    "noTracks": "Šiam grojaraščiui neatsisiųsta jokių dainų.",
+    "noTracksAtAll": "Kol kas neatsisiųsta jokių dainų."
   },
   "admin": {
     "title": "Administravimas",
