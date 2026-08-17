@@ -125,7 +125,14 @@ const DEFAULT_PROGRESS: OfflineProgress = { total: 0, completed: 0, syncing: fal
 // of the authenticated app (see RootNavigator) so its state/progress survive
 // screen navigation, and so the foreground/reconnect effects below only
 // ever run once per app session rather than once per screen.
-export function OfflineDownloadsProvider({ children }: { children: ReactNode }) {
+//
+// `isReachable` (from useServerReachability, hoisted to RootNavigator) gates
+// the startup/foreground/reconnect reconciliation effect below entirely —
+// see that effect for why: it's not just wasted 5s-timeout server calls
+// while genuinely offline, it's the Android orphan-asset cleanup asking to
+// delete files that only *look* orphaned because the local index can't be
+// trusted as complete until the server confirms it.
+export function OfflineDownloadsProvider({ children, isReachable }: { children: ReactNode; isReachable: boolean }) {
   const [entries, setEntries] = useState<Record<string, OfflinePlaylistEntry>>(() => offlineIndex.getAll().playlists);
   const [progress, setProgress] = useState<Record<string, OfflineProgress>>({});
   const [diffs, setDiffs] = useState<Record<string, OfflineDiff>>({});
@@ -284,13 +291,18 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
         }
       });
 
-      await removeOfflineTracks(replacedOldAssets);
       // The loop above ran to completion (as opposed to the app being killed
       // partway through) — mark the entry complete regardless of any
       // per-track failures, which surface via `error` instead; see
       // isEntryComplete/the startup reconciliation effect below for what
-      // this gates.
+      // this gates. Flushed *before* removeOfflineTracks below, which can
+      // sit awaiting a system delete-confirmation dialog for a while (or
+      // indefinitely, if the app gets backgrounded/killed while it's up) —
+      // every track is already durably downloaded at this point regardless
+      // of whether that best-effort old-asset cleanup ever gets to run, so
+      // completion shouldn't be hostage to it.
       flush(true);
+      await removeOfflineTracks(replacedOldAssets);
       setPlaylistProgress(playlistId, {
         syncing: false,
         error: failures > 0 ? `${failures} track(s) failed to download` : null,
@@ -389,6 +401,20 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
   const orphanCleanupDoneRef = useRef(false);
 
   useEffect(() => {
+    // Nothing in here should run until the backend is confirmed reachable:
+    // the server reconciliation obviously needs it, but so — less obviously
+    // — does the orphan cleanup below, even though it's a purely local
+    // comparison. `entriesRef.current` can only be trusted as a complete
+    // picture of "what's genuinely downloaded" once any playlist stuck
+    // mid-sync (syncComplete: false) has had a real chance to finish or
+    // resume against the server; treating it as complete while still
+    // offline risks flagging perfectly valid, already-downloaded assets as
+    // orphans and prompting to delete them, every single offline launch,
+    // for as long as that entry stays stuck. Effect re-runs (and, the first
+    // time this session, finally runs the once-only orphan cleanup) the
+    // moment isReachable flips true.
+    if (!isReachable) return;
+
     const refreshAll = async () => {
       // Only on this effect's very first run (app startup), and strictly
       // before anything below can create a new asset — see
@@ -454,7 +480,7 @@ export function OfflineDownloadsProvider({ children }: { children: ReactNode }) 
       netSub();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isReachable]);
 
   const value = useMemo<OfflineDownloadsContextType>(() => ({
     entries, progress, diffs, isEnabled, getLocalUri, enableOffline, disableOffline, refreshDiff, syncPlaylist,

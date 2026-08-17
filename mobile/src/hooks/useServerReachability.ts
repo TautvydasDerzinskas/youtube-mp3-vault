@@ -27,20 +27,27 @@ const UNCONFIRMED_RETRY_MS = 3_000;
 // drives the server-unavailable shell (offline playlists, disabled bottom
 // nav — see RootNavigator/AppShell and BottomNav's disabled mode).
 //
-// Starts optimistic (true) so the app doesn't flash into offline mode
-// before the first check has had a chance to run. Backs off exponentially
-// while confirmed unreachable (capped at MAX_INTERVAL_MS) rather than
-// hammering a server that's genuinely down, and re-checks immediately
-// whenever the app returns to the foreground — the most common way a user
-// actually discovers "oh, I'm back on my home network" or notices they've
-// lost it. That foreground re-check is also exactly why a single failure
-// isn't trusted on its own (see FAILURE_THRESHOLD): a phone waking from
-// sleep often has its WiFi radio still reconnecting at that exact moment,
-// so checking instantly on resume would otherwise flip into offline mode
-// on a false alarm far more often than a genuine outage.
+// Starts pessimistic (false) — the nav/tabs stay disabled until the very
+// first check actually confirms the backend is reachable, rather than
+// flashing the full interactive shell for the several seconds a check (or,
+// worse, FAILURE_THRESHOLD of them) can take to fail. Away from the home
+// network this used to mean the app briefly looked fully online — nav
+// enabled, tabs tappable — before snapping into offline mode out from under
+// the user; starting false trades that away for a brief disabled-nav flash
+// on the genuinely-reachable path instead, which resolves as fast as the
+// first health check's round trip. Backs off exponentially while confirmed
+// unreachable (capped at MAX_INTERVAL_MS) rather than hammering a server
+// that's genuinely down, and re-checks immediately whenever the app returns
+// to the foreground — the most common way a user actually discovers "oh,
+// I'm back on my home network" or notices they've lost it. That foreground
+// re-check is also exactly why a single failure isn't trusted on its own
+// (see FAILURE_THRESHOLD): a phone waking from sleep often has its WiFi
+// radio still reconnecting at that exact moment, so checking instantly on
+// resume would otherwise flip into offline mode on a false alarm far more
+// often than a genuine outage.
 
 export function useServerReachability(): boolean {
-  const [isReachable, setIsReachable] = useState(true);
+  const [isReachable, setIsReachable] = useState(false);
   const backoffRef = useRef(BASE_INTERVAL_MS);
   const consecutiveFailuresRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

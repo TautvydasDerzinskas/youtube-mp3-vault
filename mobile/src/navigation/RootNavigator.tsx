@@ -69,9 +69,7 @@ const OfflineStack = createNativeStackNavigator<OfflineStackParamList>();
 // tabs are visible but grayed out/inert, while the middle play/pause button
 // and the drag-reveal MiniPlayer keep working, since playback of already
 // -downloaded tracks doesn't depend on the server at all.
-function AppShell() {
-  const isReachable = useServerReachability();
-
+function AppShell({ isReachable }: { isReachable: boolean }) {
   return (
     <View style={{ flex: 1 }}>
       {isReachable && <TopBar />}
@@ -142,9 +140,15 @@ function ProfileHeaderRight() {
 // AllSongs/AllArtists/AllGenres via DashboardScreen's "see more" buttons.
 export function RootNavigator() {
   const { t } = useTranslation();
+  // Hoisted here (rather than read separately by AppShell and
+  // OfflineDownloadsProvider) so both act on the exact same reachability
+  // signal instead of each running its own independent /health poll — see
+  // OfflineDownloadsProvider's isReachable prop for why it needs this too
+  // (gates the startup orphan-cleanup/reconciliation effect).
+  const isReachable = useServerReachability();
 
   return (
-    <OfflineDownloadsProvider>
+    <OfflineDownloadsProvider isReachable={isReachable}>
       <PlayerProvider>
         <NavigationContainer theme={navTheme}>
           <Stack.Navigator
@@ -153,7 +157,9 @@ export function RootNavigator() {
               headerTintColor: theme.colors.onBackground,
             }}
           >
-            <Stack.Screen name="Tabs" component={AppShell} options={{ headerShown: false }} />
+            <Stack.Screen name="Tabs" options={{ headerShown: false }}>
+              {() => <AppShell isReachable={isReachable} />}
+            </Stack.Screen>
             <Stack.Screen
               name="Profile"
               component={ProfileScreen}
