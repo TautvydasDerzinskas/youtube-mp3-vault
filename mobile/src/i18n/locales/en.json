@@ -5,6 +5,7 @@
     "password": "Password",
     "signIn": "Sign In",
     "signInFailed": "Sign in failed. Please check your credentials.",
+    "connectionError": "Could not reach the server. Check your connection and try again.",
     "passwordHelper": "At least 8 characters",
     "passwordsDoNotMatch": "Passwords do not match"
   },
@@ -334,7 +335,10 @@
     "emptyState": "No playlists are available offline yet. Enable offline on a playlist while connected to your server.",
     "playlistNotFound": "This playlist isn't available offline.",
     "noTracks": "No tracks downloaded for this playlist.",
-    "noTracksAtAll": "No tracks downloaded yet."
+    "noTracksAtAll": "No tracks downloaded yet.",
+    "changeServer": "Log out",
+    "changeServerTitle": "Log out?",
+    "changeServerBody": "This clears your saved server address and signs you out, so you can connect to a different server. Downloaded files stay on this device."
   },
   "admin": {
     "title": "Administration",

@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { Button, Dialog, Portal, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useServerConfig } from '../contexts/ServerConfigContext';
 import { OfflineStackParamList } from '../navigation/offlineTypes';
 import { displayName } from '../utils/format';
 
@@ -22,6 +24,9 @@ export function OfflinePlaylistsScreen() {
   const theme = useTheme();
   const navigation = useNavigation<Nav>();
   const { entries } = useOfflineDownloads();
+  const { logout } = useAuth();
+  const { clearServerUrl } = useServerConfig();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   const playlists = useMemo(
     () => Object.values(entries)
@@ -30,12 +35,41 @@ export function OfflinePlaylistsScreen() {
     [entries]
   );
 
+  // Escape hatch for a stuck offline mode (e.g. the server's IP/domain
+  // changed while the app was away) — TopBar/Profile aren't reachable here
+  // (see the doc comment on this screen), so this is the only way back to
+  // ServerSetupScreen without reinstalling. logout() before clearServerUrl()
+  // so the best-effort server-side logout call still targets the server the
+  // current token is actually valid for — see ServerConfigContext's
+  // clearServerUrl doc comment.
+  const handleChangeServer = async () => {
+    setConfirmingLogout(false);
+    await logout();
+    await clearServerUrl();
+  };
+
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.banner, { backgroundColor: theme.colors.elevation.level1 }]}>
         <MaterialCommunityIcons name="wifi-off" size={18} color={theme.colors.onSurfaceVariant} />
         <Text style={{ color: theme.colors.onSurfaceVariant, flex: 1 }}>{t('offline.unavailableBanner')}</Text>
+        <Button compact mode="text" textColor={theme.colors.error} onPress={() => setConfirmingLogout(true)}>
+          {t('offline.changeServer')}
+        </Button>
       </View>
+
+      <Portal>
+        <Dialog visible={confirmingLogout} onDismiss={() => setConfirmingLogout(false)}>
+          <Dialog.Title>{t('offline.changeServerTitle')}</Dialog.Title>
+          <Dialog.Content>
+            <Text>{t('offline.changeServerBody')}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setConfirmingLogout(false)}>{t('serverSetup.cancel')}</Button>
+            <Button onPress={handleChangeServer} textColor={theme.colors.error}>{t('offline.changeServer')}</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
       <FlatList
         data={playlists}
         keyExtractor={(p) => p.playlistId}

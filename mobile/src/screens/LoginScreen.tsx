@@ -19,7 +19,12 @@ export function LoginScreen() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err?.response?.data?.error ?? t('auth.signInFailed'));
+      // No response at all (network error/timeout — see api/client.ts's
+      // default timeout) means the request never reached the server, so
+      // "check your credentials" would be actively misleading — most
+      // commonly this is the phone having no route to the configured
+      // server at all, not a rejected login.
+      setError(err?.response ? (err.response.data?.error ?? t('auth.signInFailed')) : t('auth.connectionError'));
     } finally {
       setLoading(false);
     }

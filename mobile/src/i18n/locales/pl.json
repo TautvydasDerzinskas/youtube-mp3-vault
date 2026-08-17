@@ -5,6 +5,7 @@
     "password": "Hasło",
     "signIn": "Zaloguj się",
     "signInFailed": "Logowanie nie powiodło się. Sprawdź dane logowania.",
+    "connectionError": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.",
     "passwordHelper": "Co najmniej 8 znaków",
     "passwordsDoNotMatch": "Hasła nie są zgodne"
   },
@@ -384,7 +385,10 @@
     "emptyState": "Żadna playlista nie jest jeszcze dostępna offline. Włącz tryb offline dla playlisty, gdy masz połączenie z serwerem.",
     "playlistNotFound": "Ta playlista nie jest dostępna offline.",
     "noTracks": "Dla tej playlisty nie pobrano żadnych utworów.",
-    "noTracksAtAll": "Nie pobrano jeszcze żadnych utworów."
+    "noTracksAtAll": "Nie pobrano jeszcze żadnych utworów.",
+    "changeServer": "Wyloguj się",
+    "changeServerTitle": "Wylogować się?",
+    "changeServerBody": "Spowoduje to wyczyszczenie zapisanego adresu serwera i wylogowanie, aby można było połączyć się z innym serwerem. Pobrane pliki pozostaną na tym urządzeniu."
   },
   "admin": {
     "title": "Administracja",

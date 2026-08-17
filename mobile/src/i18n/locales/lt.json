@@ -5,6 +5,7 @@
     "password": "Slaptažodis",
     "signIn": "Prisijungti",
     "signInFailed": "Prisijungti nepavyko. Patikrinkite duomenis.",
+    "connectionError": "Nepavyko pasiekti serverio. Patikrinkite ryšį ir bandykite dar kartą.",
     "passwordHelper": "Bent 8 simboliai",
     "passwordsDoNotMatch": "Slaptažodžiai nesutampa"
   },
@@ -359,7 +360,10 @@
     "emptyState": "Kol kas nėra grojaraščių, pasiekiamų neprisijungus. Prisijungę prie serverio, įjunkite neprisijungimo režimą norimam grojaraščiui.",
     "playlistNotFound": "Šis grojaraštis nepasiekiamas neprisijungus.",
     "noTracks": "Šiam grojaraščiui neatsisiųsta jokių dainų.",
-    "noTracksAtAll": "Kol kas neatsisiųsta jokių dainų."
+    "noTracksAtAll": "Kol kas neatsisiųsta jokių dainų.",
+    "changeServer": "Atsijungti",
+    "changeServerTitle": "Atsijungti?",
+    "changeServerBody": "Tai išvalys išsaugotą serverio adresą ir jus atjungs, kad galėtumėte prisijungti prie kito serverio. Atsisiųsti failai liks šiame įrenginyje."
   },
   "admin": {
     "title": "Administravimas",

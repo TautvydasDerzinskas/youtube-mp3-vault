@@ -14,6 +14,15 @@ declare module 'axios' {
 }
 
 const client = axios.create({
+  // Without this, a request to an address that's unreachable rather than
+  // cleanly refused (e.g. a dead LAN IP/hostname no longer valid off the
+  // home network) can sit awaiting a TCP-level connect timeout far longer
+  // than any UI should wait — tens of seconds, platform-dependent — before
+  // ever rejecting. Every JSON API call goes through this one instance (raw
+  // file downloads in mobile/src/offline/downloader.ts don't), so one
+  // default here covers login, manifests, etc. without needing every call
+  // site to remember its own.
+  timeout: 20_000,
   // Lets the backend attribute login/logout audit log entries to the mobile
   // client — see backend/src/services/auditLog.ts's getClientPlatform.
   headers: { 'Content-Type': 'application/json', 'X-Client-Platform': 'mobile' },

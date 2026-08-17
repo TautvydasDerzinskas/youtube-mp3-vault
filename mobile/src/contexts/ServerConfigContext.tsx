@@ -7,6 +7,19 @@ interface ServerConfigContextType {
   serverUrl: string | null;
   loading: boolean;
   setServerUrl: (rawUrl: string) => Promise<void>;
+  // Drops back to ServerSetupScreen (see Root in App.tsx, which renders it
+  // whenever serverUrl is null) without picking a new address first —
+  // unlike UpdateServerUrlScreen's logout-then-setServerUrl (which commits
+  // both in one step because it already has a tested replacement URL in
+  // hand), this is the escape hatch for when the *current* address is the
+  // problem and there's nothing to test yet (see OfflinePlaylistsScreen's
+  // "change server" action) — e.g. the server's IP/domain changed and the
+  // app is stuck offline with no way to reach Profile/Settings to fix it,
+  // since TopBar is hidden in offline mode. Callers are expected to log out
+  // first (same ordering/reasoning as UpdateServerUrlScreen) so the
+  // best-effort server-side logout call still targets the server the
+  // current token is actually valid for.
+  clearServerUrl: () => Promise<void>;
 }
 
 const ServerConfigContext = createContext<ServerConfigContextType | null>(null);
@@ -41,8 +54,14 @@ export function ServerConfigProvider({ children }: { children: ReactNode }) {
     setServerUrlState(normalized);
   }, []);
 
+  const clearServerUrl = useCallback(async () => {
+    await serverUrlStorage.clear();
+    client.defaults.baseURL = undefined;
+    setServerUrlState(null);
+  }, []);
+
   return (
-    <ServerConfigContext.Provider value={{ serverUrl, loading, setServerUrl }}>
+    <ServerConfigContext.Provider value={{ serverUrl, loading, setServerUrl, clearServerUrl }}>
       {children}
     </ServerConfigContext.Provider>
   );
