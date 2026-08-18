@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { Button, Dialog, Portal, Text, useTheme } from 'react-native-paper';
+import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Button, Chip, Dialog, Divider, Portal, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,9 +16,13 @@ type Nav = NativeStackNavigationProp<OfflineStackParamList, 'OfflinePlaylists'>;
 // Rendered by AppShell in place of the normal tab content whenever the
 // configured server can't be reached (see RootNavigator.tsx and
 // useServerReachability) — reads only from the local offline-download index
-// (mobile/src/offline/), never hits the network. Thumbnails are shown as a
-// plain icon rather than attempting the real (backend-hosted) thumbnailUrl,
-// since that would just be a guaranteed-failing request in this mode.
+// (mobile/src/offline/), never hits the network for the list itself.
+// Thumbnails do render their real thumbnailUrl (same as online's
+// PlaylistRow/TrackRow) rather than a plain icon — that URL was already
+// fetched once while online, and Image's own disk cache means it keeps
+// rendering from there even with the server genuinely unreachable; a bare
+// icon here would actually be a regression from what the user already sees
+// in the mini player, which shows the real thumbnail for the same reason.
 export function OfflinePlaylistsScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -32,6 +36,11 @@ export function OfflinePlaylistsScreen() {
     () => Object.values(entries)
       .filter(p => p.tracks.length > 0)
       .sort((a, b) => displayName(a).localeCompare(displayName(b))),
+    [entries]
+  );
+
+  const totalTrackCount = useMemo(
+    () => Object.values(entries).reduce((sum, p) => sum + p.tracks.length, 0),
     [entries]
   );
 
@@ -79,9 +88,13 @@ export function OfflinePlaylistsScreen() {
             onPress={() => navigation.navigate('OfflinePlaylistDetail', { playlistId: item.playlistId })}
             style={[styles.row, { borderColor: theme.colors.outline, backgroundColor: theme.colors.elevation.level1 }]}
           >
-            <View style={[styles.thumb, { backgroundColor: theme.colors.elevation.level3 }]}>
-              <MaterialCommunityIcons name="music-note" size={18} color={theme.colors.onSurfaceVariant} />
-            </View>
+            {item.thumbnailUrl ? (
+              <Image source={{ uri: item.thumbnailUrl }} style={styles.thumb} />
+            ) : (
+              <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: theme.colors.elevation.level3 }]}>
+                <MaterialCommunityIcons name="music-note" size={18} color={theme.colors.onSurfaceVariant} />
+              </View>
+            )}
             <View style={styles.info}>
               <Text numberOfLines={1} style={[styles.title, { color: theme.colors.onBackground }]}>{displayName(item)}</Text>
               <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
@@ -98,6 +111,28 @@ export function OfflinePlaylistsScreen() {
               {t('offline.emptyState')}
             </Text>
           </View>
+        }
+        ListFooterComponent={
+          <>
+            <Divider style={styles.divider} />
+            <Pressable
+              onPress={() => navigation.navigate('OfflineAllTracks')}
+              style={[styles.row, { borderColor: theme.colors.outline, backgroundColor: theme.colors.elevation.level1 }]}
+            >
+              <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: theme.colors.elevation.level3 }]}>
+                <MaterialCommunityIcons name="music-note" size={18} color={theme.colors.onSurfaceVariant} />
+              </View>
+              <View style={styles.info}>
+                <Text numberOfLines={1} style={[styles.title, { color: theme.colors.onBackground }]}>
+                  {t('playlists.allTracks.title')}
+                </Text>
+                <Chip compact mode="outlined" style={styles.chip}>
+                  {t('offline.trackCount', { count: totalTrackCount })}
+                </Chip>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
+            </Pressable>
+          </>
         }
       />
     </View>
@@ -118,7 +153,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
   },
-  thumb: { width: 48, height: 36, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  info: { flex: 1, minWidth: 0, gap: 2 },
+  thumb: { width: 48, height: 36, borderRadius: 6 },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
+  info: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: 14, fontWeight: '600' },
+  divider: { marginVertical: 12 },
+  chip: { minHeight: 24, alignSelf: 'flex-start' },
 });

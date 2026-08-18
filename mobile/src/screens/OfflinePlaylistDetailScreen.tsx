@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -72,6 +72,13 @@ export function OfflinePlaylistDetailScreen() {
                   color={theme.colors.primary}
                 />
               </View>
+              {item.thumbnailUrl ? (
+                <Image source={{ uri: item.thumbnailUrl }} style={styles.thumb} />
+              ) : (
+                <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: theme.colors.elevation.level3 }]}>
+                  <MaterialCommunityIcons name="music-note" size={16} color={theme.colors.onSurfaceVariant} />
+                </View>
+              )}
               <View style={styles.text}>
                 <Text
                   numberOfLines={1}
@@ -110,6 +117,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   playSlot: { width: 24, alignItems: 'center' },
+  thumb: { width: 40, height: 40, borderRadius: 6 },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, minWidth: 0 },
   title: { fontSize: 14 },
   artist: { fontSize: 12, marginTop: 1 },
