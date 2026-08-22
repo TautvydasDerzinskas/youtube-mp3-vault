@@ -11,6 +11,8 @@ export interface User {
   scrobblingEnabled: boolean;
   autoDeleteNonMusicEnabled: boolean;
   nowPlayingPublic: boolean;
+  deezerConnected: boolean;
+  deezerCookieValid: boolean | null;
 }
 
 interface AuthResponse {
@@ -24,6 +26,11 @@ interface MeResponse {
   // needed. Gates the read-only Discover feature and "Generate similar
   // playlist", as distinct from lastfmScrobblingAvailable above.
   lastfmDiscoverAvailable: boolean;
+  // Which per-user HQ providers (currently just "deezer") the admin
+  // currently allows connecting at all — an empty array means the whole
+  // "HQ Download" profile tab should be hidden, not just individual
+  // providers within it.
+  allowedHqProviders: string[];
 }
 
 export type RegisterResponse =
@@ -105,6 +112,16 @@ export const authApi = {
 
   setNowPlayingPublic: async (enabled: boolean): Promise<AuthResponse> => {
     const { data } = await client.patch<AuthResponse>('/auth/settings/now-playing-public', { enabled });
+    return data;
+  },
+
+  saveDeezerCookie: async (arlCookie: string): Promise<AuthResponse> => {
+    const { data } = await client.patch<AuthResponse>('/auth/deezer', { arlCookie });
+    return data;
+  },
+
+  disconnectDeezer: async (): Promise<AuthResponse> => {
+    const { data } = await client.post<AuthResponse>('/auth/deezer/disconnect');
     return data;
   },
 };

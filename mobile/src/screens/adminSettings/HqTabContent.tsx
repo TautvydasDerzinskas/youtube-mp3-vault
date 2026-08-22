@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Banner, Switch, Text, useTheme } from 'react-native-paper';
+import { Banner, Checkbox, Switch, Text, useTheme } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
-import { adminApi, HqSettings } from '../../api/admin';
+import { adminApi, HqSettings, HqUserProvider, HQ_USER_PROVIDERS } from '../../api/admin';
 
 interface HqTabContentProps {
   hq: HqSettings;
@@ -17,13 +17,13 @@ export function HqTabContent({ hq, onSaved }: HqTabContentProps) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const handleToggle = async (autoDownloadEnabled: boolean) => {
-    setDraft({ autoDownloadEnabled });
+  const persist = async (next: HqSettings) => {
+    setDraft(next);
     setError(null);
     setSaved(false);
     setSaving(true);
     try {
-      const updated = await adminApi.updateHqSettings({ autoDownloadEnabled });
+      const updated = await adminApi.updateHqSettings(next);
       setDraft(updated);
       onSaved(updated);
       setSaved(true);
@@ -33,6 +33,17 @@ export function HqTabContent({ hq, onSaved }: HqTabContentProps) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleToggle = (autoDownloadEnabled: boolean) => persist({ ...draft, autoDownloadEnabled });
+
+  const toggleProvider = (provider: HqUserProvider, enabled: boolean) => {
+    persist({
+      ...draft,
+      allowedUserProviders: enabled
+        ? [...draft.allowedUserProviders, provider]
+        : draft.allowedUserProviders.filter((p) => p !== provider),
+    });
   };
 
   return (
@@ -46,6 +57,21 @@ export function HqTabContent({ hq, onSaved }: HqTabContentProps) {
         <Switch value={draft.autoDownloadEnabled} disabled={saving} onValueChange={handleToggle} />
       </View>
 
+      <Text variant="bodyLarge" style={{ marginBottom: 4 }}>{t('adminSettings.hq.allowedUserProviders')}</Text>
+      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 4 }}>
+        {t('adminSettings.hq.allowedUserProvidersDescription')}
+      </Text>
+      {HQ_USER_PROVIDERS.map((provider) => (
+        <Checkbox.Item
+          key={provider}
+          label={t(`adminSettings.hq.provider.${provider}`)}
+          status={draft.allowedUserProviders.includes(provider) ? 'checked' : 'unchecked'}
+          disabled={saving}
+          onPress={() => toggleProvider(provider, !draft.allowedUserProviders.includes(provider))}
+          style={styles.checkboxItem}
+        />
+      ))}
+
       {error && <Banner visible icon="alert-circle-outline" style={styles.banner}>{error}</Banner>}
       {saved && <Banner visible icon="check-circle-outline" style={styles.banner}>{t('adminSettings.saved')}</Banner>}
     </View>
@@ -55,5 +81,6 @@ export function HqTabContent({ hq, onSaved }: HqTabContentProps) {
 const styles = StyleSheet.create({
   section: { paddingBottom: 8 },
   switchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  checkboxItem: { paddingHorizontal: 0 },
   banner: { marginBottom: 12 },
 });

@@ -10,7 +10,7 @@ import { PostgresTab } from './PostgresTab';
 const EMPTY_SMTP: SmtpSettings = { host: null, port: 587, secure: false, user: null, pass: null, from: '' };
 const EMPTY_POSTGRES: PostgresSettings = { database: '', user: '', password: '' };
 const EMPTY_LASTFM: LastfmSettings = { apiKey: null, apiSecret: null };
-const EMPTY_HQ: HqSettings = { autoDownloadEnabled: false };
+const EMPTY_HQ: HqSettings = { autoDownloadEnabled: false, allowedUserProviders: [] };
 
 export default function SettingsPage() {
   const { t } = useTranslation();

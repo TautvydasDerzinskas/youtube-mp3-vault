@@ -12,6 +12,7 @@ interface CachedUser {
   user: User;
   lastfmScrobblingAvailable: boolean;
   lastfmDiscoverAvailable: boolean;
+  allowedHqProviders: string[];
 }
 
 export const cachedUserStorage = {

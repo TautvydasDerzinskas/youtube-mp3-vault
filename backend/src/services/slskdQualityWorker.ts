@@ -2,9 +2,11 @@ import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { findBetterQualityMp3, MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
-import { isHqAutoDownloadEnabled } from './settings';
+import { isHqAutoDownloadEnabled, isUserHqProviderAllowed } from './settings';
 import { findExactMatchCandidate, downloadAndReplace as downloadAndReplaceViaSlskd } from './hqReplace';
 import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSaavn } from './jiosaavnReplace';
+import { establishDeezerSession, type DeezerSession } from './deezer';
+import { findDeezerCandidate, downloadAndReplace as downloadAndReplaceViaDeezer } from './deezerReplace';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
 // playlist. Called at the end of a playlist's download pass (see
@@ -32,13 +34,20 @@ import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSa
 // generally the better/more current source when it has a match); if it
 // comes up empty, JioSaavn (services/jiosaavnReplace.ts) is tried as a
 // fallback — a free public catalog with no peer pool to wait on, so it
-// costs one extra search rather than a real wait when slskd has nothing.
-// That path in particular can take a while per video (a real slskd search
-// plus, when a match is found, an actual file transfer) — onProgress (only
-// syncService.ts's downloadPendingVideos passes one) reports this video's
-// 1-indexed position and running total before each one is processed, so the
-// caller can surface live progress instead of this looking indistinguishable
-// from stuck.
+// costs one extra search rather than a real wait when slskd has nothing. If
+// that also comes up empty and this playlist's owner has connected their own
+// Deezer account (services/deezer.ts/deezerReplace.ts), Deezer is tried
+// last — unlike the other two, it's per-user, not app-wide, since it
+// streams tracks that specific account is entitled to. Its cookie is
+// verified once per call, up front (see deezerSession below), not
+// per-video: a dead/expired cookie should stop being retried for the rest
+// of this sync pass rather than failing the same way on every remaining
+// video. That path in particular can take a while per video (a real slskd
+// search plus, when a match is found, an actual file transfer) —
+// onProgress (only syncService.ts's downloadPendingVideos passes one)
+// reports this video's 1-indexed position and running total before each
+// one is processed, so the caller can surface live progress instead of
+// this looking indistinguishable from stuck.
 export async function resolvePlaylistQuality(
   playlistId: string,
   options: {
@@ -59,6 +68,30 @@ export async function resolvePlaylistQuality(
       : { playlistId, downloadStatus: 'done', qualityCheckStatus: 'pending' },
     orderBy: { position: 'asc' },
   });
+
+  // Established once per call (i.e. once per sync pass for this playlist),
+  // never per video — see the block comment above for why. null means any
+  // of: the admin has disabled Deezer entirely (hqAllowedUserProviders,
+  // checked first so a disabled provider never even attempts a network
+  // call), the owner hasn't connected it, or their cookie is currently
+  // unusable (dead/expired, or no HQ-entitled Deezer plan) — either way
+  // every video below simply skips this provider, same as if it didn't exist.
+  let deezerSession: DeezerSession | null = null;
+  if (isHqAutoDownloadEnabled() && isUserHqProviderAllowed('deezer') && videos.length > 0) {
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      select: { userId: true, user: { select: { deezerArlCookie: true } } },
+    });
+    if (playlist?.user.deezerArlCookie) {
+      deezerSession = await establishDeezerSession(playlist.user.deezerArlCookie);
+      await prisma.user
+        .update({
+          where: { id: playlist.userId },
+          data: { deezerCookieValid: deezerSession !== null, deezerCookieCheckedAt: new Date() },
+        })
+        .catch(() => {});
+    }
+  }
 
   for (const [index, video] of videos.entries()) {
     if (!isOnline()) return;
@@ -97,6 +130,7 @@ export async function resolvePlaylistQuality(
       if (isHqAutoDownloadEnabled()) {
         let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
         let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
+        let deezerCandidate: Awaited<ReturnType<typeof findDeezerCandidate>> = null;
         let replaced = false;
 
         // Each source is isolated in its own try/catch — an unexpected
@@ -125,6 +159,18 @@ export async function resolvePlaylistQuality(
           }
         }
 
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && deezerSession) {
+          // Both free sources came up empty — last resort is this
+          // playlist's owner's own Deezer account, already confirmed usable
+          // once up front for this whole sync pass (see deezerSession above).
+          try {
+            deezerCandidate = await findDeezerCandidate(deezerSession, video.artist, video.title, video.bitrate, video.duration);
+            if (deezerCandidate) replaced = await downloadAndReplaceViaDeezer(video, deezerSession, deezerCandidate);
+          } catch (err) {
+            console.error(`[deezer] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          }
+        }
+
         if (replaced) {
           // hqFileDownloaded was false going into this pass (the query above
           // filters on it) — an actual replacement is always a genuinely new
@@ -133,7 +179,7 @@ export async function resolvePlaylistQuality(
           continue; // downloadAndReplace* already updated every flag/status itself
         }
 
-        if (!slskdCandidate && !jioSaavnCandidate) {
+        if (!slskdCandidate && !jioSaavnCandidate && !deezerCandidate) {
           // Neither source found anything eligible right now — a stable,
           // repeatable verdict, same as the free path below.
           await prisma.playlistVideo.update({

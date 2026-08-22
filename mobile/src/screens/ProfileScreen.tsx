@@ -7,25 +7,30 @@ import { useAuth } from '../contexts/AuthContext';
 import { ProfileTabContent } from './profile/ProfileTabContent';
 import { SettingsTabContent } from './profile/SettingsTabContent';
 import { LastfmTabContent } from './profile/LastfmTabContent';
+import { HqDownloadTabContent } from './profile/HqDownloadTabContent';
 
-type ProfileTabKey = 'profile' | 'settings' | 'lastfm';
+type ProfileTabKey = 'profile' | 'settings' | 'lastfm' | 'hqDownload';
 
-// Reached by tapping the avatar in TopBar. Mirrors web's ProfilePage 3-tab
-// layout (Profile / Settings / Last.fm), but with a fixed logout bar
-// pinned to the bottom of the screen at all times, rather than web's
-// logout button living in the per-page header — logging out is the one
-// action that should never require switching tabs first to reach it.
+// Reached by tapping the avatar in TopBar. Mirrors web's ProfilePage tab
+// layout (Profile / Settings / Last.fm / HQ Download), but with a fixed
+// logout bar pinned to the bottom of the screen at all times, rather than
+// web's logout button living in the per-page header — logging out is the
+// one action that should never require switching tabs first to reach it.
 export function ProfileScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { logout, lastfmScrobblingAvailable } = useAuth();
+  const { logout, lastfmScrobblingAvailable, allowedHqProviders } = useAuth();
   const [tab, setTab] = useState<ProfileTabKey>('profile');
+  // Hides the whole tab once the admin has disabled every per-user HQ
+  // provider (currently just Deezer) — see HqDownloadTabContent.
+  const showHqDownloadTab = allowedHqProviders.length > 0;
 
   const buttons = [
     { value: 'profile', label: t('profile.tabProfile') },
     { value: 'settings', label: t('profile.tabSettings') },
     ...(lastfmScrobblingAvailable ? [{ value: 'lastfm', label: t('profile.tabLastfm') }] : []),
+    ...(showHqDownloadTab ? [{ value: 'hqDownload', label: t('profile.tabHqDownload') }] : []),
   ];
 
   return (
@@ -42,6 +47,7 @@ export function ProfileScreen() {
           {tab === 'profile' && <ProfileTabContent />}
           {tab === 'settings' && <SettingsTabContent />}
           {tab === 'lastfm' && lastfmScrobblingAvailable && <LastfmTabContent />}
+          {tab === 'hqDownload' && showHqDownloadTab && <HqDownloadTabContent allowedProviders={allowedHqProviders} />}
         </ScrollView>
       </View>
 

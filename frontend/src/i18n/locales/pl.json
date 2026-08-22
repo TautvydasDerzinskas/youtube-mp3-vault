@@ -268,6 +268,7 @@
     "tabProfile": "Profil",
     "tabSettings": "Ustawienia",
     "tabLastfm": "Last.fm",
+    "tabHqDownload": "Pobieranie HQ",
     "avatarAlt": "Awatar profilu",
     "displayName": "Nazwa wyświetlana",
     "displayNameHelper": "Nazwy wyświetlanej nie można zmienić",
@@ -310,6 +311,20 @@
       "disconnected": "Rozłączono z Last.fm.",
       "connectedAlert": "Połączono z Last.fm.",
       "errorAlert": "Nie udało się połączyć z Last.fm. Spróbuj ponownie."
+    },
+    "deezer": {
+      "description": "Połącz własne konto Deezer, aby aplikacja mogła jako ostatnią deskę ratunku pobierać brakujące utwory w wysokiej jakości (FLAC lub 320kbps) bezpośrednio z Deezer, gdy nie znajdzie ich nigdzie indziej. Działa to tylko z odpowiednią płatną subskrypcją Deezer i pobiera wyłącznie utwory, do których Twoje konto już ma prawo dostępu.",
+      "cookieLabel": "Ciasteczko „arl” z Deezer",
+      "placeholder": "Wklej tutaj swoje ciasteczko arl",
+      "cookieHelper": "Skopiuj wartość ciasteczka „arl” z deezer.com będąc zalogowanym (narzędzia deweloperskie przeglądarki, sekcja Application/Storage → Cookies). Traktuj je jak hasło — każdy, kto je zna, może pobierać z Twojego konta.",
+      "save": "Zapisz",
+      "disconnect": "Rozłącz",
+      "disconnected": "Rozłączono z Deezer.",
+      "saved": "Ciasteczko Deezer zapisane.",
+      "connectedValid": "Połączono — to ciasteczko obecnie działa.",
+      "connectedInvalid": "Połączono, ale to ciasteczko już nie działa. Wklej nowe poniżej.",
+      "connectedUnknown": "Połączono — zostanie zweryfikowane przed następną synchronizacją.",
+      "offlineNotice": "Brak połączenia z internetem — zostanie to automatycznie zweryfikowane przed następną synchronizacją."
     }
   },
   "downloads": {
@@ -352,7 +367,12 @@
     "hq": {
       "title": "Pobieranie HQ",
       "description": "Wymaga zmodyfikowanego obrazu kompatybilnego ze slskd (zobacz SLSKD_IMAGE w docker-compose.yml) z wbudowaną weryfikacją IP kupującego — nie ma żadnego efektu przy zwykłym slskd.",
-      "autoDownloadEnabled": "Automatycznie pobieraj i zastępuj pliki wersjami w wyższej jakości, gdy zostaną znalezione"
+      "autoDownloadEnabled": "Automatycznie pobieraj i zastępuj pliki wersjami w wyższej jakości, gdy zostaną znalezione",
+      "allowedUserProviders": "Dozwoleni dostawcy skanowania HQ dla użytkowników",
+      "allowedUserProvidersDescription": "Pozwala użytkownikom połączyć własne konto tych dostawców z poziomu swojego profilu, jako dodatkowe źródło HQ oprócz powyższych. Wyłączenie dostawcy tutaj ukrywa go w profilu każdego użytkownika i przestaje być używany podczas synchronizacji, nawet jeśli użytkownik już go połączył.",
+      "provider": {
+        "deezer": "Deezer"
+      }
     }
   },
   "users": {
@@ -436,7 +456,8 @@
       "user_logged_in_mobile": "Zalogowano się (Mobile)",
       "user_logged_out_web": "Wylogowano się (Web)",
       "user_logged_out_mobile": "Wylogowano się (Mobile)",
-      "playlist_offline_enabled": "Włączono tryb offline (Mobile)"
+      "playlist_offline_enabled": "Włączono tryb offline (Mobile)",
+      "deezer_connected": "Połączono Deezer"
     },
     "detailText": {
       "playlistImported": "Zaimportowano „{{name}}” ({{songCount}} utworów)",
@@ -447,7 +468,8 @@
       "generatedCreated": "Wygenerowano „{{name}}” na podstawie „{{sourceName}}” ({{songCount}} utworów, {{failedCount}} nieudanych)",
       "loggedIn": "Zalogowano się jako {{email}}",
       "loggedOut": "Wylogowano się",
-      "offlineEnabled": "Włączono pobieranie offline dla „{{name}}”"
+      "offlineEnabled": "Włączono pobieranie offline dla „{{name}}”",
+      "deezerConnected": "Połączono konto Deezer do pobierania HQ"
     }
   },
   "dashboard": {

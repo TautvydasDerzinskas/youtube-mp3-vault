@@ -21,8 +21,16 @@ export interface LastfmSettings {
   apiSecret: string | null;
 }
 
+// Canonical whitelist of per-user, opt-in-with-own-credentials HQ providers
+// (see schema.prisma's hqAllowedUserProviders) — used to sanitize admin
+// input server-side (routes/admin.ts) so a typo or stale client can never
+// persist an unknown provider key.
+export const HQ_USER_PROVIDERS = ['deezer'] as const;
+export type HqUserProvider = (typeof HQ_USER_PROVIDERS)[number];
+
 export interface HqSettings {
   autoDownloadEnabled: boolean;
+  allowedUserProviders: HqUserProvider[];
 }
 
 interface SettingsCache {
@@ -63,7 +71,12 @@ function toCache(row: Awaited<ReturnType<typeof ensureRow>>): SettingsCache {
     },
     postgres: { database: row.postgresDb, user: row.postgresUser, password: row.postgresPassword },
     lastfm: { apiKey: row.lastfmApiKey, apiSecret: row.lastfmApiSecret },
-    hq: { autoDownloadEnabled: row.hqAutoDownloadEnabled },
+    hq: {
+      autoDownloadEnabled: row.hqAutoDownloadEnabled,
+      allowedUserProviders: row.hqAllowedUserProviders.filter((p): p is HqUserProvider =>
+        HQ_USER_PROVIDERS.includes(p as HqUserProvider)
+      ),
+    },
   };
 }
 
@@ -109,6 +122,10 @@ export function getHqSettings(): HqSettings {
 
 export function isHqAutoDownloadEnabled(): boolean {
   return requireCache().hq.autoDownloadEnabled;
+}
+
+export function isUserHqProviderAllowed(provider: HqUserProvider): boolean {
+  return requireCache().hq.allowedUserProviders.includes(provider);
 }
 
 export async function updateSmtpSettings(input: SmtpSettings): Promise<SmtpSettings> {
@@ -162,6 +179,7 @@ export async function updateHqSettings(input: HqSettings): Promise<HqSettings> {
     where: { id: 1 },
     data: {
       hqAutoDownloadEnabled: input.autoDownloadEnabled,
+      hqAllowedUserProviders: input.allowedUserProviders,
     },
   });
   cache = toCache(row);

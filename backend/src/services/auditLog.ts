@@ -15,7 +15,8 @@ export type LogAction =
   | 'user_logged_in_web'
   | 'user_logged_in_mobile'
   | 'user_logged_out_web'
-  | 'user_logged_out_mobile';
+  | 'user_logged_out_mobile'
+  | 'deezer_connected';
 
 export type ClientPlatform = 'web' | 'mobile';
 

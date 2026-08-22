@@ -34,6 +34,7 @@ const ACTION_COLORS: Record<LogAction, 'default' | 'primary' | 'success' | 'warn
   user_logged_in_mobile: 'success',
   user_logged_out_web: 'default',
   user_logged_out_mobile: 'default',
+  deezer_connected: 'success',
 };
 
 export default function LogsPage() {
@@ -90,6 +91,8 @@ export default function LogsPage() {
       case 'user_logged_out_web':
       case 'user_logged_out_mobile':
         return t('logs.detailText.loggedOut');
+      case 'deezer_connected':
+        return t('logs.detailText.deezerConnected');
       default:
         return JSON.stringify(d);
     }

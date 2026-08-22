@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   lastfmScrobblingAvailable: boolean;
   lastfmDiscoverAvailable: boolean;
+  allowedHqProviders: string[];
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateLanguage: (language: string) => Promise<void>;
@@ -17,6 +18,8 @@ interface AuthContextType {
   setScrobbling: (enabled: boolean) => Promise<void>;
   setAutoDeleteNonMusic: (enabled: boolean) => Promise<void>;
   setNowPlayingPublic: (enabled: boolean) => Promise<void>;
+  saveDeezerCookie: (arlCookie: string) => Promise<void>;
+  disconnectDeezer: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -34,14 +37,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [lastfmScrobblingAvailable, setLastfmScrobblingAvailable] = useState(false);
   const [lastfmDiscoverAvailable, setLastfmDiscoverAvailable] = useState(false);
-  // Mirrors the two state values above so persistUserCache (called from
-  // setters that only receive `user`, e.g. updateProfile) can still write a
+  const [allowedHqProviders, setAllowedHqProviders] = useState<string[]>([]);
+  // Mirrors the state values above so persistUserCache (called from setters
+  // that only receive `user`, e.g. updateProfile) can still write a
   // complete cache entry without needing every one of those callbacks to
   // also thread the flags through.
-  const lastfmFlagsRef = useRef({ lastfmScrobblingAvailable: false, lastfmDiscoverAvailable: false });
+  const serverFlagsRef = useRef({ lastfmScrobblingAvailable: false, lastfmDiscoverAvailable: false, allowedHqProviders: [] as string[] });
 
   const persistUserCache = useCallback((u: User) => {
-    cachedUserStorage.set({ user: u, ...lastfmFlagsRef.current }).catch(() => {});
+    cachedUserStorage.set({ user: u, ...serverFlagsRef.current }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -52,11 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const { user, lastfmScrobblingAvailable, lastfmDiscoverAvailable } = await authApi.me();
+        const { user, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders } = await authApi.me();
         setUser(applyUser(user));
         setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
         setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
-        lastfmFlagsRef.current = { lastfmScrobblingAvailable, lastfmDiscoverAvailable };
+        setAllowedHqProviders(allowedHqProviders);
+        serverFlagsRef.current = { lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders };
         persistUserCache(user);
       } catch (err: any) {
         const status = err?.response?.status;
@@ -75,9 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(applyUser(cached.user));
             setLastfmScrobblingAvailable(cached.lastfmScrobblingAvailable);
             setLastfmDiscoverAvailable(cached.lastfmDiscoverAvailable);
-            lastfmFlagsRef.current = {
+            setAllowedHqProviders(cached.allowedHqProviders);
+            serverFlagsRef.current = {
               lastfmScrobblingAvailable: cached.lastfmScrobblingAvailable,
               lastfmDiscoverAvailable: cached.lastfmDiscoverAvailable,
+              allowedHqProviders: cached.allowedHqProviders,
             };
           }
         }
@@ -91,14 +98,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { user, token } = await authApi.login(email, password);
     await tokenStorage.set(token);
     setUser(applyUser(user));
-    // login's response doesn't include lastfm*Available (only /me does) —
-    // fetch it once right after so Last.fm/Generate-Similar gating is
+    // login's response doesn't include these flags (only /me does) — fetch
+    // once right after so Last.fm/Generate-Similar/HQ-provider gating is
     // correct without waiting for some other trigger to refresh it.
     try {
-      const { lastfmScrobblingAvailable, lastfmDiscoverAvailable } = await authApi.me();
+      const { lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders } = await authApi.me();
       setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
       setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
-      lastfmFlagsRef.current = { lastfmScrobblingAvailable, lastfmDiscoverAvailable };
+      setAllowedHqProviders(allowedHqProviders);
+      serverFlagsRef.current = { lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders };
     } catch {
       // Best-effort — worst case these stay hidden until next launch.
     }
@@ -157,11 +165,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistUserCache(user);
   }, [persistUserCache]);
 
+  const saveDeezerCookie = useCallback(async (arlCookie: string) => {
+    const { user } = await authApi.saveDeezerCookie(arlCookie);
+    setUser(applyUser(user));
+    persistUserCache(user);
+  }, [persistUserCache]);
+
+  const disconnectDeezer = useCallback(async () => {
+    const { user } = await authApi.disconnectDeezer();
+    setUser(applyUser(user));
+    persistUserCache(user);
+  }, [persistUserCache]);
+
   return (
     <AuthContext.Provider
       value={{
-        user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, login, logout,
+        user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders, login, logout,
         updateLanguage, updateProfile, disconnectLastfm, setScrobbling, setAutoDeleteNonMusic, setNowPlayingPublic,
+        saveDeezerCookie, disconnectDeezer,
       }}
     >
       {children}

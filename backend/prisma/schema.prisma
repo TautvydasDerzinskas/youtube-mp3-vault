@@ -52,6 +52,18 @@ model User {
   nowPlayingArtist          String?
   nowPlayingTitle           String?
   nowPlayingHeartbeatAt     DateTime?
+  // A user's own Deezer account "arl" cookie — opt-in, per-user (unlike
+  // slskd/JioSaavn, which are app-wide fallbacks), since it authorizes
+  // downloading tracks that specific Deezer account is entitled to, not a
+  // shared/free catalog. See services/deezer.ts/deezerReplace.ts and
+  // routes/auth.ts's /deezer endpoints. deezerCookieValid is null until the
+  // first check ever runs, then reflects the outcome of the most recent
+  // one — resolvePlaylistQuality (see slskdQualityWorker.ts) re-verifies it
+  // once per sync pass, before touching any track, rather than discovering
+  // "this cookie is dead" from a failure on every single video.
+  deezerArlCookie           String?
+  deezerCookieValid         Boolean?
+  deezerCookieCheckedAt     DateTime?
   createdAt                 DateTime   @default(now())
   updatedAt                 DateTime   @updatedAt
   playlists                 Playlist[]
@@ -250,6 +262,17 @@ model AppSettings {
   lastfmApiSecret String?
 
   hqAutoDownloadEnabled Boolean @default(false)
+
+  // Which per-user, opt-in-with-own-credentials HQ providers (currently
+  // just Deezer — see services/deezer.ts) users are allowed to connect at
+  // all. Unlike hqAutoDownloadEnabled above (a single app-wide on/off
+  // switch for the whole HQ-replace pipeline), this is a per-provider
+  // allow-list: disabling an entry here hides that provider's section from
+  // every user's own profile (see routes/auth.ts's /me) and makes
+  // resolvePlaylistQuality skip it outright during a sync, even for a user
+  // who already has credentials saved for it (see slskdQualityWorker.ts) —
+  // existing saved credentials are left alone, just unused while disabled.
+  hqAllowedUserProviders String[] @default(["deezer"])
 
   updatedAt DateTime @updatedAt
 

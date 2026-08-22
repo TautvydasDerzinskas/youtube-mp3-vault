@@ -11,7 +11,7 @@ import { PostgresTabContent } from './adminSettings/PostgresTabContent';
 const EMPTY_SMTP: SmtpSettings = { host: null, port: 587, secure: false, user: null, pass: null, from: '' };
 const EMPTY_POSTGRES: PostgresSettings = { database: '', user: '', password: '' };
 const EMPTY_LASTFM: LastfmSettings = { apiKey: null, apiSecret: null };
-const EMPTY_HQ: HqSettings = { autoDownloadEnabled: false };
+const EMPTY_HQ: HqSettings = { autoDownloadEnabled: false, allowedUserProviders: [] };
 
 type SettingsTabKey = 'smtp' | 'lastfm' | 'hq' | 'postgres';
 

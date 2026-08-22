@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   lastfmScrobblingAvailable: boolean;
   lastfmDiscoverAvailable: boolean;
+  allowedHqProviders: string[];
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<RegisterResponse>;
   verifyEmail: (token: string) => Promise<void>;
@@ -26,6 +27,8 @@ interface AuthContextType {
   setScrobbling: (enabled: boolean) => Promise<void>;
   setAutoDeleteNonMusic: (enabled: boolean) => Promise<void>;
   setNowPlayingPublic: (enabled: boolean) => Promise<void>;
+  saveDeezerCookie: (arlCookie: string) => Promise<void>;
+  disconnectDeezer: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,13 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [lastfmScrobblingAvailable, setLastfmScrobblingAvailable] = useState(false);
   const [lastfmDiscoverAvailable, setLastfmDiscoverAvailable] = useState(false);
+  const [allowedHqProviders, setAllowedHqProviders] = useState<string[]>([]);
 
   const refreshUser = useCallback(async () => {
     try {
-      const { user, lastfmScrobblingAvailable, lastfmDiscoverAvailable } = await authApi.me();
+      const { user, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders } = await authApi.me();
       setUser(applyUser(user));
       setLastfmScrobblingAvailable(lastfmScrobblingAvailable);
       setLastfmDiscoverAvailable(lastfmDiscoverAvailable);
+      setAllowedHqProviders(allowedHqProviders);
     } catch {
       setUser(null);
     }
@@ -113,12 +118,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(applyUser(user));
   };
 
+  const saveDeezerCookie = async (arlCookie: string) => {
+    const { user } = await authApi.saveDeezerCookie(arlCookie);
+    setUser(applyUser(user));
+  };
+
+  const disconnectDeezer = async () => {
+    const { user } = await authApi.disconnectDeezer();
+    setUser(applyUser(user));
+  };
+
   return (
     <AuthContext.Provider
       value={{
-        user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, login, register, verifyEmail,
+        user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders, login, register, verifyEmail,
         resendVerification, logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
-        setAutoDeleteNonMusic, setNowPlayingPublic,
+        setAutoDeleteNonMusic, setNowPlayingPublic, saveDeezerCookie, disconnectDeezer,
       }}
     >
       {children}

@@ -7,7 +7,7 @@ import { startSoftReimport, startTagRebuild } from '../services/reimport';
 import {
   getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
   getLastfmSettings, updateLastfmSettings,
-  getHqSettings, updateHqSettings,
+  getHqSettings, updateHqSettings, HQ_USER_PROVIDERS, HqUserProvider,
 } from '../services/settings';
 
 const router = Router();
@@ -291,9 +291,16 @@ router.patch('/settings/lastfm', async (req, res, next) => {
 
 router.patch('/settings/hq', async (req, res, next) => {
   try {
-    const { autoDownloadEnabled } = req.body as Record<string, unknown>;
+    const { autoDownloadEnabled, allowedUserProviders } = req.body as Record<string, unknown>;
+    // Sanitized against the canonical whitelist rather than trusted as-is —
+    // a stale/mismatched client sending an unknown provider key should
+    // never be able to persist it (see services/settings.ts).
+    const sanitizedProviders = Array.isArray(allowedUserProviders)
+      ? allowedUserProviders.filter((p): p is HqUserProvider => HQ_USER_PROVIDERS.includes(p))
+      : [];
     const updated = await updateHqSettings({
       autoDownloadEnabled: autoDownloadEnabled === true,
+      allowedUserProviders: sanitizedProviders,
     });
     res.json({ hq: updated });
   } catch (err) {

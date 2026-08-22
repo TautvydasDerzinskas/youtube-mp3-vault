@@ -21,6 +21,7 @@
     "tabProfile": "Profilis",
     "tabSettings": "Nustatymai",
     "tabLastfm": "Last.fm",
+    "tabHqDownload": "HQ atsisiuntimas",
     "displayName": "Rodomas vardas",
     "displayNameHelper": "Rodomo vardo pakeisti negalima",
     "email": "El. paštas",
@@ -65,6 +66,20 @@
       "disconnect": "Atsijungti",
       "connectedAlert": "Prisijungta prie Last.fm.",
       "errorAlert": "Nepavyko prisijungti prie Last.fm. Bandykite dar kartą."
+    },
+    "deezer": {
+      "description": "Prijunkite savo Deezer paskyrą, kad programa galėtų kaip paskutinę priemonę atsisiųsti trūkstamus aukštos kokybės (FLAC arba 320kbps) takelius tiesiai iš Deezer, kai jų nepavyksta rasti kitur. Tai veikia tik su tinkama mokama Deezer prenumerata ir atsisiunčia tik takelius, kuriuos jūsų paskyra jau turi teisę groti.",
+      "cookieLabel": "Deezer „arl“ slapukas",
+      "placeholder": "Įklijuokite savo arl slapuką čia",
+      "cookieHelper": "Nukopijuokite „arl“ slapuko reikšmę iš deezer.com būdami prisijungę (naršyklės kūrėjo įrankiuose, skiltyje Application/Storage → Cookies). Saugokite jį kaip slaptažodį — bet kas, turintis jį, gali atsisiųsti iš jūsų paskyros.",
+      "save": "Išsaugoti",
+      "disconnect": "Atsijungti",
+      "disconnected": "Atsijungta nuo Deezer.",
+      "saved": "Deezer slapukas išsaugotas.",
+      "connectedValid": "Prijungta — šis slapukas šiuo metu veikia.",
+      "connectedInvalid": "Prijungta, bet šis slapukas nebeveikia. Įklijuokite naują žemiau.",
+      "connectedUnknown": "Prijungta — bus patikrinta prieš kitą sinchronizavimą.",
+      "offlineNotice": "Šiuo metu nėra interneto ryšio — tai bus automatiškai patikrinta prieš kitą sinchronizavimą."
     }
   },
   "dashboard": {
@@ -442,7 +457,8 @@
       "user_logged_in_web": "Prisijungė (Web)",
       "user_logged_in_mobile": "Prisijungė (Mobili app.)",
       "user_logged_out_web": "Atsijungė (Web)",
-      "user_logged_out_mobile": "Atsijungė (Mobili app.)"
+      "user_logged_out_mobile": "Atsijungė (Mobili app.)",
+      "deezer_connected": "Prijungtas Deezer"
     },
     "detailText": {
       "playlistImported": "Importuota „{{name}}“ ({{songCount}} dainų)",
@@ -452,6 +468,7 @@
       "syncPaused": "Pristabdyta automatinė sinchronizacija „{{name}}“",
       "offlineEnabled": "Įjungtas atsisiuntimas neprisijungus grojaraščiui „{{name}}“",
       "generatedCreated": "Sugeneruota „{{name}}“ iš „{{sourceName}}“ ({{songCount}} dainų, {{failedCount}} nepavyko)",
+      "deezerConnected": "Prijungta Deezer paskyra HQ atsisiuntimams",
       "loggedIn": "Prisijungė kaip {{email}}",
       "loggedOut": "Atsijungė"
     }
@@ -482,7 +499,12 @@
     },
     "hq": {
       "description": "Automatiškai ieškoti aukštesnės kokybės atsisiųstų dainų pakaitalų.",
-      "autoDownloadEnabled": "Automatiškai atsisiųsti HQ pakaitalus"
+      "autoDownloadEnabled": "Automatiškai atsisiųsti HQ pakaitalus",
+      "allowedUserProviders": "Leidžiami vartotojų HQ paieškos tiekėjai",
+      "allowedUserProvidersDescription": "Leidžia vartotojams iš savo profilio prijungti savo paskyrą šiems tiekėjams — tai papildomas HQ šaltinis. Išjungus tiekėją čia, jis dingsta iš kiekvieno vartotojo profilio ir nebenaudojamas sinchronizavimo metu, net jei vartotojas jį jau buvo prijungęs.",
+      "provider": {
+        "deezer": "Deezer"
+      }
     },
     "postgres": {
       "description": "Pakeičia serverio gyvą duomenų bazės ryšį visiems šio serverio vartotojams. Keiskite tik jei tiksliai žinote, ką darote.",

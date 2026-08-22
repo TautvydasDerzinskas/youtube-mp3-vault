@@ -21,6 +21,7 @@
     "tabProfile": "Profile",
     "tabSettings": "Settings",
     "tabLastfm": "Last.fm",
+    "tabHqDownload": "HQ Download",
     "displayName": "Display Name",
     "displayNameHelper": "Display name can't be changed",
     "email": "Email",
@@ -65,6 +66,20 @@
       "disconnect": "Disconnect",
       "connectedAlert": "Connected to Last.fm.",
       "errorAlert": "Couldn't connect to Last.fm. Please try again."
+    },
+    "deezer": {
+      "description": "Connect your own Deezer account so this app can fetch missing high-quality (FLAC or 320kbps) tracks directly from Deezer as a last resort, when no other source has them. This only works with an eligible paid Deezer subscription, and only ever downloads tracks your account is already entitled to stream.",
+      "cookieLabel": "Deezer \"arl\" cookie",
+      "placeholder": "Paste your arl cookie here",
+      "cookieHelper": "Copy the value of the \"arl\" cookie from deezer.com while logged in (your browser's dev tools, under Application/Storage → Cookies). Treat it like a password — anyone with it can download from your account.",
+      "save": "Save",
+      "disconnect": "Disconnect",
+      "disconnected": "Disconnected from Deezer.",
+      "saved": "Deezer cookie saved.",
+      "connectedValid": "Connected — this cookie is currently working.",
+      "connectedInvalid": "Connected, but this cookie isn't working anymore. Paste a fresh one below.",
+      "connectedUnknown": "Connected — will be verified before your next sync.",
+      "offlineNotice": "No internet connection right now — this will be verified automatically before your next sync."
     }
   },
   "dashboard": {
@@ -417,7 +432,8 @@
       "user_logged_in_web": "Logged in (Web)",
       "user_logged_in_mobile": "Logged in (Mobile)",
       "user_logged_out_web": "Logged out (Web)",
-      "user_logged_out_mobile": "Logged out (Mobile)"
+      "user_logged_out_mobile": "Logged out (Mobile)",
+      "deezer_connected": "Connected Deezer"
     },
     "detailText": {
       "playlistImported": "Imported \"{{name}}\" ({{songCount}} songs)",
@@ -427,6 +443,7 @@
       "syncPaused": "Paused automatic sync for \"{{name}}\"",
       "offlineEnabled": "Enabled offline downloads for \"{{name}}\"",
       "generatedCreated": "Generated \"{{name}}\" from \"{{sourceName}}\" ({{songCount}} songs, {{failedCount}} failed)",
+      "deezerConnected": "Connected a Deezer account for HQ downloads",
       "loggedIn": "Logged in as {{email}}",
       "loggedOut": "Logged out"
     }
@@ -457,7 +474,12 @@
     },
     "hq": {
       "description": "Automatically look for higher-quality replacements for downloaded tracks.",
-      "autoDownloadEnabled": "Auto-download HQ replacements"
+      "autoDownloadEnabled": "Auto-download HQ replacements",
+      "allowedUserProviders": "Allowed user HQ scan providers",
+      "allowedUserProvidersDescription": "Lets users connect their own account for these providers from their Profile, as an additional HQ fallback source. Disabling one here hides it from every user's Profile and stops it being used during sync, even for a user who already connected it.",
+      "provider": {
+        "deezer": "Deezer"
+      }
     },
     "postgres": {
       "description": "Switches the server's live database connection for every user on this instance. Only change this if you know what you're doing.",

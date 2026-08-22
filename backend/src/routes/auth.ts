@@ -5,8 +5,9 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../services/prisma';
 import { sendVerificationEmail } from '../services/mailer';
-import { isSmtpConfigured, isLastfmScrobblingConfigured, isLastfmDiscoverEnabled } from '../services/settings';
+import { isSmtpConfigured, isLastfmScrobblingConfigured, isLastfmDiscoverEnabled, isUserHqProviderAllowed, getHqSettings } from '../services/settings';
 import { getAuthUrl, getSession } from '../services/lastfm';
+import { verifyDeezerLogin } from '../services/deezer';
 import { isOnline } from '../services/connectivity';
 import { removeExistingNonMusicVideos } from '../services/syncService';
 import { config } from '../config';
@@ -45,6 +46,8 @@ function toSafeUser(user: {
   scrobblingEnabled: boolean;
   autoDeleteNonMusicEnabled: boolean;
   nowPlayingPublic: boolean;
+  deezerArlCookie?: string | null;
+  deezerCookieValid?: boolean | null;
 }) {
   return {
     id: user.id,
@@ -57,6 +60,11 @@ function toSafeUser(user: {
     scrobblingEnabled: user.scrobblingEnabled,
     autoDeleteNonMusicEnabled: user.autoDeleteNonMusicEnabled,
     nowPlayingPublic: user.nowPlayingPublic,
+    // Never echoes the cookie itself back to the client, only whether one is
+    // set — same "connected, not the credential" shape lastfmUsername gives
+    // for Last.fm above.
+    deezerConnected: Boolean(user.deezerArlCookie),
+    deezerCookieValid: user.deezerCookieValid ?? null,
   };
 }
 
@@ -287,6 +295,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       select: {
         id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true,
         lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true, nowPlayingPublic: true,
+        deezerArlCookie: true, deezerCookieValid: true,
       },
     });
     if (!user) {
@@ -297,6 +306,12 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       user: toSafeUser(user),
       lastfmScrobblingAvailable: isLastfmScrobblingConfigured(),
       lastfmDiscoverAvailable: isLastfmDiscoverEnabled(),
+      // Which per-user HQ provider sections (currently just Deezer) the
+      // admin currently allows connecting at all — see
+      // schema.prisma's hqAllowedUserProviders. An empty array means the
+      // client should hide the whole "HQ Download" profile tab, not just
+      // grey out individual providers within it.
+      allowedHqProviders: getHqSettings().allowedUserProviders,
     });
   } catch (err) {
     next(err);
@@ -517,6 +532,52 @@ router.patch('/lastfm/scrobbling', requireAuth, async (req: AuthRequest, res, ne
       }
     }
     const user = await prisma.user.update({ where: { id: req.userId }, data: { scrobblingEnabled: enabled } });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PATCH /api/auth/deezer ─────────────────────────────────────────────
+// Saves a user's own Deezer "arl" cookie (see services/deezer.ts for what
+// this unlocks) and verifies it immediately when possible, same "check it
+// now, not just at the next sync" spirit as slskdQualityWorker.ts's
+// per-sync check. Offline, the cookie is still saved (deezerCookieValid
+// left null/"unknown") — resolvePlaylistQuality will verify it the next
+// time it actually runs.
+
+router.patch('/deezer', requireAuth, authLimiter, async (req: AuthRequest, res, next) => {
+  try {
+    if (!isUserHqProviderAllowed('deezer')) {
+      res.status(403).json({ error: 'Deezer HQ downloads are currently disabled by the administrator' });
+      return;
+    }
+    const { arlCookie } = req.body as { arlCookie?: unknown };
+    if (typeof arlCookie !== 'string' || !arlCookie.trim()) {
+      res.status(400).json({ error: 'arlCookie is required' });
+      return;
+    }
+    const trimmed = arlCookie.trim();
+    const valid = isOnline() ? await verifyDeezerLogin(trimmed) : null;
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { deezerArlCookie: trimmed, deezerCookieValid: valid, deezerCookieCheckedAt: valid === null ? null : new Date() },
+    });
+    void createLog({ userId: user.id, action: 'deezer_connected', details: { valid } });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/auth/deezer/disconnect ──────────────────────────────────────
+
+router.post('/deezer/disconnect', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { deezerArlCookie: null, deezerCookieValid: null, deezerCookieCheckedAt: null },
+    });
     res.json({ user: toSafeUser(user) });
   } catch (err) {
     next(err);
