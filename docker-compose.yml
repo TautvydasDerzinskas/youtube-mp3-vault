@@ -57,7 +57,7 @@ services:
       SLSKD_URL: http://slskd:5030
       SLSKD_API_KEY: ${SLSKD_API_KEY:?SLSKD_API_KEY is required — generate via openssl rand -hex 32}
       AUDIO_ANALYSIS_URL: http://audio-analysis:8000
-      BGUTIL_PROVIDER_URL: http://bgutil-provider:4416
+      BGUTIL_PROVIDER_URL: ${BGUTIL_PROVIDER_URL-http://bgutil-provider:4416}
       LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       LASTFM_API_SECRET: ${LASTFM_API_SECRET:-}
       SMTP_HOST: ${SMTP_HOST:-}

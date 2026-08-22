@@ -12,12 +12,12 @@ class OfflineSyncServiceModule : Module() {
     Name("OfflineSyncService")
 
     Function("updateProgress") { completed: Int, total: Int ->
-      val context = appContext.reactContext ?: return@Function
+      val context = appContext.reactContext ?: return@Function Unit
       OfflineSyncForegroundService.update(context, completed, total)
     }
 
     Function("stop") {
-      val context = appContext.reactContext ?: return@Function
+      val context = appContext.reactContext ?: return@Function Unit
       OfflineSyncForegroundService.stop(context)
     }
   }
