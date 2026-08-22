@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, PermissionsAndroid, Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { playlistsApi, ManifestTrack } from '../api/playlists';
 import { offlineIndex } from './offlineIndex';
+import OfflineSyncService from '../../modules/offline-sync-service/src/OfflineSyncServiceModule';
 import {
   downloadTrack, removeOfflineTracks, removeOfflinePlaylistDir, removeAndroidOrphanAssets, offlineFileExists,
   runWithConcurrency, MAX_CONCURRENT_DOWNLOADS,
@@ -481,6 +482,45 @@ export function OfflineDownloadsProvider({ children, isReachable }: { children: 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReachable]);
+
+  // Android only: keeps the ongoing "Syncing offline music" notification
+  // (see modules/offline-sync-service) in step with every playlist currently
+  // syncing at once — not just the single playlist a user happens to be
+  // looking at — so the notification is the one place that reflects overall
+  // progress across e.g. a fresh-install reconciliation pulling down several
+  // offline-enabled playlists at the same time. Running as a foreground
+  // service is also what lets that sync keep going while the app is
+  // backgrounded/the phone is locked instead of being throttled by Android's
+  // background execution limits within a couple of minutes; see
+  // OfflineSyncForegroundService's own doc comment.
+  const notificationPermissionRequestedRef = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const active = Object.values(progress).filter(p => p.syncing);
+    if (active.length === 0) {
+      OfflineSyncService.stop();
+      return;
+    }
+
+    // Requested lazily on the first sync of the session rather than at app
+    // startup — this is a background-sync notification, not something worth
+    // prompting for before the feature it belongs to has actually kicked in.
+    // Not awaited: if the user declines, startForegroundService below still
+    // runs the service (and so still gets the background-execution exemption
+    // above), Android just silently drops the notification post itself.
+    if (!notificationPermissionRequestedRef.current) {
+      notificationPermissionRequestedRef.current = true;
+      if (Platform.Version >= 33) {
+        PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS).catch(() => {});
+      }
+    }
+
+    const completed = active.reduce((sum, p) => sum + p.completed, 0);
+    const total = active.reduce((sum, p) => sum + p.total, 0);
+    OfflineSyncService.updateProgress(completed, total);
+  }, [progress]);
 
   const value = useMemo<OfflineDownloadsContextType>(() => ({
     entries, progress, diffs, isEnabled, getLocalUri, enableOffline, disableOffline, refreshDiff, syncPlaylist,
