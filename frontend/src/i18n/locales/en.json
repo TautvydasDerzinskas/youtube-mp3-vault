@@ -217,6 +217,7 @@
       "back": "Back to playlists",
       "failedToLoad": "Failed to load this playlist.",
       "trackCount": "{{count}} tracks",
+      "trackCountFiltered": "{{visible}} / {{total}} tracks",
       "filterByGenre": "Filter by genre",
       "clearGenreFilter": "Clear genre filter",
       "noGenre": "No genre ({{count}})",

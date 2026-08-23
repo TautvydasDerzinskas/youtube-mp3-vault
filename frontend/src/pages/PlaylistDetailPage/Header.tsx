@@ -9,6 +9,7 @@ import { TrackFilterBar } from './TrackFilterBar';
 
 interface HeaderProps {
   playlist: Playlist;
+  visibleCount: number;
   genreCounts: GenreCount[];
   selectedGenres: Set<string>;
   onToggleGenre: (genre: string) => void;
@@ -25,7 +26,7 @@ interface HeaderProps {
 }
 
 export function Header({
-  playlist, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
+  playlist, visibleCount, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
   sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
   onPlayFirst, canPlayFirst, isPlaying,
 }: HeaderProps) {
@@ -66,7 +67,9 @@ export function Header({
           )}
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 0.5 }}>
             <Chip size="small" variant="outlined"
-              label={t('playlists.detail.trackCount', { count: playlist.videoCount })} />
+              label={visibleCount !== playlist.videoCount
+                ? t('playlists.detail.trackCountFiltered', { visible: visibleCount, total: playlist.videoCount })
+                : t('playlists.detail.trackCount', { count: playlist.videoCount })} />
             {playlist.totalSize > 0 && (
               <Chip size="small" variant="outlined" label={formatBytes(playlist.totalSize)} />
             )}

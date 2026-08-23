@@ -231,6 +231,7 @@
       "back": "Grįžti į grojaraščius",
       "failedToLoad": "Nepavyko įkelti šio grojaraščio.",
       "trackCount": "{{count}} dainų",
+      "trackCountFiltered": "{{visible}} / {{total}} dainų",
       "filterByGenre": "Filtruoti pagal žanrą",
       "clearGenreFilter": "Išvalyti žanrų filtrą",
       "noGenre": "Be žanro ({{count}})",

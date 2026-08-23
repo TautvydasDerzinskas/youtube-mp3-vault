@@ -245,6 +245,7 @@
       "back": "Wróć do playlist",
       "failedToLoad": "Nie udało się załadować tej playlisty.",
       "trackCount": "{{count}} utworów",
+      "trackCountFiltered": "{{visible}} / {{total}} utworów",
       "filterByGenre": "Filtruj wg gatunku",
       "clearGenreFilter": "Wyczyść filtr gatunków",
       "noGenre": "Bez gatunku ({{count}})",

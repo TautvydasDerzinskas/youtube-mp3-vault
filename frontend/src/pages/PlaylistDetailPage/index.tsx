@@ -97,6 +97,7 @@ export default function PlaylistDetailPage() {
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header
         playlist={playlist}
+        visibleCount={filteredTracks.length}
         genreCounts={genreCounts}
         selectedGenres={selectedGenres}
         onToggleGenre={toggleGenre}
