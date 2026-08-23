@@ -48,6 +48,124 @@ export function artistIsSupersetMatch(a: string, b: string): boolean {
   return fa === fb || fa.includes(fb) || fb.includes(fa);
 }
 
+const FEAT_KEYWORD_RE = /\b(feat\.?|ft\.?|featuring)\b/i;
+// Everything up to the feat keyword, within one bracket's content — captures
+// e.g. "Extended Remix, " out of "Extended Remix, feat. Droid Project", so
+// that other info sharing the bracket with a feat credit survives instead of
+// the whole bracket being dropped. Assumes a feat credit runs to the end of
+// whatever bracket it's in (true of every real-world case seen so far,
+// including multiple comma-separated featured artists like
+// "feat. Slimus, Ай-Q") rather than trying to parse content that resumes
+// *after* the credit, which would need distinguishing "another feature" from
+// "an unrelated descriptor" past a comma — not worth the complexity without
+// a real example of that ordering.
+const FEAT_PREFIX_RE = /^(.*?)\b(?:feat\.?|ft\.?|featuring)\b.*$/i;
+// A bare (non-bracketed) "feat./ft./featuring <names>" run, consumed from
+// the keyword up to the next bracket-open or the end of the string — covers
+// "Title Feat. Artist" and "Artist feat. Other Artist" (an artist field with
+// no title at all), which the bracket handling below doesn't touch.
+const BARE_FEAT_RE = /\s*\b(feat\.?|ft\.?|featuring)\b[^([\]]*(?=[([]|$)/gi;
+
+// Strips featured-artist credits from a title or artist string — used to
+// retry a provider search with a plainer query when the original (which
+// tier-matching in MATCH_TIERS already tolerates a *found* candidate
+// differing on, see artistIsSupersetMatch/titleSimilarity above) turns up no
+// candidates at all. That's a distinct problem from matching: a provider's
+// own search endpoint may simply rank/return worse results for a query
+// cluttered with "(feat. X)", so nothing ever reaches the tolerant matching
+// tiers to begin with. Returns the original string unchanged if nothing was
+// stripped (including when stripping would empty it out) — the caller
+// should compare against the original before deciding a retry is worthwhile.
+export function stripFeaturedArtists(text: string): string {
+  if (!text) return text;
+  let cleaned = text.replace(/([([])([^)\]]*)([)\]])/g, (whole, open, inner, close) => {
+    if (!FEAT_KEYWORD_RE.test(inner)) return whole; // no feat credit in this bracket — leave it alone
+    const before = (inner.match(FEAT_PREFIX_RE)?.[1] ?? '').replace(/[,;\s]+$/, '').trim();
+    // Nothing else shared the bracket (the common case, "(feat. X)") — drop
+    // the whole thing, delimiters included, rather than leaving "()" behind.
+    return before ? `${open}${before}${close}` : ' ';
+  });
+  cleaned = cleaned.replace(BARE_FEAT_RE, ' ');
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  return cleaned || text.trim();
+}
+
+// Upload-decoration words/phrases — "[PREMIERE]", "- Lyrics HD!", "(FREE)",
+// "- High Quality", "[Bass Boosted]", a "(Live - ...)" performance-context
+// bracket — that clutter a query without being real catalog information.
+// Deliberately a narrower, standalone list rather than reusing
+// musicbrainz.ts's stripJunkTags: that function's second pass drops *any*
+// bracket that isn't on its remix/edit/version allowlist, which is fine for
+// metadata resolution (MusicBrainz's own fuzzy search absorbs the loss) but
+// actively wrong here — it was gutting real title content like "(Interlude)"
+// and "(Bring Your Own Bombs)" that simply isn't a recognized version word.
+// This only ever removes a *recognized* junk phrase; anything unfamiliar is
+// left alone, however odd-looking, since guessing wrong here costs a real
+// search match. "live" is deliberately included even though
+// MEANINGFUL_BRACKET_WORDS in musicbrainz.ts keeps it for metadata (a live
+// recording genuinely is a different one there) — a specific live/TV-
+// performance clip essentially never has its own dedicated HQ release, so
+// falling back to matching the studio version is the more useful bet here.
+const UPLOAD_NOISE_WORDS = [
+  'official', 'video', 'audio', 'lyrics?', 'visualizer', 'remaster\\w*',
+  'hd', 'hq', '4k', 'high\\s*quality', 'premiere', 'live',
+  'free', 'bass\\s*boosted', 'out\\s*now', 'cover\\s*art',
+  'download\\s*link', 'radio\\s*rip', 'copyright\\s*free(\\s*music)?', 'english\\s*version',
+];
+const UPLOAD_NOISE_WORD_RE = new RegExp(`\\b(${UPLOAD_NOISE_WORDS.join('|')})\\b`, 'i');
+// Trailing punctuation after the noise word is tolerant of a stray "!"/"?"/
+// "." ("- Lyrics Hd!"), not just whitespace — an upload title's trailing
+// flourish is exactly where that shows up.
+const UPLOAD_NOISE_TRAILING_RE = new RegExp(`[\\s\\-|/,*•]+\\b(${UPLOAD_NOISE_WORDS.join('|')})\\b[\\s!?.]*$`, 'i');
+
+// Strips upload-decoration noise — see UPLOAD_NOISE_WORDS above. A bracket
+// containing a recognized noise word is dropped in its entirety (no attempt
+// to keep other content sharing it, unlike stripFeaturedArtists — none of
+// the real cases seen so far mix a noise word with something worth keeping
+// in the same bracket); a bare trailing noise phrase is trimmed off the end.
+// Same "returns the original if nothing changed" contract as
+// stripFeaturedArtists, for the same reason (the caller only wants to retry
+// a search when this actually produced something different).
+export function stripUploadNoise(text: string): string {
+  if (!text) return text;
+  // Same [{【 / ]}】 → ( / ) normalization as musicbrainz.ts's stripJunkTags —
+  // YouTube titles use them interchangeably for the same kind of annotation.
+  let cleaned = text.replace(/[[{【]/g, '(').replace(/[\]}】]/g, ')');
+  cleaned = cleaned.replace(/([([])([^)\]]*)([)\]])/g, (whole, _open, inner) => (
+    UPLOAD_NOISE_WORD_RE.test(inner) ? ' ' : whole
+  ));
+  for (let i = 0; i < 10; i++) {
+    const next = cleaned.replace(UPLOAD_NOISE_TRAILING_RE, '').trim();
+    if (next === cleaned) break;
+    cleaned = next;
+  }
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  return cleaned || text.trim();
+}
+
+// Decorative Unicode a video's uploader-chosen title/channel name often
+// carries (flag pairs, stars, dingbats, misc pictographs) — essentially
+// never part of a real catalog entry on any provider searched here, unlike a
+// feat. credit above (which some catalogs genuinely do index), so this is
+// applied unconditionally before every search rather than only as a
+// no-results fallback. Replaces with a space rather than deleting outright,
+// since these are frequently glued directly onto a word with no separating
+// whitespace (e.g. "🇧🇷Dj Alok") and simply deleting the symbol would fuse
+// the surrounding text together wrong. Deliberately excludes the zero-width
+// joiner/variation-selector code points compound emoji use to glue simpler
+// ones together (a linter footgun in a character class, and — being
+// zero-width — harmless to leave behind either way): every base emoji
+// codepoint they'd join is already covered by the ranges below, so a stray
+// joiner left behind is invisible, not clutter.
+const DECORATIVE_SYMBOL_RE =
+  /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu;
+
+export function stripDecorativeSymbols(text: string): string {
+  if (!text) return text;
+  const cleaned = text.replace(DECORATIVE_SYMBOL_RE, ' ').replace(/\s+/g, ' ').trim();
+  return cleaned || text;
+}
+
 export type DurationStrictness = 'sanity' | 'moderate' | 'tight';
 
 // How close a candidate's reported length has to be to our stored video

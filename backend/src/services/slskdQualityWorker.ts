@@ -7,6 +7,7 @@ import { findExactMatchCandidate, downloadAndReplace as downloadAndReplaceViaSls
 import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSaavn } from './jiosaavnReplace';
 import { establishDeezerSession, type DeezerSession } from './deezer';
 import { findDeezerCandidate, downloadAndReplace as downloadAndReplaceViaDeezer } from './deezerReplace';
+import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols } from './trackMatching';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
 // playlist. Called at the end of a playlist's download pass (see
@@ -137,6 +138,31 @@ export async function resolvePlaylistQuality(
       continue;
     }
 
+    // Decorative Unicode (flag emoji, stars, dingbats — see
+    // stripDecorativeSymbols) an uploader tacked onto a title/artist is
+    // essentially never part of a real catalog entry on any of these
+    // providers, so it's cleaned unconditionally before every search below,
+    // not just as a no-results fallback.
+    const searchArtist = stripDecorativeSymbols(video.artist);
+    const searchTitle = stripDecorativeSymbols(video.title);
+
+    // A search query cluttered with a "(feat. X)" credit or upload noise
+    // ("[PREMIERE]", "- Lyrics HD!", "(Live - Swedish Idol 2016)") often
+    // returns worse (or zero) results from a provider's own search endpoint,
+    // even though MATCH_TIERS already tolerates a *found* candidate
+    // differing on exactly this (artistIsSupersetMatch, titleSimilarity's
+    // "dropped/added filler word" allowance) — that tolerance never gets a
+    // chance to apply if the search itself came back empty. Unlike the
+    // decorative-symbol cleanup above, this combined fallback is only tried
+    // once the plain search already failed, never unconditionally: some
+    // catalogs genuinely do index a feat. credit as part of the title, so
+    // the plainer, more-likely-correct search always gets first shot. Only
+    // worth a second search per source when stripping actually changed
+    // something.
+    const strippedArtist = stripUploadNoise(stripFeaturedArtists(searchArtist));
+    const strippedTitle = stripUploadNoise(stripFeaturedArtists(searchTitle));
+    const hasCleanedFallback = strippedArtist !== searchArtist || strippedTitle !== searchTitle;
+
     try {
       if (isHqAutoDownloadEnabled()) {
         let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
@@ -153,7 +179,10 @@ export async function resolvePlaylistQuality(
         // "no match"/"download failed" cases (see hqReplace.ts and
         // jiosaavnReplace.ts) — this is a backstop for the unexpected case.
         try {
-          slskdCandidate = await findExactMatchCandidate(video.artist, video.title, video.bitrate, video.duration);
+          slskdCandidate = await findExactMatchCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
+          if (!slskdCandidate && hasCleanedFallback) {
+            slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+          }
           if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
         } catch (err) {
           console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
@@ -163,7 +192,10 @@ export async function resolvePlaylistQuality(
           // slskd came up empty (or errored) — fall back to JioSaavn's free
           // public catalog before giving up on this video for this pass.
           try {
-            jioSaavnCandidate = await findJioSaavnCandidate(video.artist, video.title, video.bitrate, video.duration);
+            jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
+            if (!jioSaavnCandidate && hasCleanedFallback) {
+              jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
             if (jioSaavnCandidate) replaced = await downloadAndReplaceViaJioSaavn(video, jioSaavnCandidate);
           } catch (err) {
             console.error(`[jiosaavn] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
@@ -175,7 +207,10 @@ export async function resolvePlaylistQuality(
           // playlist's owner's own Deezer account, already confirmed usable
           // once up front for this whole sync pass (see deezerSession above).
           try {
-            deezerCandidate = await findDeezerCandidate(deezerSession, video.artist, video.title, video.bitrate, video.duration);
+            deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration);
+            if (!deezerCandidate && hasCleanedFallback) {
+              deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
             if (deezerCandidate) replaced = await downloadAndReplaceViaDeezer(video, deezerSession, deezerCandidate);
           } catch (err) {
             console.error(`[deezer] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
@@ -218,7 +253,10 @@ export async function resolvePlaylistQuality(
         continue;
       }
 
-      const betterBitrate = await findBetterQualityMp3(video.artist, video.title, video.bitrate);
+      let betterBitrate = await findBetterQualityMp3(searchArtist, searchTitle, video.bitrate);
+      if (betterBitrate === null && hasCleanedFallback) {
+        betterBitrate = await findBetterQualityMp3(strippedArtist, strippedTitle, video.bitrate);
+      }
       if (betterBitrate !== null && !video.betterQualityExists) onHqFound?.(video.id); // wasn't already known before this pass
       await prisma.playlistVideo.update({
         where: { id: video.id },
