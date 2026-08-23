@@ -1,29 +1,23 @@
-import { Accordion, AccordionSummary, AccordionDetails, Paper, Tooltip, IconButton, Box } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material';
+import { Paper, Tooltip, IconButton, Box } from '@mui/material';
+import { PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Playlist, PlaylistVideo } from '../../../api/youtube';
-import { VideoState, NowPlaying } from '../types';
-import { VideoList } from '../VideoList';
+import { Playlist } from '../../../api/youtube';
+import { NowPlaying } from '../types';
 import { Thumbnail } from './Thumbnail';
 import { Info } from './Info';
 import { Actions } from './Actions';
 
 interface PlaylistRowProps {
   playlist: Playlist;
-  expanded: boolean;
-  onToggleExpand: (open: boolean) => void;
   isSyncingLocally: boolean;
   isRetryingLocally: boolean;
   online: boolean;
   canGenerateSimilar: boolean;
   hasGeneratedPlaylist: boolean;
   isLockedBySource: boolean;
-  videoCache: Record<string, VideoState>;
-  setVideoCache: React.Dispatch<React.SetStateAction<Record<string, VideoState>>>;
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
-  onTogglePlay: (playlistId: string, video: PlaylistVideo) => void;
   onPlayFirst: (e: React.MouseEvent, playlist: Playlist) => void;
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
@@ -34,10 +28,15 @@ interface PlaylistRowProps {
   onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;
 }
 
+// Every playlist row is just a link now — "openable, not expandable" (no
+// more inline accordion + track list). A busy playlist opens onto the
+// dedicated SyncingPlaylistDetailPage (live progress, no sort/filter/search
+// controls, since those don't make sense against a list still being mutated
+// under you); anything else opens onto the normal PlaylistDetailPage.
 export function PlaylistRow({
-  playlist, expanded, onToggleExpand, isSyncingLocally, isRetryingLocally, online, canGenerateSimilar,
+  playlist, isSyncingLocally, isRetryingLocally, online, canGenerateSimilar,
   hasGeneratedPlaylist, isLockedBySource,
-  videoCache, setVideoCache, nowPlaying, isAudioPlaying, onTogglePlay, onPlayFirst,
+  nowPlaying, isAudioPlaying, onPlayFirst,
   onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete, onGenerateSimilar,
 }: PlaylistRowProps) {
   const { t } = useTranslation();
@@ -45,12 +44,9 @@ export function PlaylistRow({
   const isRetrying = playlist.syncStatus === 'retrying' || isRetryingLocally;
   const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isRetrying || isSyncingLocally;
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
-  const isSynced = !isBusy && playlist.downloadedCount > 0 && playlist.downloadedCount <= playlist.videoCount;
-  // No PlaylistVideo rows exist yet during this phase (they're only created
-  // once candidate discovery finishes) — expanding would just show a
-  // confusing "no videos found" empty state, so don't offer it at all.
-  const isGenerating = playlist.syncStatus === 'generating';
   const isRowPlaying = nowPlaying?.playlistId === playlist.id && isAudioPlaying;
+
+  const open = () => navigate(isBusy ? `/playlists/${playlist.id}/syncing` : `/playlists/${playlist.id}`);
 
   const playButton = (
     <Tooltip title={isRowPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
@@ -63,83 +59,33 @@ export function PlaylistRow({
     </Tooltip>
   );
 
-  if (isSynced) {
-    const open = () => navigate(`/playlists/${playlist.id}`);
-    return (
-      <Paper onClick={open} elevation={0}
-        sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
-          border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px',
-          '&:hover': { borderColor: 'primary.dark' } }}>
-        <Box onClick={e => e.stopPropagation()}>{playButton}</Box>
-        <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
-        <Info playlist={playlist} isBusy={isBusy} isPausing={isPausing} expanded={false} />
-        <Actions
-          playlist={playlist}
-          isBusy={isBusy}
-          isPausing={isPausing}
-          isRetrying={isRetrying}
-          online={online}
-          canGenerateSimilar={canGenerateSimilar}
-          hasGeneratedPlaylist={hasGeneratedPlaylist}
-          isLockedBySource={isLockedBySource}
-          onOpen={open}
-          onRename={onRename}
-          onSync={onSync}
-          onRetryFailed={onRetryFailed}
-          onScanHq={onScanHq}
-          onTogglePause={onTogglePause}
-          onDelete={onDelete}
-          onGenerateSimilar={onGenerateSimilar}
-        />
-      </Paper>
-    );
-  }
-
   return (
-    <Accordion expanded={!isGenerating && expanded}
-      onChange={(_, open) => { if (!isGenerating) onToggleExpand(open); }}
-      disableGutters
-      sx={{ mb: 1, '&:before': { display: 'none' }, border: '1px solid',
-        borderColor: expanded ? 'primary.dark' : '#2a2a2a',
-        borderRadius: '8px !important', overflow: 'hidden',
-        opacity: isPausing ? 0.55 : 1, transition: 'opacity 0.2s' }}>
-
-      <AccordionSummary expandIcon={isGenerating ? undefined : <ExpandMoreIcon />}
-        sx={{ px: 2, py: 1, cursor: isGenerating ? 'default' : 'pointer',
-          '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5, minWidth: 0 } }}>
-
-        <Box onClick={e => e.stopPropagation()}>{playButton}</Box>
-
-        <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
-
-        <Info playlist={playlist} isBusy={isBusy} isPausing={isPausing} expanded={expanded} />
-
-        <Actions
-          playlist={playlist}
-          isBusy={isBusy}
-          isPausing={isPausing}
-          isRetrying={isRetrying}
-          online={online}
-          canGenerateSimilar={canGenerateSimilar}
-          hasGeneratedPlaylist={hasGeneratedPlaylist}
-          isLockedBySource={isLockedBySource}
-          onRename={onRename}
-          onSync={onSync}
-          onRetryFailed={onRetryFailed}
-          onScanHq={onScanHq}
-          onTogglePause={onTogglePause}
-          onDelete={onDelete}
-          onGenerateSimilar={onGenerateSimilar}
-        />
-      </AccordionSummary>
-
-      <AccordionDetails sx={{ px: 2, pt: 0, pb: 2, maxHeight: 420, overflowY: 'auto' }}>
-        {expanded && (
-          <VideoList playlistId={playlist.id} cache={videoCache} setCache={setVideoCache}
-            nowPlaying={nowPlaying} isAudioPlaying={isAudioPlaying} onTogglePlay={onTogglePlay}
-            retrying={isRetrying} />
-        )}
-      </AccordionDetails>
-    </Accordion>
+    <Paper onClick={open} elevation={0}
+      sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
+        border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px',
+        opacity: isPausing ? 0.55 : 1, transition: 'opacity 0.2s',
+        '&:hover': { borderColor: 'primary.dark' } }}>
+      <Box onClick={e => e.stopPropagation()}>{playButton}</Box>
+      <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
+      <Info playlist={playlist} isBusy={isBusy} isPausing={isPausing} />
+      <Actions
+        playlist={playlist}
+        isBusy={isBusy}
+        isPausing={isPausing}
+        isRetrying={isRetrying}
+        online={online}
+        canGenerateSimilar={canGenerateSimilar}
+        hasGeneratedPlaylist={hasGeneratedPlaylist}
+        isLockedBySource={isLockedBySource}
+        onOpen={open}
+        onRename={onRename}
+        onSync={onSync}
+        onRetryFailed={onRetryFailed}
+        onScanHq={onScanHq}
+        onTogglePause={onTogglePause}
+        onDelete={onDelete}
+        onGenerateSimilar={onGenerateSimilar}
+      />
+    </Paper>
   );
 }

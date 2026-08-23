@@ -203,6 +203,18 @@ export interface SyncPhase {
   current: number;
   total: number;
   title: string;
+  // Ids of every video with a real, terminal verdict so far *this specific
+  // pass* — oldest-first (i.e. processing order, since both workers walk
+  // `position asc`). Deliberately not derived from qualityCheckStatus/
+  // metadataStatus alone: those persist across passes, so under `rescanAll`
+  // (Scan for HQ) a row already 'checked' from a past ordinary sync would
+  // look "already done" even though this specific rescan hasn't reached it
+  // yet. This list is the one thing that's accurate for both regular syncs
+  // and rescans.
+  processedIds: string[];
+  // Subset of processedIds (quality phase only) that got a genuinely new HQ
+  // upgrade this pass — same "genuinely new" definition as onHqFound below.
+  hqFoundIds: string[];
 }
 
 // Once every video is downloaded, downloadPendingVideos still has metadata
@@ -606,12 +618,30 @@ export async function downloadPendingVideos(
     // from "stuck", for however long these take (an HQ check with the
     // auto-download toggle on does real slskd searches and file transfers,
     // which visibly can take a while).
+    // Reset per phase (not shared/accumulated across metadata → quality) —
+    // each is its own pass over its own candidate set, so "processed so far"
+    // starts fresh when quality picks up where metadata left off. The same
+    // array reference is reused across every callback within one phase (and
+    // read directly by getSyncPhase between syncPhases.set calls, not just
+    // at them), so a push below is visible to a poll immediately.
+    const metadataProcessedIds: string[] = [];
     await resolvePlaylistMetadata(playlistId, {
-      onProgress: (current, total, title) => syncPhases.set(playlistId, { phase: 'metadata', current, total, title }),
+      onProgress: (current, total, title) => syncPhases.set(playlistId, {
+        phase: 'metadata', current, total, title, processedIds: metadataProcessedIds, hqFoundIds: [],
+      }),
+      onVideoProcessed: (videoId) => metadataProcessedIds.push(videoId),
     });
+    const qualityProcessedIds: string[] = [];
+    const qualityHqFoundIds: string[] = [];
     await resolvePlaylistQuality(playlistId, {
-      onProgress: (current, total, title) => syncPhases.set(playlistId, { phase: 'quality', current, total, title }),
-      onHqFound: report ? () => report.stats.newHqCount++ : undefined,
+      onProgress: (current, total, title) => syncPhases.set(playlistId, {
+        phase: 'quality', current, total, title, processedIds: qualityProcessedIds, hqFoundIds: qualityHqFoundIds,
+      }),
+      onVideoProcessed: (videoId) => qualityProcessedIds.push(videoId),
+      onHqFound: (videoId) => {
+        qualityHqFoundIds.push(videoId);
+        if (report) report.stats.newHqCount++;
+      },
       rescanAll,
     });
 

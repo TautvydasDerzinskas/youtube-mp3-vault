@@ -78,6 +78,9 @@
     "pacingMessage": "Lėtinama…",
     "metadataPhaseMessage": "Nustatomi metaduomenys {{current}}/{{total}} — {{title}}",
     "qualityPhaseMessage": "Ieškoma HQ failo „{{title}}“ ({{current}}/{{total}})",
+    "hqFoundSoFar_one": "Rastas {{count}} HQ atnaujinimas",
+    "hqFoundSoFar_few": "Rasti {{count}} HQ atnaujinimai",
+    "hqFoundSoFar_other": "Rasta {{count}} HQ atnaujinimų",
     "rename": "Pervadinti",
     "syncNow": "Sinchronizuoti dabar",
     "syncError": "Nepavyko pradėti sinchronizavimo.",
@@ -121,6 +124,10 @@
     "allTracks": {
       "title": "Visos dainos",
       "sourcedFromYoutube": "Šaltinis: YouTube"
+    },
+    "syncingPage": {
+      "starting": "Pradedama sinchronizacija…",
+      "waiting": "Dainos rodysis čia, kai tik bus apdorotos…"
     },
     "addDialog": {
       "title": "Pridėti grojaraštį",

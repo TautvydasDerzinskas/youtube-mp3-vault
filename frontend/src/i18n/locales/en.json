@@ -78,6 +78,8 @@
     "pacingMessage": "Pacing…",
     "metadataPhaseMessage": "Resolving metadata {{current}}/{{total}} — {{title}}",
     "qualityPhaseMessage": "Searching HQ file for '{{title}}' ({{current}}/{{total}})",
+    "hqFoundSoFar_one": "{{count}} HQ upgrade found so far",
+    "hqFoundSoFar_other": "{{count}} HQ upgrades found so far",
     "rename": "Rename",
     "syncNow": "Sync now",
     "syncError": "Failed to start sync.",
@@ -117,6 +119,10 @@
     "allTracks": {
       "title": "All Tracks",
       "sourcedFromYoutube": "Sourced from YouTube"
+    },
+    "syncingPage": {
+      "starting": "Starting sync…",
+      "waiting": "Tracks will appear here as they're processed…"
     },
     "addDialog": {
       "title": "Add Playlist",

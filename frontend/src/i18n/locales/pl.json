@@ -78,6 +78,10 @@
     "pacingMessage": "Zwalnianie tempa…",
     "metadataPhaseMessage": "Ustalanie metadanych {{current}}/{{total}} — {{title}}",
     "qualityPhaseMessage": "Szukanie pliku HQ dla „{{title}}” ({{current}}/{{total}})",
+    "hqFoundSoFar_one": "Znaleziono {{count}} ulepszenie HQ",
+    "hqFoundSoFar_few": "Znaleziono {{count}} ulepszenia HQ",
+    "hqFoundSoFar_many": "Znaleziono {{count}} ulepszeń HQ",
+    "hqFoundSoFar_other": "Znaleziono {{count}} ulepszenia HQ",
     "rename": "Zmień nazwę",
     "syncNow": "Synchronizuj teraz",
     "syncError": "Nie udało się rozpocząć synchronizacji.",
@@ -125,6 +129,10 @@
     "allTracks": {
       "title": "Wszystkie utwory",
       "sourcedFromYoutube": "Źródło: YouTube"
+    },
+    "syncingPage": {
+      "starting": "Rozpoczynanie synchronizacji…",
+      "waiting": "Utwory pojawią się tutaj w miarę ich przetwarzania…"
     },
     "addDialog": {
       "title": "Dodaj playlistę",

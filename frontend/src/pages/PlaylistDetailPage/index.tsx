@@ -82,6 +82,17 @@ export default function PlaylistDetailPage() {
     return <Alert severity="error" sx={{ m: 3 }}>{t('playlists.detail.failedToLoad')}</Alert>;
   }
 
+  // A playlist that's actually busy (direct link, bookmark, refresh, or a
+  // sync starting elsewhere while this URL happened to already be loaded)
+  // belongs on the dedicated syncing view instead — this page's sort/filter/
+  // search controls don't make sense against a list still being mutated out
+  // from under them. Only checked once at load, not on every poll tick —
+  // this page doesn't poll at all, so a sync starting *while already sitting
+  // here* isn't caught until the next navigation/reload.
+  if (playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || playlist.syncStatus === 'retrying') {
+    return <Navigate to={`/playlists/${playlistId}/syncing`} replace />;
+  }
+
   return (
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header

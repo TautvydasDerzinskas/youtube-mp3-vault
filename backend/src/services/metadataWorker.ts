@@ -62,9 +62,17 @@ async function resolveFallbackMetadata(title: string, channelName: string | null
 // displayed.
 export async function resolvePlaylistMetadata(
   playlistId: string,
-  options: { force?: boolean; onProgress?: (current: number, total: number, title: string) => void } = {}
+  options: {
+    force?: boolean;
+    onProgress?: (current: number, total: number, title: string) => void;
+    // Fired once a video has a real, terminal verdict for this pass (found,
+    // fallback, or errored) — not fired for one skipped because it vanished
+    // from the DB mid-lookup (Prisma P2025 below), same "not a real verdict
+    // yet" reasoning as resolvePlaylistQuality's onVideoProcessed.
+    onVideoProcessed?: (videoId: string) => void;
+  } = {}
 ): Promise<void> {
-  const { force = false, onProgress } = options;
+  const { force = false, onProgress, onVideoProcessed } = options;
 
   const videos = await prisma.playlistVideo.findMany({
     where: force
@@ -124,6 +132,7 @@ export async function resolvePlaylistMetadata(
           });
         }
       }
+      onVideoProcessed?.(video.id);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') continue;
 
@@ -131,6 +140,7 @@ export async function resolvePlaylistMetadata(
       await prisma.playlistVideo
         .update({ where: { id: video.id }, data: { metadataStatus: 'error', metadataFetchedAt: new Date() } })
         .catch(() => {});
+      onVideoProcessed?.(video.id);
     }
   }
 }

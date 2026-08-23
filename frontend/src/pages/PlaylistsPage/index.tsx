@@ -42,8 +42,7 @@ export default function PlaylistsPage() {
   }, []);
 
   const {
-    playlists, loading, error, syncing, retrying, videoCache, setVideoCache,
-    expanded, setExpanded, updatePlaylist, handleAdded, handleSync,
+    playlists, loading, error, syncing, retrying, updatePlaylist, handleAdded, handleSync,
     handleRetryFailed, handleScanHq, handleTogglePause, handleDelete: rawHandleDelete,
     handleGenerateSimilar,
   } = usePlaylists();
@@ -191,19 +190,14 @@ export default function PlaylistsPage() {
         <PlaylistRow
           key={playlist.id}
           playlist={playlist}
-          expanded={expanded === playlist.id}
-          onToggleExpand={open => setExpanded(open ? playlist.id : false)}
           isSyncingLocally={syncing.has(playlist.id)}
           isRetryingLocally={retrying.has(playlist.id)}
           online={online}
           canGenerateSimilar={canGenerateSimilar}
           hasGeneratedPlaylist={generatedSourceIds.has(playlist.id)}
           isLockedBySource={busyGeneratedSourceIds.has(playlist.id)}
-          videoCache={videoCache}
-          setVideoCache={setVideoCache}
           nowPlaying={nowPlaying}
           isAudioPlaying={isAudioPlaying}
-          onTogglePlay={handleTogglePlay}
           onPlayFirst={handlePlayFirst}
           onRename={setRenaming}
           onSync={handleSync}

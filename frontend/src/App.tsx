@@ -7,6 +7,7 @@ import AppLayout from './components/Layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
+import SyncingPlaylistDetailPage from './pages/SyncingPlaylistDetailPage';
 import AllTracksPage from './pages/AllTracksPage';
 import ArtistsPage from './pages/ArtistsPage';
 import ArtistDetailPage from './pages/ArtistDetailPage';
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="genres" element={<GenresPage />} />
           <Route path="all-tracks" element={<AllTracksPage />} />
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />
+          <Route path="playlists/:id/syncing" element={<SyncingPlaylistDetailPage />} />
           <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/email" element={<ChangeEmailPage />} />

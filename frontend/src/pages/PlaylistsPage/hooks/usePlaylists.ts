@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, Playlist } from '../../../api/youtube';
 import { useToast } from '../../../contexts/ToastContext';
-import { VideoState } from '../types';
 import { displayName } from '../utils';
 
 export function usePlaylists() {
@@ -11,17 +10,12 @@ export function usePlaylists() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | false>(false);
-  const [videoCache, setVideoCache] = useState<Record<string, VideoState>>({});
   const [syncing, setSyncing] = useState<Set<string>>(new Set());
   // Subset of `syncing` specifically for retry-failed requests still in
   // flight — lets the UI know not to offer pause during the brief window
   // before the backend's 'retrying' syncStatus comes back (see PlaylistRow).
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const expandedRef = useRef<string | false>(false);
-
-  useEffect(() => { expandedRef.current = expanded; }, [expanded]);
 
   const loadPlaylists = useCallback(async () => {
     try {
@@ -41,12 +35,6 @@ export function usePlaylists() {
     if (!hasSyncing) return;
     pollRef.current = setTimeout(async () => {
       const fresh = await loadPlaylists();
-      const currentExpanded = expandedRef.current;
-      if (currentExpanded) {
-        playlistsApi.getVideos(currentExpanded)
-          .then(({ videos }) => setVideoCache(prev => ({ ...prev, [currentExpanded]: videos })))
-          .catch(() => {});
-      }
       schedulePoll(fresh);
     }, 3000);
   }, [loadPlaylists]);
@@ -131,7 +119,6 @@ export function usePlaylists() {
     try {
       await playlistsApi.remove(playlist.id);
       setPlaylists(prev => prev.filter(p => p.id !== playlist.id));
-      if (expanded === playlist.id) setExpanded(false);
       showSuccess(t('playlists.deleted', { name: displayName(playlist) }));
       return true;
     } catch (err: any) {
@@ -152,8 +139,6 @@ export function usePlaylists() {
 
   return {
     playlists, loading, error, syncing, retrying,
-    videoCache, setVideoCache,
-    expanded, setExpanded,
     updatePlaylist, handleAdded, handleSync, handleRetryFailed, handleScanHq, handleTogglePause, handleDelete,
     handleGenerateSimilar,
   };

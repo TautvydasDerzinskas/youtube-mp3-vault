@@ -8,10 +8,9 @@ interface InfoProps {
   playlist: Playlist;
   isBusy: boolean;
   isPausing: boolean;
-  expanded: boolean;
 }
 
-export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
+export function Info({ playlist, isBusy, isPausing }: InfoProps) {
   const { t } = useTranslation();
   const progress = playlist.videoCount > 0
     ? Math.round(((playlist.downloadedCount + playlist.failedCount) / playlist.videoCount) * 100) : 0;
@@ -64,7 +63,13 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
         {playlist.syncStatus === 'generating' ? (
           <Chip label={t('playlists.generatingChip')} size="small" color="info" sx={{ fontSize: 11 }} />
         ) : isBusy ? (
-          <Chip label={t('playlists.syncing')} size="small" color="info" sx={{ fontSize: 11 }} />
+          <>
+            <Chip label={t('playlists.syncing')} size="small" color="info" sx={{ fontSize: 11 }} />
+            {playlist.syncPhase?.phase === 'quality' && playlist.syncPhase.hqFoundIds.length > 0 && (
+              <Chip label={t('playlists.hqFoundSoFar', { count: playlist.syncPhase.hqFoundIds.length })}
+                size="small" color="success" variant="outlined" sx={{ fontSize: 11 }} />
+            )}
+          </>
         ) : (
           <>
             {isGenerated ? (
@@ -105,7 +110,7 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
             ? t('playlists.pausingMessage', { title: playlist.currentVideo.title })
             : t('playlists.pausingMessageGeneric')}
         </Typography>
-      ) : playlist.syncPhase && !expanded ? (
+      ) : playlist.syncPhase ? (
         // Every video is downloaded by this point — metadata resolution and
         // (potentially slow, real slskd searches/transfers) HQ quality
         // checking are all that's left, so this is a distinct message + a
@@ -118,7 +123,7 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
             { current: playlist.syncPhase.current, total: playlist.syncPhase.total, title: playlist.syncPhase.title }
           )}
         </Typography>
-      ) : playlist.isPacing && !expanded ? (
+      ) : playlist.isPacing ? (
         // Between downloads, nothing has downloadStatus 'downloading' — this
         // fills the same slot the syncing message occupies the rest of the
         // time, so the row's height doesn't shift every time pacing kicks in.
@@ -126,7 +131,7 @@ export function Info({ playlist, isBusy, isPausing, expanded }: InfoProps) {
           {t('playlists.pacingMessage')}
         </Typography>
       ) : (
-        isBusy && !expanded && playlist.currentVideo && (
+        isBusy && playlist.currentVideo && (
           <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ mt: 0.25 }}>
             {t('playlists.syncingMessage', {
               // Not playlist.currentVideo.position — that's the video's raw

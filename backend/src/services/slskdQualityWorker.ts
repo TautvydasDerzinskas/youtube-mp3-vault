@@ -56,12 +56,21 @@ export async function resolvePlaylistQuality(
     // actually downloaded (auto-download mode) or just newly flagged
     // available — never for a video whose upgrade was already known from a
     // past check, even under rescanAll. Only syncService.ts's
-    // downloadPendingVideos passes one, to accumulate SyncStats.newHqCount.
-    onHqFound?: () => void;
+    // downloadPendingVideos passes one, to accumulate SyncStats.newHqCount
+    // and the live per-pass hqFoundIds list (see SyncPhase).
+    onHqFound?: (videoId: string) => void;
+    // Fired once a video has a real, terminal verdict for this pass —
+    // downloaded, flagged available-but-undownloaded, or confirmed no
+    // upgrade exists/errored. Deliberately NOT fired for a video skipped
+    // only because it's still waiting on a future metadata pass, or one
+    // that vanished from the DB mid-check (Prisma P2025 below) — neither is
+    // a real verdict, just "still nothing to say yet." Lets the caller
+    // build a live "already handled this pass" list (see SyncPhase.processedIds).
+    onVideoProcessed?: (videoId: string) => void;
     rescanAll?: boolean;
   } = {}
 ): Promise<void> {
-  const { onProgress, onHqFound, rescanAll = false } = options;
+  const { onProgress, onHqFound, onVideoProcessed, rescanAll = false } = options;
   const videos = await prisma.playlistVideo.findMany({
     where: rescanAll
       ? { playlistId, downloadStatus: 'done', hqFileDownloaded: false }
@@ -110,6 +119,7 @@ export async function resolvePlaylistQuality(
       await prisma.playlistVideo
         .update({ where: { id: video.id }, data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() } })
         .catch(() => {});
+      onVideoProcessed?.(video.id);
       continue;
     }
 
@@ -123,6 +133,7 @@ export async function resolvePlaylistQuality(
       await prisma.playlistVideo
         .update({ where: { id: video.id }, data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() } })
         .catch(() => {});
+      onVideoProcessed?.(video.id);
       continue;
     }
 
@@ -175,7 +186,8 @@ export async function resolvePlaylistQuality(
           // hqFileDownloaded was false going into this pass (the query above
           // filters on it) — an actual replacement is always a genuinely new
           // find, never a re-affirmation of one already known.
-          onHqFound?.();
+          onHqFound?.(video.id);
+          onVideoProcessed?.(video.id);
           continue; // downloadAndReplace* already updated every flag/status itself
         }
 
@@ -186,6 +198,7 @@ export async function resolvePlaylistQuality(
             where: { id: video.id },
             data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() },
           });
+          onVideoProcessed?.(video.id);
           continue;
         }
 
@@ -196,16 +209,17 @@ export async function resolvePlaylistQuality(
         // available and leave qualityCheckStatus pending so the next sync
         // retries the download, rather than a one-off failure permanently
         // giving up on it.
-        if (!video.betterQualityExists) onHqFound?.(); // wasn't already known before this pass
+        if (!video.betterQualityExists) onHqFound?.(video.id); // wasn't already known before this pass
         await prisma.playlistVideo.update({
           where: { id: video.id },
           data: { betterQualityExists: true },
         });
+        onVideoProcessed?.(video.id);
         continue;
       }
 
       const betterBitrate = await findBetterQualityMp3(video.artist, video.title, video.bitrate);
-      if (betterBitrate !== null && !video.betterQualityExists) onHqFound?.(); // wasn't already known before this pass
+      if (betterBitrate !== null && !video.betterQualityExists) onHqFound?.(video.id); // wasn't already known before this pass
       await prisma.playlistVideo.update({
         where: { id: video.id },
         data: {
@@ -214,6 +228,7 @@ export async function resolvePlaylistQuality(
           qualityCheckedAt: new Date(),
         },
       });
+      onVideoProcessed?.(video.id);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') continue;
 
@@ -221,6 +236,7 @@ export async function resolvePlaylistQuality(
       await prisma.playlistVideo
         .update({ where: { id: video.id }, data: { qualityCheckStatus: 'error', qualityCheckedAt: new Date() } })
         .catch(() => {});
+      onVideoProcessed?.(video.id);
     }
   }
 }

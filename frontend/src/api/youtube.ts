@@ -1,5 +1,22 @@
 import client from './client';
 
+export interface SyncPhase {
+  phase: 'metadata' | 'quality';
+  current: number;
+  total: number;
+  title: string;
+  // Ids of every video with a real, terminal verdict so far this pass,
+  // oldest-first (processing order) — see backend/src/services/syncService.ts's
+  // SyncPhase for why this can't just be derived from qualityCheckStatus/
+  // metadataStatus (those persist across passes, so under a "Scan for HQ"
+  // rescan an already-`checked` row would look done before this pass ever
+  // reaches it).
+  processedIds: string[];
+  // Subset of processedIds (quality phase only) that got a genuinely new HQ
+  // upgrade this pass.
+  hqFoundIds: string[];
+}
+
 export interface Playlist {
   id: string;
   // Null only for a generated ("similar playlist") entry — see sourcePlaylistId.
@@ -31,7 +48,7 @@ export interface Playlist {
   // real file transfers), so this is what backs a distinct "still working"
   // message and progress bar instead of the download progress bar just
   // sitting at 100% with nothing to distinguish "working" from "stuck".
-  syncPhase: { phase: 'metadata' | 'quality'; current: number; total: number; title: string } | null;
+  syncPhase: SyncPhase | null;
   // Set only on a generated playlist — the source it was generated from
   // (sourcePlaylistName is a snapshot, so it survives the source being
   // renamed or deleted later).
