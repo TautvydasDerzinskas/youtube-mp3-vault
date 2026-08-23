@@ -22,15 +22,21 @@ const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Fir
 const FETCH_TIMEOUT_MS = 15_000;
 const DOWNLOAD_FETCH_TIMEOUT_MS = 3 * 60_000;
 
-// A long-lived, always-available track used purely to probe an account's
-// capabilities — same track id the Python reference implementation's
-// test_deezer_login() uses. Fetching its private track page both confirms
-// the "arl" cookie is actually logged in (an anonymous/expired session's
-// response is missing "MD5_ORIGIN" entirely, see below) and hands back a
-// real TRACK_TOKEN, which is what get_song_url actually needs — reused here
-// to probe which quality formats (FLAC / MP3_320) this account can stream
-// without needing a second, unrelated song.
-const PROBE_TRACK_ID = '917265';
+// A long-lived, widely-available track used purely to probe an account's
+// capabilities. Fetching its private track page both confirms the "arl"
+// cookie is actually logged in (an anonymous/expired session's response is
+// missing "MD5_ORIGIN" entirely, see below) and hands back a real
+// TRACK_TOKEN, which is what get_song_url actually needs — reused here to
+// probe which quality formats (FLAC / MP3_320) this account can stream
+// without needing a second, unrelated song. NOTE: the Python reference
+// implementation's test_deezer_login() originally used track id 917265, but
+// that track has since been pulled from Deezer's catalog entirely
+// (available_countries: [] on the public API) — any request for it now 404s
+// regardless of login state, which made verifyDeezerLogin/establishDeezerSession
+// reject every cookie as invalid. If this id ever meets the same fate, check
+// https://api.deezer.com/track/<id> for a non-empty available_countries
+// before picking a replacement.
+const PROBE_TRACK_ID = '3135556';
 
 function withCookie(arlCookie: string): string {
   return `arl=${arlCookie}; comeback=1`;
