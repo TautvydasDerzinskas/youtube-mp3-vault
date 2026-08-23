@@ -106,11 +106,21 @@ async function getUserData(cookieHeader: string): Promise<DeezerUserData | null>
 // (unnecessary here: the JSON payload's own opening brace is a specific
 // enough anchor that scanning the raw page text finds the same substring a
 // script-tag walk would, and Deezer's page only ever embeds this once).
+// The regex itself is greedy to end-of-line (no `s` flag, so `.` still stops
+// at a real newline) rather than tracking brace depth — cheap, and correct
+// as long as nothing but the JSON sits on that line. That assumption used to
+// hold because the line ended right after the JSON; Deezer has since started
+// emitting the closing `</script>` on the very same line with no newline in
+// between, so the match now swallows that tag text too and JSON.parse chokes
+// on it as trailing garbage. Trimming at the first `</script>` in the match
+// restores the exact substring that used to be captured.
 function extractDzrAppState(html: string): any | null {
   const match = html.match(/\{"DATA":.*/);
   if (!match) return null;
+  const scriptEnd = match[0].indexOf('</script>');
+  const jsonText = scriptEnd === -1 ? match[0] : match[0].slice(0, scriptEnd);
   try {
-    return JSON.parse(match[0]);
+    return JSON.parse(jsonText);
   } catch {
     return null;
   }
