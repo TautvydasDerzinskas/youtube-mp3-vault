@@ -1,17 +1,9 @@
 import { useEffect } from 'react';
-import {
-  Box, Typography, CircularProgress, Alert, IconButton, Tooltip, List, ListItem,
-  ListItemAvatar, ListItemText, Avatar, Stack,
-} from '@mui/material';
-import {
-  MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
-  PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, WarningAmber as WarningAmberIcon,
-  HighQuality as HqIcon,
-} from '@mui/icons-material';
+import { Box, Typography, CircularProgress, Alert, List } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../../api/youtube';
 import { VideoState, NowPlaying } from './types';
-import { formatBytes, formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON, isLowBitrate } from './utils';
+import { TrackRow } from './TrackRow';
 
 interface VideoListProps {
   playlistId: string;
@@ -65,80 +57,8 @@ export function VideoList({ playlistId, cache, setCache, nowPlaying, isAudioPlay
       {visible.map(v => {
         const isCurrentTrack = nowPlaying?.playlistId === playlistId && nowPlaying?.videoId === v.id;
         return (
-          <ListItem key={v.id} disableGutters
-            sx={{ py: 0.4, opacity: v.downloadStatus === 'removed' ? 0.35 : 1,
-              bgcolor: isCurrentTrack ? 'action.selected' : 'transparent', borderRadius: 1 }}>
-            <Box sx={{ width: 44, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-              {v.downloadStatus === 'done' && (
-                <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-                  <IconButton onClick={() => onTogglePlay(playlistId, v)} sx={{ color: 'primary.main' }}>
-                    {isCurrentTrack && isAudioPlaying
-                      ? <PauseTrackIcon sx={{ fontSize: 26 }} />
-                      : <PlayArrowIcon sx={{ fontSize: 26 }} />}
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-            <ListItemAvatar sx={{ minWidth: 48 }}>
-              <Box sx={{ position: 'relative' }}>
-                <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 38, height: 26, borderRadius: 1 }}>
-                  <MusicNoteIcon sx={{ fontSize: 14 }} />
-                </Avatar>
-                {(v.hqFileDownloaded || v.betterQualityExists) && (
-                  <Tooltip title={v.hqFileDownloaded ? t('playlists.videoList.hqDownloaded') : t('playlists.videoList.hqAvailable')}>
-                    <Box sx={{
-                      position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      bgcolor: 'rgba(0,0,0,0.45)', borderRadius: 1,
-                    }}>
-                      <HqIcon sx={{ fontSize: 16, color: v.hqFileDownloaded ? 'success.main' : 'grey.300' }} />
-                    </Box>
-                  </Tooltip>
-                )}
-              </Box>
-            </ListItemAvatar>
-            <ListItemText
-              primary={v.title}
-              primaryTypographyProps={{ variant: 'body2', noWrap: true,
-                sx: { textDecoration: v.downloadStatus === 'removed' ? 'line-through' : 'none',
-                  fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' } }}
-              secondary={
-                <Typography variant="caption" color="text.secondary">
-                  #{v.position}{v.artist ? ` · ${v.artist}` : ''}{v.releaseYear ? ` · ${v.releaseYear}` : ''}{v.genres.length > 0 ? ` · ${v.genres.map(formatGenre).join(', ')}` : ''}{v.fileSize ? ` · ${formatBytes(v.fileSize)}` : ''}{v.downloadStatus === 'done' && v.bitrate ? ` · ${v.bitrate}kbps` : ''}
-                </Typography>
-              }
-            />
-            {v.playCount > 0 && (
-              <Typography variant="caption" color="text.secondary" noWrap sx={{ flexShrink: 0, textAlign: 'left', ml: 1 }}>
-                {t('artists.detail.totalPlayCount', { count: v.playCount })}
-              </Typography>
-            )}
-            <Stack direction="row" alignItems="center" gap={0.5} sx={{ flexShrink: 0, ml: 1 }}>
-              <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
-                <Box sx={{ display: 'flex' }}>{STATUS_ICON[v.downloadStatus] ?? null}</Box>
-              </Tooltip>
-              {v.downloadStatus === 'done' && isLowBitrate(v.bitrate) && (
-                <Tooltip title={t('playlists.videoList.lowQuality', { bitrate: v.bitrate })}>
-                  <WarningAmberIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-                </Tooltip>
-              )}
-              {v.duration && (
-                <Typography variant="caption" color="text.secondary">{formatDuration(v.duration)}</Typography>
-              )}
-              <Tooltip title={t('playlists.videoList.watchOnYouTube')}>
-                <IconButton size="small" component="a" href={youtubeWatchUrl(v.youtubeId)}
-                  target="_blank" rel="noopener noreferrer">
-                  <YouTubeIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
-              {v.downloadStatus === 'done' && (
-                <Tooltip title={t('playlists.videoList.downloadMp3')}>
-                  <IconButton size="small" component="a" href={playlistsApi.downloadUrl(playlistId, v.id)} download>
-                    <DownloadIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Stack>
-          </ListItem>
+          <TrackRow key={v.id} playlistId={playlistId} video={v} isCurrentTrack={isCurrentTrack}
+            isAudioPlaying={isAudioPlaying} onTogglePlay={() => onTogglePlay(playlistId, v)} />
         );
       })}
     </List>

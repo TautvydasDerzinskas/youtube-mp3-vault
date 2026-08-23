@@ -2,6 +2,7 @@ import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip, CircularProg
 import {
   MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseIcon, Download as DownloadIcon,
+  HighQuality as HqIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -72,6 +73,11 @@ export function Header({ playlistId, video, isPlayingThis, onTogglePlay, usedIn 
       <Box sx={{ mt: 2 }}>
         <Stack direction="row" gap={1} flexWrap="wrap">
           {video.duration && <Chip size="small" variant="outlined" label={formatDuration(video.duration)} />}
+          {video.hqFileDownloaded && (
+            <Tooltip title={t('playlists.videoList.hqDownloaded')}>
+              <Chip size="small" color="success" icon={<HqIcon sx={{ fontSize: 16 }} />} label={t('playlists.trackDetail.hqLabel')} />
+            </Tooltip>
+          )}
           <Chip size="small" variant="outlined" label={t('artists.detail.totalPlayCount', { count: video.playCount })} />
         </Stack>
 

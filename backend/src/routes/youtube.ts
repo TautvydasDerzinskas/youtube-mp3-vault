@@ -565,6 +565,8 @@ router.get('/:id/videos/:videoId/recommendations', requireAuth, async (req: Auth
       select: {
         id: true, playlistId: true, youtubeId: true, title: true, artist: true,
         genres: true, thumbnailUrl: true, duration: true, playCount: true, audioEmbedding: true,
+        betterQualityExists: true, hqFileDownloaded: true,
+        position: true, releaseYear: true, fileSize: true, bitrate: true, downloadError: true,
       },
     });
 

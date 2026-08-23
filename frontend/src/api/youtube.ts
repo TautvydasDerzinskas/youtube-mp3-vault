@@ -85,6 +85,13 @@ export interface RecommendedTrack {
   duration: number | null;
   playCount: number;
   similarity: number;
+  betterQualityExists: boolean;
+  hqFileDownloaded: boolean;
+  position: number;
+  releaseYear: number | null;
+  fileSize: number | null;
+  bitrate: number | null;
+  downloadError: string | null;
 }
 
 // A YouTube search result, never downloaded — just a link out. See

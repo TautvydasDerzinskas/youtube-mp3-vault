@@ -1,16 +1,10 @@
-import {
-  Box, Typography, List, ListItemButton, ListItemAvatar, Avatar, ListItemText,
-  CircularProgress, IconButton, Tooltip,
-} from '@mui/material';
-import {
-  MusicNote as MusicNoteIcon, PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon,
-} from '@mui/icons-material';
+import { Box, Typography, List, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { RecommendedTrack } from '../../api/youtube';
-import { formatDuration, formatGenre } from '../PlaylistsPage/utils';
 import { NowPlaying } from '../PlaylistsPage/types';
 import { QueueTrack } from '../../contexts/PlayerContext';
+import { TrackRow } from '../PlaylistsPage/TrackRow';
 
 function toQueueTrack(rec: RecommendedTrack): QueueTrack {
   return {
@@ -20,23 +14,23 @@ function toQueueTrack(rec: RecommendedTrack): QueueTrack {
     title: rec.title,
     duration: rec.duration,
     thumbnailUrl: rec.thumbnailUrl,
-    position: 0,
+    position: rec.position,
     isAvailable: true,
     downloadStatus: 'done',
-    downloadError: null,
-    fileSize: null,
-    bitrate: null,
+    downloadError: rec.downloadError,
+    fileSize: rec.fileSize,
+    bitrate: rec.bitrate,
     addedAt: '',
     artist: rec.artist,
     album: null,
     trackNumber: null,
     genres: rec.genres,
-    releaseYear: null,
+    releaseYear: rec.releaseYear,
     metadataStatus: 'pending',
     playCount: rec.playCount,
     lastPlayedAt: null,
-    betterQualityExists: false,
-    hqFileDownloaded: false,
+    betterQualityExists: rec.betterQualityExists,
+    hqFileDownloaded: rec.hqFileDownloaded,
   };
 }
 
@@ -53,7 +47,9 @@ interface RecommendedTracksProps {
  * Renders nothing but a bare spinner while loading (no title), and nothing
  * at all once resolved if there's nothing to show — same contract as
  * DiscoverTracks and RemixLinks, so the three sections behave identically
- * regardless of which ones end up with content.
+ * regardless of which ones end up with content. Rows reuse TrackRow, the
+ * same component the playlist page's own track list renders, so a track
+ * looks and behaves identically here as it does there.
  */
 export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onTogglePlay }: RecommendedTracksProps) {
   const { t } = useTranslation();
@@ -76,38 +72,10 @@ export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onToggleP
         {state.map((rec, index) => {
           const isCurrentTrack = nowPlaying?.playlistId === rec.playlistId && nowPlaying?.videoId === rec.id;
           return (
-            <ListItemButton key={rec.id} onClick={() => navigate(`/playlists/${rec.playlistId}/${rec.id}`)}
-              selected={isCurrentTrack}
-              sx={{ borderBottom: '1px solid #2a2a2a', '&:last-of-type': { borderBottom: 'none' } }}>
-              <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-                <IconButton onClick={(e) => { e.stopPropagation(); onTogglePlay(rec.playlistId, queue[index], queue); }} sx={{ color: 'primary.main', flexShrink: 0, mr: 0.5 }}>
-                  {isCurrentTrack && isAudioPlaying
-                    ? <PauseTrackIcon sx={{ fontSize: 28 }} />
-                    : <PlayArrowIcon sx={{ fontSize: 28 }} />}
-                </IconButton>
-              </Tooltip>
-              <ListItemAvatar sx={{ minWidth: 52 }}>
-                <Avatar src={rec.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1 }}>
-                  <MusicNoteIcon sx={{ fontSize: 16 }} />
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary={rec.title}
-                secondary={[rec.artist, rec.genres.length > 0 ? rec.genres.map(formatGenre).join(', ') : null].filter(Boolean).join(' · ') || undefined}
-                primaryTypographyProps={{ variant: 'body2', noWrap: true, fontWeight: isCurrentTrack ? 700 : 400, color: isCurrentTrack ? 'primary.main' : 'inherit' }}
-                secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-              />
-              {rec.playCount > 0 && (
-                <Typography variant="caption" color="text.secondary" noWrap sx={{ flexShrink: 0, ml: 1, display: { xs: 'none', sm: 'block' } }}>
-                  {t('artists.detail.totalPlayCount', { count: rec.playCount })}
-                </Typography>
-              )}
-              {rec.duration != null && (
-                <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, ml: 1, mr: 1 }}>
-                  {formatDuration(rec.duration)}
-                </Typography>
-              )}
-            </ListItemButton>
+            <TrackRow key={rec.id} playlistId={rec.playlistId} video={queue[index]} isCurrentTrack={isCurrentTrack}
+              isAudioPlaying={isAudioPlaying} onTogglePlay={() => onTogglePlay(rec.playlistId, queue[index], queue)}
+              onClick={() => navigate(`/playlists/${rec.playlistId}/${rec.id}`)}
+              sx={{ borderRadius: 0, borderBottom: '1px solid #2a2a2a', '&:last-of-type': { borderBottom: 'none' } }} />
           );
         })}
       </List>

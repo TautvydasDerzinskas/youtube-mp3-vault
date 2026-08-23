@@ -233,7 +233,8 @@
       "recommendedTitle": "Similar songs",
       "discoverTitle": "Discover",
       "openInSpotify": "Search on Spotify",
-      "remixesTitle": "Remixes on YouTube"
+      "remixesTitle": "Remixes on YouTube",
+      "hqLabel": "HQ"
     }
   },
   "profile": {

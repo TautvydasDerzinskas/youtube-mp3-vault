@@ -25,7 +25,7 @@ export default function TrackDetailPage() {
   const isPlayingThis = nowPlaying?.playlistId === playlistId && nowPlaying?.videoId === video.id && isAudioPlaying;
 
   return (
-    <Box sx={{ p: 3, maxWidth: 900, mx: 'auto' }}>
+    <Box sx={{ p: 3 }}>
       <Header
         playlistId={playlistId}
         video={video}
