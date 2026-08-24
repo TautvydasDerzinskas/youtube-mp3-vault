@@ -174,8 +174,8 @@ export async function resolvePlaylistQuality(
       if (isHqAutoDownloadEnabled()) {
         let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
         let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
-        let bandcampCandidate: Awaited<ReturnType<typeof findBandcampCandidate>> = null;
         let deezerCandidate: Awaited<ReturnType<typeof findDeezerCandidate>> = null;
+        let bandcampCandidate: Awaited<ReturnType<typeof findBandcampCandidate>> = null;
         let replaced = false;
 
         // Each source is isolated in its own try/catch — an unexpected
@@ -210,24 +210,11 @@ export async function resolvePlaylistQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate) {
-          // slskd and JioSaavn both came up empty — try Bandcamp's free
-          // catalog before falling back to a per-user paid source.
-          try {
-            bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
-            if (!bandcampCandidate && hasCleanedFallback) {
-              bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
-            }
-            if (bandcampCandidate) replaced = await downloadAndReplaceViaBandcamp(video, bandcampCandidate);
-          } catch (err) {
-            console.error(`[bandcamp] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
-          }
-        }
-
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !bandcampCandidate && deezerSession) {
-          // All three free sources came up empty — last resort is this
-          // playlist's owner's own Deezer account, already confirmed usable
-          // once up front for this whole sync pass (see deezerSession above).
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && deezerSession) {
+          // slskd and JioSaavn both came up empty — try this playlist's
+          // owner's own Deezer account next (already confirmed usable once
+          // up front for this whole sync pass, see deezerSession above),
+          // ahead of Bandcamp's free catalog.
           try {
             deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration);
             if (!deezerCandidate && hasCleanedFallback) {
@@ -236,6 +223,21 @@ export async function resolvePlaylistQuality(
             if (deezerCandidate) replaced = await downloadAndReplaceViaDeezer(video, deezerSession, deezerCandidate);
           } catch (err) {
             console.error(`[deezer] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          }
+        }
+
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate) {
+          // Nothing above found anything (or there's no Deezer account
+          // connected for this playlist) — Bandcamp's free catalog is the
+          // last resort.
+          try {
+            bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
+            if (!bandcampCandidate && hasCleanedFallback) {
+              bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
+            if (bandcampCandidate) replaced = await downloadAndReplaceViaBandcamp(video, bandcampCandidate);
+          } catch (err) {
+            console.error(`[bandcamp] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
           }
         }
 
