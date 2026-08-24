@@ -106,34 +106,134 @@ export function stripFeaturedArtists(text: string): string {
 // recording genuinely is a different one there) — a specific live/TV-
 // performance clip essentially never has its own dedicated HQ release, so
 // falling back to matching the studio version is the more useful bet here.
+//
+// Deliberately does NOT include "slowed"/"reverb"/"tiktok" despite being a
+// real, recurring pattern (a TikTok-trend edit like "(Tiktok Slowed +
+// Reverb)") — unlike "live", that's not the same song at a quality
+// disadvantage, it's the same song deliberately played at a different tempo/
+// pitch. Falling back to the plain title would find and auto-replace it with
+// a normal-speed file, silently swapping what the user actually kept rather
+// than upgrading it. MATCH_TIERS' duration check isn't a reliable enough
+// backstop either — reverb alone doesn't shift duration at all, only an
+// actual tempo change does, so a reverb-only edit would sail through
+// unnoticed.
 const UPLOAD_NOISE_WORDS = [
   'official', 'video', 'audio', 'lyrics?', 'visualizer', 'remaster\\w*',
-  'hd', 'hq', '4k', 'high\\s*quality', 'premiere', 'live',
-  'free', 'bass\\s*boosted', 'out\\s*now', 'cover\\s*art',
+  'hd', 'hq', '4k', 'high\\s*quality', 'premiere', 'live', 'eurovision', 'trailer',
+  'free', 'bass\\s*boosted', 'out\\s*now', 'cover\\s*art', 'explicit', 'clean',
   'download\\s*link', 'radio\\s*rip', 'copyright\\s*free(\\s*music)?', 'english\\s*version',
+  // A producer credit — "(Prod. X)" — is exactly as unhelpful to a provider's
+  // own search as a feat. credit (see stripFeaturedArtists), so gets the same
+  // treatment. Every real case seen so far is the bracket's entire content
+  // ("(Prod. Jonah Roy)"), never sharing it with something else worth
+  // keeping, so unlike feat this doesn't need the before/after split.
+  'prod\\.?',
+  // Non-English uploader-tag spellings of official/audio/clip/premiere — same
+  // rationale, and same specific languages, as musicbrainz.ts's own
+  // JUNK_TAG_WORDS (this app's userbase evidently spans Portuguese/Spanish
+  // "Áudio Oficial" and Russian/Lithuanian uploads too, not just English ones).
+  'oficial', 'áudio', 'клип', 'официальн\\w*', 'премьера\\w*', 'oficialus', 'klipas',
 ];
-const UPLOAD_NOISE_WORD_RE = new RegExp(`\\b(${UPLOAD_NOISE_WORDS.join('|')})\\b`, 'i');
+// \b and \w are ASCII-only in JS by default — the Cyrillic entries above
+// (клип/официальн*/премьера*) never actually matched anything with a plain
+// \b(...)​\b pattern, silently no-oping on every Cyrillic title. Unicode
+// property escapes (\p{L}/\p{N} under the 'u' flag) treat any Unicode
+// letter/number as a "word" character, so the boundary lands correctly
+// regardless of script — verified this actually matches "Официальный" now,
+// where the old pattern didn't.
+const UPLOAD_NOISE_WORD_RE = new RegExp(`(?<![\\p{L}\\p{N}])(${UPLOAD_NOISE_WORDS.join('|')})(?![\\p{L}\\p{N}])`, 'iu');
 // Trailing punctuation after the noise word is tolerant of a stray "!"/"?"/
 // "." ("- Lyrics Hd!"), not just whitespace — an upload title's trailing
 // flourish is exactly where that shows up.
-const UPLOAD_NOISE_TRAILING_RE = new RegExp(`[\\s\\-|/,*•]+\\b(${UPLOAD_NOISE_WORDS.join('|')})\\b[\\s!?.]*$`, 'i');
+const UPLOAD_NOISE_TRAILING_RE = new RegExp(
+  `[\\s\\-|/,*•]+(?<![\\p{L}\\p{N}])(${UPLOAD_NOISE_WORDS.join('|')})(?![\\p{L}\\p{N}])[\\s!?.]*$`, 'iu'
+);
 
-// Strips upload-decoration noise — see UPLOAD_NOISE_WORDS above. A bracket
-// containing a recognized noise word is dropped in its entirety (no attempt
-// to keep other content sharing it, unlike stripFeaturedArtists — none of
-// the real cases seen so far mix a noise word with something worth keeping
-// in the same bracket); a bare trailing noise phrase is trimmed off the end.
-// Same "returns the original if nothing changed" contract as
-// stripFeaturedArtists, for the same reason (the caller only wants to retry
-// a search when this actually produced something different).
+// Eurovision participant countries, past and present — the contest's own
+// YouTube channel tags every entry with "(Song Title (Country))", a channel
+// convention rather than part of the actual song title (e.g. "Sweet People
+// (Ukraine)"). Matched only as a bracket's WHOLE (trimmed) content, never
+// "contains" like UPLOAD_NOISE_WORDS above — a country name can legitimately
+// be one word among others (a producer credit like "(Chad Remix)", or an
+// artist name like "(Georgia Anne Muldrow Remix)"), and only an exact,
+// nothing-else match is a safe enough signal to drop the bracket. A bare
+// "eurovision" mention (e.g. "(Eurovision 2016 - Latvia)") is already caught
+// by the ordinary contains-based check above via UPLOAD_NOISE_WORDS.
+const EUROVISION_COUNTRIES = [
+  'Albania', 'Andorra', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Belarus', 'Belgium',
+  'Bosnia and Herzegovina', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Czech Republic',
+  'Denmark', 'Estonia', 'Finland', 'France', 'Georgia', 'Germany', 'Greece', 'Hungary',
+  'Iceland', 'Ireland', 'Israel', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta',
+  'Moldova', 'Monaco', 'Montenegro', 'Morocco', 'Netherlands', 'North Macedonia', 'Norway',
+  'Poland', 'Portugal', 'Romania', 'Russia', 'San Marino', 'Serbia', 'Slovakia', 'Slovenia',
+  'Spain', 'Sweden', 'Switzerland', 'Turkey', 'Ukraine', 'United Kingdom',
+];
+const COUNTRY_ONLY_BRACKET_RE = new RegExp(`^(${EUROVISION_COUNTRIES.join('|')})$`, 'i');
+
+// A bracket whose entire (trimmed) content is a plausible bare release year
+// — "Song Title (2015)", "Song Title [2013]" — same exact-whole-content
+// reasoning as COUNTRY_ONLY_BRACKET_RE above: a real title bracket is never
+// *just* a 4-digit number with nothing else, so this is safe as a "contains"
+// check would not be (a track's title could legitimately contain a year
+// among other words). Range is deliberately generous (1950–2049) rather than
+// tied to "now" — this only needs to reject things that aren't years at all,
+// not police plausible release dates.
+const YEAR_ONLY_BRACKET_RE = /^(19[5-9]\d|20[0-4]\d)$/;
+
+// Label/imprint release tags — "[Monstercat Release]", "[Silk Music]",
+// "(Proximity Release)" — a bracket ending in Music/Records/Release, but
+// ONLY when nothing meaningful (remix/mix/edit/version/etc, same word list
+// as musicbrainz.ts's MEANINGFUL_BRACKET_WORDS) shares the bracket, via
+// negative lookahead. A first attempt at this without that guard wrongly
+// nuked "[Remix Music]" down to nothing, losing the real "Remix" info — the
+// guard means that case simply doesn't match at all now (falls through
+// untouched), while genuine label tags like the real examples above still do.
+const MEANINGFUL_VERSION_WORDS = 'mix|remix|edit|version|vip|bootleg|mashup|cover|instrumental|acoustic'
+  + '|unplugged|medley|rework|flip|dub|extended|radio|club|original|edition|chorus|reprise|refix|redux|bonus|demo';
+const LABEL_TAG_BRACKET_RE = new RegExp(
+  `^(?!.*\\b(?:${MEANINGFUL_VERSION_WORDS})\\b).*\\b(?:music|records?|recordings?|release)\\s*$`, 'i'
+);
+
+// Words that mean the audio itself was deliberately altered — a different
+// tempo/pitch, not just a different quality of the same recording. A hard
+// override, checked before anything else below: even if a bracket ALSO
+// contains an otherwise-safe noise word ("(Slowed & Bass Boosted)" contains
+// both "slowed" and the already-approved "bass boosted"), the presence of
+// any of these blocks stripping that bracket at all. Silently falling back
+// to a plain-title search here would find and auto-replace the file with a
+// normal-speed version — not a quality upgrade, a content swap the user
+// never asked for. MATCH_TIERS' duration check isn't a reliable backstop
+// either: reverb alone doesn't shift duration, only an actual tempo change
+// does, so a reverb-only edit would sail through unnoticed.
+const CONTENT_ALTERED_WORDS = 'slowed|reverb|sped\\s*up|nightcore|daycore|chopped\\s*(?:and|&)\\s*screwed';
+const CONTENT_ALTERED_RE = new RegExp(`(?<![\\p{L}\\p{N}])(?:${CONTENT_ALTERED_WORDS})(?![\\p{L}\\p{N}])`, 'iu');
+
+// Strips upload-decoration noise — see UPLOAD_NOISE_WORDS/EUROVISION_COUNTRIES/
+// YEAR_ONLY_BRACKET_RE/LABEL_TAG_BRACKET_RE above. A bracket containing a
+// recognized noise word, or whose entire content is nothing but a country
+// name, a bare year, or a guarded label tag, is dropped in its entirety (no
+// attempt to keep other content sharing it, unlike stripFeaturedArtists —
+// none of the real cases seen so far mix noise with something worth keeping
+// in the same bracket) — UNLESS CONTENT_ALTERED_RE also matches, which wins
+// outright regardless of what else is in there; a bare trailing noise phrase
+// is trimmed off the end. Same "returns the original if nothing changed"
+// contract as stripFeaturedArtists, for the same reason (the caller only
+// wants to retry a search when this actually produced something different).
 export function stripUploadNoise(text: string): string {
   if (!text) return text;
   // Same [{【 / ]}】 → ( / ) normalization as musicbrainz.ts's stripJunkTags —
   // YouTube titles use them interchangeably for the same kind of annotation.
   let cleaned = text.replace(/[[{【]/g, '(').replace(/[\]}】]/g, ')');
-  cleaned = cleaned.replace(/([([])([^)\]]*)([)\]])/g, (whole, _open, inner) => (
-    UPLOAD_NOISE_WORD_RE.test(inner) ? ' ' : whole
-  ));
+  cleaned = cleaned.replace(/([([])([^)\]]*)([)\]])/g, (whole, _open, inner) => {
+    if (CONTENT_ALTERED_RE.test(inner)) return whole;
+    const trimmed = inner.trim();
+    return UPLOAD_NOISE_WORD_RE.test(inner)
+      || COUNTRY_ONLY_BRACKET_RE.test(trimmed)
+      || YEAR_ONLY_BRACKET_RE.test(trimmed)
+      || LABEL_TAG_BRACKET_RE.test(trimmed)
+      ? ' '
+      : whole;
+  });
   for (let i = 0; i < 10; i++) {
     const next = cleaned.replace(UPLOAD_NOISE_TRAILING_RE, '').trim();
     if (next === cleaned) break;
