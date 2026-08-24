@@ -131,12 +131,26 @@ export async function resolvePlaylistQuality(
       continue;
     }
 
-    if (!video.artist) {
+    // A video with no stored artist at all isn't necessarily a dead end —
+    // its title is sometimes really an "Artist-Title"/"Artist "Title""
+    // string crammed together with no split ever performed (see
+    // extractQuotedArtistTitle/extractDashArtistTitle's own doc comments for
+    // real examples, e.g. "Dr Dre-The Watcher (Creed 3 Intro)"). Those are
+    // otherwise only tried as later-tier fallbacks once a *real* video.artist
+    // is already known — a video with no artist at all is exactly the case
+    // they're most useful for, not one to skip past untried.
+    const noArtistExtraction = video.artist
+      ? null
+      : (extractQuotedArtistTitle(video.title) ?? extractDashArtistTitle(video.title));
+    const artist = video.artist ?? noArtistExtraction?.artist ?? null;
+    const title = noArtistExtraction?.title ?? video.title;
+
+    if (!artist) {
       // metadataStatus 'pending' means a future sync's metadata pass might
       // still fill this in — leave it pending too rather than giving up for
       // good. Any other status is terminal (see resolvePlaylistMetadata),
-      // meaning no artist is ever coming for this video, so there's nothing
-      // left to search with.
+      // meaning no artist is ever coming for this video (and the title
+      // itself didn't yield one either), so there's nothing left to search with.
       if (video.metadataStatus === 'pending') continue;
       await prisma.playlistVideo
         .update({ where: { id: video.id }, data: { qualityCheckStatus: 'checked', qualityCheckedAt: new Date() } })
@@ -150,8 +164,8 @@ export async function resolvePlaylistQuality(
     // essentially never part of a real catalog entry on any of these
     // providers, so it's cleaned unconditionally before every search below,
     // not just as a no-results fallback.
-    const searchArtist = stripDecorativeSymbols(video.artist);
-    const searchTitle = stripDecorativeSymbols(video.title);
+    const searchArtist = stripDecorativeSymbols(artist);
+    const searchTitle = stripDecorativeSymbols(title);
 
     // A search query cluttered with a "(feat. X)" credit or upload noise
     // ("[PREMIERE]", "- Lyrics HD!", "(Live - Swedish Idol 2016)") often

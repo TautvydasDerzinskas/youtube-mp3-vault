@@ -233,6 +233,16 @@ const BARE_DOMAIN_ONLY_RE = /^[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.(?:ru|su|ua|b
 // Same URL, but trailing and unbracketed — "Song Title - www.fan-guf.ru".
 const URL_TRAILING_RE = /[\s\-|/,*•]*(?:https?:\/\/|www\.)\S+[\s!?.]*$/iu;
 
+// A promo @-handle plugged into the title by the uploader — "(@Nilshoffmannmusic)",
+// "[@Crimusic]" — the artist's own channel/social handle, never real catalog
+// content, same reasoning as URL_RE right above. An "@" directly followed by
+// word characters is unambiguous enough (nothing in a real title legitimately
+// starts a word with a bare "@") to treat as a "contains" match wherever it
+// appears, bracketed or not.
+const AT_HANDLE_RE = /(?<![\p{L}\p{N}])@[\p{L}\p{N}_]+/u;
+// Same handle, but trailing and unbracketed — "Song Title @artisthandle".
+const AT_HANDLE_TRAILING_RE = /[\s\-|/,*•]*(?<![\p{L}\p{N}])@[\p{L}\p{N}_]+[\s!?.]*$/u;
+
 // A film/show title trailing a song title outright, immediately before the
 // literal word "Soundtrack" — "Hanging On (I SEE MONSTAS Remix) Divergent
 // Soundtrack" — never real song-title content, but unlike the bracketed
@@ -308,7 +318,8 @@ export function stripUploadNoise(text: string): string {
       || YEAR_ONLY_BRACKET_RE.test(trimmed)
       || LABEL_TAG_BRACKET_RE.test(trimmed)
       || URL_RE.test(inner)
-      || BARE_DOMAIN_ONLY_RE.test(trimmed)) return ' ';
+      || BARE_DOMAIN_ONLY_RE.test(trimmed)
+      || AT_HANDLE_RE.test(inner)) return ' ';
     if (UPLOAD_NOISE_WORD_RE.test(inner)) {
       if (SOUNDTRACK_WORD_RE.test(inner) || !MEANINGFUL_VERSION_RE.test(inner)) return ' ';
       // Real version/remix content shares this bracket with the noise word
@@ -328,6 +339,7 @@ export function stripUploadNoise(text: string): string {
     let next = cleaned.replace(SOUNDTRACK_TRAILING_RE, '').trim();
     next = next.replace(UPLOAD_NOISE_TRAILING_RE, '').trim();
     next = next.replace(URL_TRAILING_RE, '').trim();
+    next = next.replace(AT_HANDLE_TRAILING_RE, '').trim();
     if (next === cleaned) break;
     cleaned = next;
   }

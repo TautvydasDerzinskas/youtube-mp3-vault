@@ -30,6 +30,15 @@ describe('stripUploadNoise', () => {
     expect(stripUploadNoise('Song Title - http://example.com/free-download')).toBe('Song Title');
   });
 
+  it('strips a bracketed @-handle promo tag', () => {
+    expect(stripUploadNoise('9 Days (@Nilshoffmannmusic)')).toBe('9 Days');
+    expect(stripUploadNoise('Live from Mile-Ex, Montréal [@Crimusic]')).toBe('Live from Mile-Ex, Montréal');
+  });
+
+  it('strips a bare trailing @-handle with no brackets', () => {
+    expect(stripUploadNoise('Song Title @artisthandle')).toBe('Song Title');
+  });
+
   it('strips a bracketed movie/show soundtrack credit', () => {
     expect(stripUploadNoise('Nightcall (Drive Original Movie Soundtrack)')).toBe('Nightcall');
     expect(stripUploadNoise('Shell Suite (Warm Bodies Soundtrack)')).toBe('Shell Suite');
