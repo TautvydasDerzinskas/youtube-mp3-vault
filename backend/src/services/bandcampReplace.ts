@@ -97,7 +97,16 @@ export async function findBandcampCandidate(
       // Only known per-candidate once a Free Download attempt has actually
       // resolved (or not) — re-checked here against this specific outcome
       // rather than trusting the tier-level best-case check above alone.
-      if (currentBitrate !== null && bitrate <= currentBitrate + tier.minBitrateImprovementKbps) continue;
+      if (currentBitrate !== null) {
+        if (bitrate <= currentBitrate + tier.minBitrateImprovementKbps) continue;
+      } else if (bitrate < MAX_PLAUSIBLE_MP3_BITRATE_KBPS) {
+        // Unknown current quality (e.g. yt-dlp couldn't report a source
+        // bitrate — see downloader.ts) — with no baseline to compare
+        // against, only a Free Download reaching this app's own ceiling is
+        // safe to accept; a 128kbps preview stream could silently downgrade
+        // a file that's actually already better than that.
+        continue;
+      }
 
       console.log(
         `[bandcamp] Found: "${artist} - ${title}" -> "${details.artist} - ${details.title}"` +

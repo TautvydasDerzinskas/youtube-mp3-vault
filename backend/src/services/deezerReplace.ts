@@ -94,10 +94,13 @@ export async function downloadAndReplace(
   const mediaFile = await prisma.mediaFile.findUnique({ where: { id: video.mediaFileId }, select: { filename: true } });
   if (!mediaFile) return false;
 
-  const mediaUrl = await getSongDownloadUrl(session.licenseToken, candidate.trackToken, session.format);
-  if (!mediaUrl) return false;
-
   console.log(`[deezer] Download started: ${video.youtubeId} ("${candidate.artist} - ${candidate.title}", ${session.format})`);
+
+  const mediaUrl = await getSongDownloadUrl(session.licenseToken, candidate.trackToken, session.format);
+  if (!mediaUrl) {
+    console.error(`[deezer] Aborting ${video.youtubeId}: no download URL for "${candidate.artist} - ${candidate.title}"`);
+    return false;
+  }
 
   const isFlac = session.format === 'FLAC';
   const tmpDir = getTmpDir();

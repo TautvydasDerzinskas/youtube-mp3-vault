@@ -169,12 +169,19 @@ async function getSongDownloadUrl(licenseToken: string, trackToken: string, form
         }),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[deezer] get_url request failed: HTTP ${res.status}`);
+      return null;
+    }
     const data: any = await res.json();
     const entry = data?.data?.[0];
     const url = entry?.media?.[0]?.sources?.[0]?.url;
-    return typeof url === 'string' ? url : null;
-  } catch {
+    if (typeof url === 'string') return url;
+    const errors = entry?.errors;
+    console.error(`[deezer] get_url returned no media URL${errors ? `: ${JSON.stringify(errors)}` : ' (empty response)'}`);
+    return null;
+  } catch (err) {
+    console.error(`[deezer] get_url request threw: ${(err as Error).message}`);
     return null;
   }
 }
