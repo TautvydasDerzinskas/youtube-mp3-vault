@@ -126,6 +126,13 @@ export async function downloadAndReplace(
     const publishedStats = await stat(publishSourcePath);
     await publishToSharedStore(publishSourcePath, mediaFile.filename);
 
+    // Unlike the other three providers' downloadAndReplace, hqFileDownloaded
+    // is unconditionally true here rather than gated on reaching the real
+    // ceiling — not an oversight, this provider genuinely always does:
+    // session.format pins the whole account to a single fixed quality
+    // (FLAC or MP3_320, see findDeezerCandidate above), never a variable
+    // per-track bitrate, so every successful download already lands at
+    // MAX_PLAUSIBLE_MP3_BITRATE_KBPS by construction.
     await prisma.mediaFile.update({
       where: { id: video.mediaFileId },
       data: { fileSize: publishedStats.size, bitrate: MAX_PLAUSIBLE_MP3_BITRATE_KBPS },

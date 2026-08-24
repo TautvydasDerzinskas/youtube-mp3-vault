@@ -5,6 +5,7 @@ import { findBetterQualityMp3, MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
 import { isHqAutoDownloadEnabled, isUserHqProviderAllowed } from './settings';
 import { findExactMatchCandidate, downloadAndReplace as downloadAndReplaceViaSlskd } from './hqReplace';
 import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSaavn } from './jiosaavnReplace';
+import { findBandcampCandidate, downloadAndReplace as downloadAndReplaceViaBandcamp } from './bandcampReplace';
 import { establishDeezerSession, type DeezerSession } from './deezer';
 import { findDeezerCandidate, downloadAndReplace as downloadAndReplaceViaDeezer } from './deezerReplace';
 import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols } from './trackMatching';
@@ -36,6 +37,12 @@ import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols } from '
 // comes up empty, JioSaavn (services/jiosaavnReplace.ts) is tried as a
 // fallback — a free public catalog with no peer pool to wait on, so it
 // costs one extra search rather than a real wait when slskd has nothing. If
+// that also comes up empty, Bandcamp (services/bandcamp.ts/bandcampReplace.ts)
+// is tried next — another free, no-login catalog, useful mainly for the
+// independent/underground tracks JioSaavn's Indian-market-skewed catalog and
+// slskd's peer pool both miss, though its own ceiling is a fixed, fairly low
+// bitrate (see BANDCAMP_STREAM_BITRATE_KBPS), so it's never preferred over a
+// source that might have genuinely better quality for the same track. If
 // that also comes up empty and this playlist's owner has connected their own
 // Deezer account (services/deezer.ts/deezerReplace.ts), Deezer is tried
 // last — unlike the other two, it's per-user, not app-wide, since it
@@ -167,6 +174,7 @@ export async function resolvePlaylistQuality(
       if (isHqAutoDownloadEnabled()) {
         let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
         let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
+        let bandcampCandidate: Awaited<ReturnType<typeof findBandcampCandidate>> = null;
         let deezerCandidate: Awaited<ReturnType<typeof findDeezerCandidate>> = null;
         let replaced = false;
 
@@ -202,8 +210,22 @@ export async function resolvePlaylistQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && deezerSession) {
-          // Both free sources came up empty — last resort is this
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate) {
+          // slskd and JioSaavn both came up empty — try Bandcamp's free
+          // catalog before falling back to a per-user paid source.
+          try {
+            bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
+            if (!bandcampCandidate && hasCleanedFallback) {
+              bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
+            if (bandcampCandidate) replaced = await downloadAndReplaceViaBandcamp(video, bandcampCandidate);
+          } catch (err) {
+            console.error(`[bandcamp] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          }
+        }
+
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !bandcampCandidate && deezerSession) {
+          // All three free sources came up empty — last resort is this
           // playlist's owner's own Deezer account, already confirmed usable
           // once up front for this whole sync pass (see deezerSession above).
           try {
@@ -226,8 +248,8 @@ export async function resolvePlaylistQuality(
           continue; // downloadAndReplace* already updated every flag/status itself
         }
 
-        if (!slskdCandidate && !jioSaavnCandidate && !deezerCandidate) {
-          // Neither source found anything eligible right now — a stable,
+        if (!slskdCandidate && !jioSaavnCandidate && !bandcampCandidate && !deezerCandidate) {
+          // No source found anything eligible right now — a stable,
           // repeatable verdict, same as the free path below.
           await prisma.playlistVideo.update({
             where: { id: video.id },

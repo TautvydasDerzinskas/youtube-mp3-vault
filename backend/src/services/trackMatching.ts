@@ -243,6 +243,36 @@ export function stripUploadNoise(text: string): string {
   return cleaned || text.trim();
 }
 
+// Splits a raw "Artist - Title"-shaped string (typically a Soulseek
+// filename, which carries no structured metadata of its own — JioSaavn and
+// Deezer candidates never go through this, they already have real artist/
+// title fields from their own APIs) into its two halves. Deliberately does
+// NOT run musicbrainz.ts's stripJunkTags first, unlike that module's own
+// parseArtistAndTitle — this function's caller is about to trust its output
+// enough to auto-download and replace a file with it, and stripJunkTags's
+// "any bracket not on the remix/version allowlist is discarded as trivia"
+// pass is exactly backwards for that: it's fine (even correct) for cleaning
+// a video's own title before an independent MusicBrainz lookup, but here it
+// actively destroys the evidence that would otherwise prevent a false match.
+// Concretely: "Britney Spears - Make Me (Clean) (Funkymix by DJ Rix)" — a
+// DJ-pool compilation edit, not the plain track — folded down to "Britney
+// Spears - Make Me" once run through stripJunkTags (neither "Clean" nor the
+// fused word "Funkymix" is on the allowlist), which then passed MATCH_TIERS'
+// second-strictest tier against "Make Me..." even though the real
+// similarity between the two full titles is ~0.33, well under the fuzzy
+// tier's own 0.82 bar — it should have needed that tier and failed there.
+// The caller pre-cleans with stripUploadNoise instead (recognized noise like
+// "(Official Audio)" still gets removed — see its own positive-control
+// cases — but anything unfamiliar, which is exactly what a mislabeled edit
+// looks like, survives and correctly keeps the candidate from matching).
+export function splitArtistTitle(rawTitle: string): { artist: string | null; title: string } {
+  // Same separator set and "not a bare mid-word hyphen" whitespace
+  // requirement as musicbrainz.ts's parseArtistAndTitle.
+  const match = rawTitle.match(/^(.{1,70}?)(?:\s+[-–—|~•]\s*|\s*[-–—|~•]\s+)(.+)$/);
+  if (match) return { artist: match[1].trim(), title: match[2].trim() };
+  return { artist: null, title: rawTitle.trim() };
+}
+
 // Decorative Unicode a video's uploader-chosen title/channel name often
 // carries (flag pairs, stars, dingbats, misc pictographs) — essentially
 // never part of a real catalog entry on any provider searched here, unlike a

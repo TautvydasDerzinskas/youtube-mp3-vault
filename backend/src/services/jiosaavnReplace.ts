@@ -146,16 +146,27 @@ export async function downloadAndReplace(
     const tmpStats = await stat(tmpMp3Path);
     await publishToSharedStore(tmpMp3Path, mediaFile.filename);
 
+    // hqFileDownloaded is this app's "stop looking, we're done" signal (see
+    // slskdQualityWorker.ts's rescanAll query, which only ever re-checks
+    // videos where this is still false) — only true once the matched
+    // candidate actually reached the real ceiling. JioSaavn offers a range
+    // of qualities (96/160/320kbps AAC), and findJioSaavnCandidate can
+    // return a below-320 match once it clears a tier's improvement margin —
+    // that's still worth taking, but the file gets published and left
+    // flagged as betterQualityExists so a future rescan keeps trying other
+    // sources for the real 320 instead of considering this one settled.
+    const reachedCeiling = candidate.bitrate >= MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
+
     await prisma.mediaFile.update({
       where: { id: video.mediaFileId },
-      data: { fileSize: tmpStats.size, bitrate: MAX_PLAUSIBLE_MP3_BITRATE_KBPS },
+      data: { fileSize: tmpStats.size, bitrate: candidate.bitrate },
     });
     await prisma.playlistVideo.updateMany({
       where: { mediaFileId: video.mediaFileId },
       data: {
-        hqFileDownloaded: true,
-        betterQualityExists: false,
-        bitrate: MAX_PLAUSIBLE_MP3_BITRATE_KBPS,
+        hqFileDownloaded: reachedCeiling,
+        betterQualityExists: !reachedCeiling,
+        bitrate: candidate.bitrate,
         fileSize: tmpStats.size,
         qualityCheckStatus: 'checked',
         qualityCheckedAt: new Date(),

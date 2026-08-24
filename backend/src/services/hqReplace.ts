@@ -5,9 +5,8 @@ import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { config } from '../config';
 import { slskdClient, isSlskdConfigured, MAX_PLAUSIBLE_MP3_BITRATE_KBPS, LOSSLESS_EXTENSIONS } from './slskd';
-import { parseArtistAndTitle } from './musicbrainz';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
-import { isDurationPlausible, MATCH_TIERS } from './trackMatching';
+import { isDurationPlausible, MATCH_TIERS, splitArtistTitle, stripUploadNoise } from './trackMatching';
 import { transcodeToMp3 } from './audioTranscode';
 
 // Generous ceiling for a single track transfer, polled every couple of
@@ -103,7 +102,7 @@ export async function findExactMatchCandidate(
         const candidate: HqCandidate = { username: response.username, filename, size: Number(file?.size ?? 0), bitrate, format };
         if (best && !isBetterCandidate(candidate, best)) continue;
 
-        const parsed = parseArtistAndTitle(baseNameFromSlskdPath(filename), null);
+        const parsed = splitArtistTitle(stripUploadNoise(baseNameFromSlskdPath(filename)));
         if (!parsed.artist) continue;
         if (!tier.textMatch(parsed.artist, parsed.title, artist, title)) continue;
 
@@ -262,6 +261,16 @@ export async function downloadAndReplace(
     publishedBitrate = candidate.bitrate;
   }
 
+  // hqFileDownloaded is this app's "stop looking, we're done" signal (see
+  // slskdQualityWorker.ts's rescanAll query, which only ever re-checks
+  // videos where this is still false) — only true once the published file
+  // actually reached the real ceiling. An mp3 peer file can clear a tier's
+  // improvement margin without reaching 320 (see isBetterCandidate/
+  // findExactMatchCandidate above) — that's still worth taking, but stays
+  // flagged as betterQualityExists so a future rescan keeps trying other
+  // sources for the real 320 instead of considering this one settled.
+  const reachedCeiling = publishedBitrate >= MAX_PLAUSIBLE_MP3_BITRATE_KBPS;
+
   await prisma.mediaFile.update({
     where: { id: video.mediaFileId },
     data: { fileSize: publishedSize, bitrate: publishedBitrate },
@@ -269,8 +278,8 @@ export async function downloadAndReplace(
   await prisma.playlistVideo.updateMany({
     where: { mediaFileId: video.mediaFileId },
     data: {
-      hqFileDownloaded: true,
-      betterQualityExists: false,
+      hqFileDownloaded: reachedCeiling,
+      betterQualityExists: !reachedCeiling,
       bitrate: publishedBitrate,
       fileSize: publishedSize,
       qualityCheckStatus: 'checked',
