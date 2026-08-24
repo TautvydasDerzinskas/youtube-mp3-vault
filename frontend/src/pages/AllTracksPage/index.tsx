@@ -60,6 +60,7 @@ export default function AllTracksPage() {
     <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header
         summary={summary}
+        visibleCount={filteredTracks.length}
         genreCounts={genreCounts}
         selectedGenres={selectedGenres}
         onToggleGenre={toggleGenre}

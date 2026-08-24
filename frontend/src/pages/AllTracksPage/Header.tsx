@@ -9,6 +9,7 @@ import { AllTracksSummary } from './hooks/useAllTracksDetail';
 
 interface HeaderProps {
   summary: AllTracksSummary;
+  visibleCount: number;
   genreCounts: GenreCount[];
   selectedGenres: Set<string>;
   onToggleGenre: (genre: string) => void;
@@ -28,7 +29,7 @@ interface HeaderProps {
 // row). Only the track filter/sort bar carries over, since that's the one
 // thing this page is explicitly meant to behave like a playlist page for.
 export function Header({
-  summary, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
+  summary, visibleCount, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
   sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
 }: HeaderProps) {
   const { t } = useTranslation();
@@ -57,7 +58,10 @@ export function Header({
               : t('playlists.allTracks.sourcedFromYoutube')}
           </Typography>
           <Box sx={{ mt: 0.5 }}>
-            <Chip size="small" variant="outlined" label={t('playlists.detail.trackCount', { count: summary.songCount })} />
+            <Chip size="small" variant="outlined"
+              label={visibleCount !== summary.songCount
+                ? t('playlists.detail.trackCountFiltered', { visible: visibleCount, total: summary.songCount })
+                : t('playlists.detail.trackCount', { count: summary.songCount })} />
           </Box>
         </Box>
       </Box>
