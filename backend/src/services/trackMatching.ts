@@ -122,6 +122,24 @@ const UPLOAD_NOISE_WORDS = [
   'hd', 'hq', '4k', 'high\\s*quality', 'premiere', 'live', 'eurovision', 'trailer',
   'free', 'bass\\s*boosted', 'out\\s*now', 'cover\\s*art', 'explicit', 'clean',
   'download\\s*link', 'radio\\s*rip', 'copyright\\s*free(\\s*music)?', 'english\\s*version',
+  // "Radio Edit" — unlike a genuine remix (a materially different mix, kept
+  // via MEANINGFUL_VERSION_RE below), this is normally just a shortened cut
+  // of the very same mix. It's real MEANINGFUL_VERSION_WORDS content too
+  // (bare "radio" is on that list, so "Radio Mix"/"Radio Release" etc. are
+  // still protected elsewhere), but for THIS fallback's purposes it's not
+  // enough of a difference to justify blocking a match against an ordinary
+  // HQ file of the same song — a provider search for the full "Radio Edit"
+  // title turns up far fewer/no results than the plain title would.
+  'radio\\s*edit',
+  // A movie/show soundtrack credit — "(Drive Original Movie Soundtrack)",
+  // "(Warm Bodies Soundtrack)" — the actual song still exists as a standalone
+  // release a provider can find on its own merits; the film title only ever
+  // hurts that search, same reasoning as UPLOAD_NOISE_WORDS in general. Every
+  // real case seen so far is the bracket's entire content, so a plain
+  // contains-match (dropping the whole bracket) is enough here — the
+  // *unbracketed* film-name-plus-"soundtrack" case is handled separately by
+  // SOUNDTRACK_TRAILING_RE below, since the film name itself isn't a fixed word.
+  'soundtracks?',
   // A producer credit — "(Prod. X)" — is exactly as unhelpful to a provider's
   // own search as a feat. credit (see stripFeaturedArtists), so gets the same
   // treatment. Every real case seen so far is the bracket's entire content
@@ -132,7 +150,14 @@ const UPLOAD_NOISE_WORDS = [
   // rationale, and same specific languages, as musicbrainz.ts's own
   // JUNK_TAG_WORDS (this app's userbase evidently spans Portuguese/Spanish
   // "Áudio Oficial" and Russian/Lithuanian uploads too, not just English ones).
-  'oficial', 'áudio', 'клип', 'официальн\\w*', 'премьера\\w*', 'oficialus', 'klipas',
+  // \w* on the Cyrillic stems below is deliberately NOT \w (ASCII-only) —
+  // every real inflected form ("Официальное", "Официальный", "Премьера"'s
+  // own case endings) continues in Cyrillic, which \w can't consume, so the
+  // boundary check right after the stem would fail against the very next
+  // (Cyrillic, still-a-letter) character and the word would never match at
+  // all. \p{L}\p{N} is the same Unicode-aware class UPLOAD_NOISE_WORD_RE's
+  // own boundary lookarounds already use, for the same reason.
+  'oficial', 'áudio', 'клип', 'официальн[\\p{L}\\p{N}]*', 'премьера[\\p{L}\\p{N}]*', 'oficialus', 'klipas',
 ];
 // \b and \w are ASCII-only in JS by default — the Cyrillic entries above
 // (клип/официальн*/премьера*) never actually matched anything with a plain
@@ -194,6 +219,33 @@ const LABEL_TAG_BRACKET_RE = new RegExp(
   `^(?!.*\\b(?:${MEANINGFUL_VERSION_WORDS})\\b).*\\b(?:music|records?|recordings?|release)\\s*$`, 'i'
 );
 
+// URL/domain promo tags left behind by an uploader's channel branding —
+// "(www.Fan-Guf.ru)", "[http://example.com]" — never real title content,
+// unlike UPLOAD_NOISE_WORDS' ambiguous words. An explicit http(s):// or
+// www. prefix is unambiguous, so it's stripped as a "contains" match
+// wherever it appears (like UPLOAD_NOISE_WORD_RE); a bare domain with no
+// such prefix (e.g. "(Fan-Guf.ru)") is only stripped when it's a bracket's
+// WHOLE content, same safety reasoning as COUNTRY_ONLY_BRACKET_RE/
+// YEAR_ONLY_BRACKET_RE above — a domain-shaped word could otherwise
+// coincide with real title text.
+const URL_RE = /(?:https?:\/\/|www\.)\S+/iu;
+const BARE_DOMAIN_ONLY_RE = /^[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.(?:ru|su|ua|by|kz|com|net|org|info|biz|me|tv|fm|club|site|online|top|xyz|name)$/iu;
+// Same URL, but trailing and unbracketed — "Song Title - www.fan-guf.ru".
+const URL_TRAILING_RE = /[\s\-|/,*•]*(?:https?:\/\/|www\.)\S+[\s!?.]*$/iu;
+
+// A film/show title trailing a song title outright, immediately before the
+// literal word "Soundtrack" — "Hanging On (I SEE MONSTAS Remix) Divergent
+// Soundtrack" — never real song-title content, but unlike the bracketed
+// case above (see 'soundtracks?' in UPLOAD_NOISE_WORDS) the film name itself
+// varies per track, so this captures a short run of Title-Case words right
+// before "soundtrack" and drops the whole run, not just the word — a
+// dangling "Divergent" left behind would still hurt a provider search just
+// as much as the full phrase would. Deliberately not case-insensitive on
+// the qualifier words themselves (only on "soundtrack"): requiring a real
+// Title-Case run is what keeps this from eating an ordinary lowercase
+// trailing phrase that just happens to end in an unrelated "soundtrack".
+const SOUNDTRACK_TRAILING_RE = /[\s\-|/,*•]+(?:[\p{Lu}][\p{L}\p{N}'.-]*\s+){0,5}[Ss]oundtrack\b[\s!?.]*$/u;
+
 // Words that mean the audio itself was deliberately altered — a different
 // tempo/pitch, not just a different quality of the same recording. A hard
 // override, checked before anything else below: even if a bracket ALSO
@@ -207,6 +259,31 @@ const LABEL_TAG_BRACKET_RE = new RegExp(
 // does, so a reverb-only edit would sail through unnoticed.
 const CONTENT_ALTERED_WORDS = 'slowed|reverb|sped\\s*up|nightcore|daycore|chopped\\s*(?:and|&)\\s*screwed';
 const CONTENT_ALTERED_RE = new RegExp(`(?<![\\p{L}\\p{N}])(?:${CONTENT_ALTERED_WORDS})(?![\\p{L}\\p{N}])`, 'iu');
+
+// Real remix/version credit words (same list as LABEL_TAG_BRACKET_RE's
+// guard above) — when one of these shares a bracket with an otherwise
+// droppable noise word ("(Skrillex Remix -- BASS BOOSTED)"), dropping the
+// whole bracket would lose a genuinely different, real release (a remix is
+// not the same recording as the original), not just decoration. Verified
+// real case: this exact bracket used to collapse to nothing, and the
+// resulting bare "Cinema" search silently matched and replaced the file
+// with the ORIGINAL (non-remix) track instead.
+const MEANINGFUL_VERSION_RE = new RegExp(`\\b(?:${MEANINGFUL_VERSION_WORDS})\\b`, 'i');
+// A soundtrack credit always wins outright, even over MEANINGFUL_VERSION_RE
+// above — "original" is real version info in "(Original Mix)" but false
+// signal in "(Drive Original Movie Soundtrack)"; a soundtrack bracket in
+// practice is never *also* a genuine remix credit sharing the same parens
+// (real cases keep them in separate brackets, e.g. "(X Remix) Y Soundtrack"),
+// so this is safe to always drop whole rather than risk keeping film-title
+// noise the ambiguous "original" match let slip through.
+const SOUNDTRACK_WORD_RE = /\bsoundtracks?\b/i;
+// Same word list as UPLOAD_NOISE_WORD_RE, but global and with its
+// surrounding separator/punctuation included in the match, so it can excise
+// just the noise phrase from inside a bracket that also has meaningful
+// content, rather than testing for presence only.
+const UPLOAD_NOISE_WORD_STRIP_RE = new RegExp(
+  `[\\s\\-|/,*•]*(?<![\\p{L}\\p{N}])(${UPLOAD_NOISE_WORDS.join('|')})(?![\\p{L}\\p{N}])[\\s!?.,]*`, 'giu'
+);
 
 // Strips upload-decoration noise — see UPLOAD_NOISE_WORDS/EUROVISION_COUNTRIES/
 // YEAR_ONLY_BRACKET_RE/LABEL_TAG_BRACKET_RE above. A bracket containing a
@@ -224,23 +301,104 @@ export function stripUploadNoise(text: string): string {
   // Same [{【 / ]}】 → ( / ) normalization as musicbrainz.ts's stripJunkTags —
   // YouTube titles use them interchangeably for the same kind of annotation.
   let cleaned = text.replace(/[[{【]/g, '(').replace(/[\]}】]/g, ')');
-  cleaned = cleaned.replace(/([([])([^)\]]*)([)\]])/g, (whole, _open, inner) => {
+  cleaned = cleaned.replace(/([([])([^)\]]*)([)\]])/g, (whole, open, inner, close) => {
     if (CONTENT_ALTERED_RE.test(inner)) return whole;
     const trimmed = inner.trim();
-    return UPLOAD_NOISE_WORD_RE.test(inner)
-      || COUNTRY_ONLY_BRACKET_RE.test(trimmed)
+    if (COUNTRY_ONLY_BRACKET_RE.test(trimmed)
       || YEAR_ONLY_BRACKET_RE.test(trimmed)
       || LABEL_TAG_BRACKET_RE.test(trimmed)
-      ? ' '
-      : whole;
+      || URL_RE.test(inner)
+      || BARE_DOMAIN_ONLY_RE.test(trimmed)) return ' ';
+    if (UPLOAD_NOISE_WORD_RE.test(inner)) {
+      if (SOUNDTRACK_WORD_RE.test(inner) || !MEANINGFUL_VERSION_RE.test(inner)) return ' ';
+      // Real version/remix content shares this bracket with the noise word
+      // — excise just the noise phrase(s), keep the rest, same before/after
+      // split reasoning as stripFeaturedArtists above.
+      const strippedInner = inner.replace(UPLOAD_NOISE_WORD_STRIP_RE, ' ').replace(/\s+/g, ' ').trim();
+      return strippedInner ? `${open}${strippedInner}${close}` : ' ';
+    }
+    return whole;
   });
   for (let i = 0; i < 10; i++) {
-    const next = cleaned.replace(UPLOAD_NOISE_TRAILING_RE, '').trim();
+    // SOUNDTRACK_TRAILING_RE must run before UPLOAD_NOISE_TRAILING_RE below —
+    // both can match a bare trailing "Soundtrack", but the latter only eats
+    // the word itself, which would leave the film-name qualifier this one
+    // is meant to catch (e.g. "Divergent") stranded with nothing left after
+    // it to trigger a second pass.
+    let next = cleaned.replace(SOUNDTRACK_TRAILING_RE, '').trim();
+    next = next.replace(UPLOAD_NOISE_TRAILING_RE, '').trim();
+    next = next.replace(URL_TRAILING_RE, '').trim();
     if (next === cleaned) break;
     cleaned = next;
   }
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
   return cleaned || text.trim();
+}
+
+// Some tracks arrive with the whole "Artist "Title"" (or "Artist-"Title"")
+// string dumped into the title field alone, with a separate `artist` column
+// that's frequently stale/unrelated rather than actually blank — e.g.
+// `Rusko feat. Amber Coffman "Hold On"`, `Latyrx "Call to Arms"`,
+// `Stands With Fists-"Holiday"`, `Krec "Южные Сны"`. The quoted portion is
+// always the real title; the text before it is consistently a more
+// trustworthy artist than whatever's already stored, so this extracts BOTH
+// halves for a fallback retry rather than just discarding the artist
+// outright — MATCH_TIERS has no artist-less tier, every tier requires some
+// artist text to compare, so a blank/skipped artist wouldn't actually widen
+// the search here the way it sounds like it should. Requires the closing
+// quote to be the very last thing in the string (mid-title quoted asides,
+// e.g. a nickname, don't have that shape) and returns null rather than a
+// no-op unchanged result, so the caller can tell a genuine extraction from
+// "this title just isn't quote-wrapped" without comparing strings itself.
+const QUOTED_TITLE_RE = /^(.{1,80}?)\s*-?\s*["“„](.+)["”]\s*$/;
+
+export function extractQuotedArtistTitle(rawTitle: string): { artist: string; title: string } | null {
+  if (!rawTitle) return null;
+  const match = QUOTED_TITLE_RE.exec(rawTitle);
+  if (!match) return null;
+  const artist = match[1].trim();
+  const title = match[2].trim();
+  if (!artist || !title) return null;
+  return { artist, title };
+}
+
+// A title occasionally arrives as the whole "Artist-Title" (or "Artist -
+// Title") string with no real split — same shape as
+// extractQuotedArtistTitle above, minus the quotes — and, just like that
+// case, the separate `artist` field alongside it is frequently unrelated
+// rather than blank (real example: title "Rebelheart-Angel" stored next to
+// artist "Kaltastu"). Other real examples: "Nas-Just a Moment" (no space at
+// all around the dash), "Винт И Мэф - Большой Город (2009) (Ex- Ю.Г.)" (a
+// second, unrelated dash sits inside a bracket further in).
+//
+// Deliberately stricter than splitArtistTitle's "any whitespace-adjacent
+// dash" rule: with no quote to anchor on, a lone dash is genuinely ambiguous
+// between a hyphenated artist name (T-Pain) and a title that just happens to
+// use dashes as its own internal punctuation ("Diversity Dance Performance -
+// 2009 - 25th April" — a single event title, not an artist/title pair at
+// all). A split is only attempted when there's EXACTLY ONE candidate dash in
+// the whole string — bracketed content is masked out first (same technique
+// as musicbrainz.ts's parseArtistAndTitle) so an incidental dash inside a
+// parenthetical aside doesn't kill an otherwise-unambiguous split, but two or
+// more dashes outside any bracket means there's no reliable way to tell
+// which one (if any) is the real separator, so this backs off entirely
+// rather than guessing wrong. Safe to be more permissive with than
+// splitArtistTitle even so — MATCH_TIERS' own text+duration confirmation is
+// still what gates an actual replace, so a wrong guess here just fails to
+// find a candidate rather than risking a bad download.
+const DASH_SEPARATOR_CHAR_RE = /[-–—|~•]/g;
+
+export function extractDashArtistTitle(rawTitle: string): { artist: string; title: string } | null {
+  if (!rawTitle) return null;
+  const masked = rawTitle.replace(/\([^()]*\)/g, (m) => ' '.repeat(m.length));
+  const matches = [...masked.matchAll(DASH_SEPARATOR_CHAR_RE)];
+  if (matches.length !== 1) return null;
+
+  const index = matches[0].index!;
+  const artist = rawTitle.slice(0, index).trim();
+  const title = rawTitle.slice(index + 1).trim();
+  if (!artist || !title) return null;
+  return { artist, title };
 }
 
 // Splits a raw "Artist - Title"-shaped string (typically a Soulseek

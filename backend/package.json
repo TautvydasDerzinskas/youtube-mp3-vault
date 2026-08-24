@@ -11,7 +11,9 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "backfill:filenames": "node dist/scripts/renameLibraryFiles.js",
-    "backfill:filenames:dev": "ts-node-dev --transpile-only src/scripts/renameLibraryFiles.ts"
+    "backfill:filenames:dev": "ts-node-dev --transpile-only src/scripts/renameLibraryFiles.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -43,6 +45,7 @@
     "@types/passport": "^1.0.16",
     "@types/passport-local": "^1.0.38",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.11"
   }
 }

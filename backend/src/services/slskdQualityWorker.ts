@@ -8,7 +8,7 @@ import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSa
 import { findBandcampCandidate, downloadAndReplace as downloadAndReplaceViaBandcamp } from './bandcampReplace';
 import { establishDeezerSession, type DeezerSession } from './deezer';
 import { findDeezerCandidate, downloadAndReplace as downloadAndReplaceViaDeezer } from './deezerReplace';
-import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols } from './trackMatching';
+import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle } from './trackMatching';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
 // playlist. Called at the end of a playlist's download pass (see
@@ -170,6 +170,27 @@ export async function resolvePlaylistQuality(
     const strippedTitle = stripUploadNoise(stripFeaturedArtists(searchTitle));
     const hasCleanedFallback = strippedArtist !== searchArtist || strippedTitle !== searchTitle;
 
+    // A third, last-resort fallback for titles stored as the whole
+    // `Artist "Title"` string with nothing split out — see
+    // extractQuotedArtistTitle's own doc comment for real examples. The
+    // extracted artist is often more trustworthy than `video.artist` itself
+    // for these rows, so this replaces it too rather than only cleaning the
+    // title. Only worth trying when it'd actually search something new.
+    const quotedExtraction = extractQuotedArtistTitle(searchTitle);
+    const hasQuotedFallback = quotedExtraction !== null
+      && (quotedExtraction.artist !== searchArtist || quotedExtraction.title !== searchTitle)
+      && (quotedExtraction.artist !== strippedArtist || quotedExtraction.title !== strippedTitle);
+
+    // A fourth, even-last-resort fallback for the same "title carries the
+    // whole Artist-Title string, stored artist is unrelated" shape as the
+    // quoted case above, minus the quotes — see extractDashArtistTitle's own
+    // doc comment for why this only fires on an unambiguous single dash.
+    const dashExtraction = extractDashArtistTitle(searchTitle);
+    const hasDashFallback = dashExtraction !== null
+      && (dashExtraction.artist !== searchArtist || dashExtraction.title !== searchTitle)
+      && (dashExtraction.artist !== strippedArtist || dashExtraction.title !== strippedTitle)
+      && (!quotedExtraction || dashExtraction.artist !== quotedExtraction.artist || dashExtraction.title !== quotedExtraction.title);
+
     try {
       if (isHqAutoDownloadEnabled()) {
         let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
@@ -191,6 +212,12 @@ export async function resolvePlaylistQuality(
           if (!slskdCandidate && hasCleanedFallback) {
             slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
           }
+          if (!slskdCandidate && hasQuotedFallback && quotedExtraction) {
+            slskdCandidate = await findExactMatchCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+          }
+          if (!slskdCandidate && hasDashFallback && dashExtraction) {
+            slskdCandidate = await findExactMatchCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+          }
           if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
         } catch (err) {
           console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
@@ -203,6 +230,12 @@ export async function resolvePlaylistQuality(
             jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
             if (!jioSaavnCandidate && hasCleanedFallback) {
               jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
+            if (!jioSaavnCandidate && hasQuotedFallback && quotedExtraction) {
+              jioSaavnCandidate = await findJioSaavnCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+            }
+            if (!jioSaavnCandidate && hasDashFallback && dashExtraction) {
+              jioSaavnCandidate = await findJioSaavnCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
             }
             if (jioSaavnCandidate) replaced = await downloadAndReplaceViaJioSaavn(video, jioSaavnCandidate);
           } catch (err) {
@@ -220,6 +253,12 @@ export async function resolvePlaylistQuality(
             if (!deezerCandidate && hasCleanedFallback) {
               deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration);
             }
+            if (!deezerCandidate && hasQuotedFallback && quotedExtraction) {
+              deezerCandidate = await findDeezerCandidate(deezerSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+            }
+            if (!deezerCandidate && hasDashFallback && dashExtraction) {
+              deezerCandidate = await findDeezerCandidate(deezerSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+            }
             if (deezerCandidate) replaced = await downloadAndReplaceViaDeezer(video, deezerSession, deezerCandidate);
           } catch (err) {
             console.error(`[deezer] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
@@ -234,6 +273,12 @@ export async function resolvePlaylistQuality(
             bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
             if (!bandcampCandidate && hasCleanedFallback) {
               bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
+            if (!bandcampCandidate && hasQuotedFallback && quotedExtraction) {
+              bandcampCandidate = await findBandcampCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+            }
+            if (!bandcampCandidate && hasDashFallback && dashExtraction) {
+              bandcampCandidate = await findBandcampCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
             }
             if (bandcampCandidate) replaced = await downloadAndReplaceViaBandcamp(video, bandcampCandidate);
           } catch (err) {

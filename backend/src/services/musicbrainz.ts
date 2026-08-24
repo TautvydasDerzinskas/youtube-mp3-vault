@@ -96,6 +96,13 @@ const JUNK_BRACKET_RE = new RegExp(`[([][^)\\]]*\\b(${JUNK_TAG_WORDS.join('|')})
 // this kind of trailing junk ("• Copyright Free Music •", "*Free Download*").
 const JUNK_TRAILING_RE = new RegExp(`[\\s\\-|/,*•]+\\b(${[...JUNK_TRAILING_PHRASES, ...JUNK_TAG_WORDS].join('|')})\\b\\s*$`, 'i');
 
+// A bare (unbracketed) URL/domain trailing the title outright — "Song Title
+// www.fan-guf.ru", "Song Title - http://example.com" — same uploader-promo
+// pattern bracketed content already loses via ANY_BRACKET_RE/
+// MEANINGFUL_BRACKET_RE below (a URL never matches a "meaningful" word, so
+// a bracketed one is already dropped), just without the parens.
+const URL_TRAILING_RE = /[\s\-|/,*•]*(?:https?:\/\/|www\.)\S+[\s!?.]*$/i;
+
 // Bracketed content is only worth keeping if it actually describes the
 // track itself (a remix/edit/version/feature credit) — anything still
 // bracketed after JUNK_BRACKET_RE above has already removed the *known*
@@ -144,7 +151,8 @@ function stripJunkTags(rawTitle: string): string {
   // Bare (non-bracketed) junk suffixes, e.g. `Song Title - Official Video`
   // with no brackets at all. Strip iteratively for chains like `Lyrics / Lyric Video`.
   for (let i = 0; i < 10; i++) {
-    const next = cleaned.replace(JUNK_TRAILING_RE, '').trim();
+    let next = cleaned.replace(JUNK_TRAILING_RE, '').trim();
+    next = next.replace(URL_TRAILING_RE, '').trim();
     if (next === cleaned) break;
     cleaned = next;
   }
@@ -166,20 +174,42 @@ function stripJunkTags(rawTitle: string): string {
 export function parseArtistAndTitle(rawTitle: string, channelName: string | null): { artist: string | null; title: string } {
   const cleaned = stripJunkTags(rawTitle);
 
+  // Same length as `cleaned` so the capture-group indices below still line
+  // up with it — masks out parenthesized spans before hunting for a
+  // separator below, otherwise a dash/colon/slash sitting inside a
+  // legitimate bracket ("Cinema (Skrillex Remix -- BASS BOOSTED)") gets
+  // mistaken for the real "Artist - Title" separator, tearing the title
+  // itself in half (verified case: this exact title used to split into
+  // artist "Cinema (Skrillex Remix" / title "- BASS BOOSTED)", losing the
+  // remix credit and silently matching the original track downstream).
+  const masked = cleaned.replace(/\([^()]*\)/g, (m) => ' '.repeat(m.length));
+  const extract = (re: RegExp): { artist: string; title: string } | null => {
+    const m = re.exec(masked) as (RegExpExecArray & { indices?: [number, number][] }) | null;
+    const indices = m?.indices;
+    if (!indices) return null;
+    const [aStart, aEnd] = indices[1];
+    const [tStart, tEnd] = indices[2];
+    return { artist: cleaned.slice(aStart, aEnd).trim(), title: cleaned.slice(tStart, tEnd).trim() };
+  };
+
   // Requires whitespace on at least one side of the dash-like separator, so
   // a bare mid-word hyphen in an artist name (T-Pain, Hi-Rez, j-LO, Ta-ku,
   // Б-2…) isn't mistaken for the "Artist - Title" split.
-  let match = cleaned.match(/^(.{1,70}?)(?:\s+[-–—|~•]\s*|\s*[-–—|~•]\s+)(.+)$/);
-  if (match) return { artist: match[1].trim(), title: match[2].trim() };
+  let result = extract(/^(.{1,70}?)(?:\s+[-–—|~•]\s*|\s*[-–—|~•]\s+)(.+)$/d);
+  if (result) return result;
 
-  match = cleaned.match(/^(.{1,70}?)\s*(?:::|\/\/)\s*(.+)$/);
-  if (match) return { artist: match[1].trim(), title: match[2].trim() };
+  result = extract(/^(.{1,70}?)\s*(?:::|\/\/)\s*(.+)$/d);
+  if (result) return result;
 
-  match = cleaned.match(/^(.{1,80}?):\s*(.+)$/);
-  if (match) return { artist: match[1].trim(), title: match[2].trim() };
+  result = extract(/^(.{1,80}?):\s*(.+)$/d);
+  if (result) return result;
 
-  match = cleaned.match(/^(.+?)\s+by\s+(.{1,60})$/i);
-  if (match) return { artist: match[2].trim(), title: match[1].trim() };
+  const byMatch = /^(.+?)\s+by\s+(.{1,60})$/id.exec(masked) as (RegExpExecArray & { indices?: [number, number][] }) | null;
+  if (byMatch?.indices) {
+    const [tStart, tEnd] = byMatch.indices[1];
+    const [aStart, aEnd] = byMatch.indices[2];
+    return { artist: cleaned.slice(aStart, aEnd).trim(), title: cleaned.slice(tStart, tEnd).trim() };
+  }
 
   return { artist: cleanChannelName(channelName), title: cleaned };
 }
@@ -263,6 +293,19 @@ export async function lookupTrackMetadata(
   const candidates: any[] = Array.isArray(searchResult?.recordings) ? searchResult.recordings : [];
   if (candidates.length === 0) return null;
 
+  // Penalized by default so a query for the plain title never silently
+  // matches a live/demo/karaoke recording instead of the studio one — but
+  // only when the source title doesn't already say the same thing itself.
+  // Regression case: this penalty used to apply unconditionally, so a
+  // genuine remix's own MusicBrainz entry always lost to the plain original
+  // recording, silently overwriting the remix's title/artist with the
+  // original's — which, downstream, made the HQ scan search for and replace
+  // the file with the wrong, non-remix track (see trackMatching.ts's
+  // MEANINGFUL_VERSION_RE for the same fix applied to the search-fallback
+  // path, and parseArtistAndTitle's `masked` split above for why the local
+  // parsing wasn't the problem here — this scoring step is a separate stage
+  // downstream of it).
+  const VERSION_DISAMBIGUATION_WORDS = ['live', 'demo', 'rehearsal', 'remix', 'instrumental', 'karaoke'];
   const rank = (r: any): number => {
     let score = r?.score ?? 0;
     const releaseGroup = r?.releases?.[0]?.['release-group'];
@@ -270,7 +313,12 @@ export async function lookupTrackMetadata(
     if (secondaryTypes.length > 0) score -= 40;
     if (releaseGroup?.['primary-type'] === 'Album' && secondaryTypes.length === 0) score += 20;
     if (r?.releases?.[0]?.status === 'Official') score += 10;
-    if (/\b(live|demo|rehearsal|remix|instrumental|karaoke)\b/i.test(r?.disambiguation ?? '')) score -= 50;
+    const disambiguation = r?.disambiguation ?? '';
+    const isUnwantedVersion = VERSION_DISAMBIGUATION_WORDS.some((word) => {
+      const wordRe = new RegExp(`\\b${word}\\b`, 'i');
+      return wordRe.test(disambiguation) && !wordRe.test(title);
+    });
+    if (isUnwantedVersion) score -= 50;
     return score;
   };
   const highConfidence = candidates.filter(r => (r?.score ?? 0) >= 80);

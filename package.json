@@ -8,6 +8,7 @@
   "scripts": {
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "test": "npm --prefix backend run test",
     "prepare": "husky"
   },
   "devDependencies": {
