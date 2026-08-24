@@ -9,6 +9,7 @@ import {
   getSongDownloadUrl,
   downloadAndDecryptTrack,
   type DeezerSession,
+  type DeezerFormat,
 } from './deezer';
 import { MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
 import { MATCH_TIERS, isDurationPlausible } from './trackMatching';
@@ -96,13 +97,25 @@ export async function downloadAndReplace(
 
   console.log(`[deezer] Download started: ${video.youtubeId} ("${candidate.artist} - ${candidate.title}", ${session.format})`);
 
-  const mediaUrl = await getSongDownloadUrl(session.licenseToken, candidate.trackToken, session.format);
+  // session.format is negotiated once per sync pass against a single probe
+  // track (see establishDeezerSession) — it reflects what the account is
+  // entitled to, not what every individual track actually has a master for.
+  // FLAC masters aren't universal (especially for remixes/underground
+  // tracks), so a FLAC miss here falls back to MP3_320 for this track alone
+  // rather than aborting outright, same as the probe itself already does.
+  let format: DeezerFormat = session.format;
+  let mediaUrl = await getSongDownloadUrl(session.licenseToken, candidate.trackToken, format);
+  if (!mediaUrl && format === 'FLAC') {
+    console.log(`[deezer] No FLAC master for ${video.youtubeId} ("${candidate.artist} - ${candidate.title}") — falling back to MP3_320`);
+    format = 'MP3_320';
+    mediaUrl = await getSongDownloadUrl(session.licenseToken, candidate.trackToken, format);
+  }
   if (!mediaUrl) {
     console.error(`[deezer] Aborting ${video.youtubeId}: no download URL for "${candidate.artist} - ${candidate.title}"`);
     return false;
   }
 
-  const isFlac = session.format === 'FLAC';
+  const isFlac = format === 'FLAC';
   const tmpDir = getTmpDir();
   const attemptId = `${video.youtubeId}-${randomUUID()}`;
   const tmpRawPath = join(tmpDir, `${attemptId}.${isFlac ? 'flac' : 'mp3'}`);
@@ -132,10 +145,9 @@ export async function downloadAndReplace(
     // Unlike the other three providers' downloadAndReplace, hqFileDownloaded
     // is unconditionally true here rather than gated on reaching the real
     // ceiling — not an oversight, this provider genuinely always does:
-    // session.format pins the whole account to a single fixed quality
-    // (FLAC or MP3_320, see findDeezerCandidate above), never a variable
-    // per-track bitrate, so every successful download already lands at
-    // MAX_PLAUSIBLE_MP3_BITRATE_KBPS by construction.
+    // every path this function can succeed through (FLAC, or the MP3_320
+    // fallback above) lands at MAX_PLAUSIBLE_MP3_BITRATE_KBPS by
+    // construction, never a variable per-track bitrate like slskd/Bandcamp.
     await prisma.mediaFile.update({
       where: { id: video.mediaFileId },
       data: { fileSize: publishedStats.size, bitrate: MAX_PLAUSIBLE_MP3_BITRATE_KBPS },
