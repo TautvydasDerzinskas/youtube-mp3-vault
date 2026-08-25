@@ -8,7 +8,7 @@ import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSa
 import { findBandcampCandidate, downloadAndReplace as downloadAndReplaceViaBandcamp } from './bandcampReplace';
 import { establishDeezerSession, type DeezerSession } from './deezer';
 import { findDeezerCandidate, downloadAndReplace as downloadAndReplaceViaDeezer } from './deezerReplace';
-import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle } from './trackMatching';
+import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle, normalizeArtistSeparators } from './trackMatching';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
 // playlist. Called at the end of a playlist's download pass (see
@@ -179,8 +179,11 @@ export async function resolvePlaylistQuality(
     // catalogs genuinely do index a feat. credit as part of the title, so
     // the plainer, more-likely-correct search always gets first shot. Only
     // worth a second search per source when stripping actually changed
-    // something.
-    const strippedArtist = stripUploadNoise(stripFeaturedArtists(searchArtist));
+    // something. normalizeArtistSeparators is folded in here too — a
+    // "Leon Somov x Saulės Kliošas"/"... & ..." collab credit needs the
+    // same comma-separated form most providers actually catalog it under
+    // (see that function's own doc comment).
+    const strippedArtist = stripUploadNoise(stripFeaturedArtists(normalizeArtistSeparators(searchArtist)));
     const strippedTitle = stripUploadNoise(stripFeaturedArtists(searchTitle));
     const hasCleanedFallback = strippedArtist !== searchArtist || strippedTitle !== searchTitle;
 

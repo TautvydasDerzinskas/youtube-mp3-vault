@@ -90,6 +90,30 @@ export function stripFeaturedArtists(text: string): string {
   return cleaned || text.trim();
 }
 
+// A multi-artist collab credit written with a stylistic connector —
+// "Leon Somov x Saulės Kliošas", "Leon Somov & Saulės Kliošas" — rather
+// than the comma-separated form most providers actually catalog artist
+// credits under ("Leon Somov, Saulės Kliošas"). Global, so a 3+-way collab
+// ("A x B x C") normalizes fully too. "x" is deliberately matched
+// lowercase-only (no 'i' flag) — a bare uppercase "X" is far more likely to
+// be part of a real word/name than a collab marker, whereas lowercase " x "
+// standalone between two names is essentially always this convention in
+// practice. "&" needs no such guard: even without this function,
+// foldForMatch already strips "&" and "," identically (both are plain
+// punctuation to it), so the artist-matching step in MATCH_TIERS treats
+// "A & B" and "A, B" as the same string either way — this only changes
+// what text gets sent to a provider's own search endpoint, not what
+// ultimately gets accepted as a match. Only ever applied to the artist
+// field — a title never carries a multi-artist credit this function should
+// touch.
+const MULTI_ARTIST_SEPARATOR_RE = /\s+(?:x|&)\s+/g;
+
+export function normalizeArtistSeparators(artist: string): string {
+  if (!artist) return artist;
+  const normalized = artist.replace(MULTI_ARTIST_SEPARATOR_RE, ', ').trim();
+  return normalized || artist;
+}
+
 // Upload-decoration words/phrases — "[PREMIERE]", "- Lyrics HD!", "(FREE)",
 // "- High Quality", "[Bass Boosted]", a "(Live - ...)" performance-context
 // bracket — that clutter a query without being real catalog information.

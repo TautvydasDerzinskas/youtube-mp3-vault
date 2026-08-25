@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   extractDashArtistTitle,
   extractQuotedArtistTitle,
+  normalizeArtistSeparators,
   splitArtistTitle,
   stripFeaturedArtists,
   stripUploadNoise,
@@ -236,5 +237,27 @@ describe('splitArtistTitle', () => {
 
   it('returns a null artist when there is no separator at all', () => {
     expect(splitArtistTitle('Just A Title')).toEqual({ artist: null, title: 'Just A Title' });
+  });
+});
+
+describe('normalizeArtistSeparators', () => {
+  it('turns a lowercase "x" collab connector into a comma', () => {
+    expect(normalizeArtistSeparators('Leon Somov x Saulės Kliošas')).toBe('Leon Somov, Saulės Kliošas');
+  });
+
+  it('turns an "&" collab connector into a comma', () => {
+    expect(normalizeArtistSeparators('Leon Somov & Saulės Kliošas')).toBe('Leon Somov, Saulės Kliošas');
+  });
+
+  it('normalizes every connector in a 3+-way collab, mixed separators included', () => {
+    expect(normalizeArtistSeparators('A x B & C')).toBe('A, B, C');
+  });
+
+  it('leaves an uppercase "X" alone — more likely part of a real name than a collab marker', () => {
+    expect(normalizeArtistSeparators('X Ambassadors')).toBe('X Ambassadors');
+  });
+
+  it('returns the input unchanged when there is no connector', () => {
+    expect(normalizeArtistSeparators('Skepta')).toBe('Skepta');
   });
 });
