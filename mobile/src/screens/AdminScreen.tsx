@@ -4,18 +4,21 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const ROWS: { key: 'AdminUsers' | 'AdminTriggers' | 'AdminLogs' | 'AdminSettings'; icon: keyof typeof MaterialCommunityIcons.glyphMap; labelKey: string }[] = [
+const ROWS: { key: 'AdminUsers' | 'AdminTriggers' | 'AdminExport' | 'AdminImport' | 'AdminLogs' | 'AdminSettings'; icon: keyof typeof MaterialCommunityIcons.glyphMap; labelKey: string }[] = [
   { key: 'AdminUsers', icon: 'account-group-outline', labelKey: 'admin.users' },
   { key: 'AdminTriggers', icon: 'flash-outline', labelKey: 'admin.triggers' },
+  { key: 'AdminExport', icon: 'file-download-outline', labelKey: 'admin.export' },
+  { key: 'AdminImport', icon: 'file-upload-outline', labelKey: 'admin.import' },
   { key: 'AdminLogs', icon: 'text-box-outline', labelKey: 'admin.logs' },
   { key: 'AdminSettings', icon: 'cog-outline', labelKey: 'admin.settings' },
 ];
 
 // Reached via the shield icon in Profile's header (admin accounts only —
 // see RootNavigator's ProfileHeaderRight). Mirrors web's /admin section
-// (UsersPage/TriggersPage/LogsPage/SettingsPage), but as a simple 4-row menu
-// pushing to its own screen per section rather than a sidebar + nested
-// routes, since a phone-width sidebar doesn't have anywhere useful to live.
+// (UsersPage/TriggersPage/ExportPage/ImportPage/LogsPage/SettingsPage), but
+// as a simple row-per-section menu pushing to its own screen rather than a
+// sidebar + nested routes, since a phone-width sidebar doesn't have
+// anywhere useful to live.
 export function AdminScreen() {
   const { t } = useTranslation();
   const theme = useTheme();

@@ -34,6 +34,8 @@ export type RootStackParamList = {
   AdminUsers: undefined;
   AdminUserDetail: { userId: string };
   AdminTriggers: undefined;
+  AdminExport: undefined;
+  AdminImport: undefined;
   AdminLogs: undefined;
   AdminSettings: undefined;
 };

@@ -31,6 +31,8 @@ import { AdminScreen } from '../screens/AdminScreen';
 import { AdminUsersScreen } from '../screens/AdminUsersScreen';
 import { AdminUserDetailScreen } from '../screens/AdminUserDetailScreen';
 import { AdminTriggersScreen } from '../screens/AdminTriggersScreen';
+import { AdminExportScreen } from '../screens/AdminExportScreen';
+import { AdminImportScreen } from '../screens/AdminImportScreen';
 import { AdminLogsScreen } from '../screens/AdminLogsScreen';
 import { AdminSettingsScreen } from '../screens/AdminSettingsScreen';
 import { useServerReachability } from '../hooks/useServerReachability';
@@ -209,6 +211,8 @@ export function RootNavigator() {
             <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: t('users.title') }} />
             <Stack.Screen name="AdminUserDetail" component={AdminUserDetailScreen} options={{ title: t('users.detailsTitle') }} />
             <Stack.Screen name="AdminTriggers" component={AdminTriggersScreen} options={{ title: t('triggers.title') }} />
+            <Stack.Screen name="AdminExport" component={AdminExportScreen} options={{ title: t('export.title') }} />
+            <Stack.Screen name="AdminImport" component={AdminImportScreen} options={{ title: t('import.title') }} />
             <Stack.Screen name="AdminLogs" component={AdminLogsScreen} options={{ title: t('logs.title') }} />
             <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} options={{ title: t('adminSettings.title') }} />
           </Stack.Navigator>

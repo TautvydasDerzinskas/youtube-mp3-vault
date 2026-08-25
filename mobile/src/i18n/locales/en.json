@@ -359,6 +359,8 @@
     "title": "Administration",
     "users": "Users",
     "triggers": "Triggers",
+    "export": "Export",
+    "import": "Import",
     "logs": "Logs",
     "settings": "Settings"
   },
@@ -407,6 +409,27 @@
       "trigger": "Rebuild ID3 tags",
       "started": "Tag rebuild started.",
       "genericError": "Failed to start tag rebuild."
+    }
+  },
+  "export": {
+    "title": "Export Tracks",
+    "description": "Export a CSV of tracks with their YouTube ID, original YouTube title, artist, and title — useful for bulk-correcting inaccurate metadata with an external tool and reimporting it via Import.",
+    "onlyNonHq": "Only tracks without HQ found",
+    "button": "Export CSV",
+    "error": "Failed to export tracks.",
+    "sharingUnavailable": "Sharing isn't available on this device."
+  },
+  "import": {
+    "title": "Import Tracks",
+    "description": "Import a CSV in the same format as Export. Matches each row by YouTube ID and updates that track's artist and title — a blank artist or title cell leaves the existing value unchanged. Updated tracks are re-queued for the next HQ scan.",
+    "chooseFile": "Choose CSV file",
+    "invalidFile": "Please select a .csv file.",
+    "button": "Import",
+    "error": "Failed to import tracks.",
+    "summary": {
+      "updated": "{{count}} track(s) updated",
+      "skipped": "{{count}} row(s) skipped (missing YouTube ID or title)",
+      "notFound": "{{count}} YouTube ID(s) not found: {{ids}}"
     }
   },
   "logs": {

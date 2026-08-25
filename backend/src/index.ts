@@ -24,7 +24,11 @@ const app = express();
 app.set('trust proxy', 2);
 app.use(helmet());
 app.use(cors({ origin: config.frontendUrl, credentials: true }));
-app.use(express.json());
+// Default 100kb is fine for every other route, but the admin CSV track
+// import (backend/src/routes/admin.ts) can legitimately be a few MB for a
+// large library — raised globally rather than per-route since the body is
+// already consumed by the time a route-specific parser would run.
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 
 app.get('/api/health', (_req, res) => {

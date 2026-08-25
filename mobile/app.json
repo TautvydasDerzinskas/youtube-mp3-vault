@@ -36,15 +36,23 @@
           }
         }
       ],
-      ["expo-audio", { "enableBackgroundPlayback": true }],
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true
+        }
+      ],
       [
         "expo-media-library",
         {
-          "granularPermissions": ["audio"],
+          "granularPermissions": [
+            "audio"
+          ],
           "photosPermission": false,
           "savePhotosPermission": false
         }
-      ]
+      ],
+      "expo-sharing"
     ]
   }
 }

@@ -4,6 +4,7 @@ import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import { prisma, switchDatabase, buildDatabaseUrl } from '../services/prisma';
 import { withDownloadStats } from '../services/playlistStats';
 import { startSoftReimport, startTagRebuild } from '../services/reimport';
+import { toCsv, parseCsv } from '../services/csv';
 import {
   getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
   getLastfmSettings, updateLastfmSettings,
@@ -158,6 +159,115 @@ router.post('/playlists/:id/rebuild-tags', async (req, res, next) => {
     }
 
     res.json({ started: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const TRACK_CSV_HEADER = ['youtubeId', 'originalTitle', 'artist', 'title'];
+
+// GET /api/admin/tracks/export?onlyNonHq=true
+// Exports every distinct video (across every user's playlists) as a CSV
+// meant for round-tripping through an external tool (e.g. an AI cleanup
+// pass) and back through the import route below — see that route's own
+// comment for the full workflow this pair supports.
+router.get('/tracks/export', async (req, res, next) => {
+  try {
+    const onlyNonHq = req.query.onlyNonHq === 'true';
+    const videos = await prisma.playlistVideo.findMany({
+      where: onlyNonHq ? { hqFileDownloaded: false } : undefined,
+      select: { youtubeId: true, originalTitle: true, artist: true, title: true },
+      orderBy: { addedAt: 'desc' },
+    });
+
+    // The same YouTube video can be saved into more than one playlist (by
+    // the same or different users) — dedupe by youtubeId so a shared video
+    // isn't paid for twice by whatever's parsing this CSV downstream. Import
+    // below applies its update to every row sharing a youtubeId regardless,
+    // so deduping here loses nothing.
+    const seen = new Map<string, { originalTitle: string | null; artist: string | null; title: string }>();
+    for (const v of videos) {
+      if (!seen.has(v.youtubeId)) seen.set(v.youtubeId, v);
+    }
+
+    const rows = [TRACK_CSV_HEADER, ...[...seen.entries()].map(([youtubeId, v]) => [
+      youtubeId, v.originalTitle ?? '', v.artist ?? '', v.title,
+    ])];
+
+    const filename = `tracks-export${onlyNonHq ? '-non-hq' : ''}-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(toCsv(rows));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/tracks/import  { csv: string }
+// The other half of the export above: re-imports a (possibly externally
+// edited) copy of that CSV and applies its artist/title columns back onto
+// every video matching each row's youtubeId. Built for correcting videos
+// whose artist/title were extracted badly from a messy YouTube title (so
+// the HQ scan's search never finds a match) — export the non-HQ tracks, run
+// them through an external AI/manual pass, re-import the corrected CSV.
+// originalTitle is read back but never applied — it's only there so
+// whatever tool edits the CSV has the raw title as context.
+router.post('/tracks/import', async (req, res, next) => {
+  try {
+    const { csv } = req.body as { csv?: unknown };
+    if (typeof csv !== 'string' || !csv.trim()) {
+      res.status(400).json({ error: 'CSV content is required' });
+      return;
+    }
+
+    const rows = parseCsv(csv);
+    if (rows.length === 0) {
+      res.status(400).json({ error: 'CSV file is empty' });
+      return;
+    }
+
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const youtubeIdIdx = header.indexOf('youtubeid');
+    const artistIdx = header.indexOf('artist');
+    const titleIdx = header.indexOf('title');
+    if (youtubeIdIdx === -1 || titleIdx === -1) {
+      res.status(400).json({ error: 'CSV must have "youtubeId" and "title" columns' });
+      return;
+    }
+
+    let updated = 0;
+    let skipped = 0;
+    const notFound: string[] = [];
+
+    for (const row of rows.slice(1)) {
+      const youtubeId = row[youtubeIdIdx]?.trim();
+      const title = row[titleIdx]?.trim();
+      // A blank artist/title cell means "no correction for this field", not
+      // "clear it" — the caller only wants to apply what the CSV actually
+      // fills in, never blank out a field that already has a real value.
+      const artist = artistIdx !== -1 ? row[artistIdx]?.trim() : '';
+
+      if (!youtubeId || !title) {
+        skipped++;
+        continue;
+      }
+
+      const data: Prisma.PlaylistVideoUpdateManyMutationInput = {
+        title,
+        // Corrected metadata is worthless until the next HQ scan actually
+        // uses it — 'checked' from a past (bad-query) pass would otherwise
+        // never get retried on its own.
+        qualityCheckStatus: 'pending',
+        qualityCheckedAt: null,
+      };
+      if (artist) data.artist = artist;
+
+      const result = await prisma.playlistVideo.updateMany({ where: { youtubeId }, data });
+      if (result.count === 0) notFound.push(youtubeId);
+      else updated += result.count;
+    }
+
+    res.json({ updated, skipped, notFound });
   } catch (err) {
     next(err);
   }

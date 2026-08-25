@@ -409,6 +409,8 @@
     "title": "Administracja",
     "users": "Użytkownicy",
     "triggers": "Wyzwalacze",
+    "export": "Eksport",
+    "import": "Import",
     "logs": "Dzienniki",
     "settings": "Ustawienia"
   },
@@ -457,6 +459,27 @@
       "trigger": "Przebuduj tagi ID3",
       "started": "Rozpoczęto przebudowę tagów.",
       "genericError": "Nie udało się rozpocząć przebudowy tagów."
+    }
+  },
+  "export": {
+    "title": "Eksportuj utwory",
+    "description": "Eksportuje CSV z utworami zawierający ich YouTube ID, oryginalny tytuł YouTube, artystę i tytuł — przydatne do masowego poprawiania niedokładnych metadanych za pomocą zewnętrznego narzędzia i ponownego zaimportowania ich przez Import.",
+    "onlyNonHq": "Tylko utwory bez znalezionej wersji HQ",
+    "button": "Eksportuj CSV",
+    "error": "Nie udało się wyeksportować utworów.",
+    "sharingUnavailable": "Udostępnianie jest niedostępne na tym urządzeniu."
+  },
+  "import": {
+    "title": "Importuj utwory",
+    "description": "Importuje CSV w tym samym formacie co Eksport. Dopasowuje każdy wiersz po YouTube ID i aktualizuje artystę oraz tytuł tego utworu — puste pole artysty lub tytułu pozostawia dotychczasową wartość bez zmian. Zaktualizowane utwory trafiają ponownie do kolejki następnego skanowania HQ.",
+    "chooseFile": "Wybierz plik CSV",
+    "invalidFile": "Wybierz plik .csv.",
+    "button": "Importuj",
+    "error": "Nie udało się zaimportować utworów.",
+    "summary": {
+      "updated": "Zaktualizowano utworów: {{count}}",
+      "skipped": "Pominięto wierszy: {{count}} (brak YouTube ID lub tytułu)",
+      "notFound": "Nie znaleziono YouTube ID ({{count}}): {{ids}}"
     }
   },
   "logs": {

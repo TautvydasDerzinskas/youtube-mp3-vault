@@ -384,6 +384,8 @@
     "title": "Administravimas",
     "users": "Vartotojai",
     "triggers": "Trigeriai",
+    "export": "Eksportas",
+    "import": "Importas",
     "logs": "Žurnalai",
     "settings": "Nustatymai"
   },
@@ -432,6 +434,27 @@
       "trigger": "Atkurti ID3 žymes",
       "started": "ID3 žymių atkūrimas pradėtas.",
       "genericError": "Nepavyko pradėti ID3 žymių atkūrimo."
+    }
+  },
+  "export": {
+    "title": "Eksportuoti dainas",
+    "description": "Eksportuokite dainų CSV su jų YouTube ID, originaliu YouTube pavadinimu, atlikėju ir pavadinimu — naudinga masiškai taisant netikslius metaduomenis su išoriniu įrankiu ir juos importuojant atgal per Importą.",
+    "onlyNonHq": "Tik dainas be rastos HQ versijos",
+    "button": "Eksportuoti CSV",
+    "error": "Nepavyko eksportuoti dainų.",
+    "sharingUnavailable": "Bendrinimas šiame įrenginyje negalimas."
+  },
+  "import": {
+    "title": "Importuoti dainas",
+    "description": "Importuokite CSV tokiu pat formatu kaip Eksportas. Kiekviena eilutė suderinama pagal YouTube ID ir atnaujina tos dainos atlikėją bei pavadinimą — tuščias atlikėjo ar pavadinimo langelis palieka esamą reikšmę nepakeistą. Atnaujintos dainos vėl įtraukiamos į kitą HQ paiešką.",
+    "chooseFile": "Pasirinkti CSV failą",
+    "invalidFile": "Pasirinkite .csv failą.",
+    "button": "Importuoti",
+    "error": "Nepavyko importuoti dainų.",
+    "summary": {
+      "updated": "Atnaujinta dainų: {{count}}",
+      "skipped": "Praleista eilučių: {{count}} (trūksta YouTube ID arba pavadinimo)",
+      "notFound": "Nerasta YouTube ID ({{count}}): {{ids}}"
     }
   },
   "logs": {

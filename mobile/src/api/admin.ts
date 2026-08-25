@@ -78,6 +78,12 @@ export interface HqSettings {
   allowedUserProviders: HqUserProvider[];
 }
 
+export interface TrackImportSummary {
+  updated: number;
+  skipped: number;
+  notFound: string[];
+}
+
 export const adminApi = {
   listUsers: async (): Promise<AdminUser[]> => {
     const { data } = await client.get<{ users: AdminUser[] }>('/admin/users');
@@ -135,5 +141,24 @@ export const adminApi = {
   listLogs: async (params: { userId?: string; from?: string; to?: string }): Promise<LogEntry[]> => {
     const { data } = await client.get<{ logs: LogEntry[] }>('/admin/logs', { params });
     return data.logs;
+  },
+
+  exportTracks: async (onlyNonHq: boolean): Promise<{ csv: string; filename: string }> => {
+    // responseType/transformResponse forced to plain text — the endpoint
+    // returns text/csv, and axios's default JSON transform would otherwise
+    // try (and fail) to JSON.parse it.
+    const response = await client.get<string>('/admin/tracks/export', {
+      params: { onlyNonHq: onlyNonHq ? 'true' : 'false' },
+      responseType: 'text',
+      transformResponse: (data) => data,
+    });
+    const disposition = (response.headers as Record<string, string>)['content-disposition'] ?? '';
+    const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'tracks-export.csv';
+    return { csv: response.data, filename };
+  },
+
+  importTracks: async (csv: string): Promise<TrackImportSummary> => {
+    const { data } = await client.post<TrackImportSummary>('/admin/tracks/import', { csv });
+    return data;
   },
 };

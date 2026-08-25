@@ -75,6 +75,12 @@ export interface HqSettings {
   allowedUserProviders: HqUserProvider[];
 }
 
+export interface TrackImportSummary {
+  updated: number;
+  skipped: number;
+  notFound: string[];
+}
+
 export const adminApi = {
   listUsers: async (): Promise<AdminUser[]> => {
     const { data } = await client.get<{ users: AdminUser[] }>('/admin/users');
@@ -132,5 +138,20 @@ export const adminApi = {
   listLogs: async (params: { userId?: string; from?: string; to?: string }): Promise<LogEntry[]> => {
     const { data } = await client.get<{ logs: LogEntry[] }>('/admin/logs', { params });
     return data.logs;
+  },
+
+  exportTracks: async (onlyNonHq: boolean): Promise<{ blob: Blob; filename: string }> => {
+    const response = await client.get('/admin/tracks/export', {
+      params: { onlyNonHq: onlyNonHq ? 'true' : 'false' },
+      responseType: 'blob',
+    });
+    const disposition: string = response.headers['content-disposition'] ?? '';
+    const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'tracks-export.csv';
+    return { blob: response.data, filename };
+  },
+
+  importTracks: async (csv: string): Promise<TrackImportSummary> => {
+    const { data } = await client.post<TrackImportSummary>('/admin/tracks/import', { csv });
+    return data;
   },
 };

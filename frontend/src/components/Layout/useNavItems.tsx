@@ -10,6 +10,8 @@ import {
   Settings as SettingsIcon,
   Bolt as TriggersIcon,
   History as LogsIcon,
+  FileDownload as ExportIcon,
+  FileUpload as ImportIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -44,6 +46,8 @@ export function useNavItems(): NavItem[] {
       children: [
         { label: t('nav.users'), path: '/admin/users', icon: <UsersIcon /> },
         { label: t('nav.triggers'), path: '/admin/triggers', icon: <TriggersIcon /> },
+        { label: t('nav.export'), path: '/admin/export', icon: <ExportIcon /> },
+        { label: t('nav.import'), path: '/admin/import', icon: <ImportIcon /> },
         { label: t('nav.logs'), path: '/admin/logs', icon: <LogsIcon /> },
         { label: t('nav.settings'), path: '/admin/settings', icon: <SettingsIcon /> },
       ],
