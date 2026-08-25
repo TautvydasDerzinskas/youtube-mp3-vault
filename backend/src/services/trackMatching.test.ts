@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  artistIsSupersetMatch,
   extractDashArtistTitle,
   extractQuotedArtistTitle,
   normalizeArtistSeparators,
@@ -259,5 +260,36 @@ describe('normalizeArtistSeparators', () => {
 
   it('returns the input unchanged when there is no connector', () => {
     expect(normalizeArtistSeparators('Skepta')).toBe('Skepta');
+  });
+});
+
+describe('artistIsSupersetMatch', () => {
+  it('rejects a different artist whose multi-word name merely starts with ours', () => {
+    // Regression: "Moon" is not a token of "Moon Squid" even though the
+    // fully-folded string "moon squid" contains "moon" as a raw substring.
+    expect(artistIsSupersetMatch('Moon Squid', 'Moon')).toBe(false);
+    expect(artistIsSupersetMatch('Moon', 'Moon Squid')).toBe(false);
+  });
+
+  it('accepts a candidate carrying one extra comma-separated collaborator', () => {
+    expect(artistIsSupersetMatch('RSAC, ELLA', 'RSAC')).toBe(true);
+    expect(artistIsSupersetMatch('RSAC', 'RSAC, ELLA')).toBe(true);
+  });
+
+  it('accepts a candidate carrying an extra feat./ft. credit', () => {
+    expect(artistIsSupersetMatch('Artist feat. Other', 'Artist')).toBe(true);
+  });
+
+  it('accepts an "&"/" x " collab credit against its comma-separated equivalent', () => {
+    expect(artistIsSupersetMatch('Sub Focus, Culture Shock & Fragma', 'Sub Focus, Culture Shock, Fragma')).toBe(true);
+  });
+
+  it('rejects two artists sharing only a short word-prefix, not a full token', () => {
+    expect(artistIsSupersetMatch('Ashley', 'Ash')).toBe(false);
+  });
+
+  it('rejects when either side is empty', () => {
+    expect(artistIsSupersetMatch('', 'Moon')).toBe(false);
+    expect(artistIsSupersetMatch('Moon', '')).toBe(false);
   });
 });

@@ -37,15 +37,36 @@ export function titleSimilarity(a: string, b: string): number {
   return union === 0 ? 0 : intersection / union;
 }
 
-// One side containing the other (after folding) tolerates a candidate
-// carrying extra featured-artist credits ("Artist ft. Other") that our own
-// stored artist doesn't, or vice versa, without accepting an unrelated
-// artist that merely shares a short substring.
+// Splits an artist credit into its individual named performers — comma,
+// "&"/" x " (via normalizeArtistSeparators), and "feat./ft./featuring" all
+// count as a delimiter between separate people. Each resulting token is
+// folded as a whole unit rather than merged into one space-joined string, so
+// artistIsSupersetMatch below can tell "an extra collaborator was added"
+// (a whole extra token) apart from "this is just a word-prefix collision
+// inside one person's own multi-word name" (e.g. "Moon" is not a token of
+// "Moon Squid" even though foldForMatch's flattened string would contain it
+// as a raw substring).
+const ARTIST_LIST_SPLIT_RE = /\s*,\s*|\s+(?:feat\.?|ft\.?|featuring)\s+/gi;
+
+function artistNameTokens(s: string): string[] {
+  return normalizeArtistSeparators(s)
+    .split(ARTIST_LIST_SPLIT_RE)
+    .map(foldForMatch)
+    .filter(Boolean);
+}
+
+// One side's artist list containing the other's (as whole names, not raw
+// substrings) tolerates a candidate carrying extra featured-artist credits
+// ("Artist ft. Other") that our own stored artist doesn't, or vice versa,
+// without accepting an unrelated artist that merely shares a short
+// substring (see artistNameTokens above for why token-level comparison,
+// not string-level, is what actually enforces that).
 export function artistIsSupersetMatch(a: string, b: string): boolean {
-  const fa = foldForMatch(a);
-  const fb = foldForMatch(b);
-  if (!fa || !fb) return false;
-  return fa === fb || fa.includes(fb) || fb.includes(fa);
+  const ta = artistNameTokens(a);
+  const tb = artistNameTokens(b);
+  if (ta.length === 0 || tb.length === 0) return false;
+  const [smaller, larger] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+  return smaller.every((name) => larger.includes(name));
 }
 
 const FEAT_KEYWORD_RE = /\b(feat\.?|ft\.?|featuring)\b/i;

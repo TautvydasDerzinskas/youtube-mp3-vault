@@ -237,24 +237,10 @@ export interface TidalSession {
 // file — see slskdQualityWorker.ts's tidalSession block. Returns null for a
 // dead/revoked refresh token (nothing left to do but ask the user to
 // reconnect), exactly as if no credentials were saved at all.
-// Redacted presence/shape check, not the secret itself — safe to ship to
-// logs (console output can end up in aggregators/issue reports).
-function describeSecret(value: string): string {
-  if (!value) return '<empty>';
-  return `<len=${value.length}, starts="${value.slice(0, 4)}...">`;
-}
-
 export async function establishTidalSession(
   user: { tidalAccessToken: string; tidalRefreshToken: string; tidalUserId: string; tidalCountryCode: string },
   onRefreshed?: (accessToken: string) => void
 ): Promise<TidalSession | null> {
-  // Temporary diagnostic for the "every track rejected with 4005" investigation
-  // — remove once the stored-credential shape is confirmed. See
-  // getBestTidalTrackUrl's own diagnostic log for the other half of this.
-  console.log(
-    `[tidal] stored credentials: accessToken=${describeSecret(user.tidalAccessToken)}, refreshToken=${describeSecret(user.tidalRefreshToken)}, userId="${user.tidalUserId}", countryCode="${user.tidalCountryCode}"`
-  );
-
   if (!user.tidalAccessToken || !user.tidalRefreshToken) return null;
 
   if (await verifyAccessToken(user.tidalAccessToken)) {
@@ -266,9 +252,7 @@ export async function establishTidalSession(
   if (!refreshed) return null;
 
   onRefreshed?.(refreshed.accessToken);
-  console.log(
-    `[tidal] session established via refresh: userId="${refreshed.userId || user.tidalUserId}", countryCode="${refreshed.countryCode || user.tidalCountryCode}" (refresh response gave userId="${refreshed.userId}", countryCode="${refreshed.countryCode}")`
-  );
+  console.log(`[tidal] session established via refresh: userId="${refreshed.userId || user.tidalUserId}", countryCode="${refreshed.countryCode || user.tidalCountryCode}"`);
   return {
     accessToken: refreshed.accessToken,
     userId: refreshed.userId || user.tidalUserId,
@@ -414,12 +398,7 @@ export async function getBestTidalTrackUrl(session: TidalSession, trackId: strin
         headers: { Authorization: `Bearer ${session.accessToken}` },
       });
       if (!res.ok) {
-        // Temporary diagnostic: every quality tier has been failing for every
-        // track since this provider launched, and the swallowed status/body
-        // made it impossible to tell a 402/403 (no active subscription) apart
-        // from a 401 (bad token/scope) or something else entirely — remove
-        // once the real cause is confirmed from a live run.
-        console.error(`[tidal] playbackinfopostpaywall ${quality} -> HTTP ${res.status} for track ${trackId} (countryCode="${session.countryCode}", userId="${session.userId}"): ${(await res.text()).slice(0, 300)}`);
+        console.error(`[tidal] playbackinfopostpaywall ${quality} -> HTTP ${res.status} for track ${trackId}: ${(await res.text()).slice(0, 300)}`);
         continue;
       }
       const resp = (await res.json()) as StreamRespond;
