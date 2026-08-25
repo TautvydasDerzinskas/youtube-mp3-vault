@@ -131,6 +131,44 @@ const UPLOAD_NOISE_WORDS = [
   // HQ file of the same song — a provider search for the full "Radio Edit"
   // title turns up far fewer/no results than the plain title would.
   'radio\\s*edit',
+  // "Extended Mix"/"Extended"/"Extended Version" — reverses an earlier
+  // stance of always keeping "extended" as protected content (it's still
+  // on MEANINGFUL_VERSION_WORDS below, deliberately left there — see the
+  // leftover-check next to MEANINGFUL_VERSION_RE for why that no longer
+  // matters). Same "Radio Edit" reasoning above, just in the other duration
+  // direction: an Extended Mix is normally the same mix as the plain/
+  // original one, just longer — and it's usually a LOT longer (often 2x+),
+  // so MATCH_TIERS' own duration tolerance reliably rejects a wrong match
+  // against the shorter plain version, the same backstop that makes "Radio
+  // Edit" safe to strip. When "extended" instead qualifies a named remix —
+  // "(Tinlicker Extended Remix)" — only the qualifier itself is dropped;
+  // the remixer's own credit is real, load-bearing content, not decoration.
+  'extended\\s*version', 'extended',
+  // "Radio Version" — synonym for "Radio Edit" above, same reasoning.
+  'radio\\s*version',
+  // "Album Version" just disambiguates from a shorter single/radio
+  // release — the same recording as the plain title, unhelpful in a
+  // search query for the same "Radio Edit"/"Extended Mix" reason.
+  'album\\s*version',
+  // "Original Mix"/"Original Version" — usually the exact recording a
+  // provider already lists with no suffix at all (it's the base/default
+  // release most catalogs treat as implicit), so this is even lower-risk
+  // than "Radio Edit": there's no shorter/longer sibling version it could
+  // get confused with, just the same untagged entry a plain-title search
+  // already finds.
+  'original\\s*mix', 'original\\s*version',
+  // "Acoustic" is real MEANINGFUL_VERSION_WORDS content too — a genuinely
+  // different arrangement, not just a different edit length, unlike
+  // everything else in this block — so this one leans on the same "a
+  // specific version essentially never has its own dedicated HQ release"
+  // pragmatism as "live" above, not the "same mix, different length"
+  // duration-tolerance argument the rest of this list relies on.
+  'acoustic',
+  // "(Intro)"/"(Outro)" — either a DJ-tool edit of the same mix (same
+  // reasoning as "Radio Edit") or a genuinely short, truncated clip of it
+  // — either way, MATCH_TIERS' duration check catches a bad match against
+  // a full-length candidate, the same backstop this whole list leans on.
+  'intro', 'outro',
   // A movie/show soundtrack credit — "(Drive Original Movie Soundtrack)",
   // "(Warm Bodies Soundtrack)" — the actual song still exists as a standalone
   // release a provider can find on its own merits; the film title only ever
@@ -279,6 +317,17 @@ const CONTENT_ALTERED_RE = new RegExp(`(?<![\\p{L}\\p{N}])(?:${CONTENT_ALTERED_W
 // resulting bare "Cinema" search silently matched and replaced the file
 // with the ORIGINAL (non-remix) track instead.
 const MEANINGFUL_VERSION_RE = new RegExp(`\\b(?:${MEANINGFUL_VERSION_WORDS})\\b`, 'i');
+// What's left of a shared bracket after excising noise word(s) can itself
+// turn out to be nothing but a bare, contentless "Mix"/"Version"/"Edit" —
+// e.g. "(Extended Mix, Official Video)" loses "Official Video" as ordinary
+// noise and "Extended" via UPLOAD_NOISE_WORDS above, leaving just "(Mix)",
+// which isn't real version information on its own (nothing distinguishes it
+// from the plain track — every song's "mix" is implicitly "a mix"). Checked
+// against the WHOLE leftover, same exact-content-match safety as
+// COUNTRY_ONLY_BRACKET_RE/YEAR_ONLY_BRACKET_RE above — a leftover that
+// still has anything else attached (a name, "Radio Mix", etc.) doesn't
+// match and survives untouched.
+const BARE_VERSION_WORD_RE = /^(mix|version|edit)$/i;
 // A soundtrack credit always wins outright, even over MEANINGFUL_VERSION_RE
 // above — "original" is real version info in "(Original Mix)" but false
 // signal in "(Drive Original Movie Soundtrack)"; a soundtrack bracket in
@@ -326,7 +375,8 @@ export function stripUploadNoise(text: string): string {
       // — excise just the noise phrase(s), keep the rest, same before/after
       // split reasoning as stripFeaturedArtists above.
       const strippedInner = inner.replace(UPLOAD_NOISE_WORD_STRIP_RE, ' ').replace(/\s+/g, ' ').trim();
-      return strippedInner ? `${open}${strippedInner}${close}` : ' ';
+      if (!strippedInner || BARE_VERSION_WORD_RE.test(strippedInner)) return ' ';
+      return `${open}${strippedInner}${close}`;
     }
     return whole;
   });

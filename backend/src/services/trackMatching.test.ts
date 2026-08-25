@@ -54,7 +54,27 @@ describe('stripUploadNoise', () => {
     // because it also contained "BASS BOOSTED", silently losing the remix
     // credit and causing the search to match the original (non-remix) track.
     expect(stripUploadNoise('Cinema (Skrillex Remix -- BASS BOOSTED)')).toBe('Cinema (Skrillex Remix)');
-    expect(stripUploadNoise('Song Title (Extended Mix, Official Video)')).toBe('Song Title (Extended Mix)');
+  });
+
+  it('strips "Extended Mix"/"Extended"/"Extended Version" brackets entirely', () => {
+    expect(stripUploadNoise('Niton (The Reason) (extended mix)')).toBe('Niton (The Reason)');
+    expect(stripUploadNoise('Let It All Out (Extended Mix)')).toBe('Let It All Out');
+    expect(stripUploadNoise('Alice (extended)')).toBe('Alice');
+    expect(stripUploadNoise('Iconic (Extended Mix) (Light Speed Remix)')).toBe('Iconic (Light Speed Remix)');
+    // Unlike the Skrillex/BASS BOOSTED case above, "Extended" sharing a
+    // bracket with other noise now also gets excised — and since nothing
+    // but the bare, meaningless "Mix" would be left afterwards, the whole
+    // bracket is dropped rather than surviving as "(Mix)".
+    expect(stripUploadNoise('Song Title (Extended Mix, Official Video)')).toBe('Song Title');
+  });
+
+  it('strips just the "extended" qualifier when it names a real remix, keeping the remix credit', () => {
+    expect(stripUploadNoise('Hide U (Tinlicker Extended Remix)')).toBe('Hide U (Tinlicker Remix)');
+    expect(stripUploadNoise(stripFeaturedArtists('One More (Solomun Extended Remix) [feat. Ad Apt]'))).toBe('One More (Solomun Remix)');
+  });
+
+  it('strips a bare trailing "Extended Version"', () => {
+    expect(stripUploadNoise('Regrete | Extended Version')).toBe('Regrete');
   });
 
   it('strips a "Radio Edit" credit, bracketed or bare, unlike a genuine remix', () => {
@@ -66,6 +86,21 @@ describe('stripUploadNoise', () => {
     // only the edit qualifier itself is noise, same partial-strip behavior
     // as the Skrillex Remix/BASS BOOSTED case above.
     expect(stripUploadNoise('Song Title (Radio Edit, David Guetta Remix)')).toBe('Song Title (David Guetta Remix)');
+  });
+
+  it('strips "Radio Version"/"Album Version"/"Original Mix"/"Original Version" brackets entirely', () => {
+    expect(stripUploadNoise('Song Title (Radio Version)')).toBe('Song Title');
+    expect(stripUploadNoise('Song Title (Album Version)')).toBe('Song Title');
+    expect(stripUploadNoise('Song Title (Original Mix)')).toBe('Song Title');
+    expect(stripUploadNoise('Song Title (Original Version)')).toBe('Song Title');
+    // A real remix bracket alongside it still survives untouched.
+    expect(stripUploadNoise('Song Title (Original Mix) (Real Remix)')).toBe('Song Title (Real Remix)');
+  });
+
+  it('strips "Acoustic"/"Intro"/"Outro" brackets entirely', () => {
+    expect(stripUploadNoise('Alice (Acoustic)')).toBe('Alice');
+    expect(stripUploadNoise('Song Title (Intro)')).toBe('Song Title');
+    expect(stripUploadNoise('Song Title (Outro)')).toBe('Song Title');
   });
 
   it('never strips content-altered wording (slowed/reverb/etc), even sharing a bracket with noise', () => {
