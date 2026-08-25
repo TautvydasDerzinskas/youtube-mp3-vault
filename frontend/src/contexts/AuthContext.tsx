@@ -7,7 +7,7 @@ import {
   ReactNode,
 } from 'react';
 import i18next from 'i18next';
-import { authApi, User, RegisterResponse } from '../api/auth';
+import { authApi, User, RegisterResponse, TidalStartResponse, TidalPollResponse } from '../api/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -31,6 +31,9 @@ interface AuthContextType {
   disconnectDeezer: () => Promise<void>;
   saveQobuzCredentials: (email: string, password: string) => Promise<void>;
   disconnectQobuz: () => Promise<void>;
+  startTidalAuth: () => Promise<TidalStartResponse>;
+  pollTidalAuth: () => Promise<TidalPollResponse>;
+  disconnectTidal: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -140,13 +143,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(applyUser(user));
   };
 
+  const startTidalAuth = async () => {
+    return authApi.startTidalAuth();
+  };
+
+  // Doesn't apply the user itself on every 'pending' tick — only a
+  // 'connected' result actually changes anything worth re-rendering for;
+  // the caller (TidalTab) is what turns this into a repeating poll.
+  const pollTidalAuth = async () => {
+    const result = await authApi.pollTidalAuth();
+    if (result.status === 'connected') setUser(applyUser(result.user));
+    return result;
+  };
+
+  const disconnectTidal = async () => {
+    const { user } = await authApi.disconnectTidal();
+    setUser(applyUser(user));
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders, login, register, verifyEmail,
         resendVerification, logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
         setAutoDeleteNonMusic, setNowPlayingPublic, saveDeezerCookie, disconnectDeezer,
-        saveQobuzCredentials, disconnectQobuz,
+        saveQobuzCredentials, disconnectQobuz, startTidalAuth, pollTidalAuth, disconnectTidal,
       }}
     >
       {children}

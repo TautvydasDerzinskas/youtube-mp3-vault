@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import i18next from 'i18next';
-import { authApi, User } from '../api/auth';
+import { authApi, User, TidalStartResponse, TidalPollResponse } from '../api/auth';
 import { tokenStorage } from '../auth/tokenStorage';
 import { cachedUserStorage } from '../storage/cachedUserStorage';
 
@@ -22,6 +22,9 @@ interface AuthContextType {
   disconnectDeezer: () => Promise<void>;
   saveQobuzCredentials: (email: string, password: string) => Promise<void>;
   disconnectQobuz: () => Promise<void>;
+  startTidalAuth: () => Promise<TidalStartResponse>;
+  pollTidalAuth: () => Promise<TidalPollResponse>;
+  disconnectTidal: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -191,12 +194,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistUserCache(user);
   }, [persistUserCache]);
 
+  const startTidalAuth = useCallback(async () => {
+    return authApi.startTidalAuth();
+  }, []);
+
+  // Doesn't touch `user` on every 'pending' tick — only a 'connected' result
+  // actually changes anything worth persisting; the caller (TidalTabContent)
+  // is what turns this into a repeating poll, same as web's AuthContext.
+  const pollTidalAuth = useCallback(async () => {
+    const result = await authApi.pollTidalAuth();
+    if (result.status === 'connected') {
+      setUser(applyUser(result.user));
+      persistUserCache(result.user);
+    }
+    return result;
+  }, [persistUserCache]);
+
+  const disconnectTidal = useCallback(async () => {
+    const { user } = await authApi.disconnectTidal();
+    setUser(applyUser(user));
+    persistUserCache(user);
+  }, [persistUserCache]);
+
   return (
     <AuthContext.Provider
       value={{
         user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders, login, logout,
         updateLanguage, updateProfile, disconnectLastfm, setScrobbling, setAutoDeleteNonMusic, setNowPlayingPublic,
         saveDeezerCookie, disconnectDeezer, saveQobuzCredentials, disconnectQobuz,
+        startTidalAuth, pollTidalAuth, disconnectTidal,
       }}
     >
       {children}

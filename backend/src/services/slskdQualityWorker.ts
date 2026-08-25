@@ -10,6 +10,8 @@ import { establishDeezerSession, type DeezerSession } from './deezer';
 import { findDeezerCandidate, downloadAndReplace as downloadAndReplaceViaDeezer } from './deezerReplace';
 import { establishQobuzSession, type QobuzSession } from './qobuz';
 import { findQobuzCandidate, downloadAndReplace as downloadAndReplaceViaQobuz } from './qobuzReplace';
+import { establishTidalSession, type TidalSession } from './tidal';
+import { findTidalCandidate, downloadAndReplace as downloadAndReplaceViaTidal } from './tidalReplace';
 import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle, normalizeArtistSeparators } from './trackMatching';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
@@ -46,14 +48,16 @@ import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extract
 // bitrate (see BANDCAMP_STREAM_BITRATE_KBPS), so it's never preferred over a
 // source that might have genuinely better quality for the same track. If
 // that also comes up empty and this playlist's owner has connected their own
-// Deezer and/or Qobuz account (services/deezer.ts/deezerReplace.ts,
-// services/qobuz.ts/qobuzReplace.ts), those are tried last, Deezer before
-// Qobuz — unlike the other two, they're per-user, not app-wide, since they
-// stream tracks that specific account is entitled to. Each session is
-// established (login verified) once per call, up front (see deezerSession/
-// qobuzSession below), not per-video: dead/expired credentials should stop
-// being retried for the rest of this sync pass rather than failing the same
-// way on every remaining video. That path in particular can take a while per
+// Deezer, Qobuz, and/or Tidal account (services/deezer.ts/deezerReplace.ts,
+// services/qobuz.ts/qobuzReplace.ts, services/tidal.ts/tidalReplace.ts),
+// those are tried last, Deezer before Qobuz before Tidal — unlike the other
+// two (slskd/JioSaavn) and Bandcamp, they're per-user, not app-wide, since
+// they stream tracks that specific account is entitled to. Each session is
+// established (login verified/refreshed) once per call, up front (see
+// deezerSession/qobuzSession/tidalSession below), not per-video: dead/
+// expired credentials should stop being retried for the rest of this sync
+// pass rather than failing the same way on every remaining video. That path
+// in particular can take a while per
 // video (a real slskd
 // search plus, when a match is found, an actual file transfer) —
 // onProgress (only syncService.ts's downloadPendingVideos passes one)
@@ -128,6 +132,46 @@ export async function resolvePlaylistQuality(
         .update({
           where: { id: playlist.userId },
           data: { qobuzCredentialsValid: qobuzSession !== null, qobuzCredentialsCheckedAt: new Date() },
+        })
+        .catch(() => {});
+    }
+  }
+
+  // Same shape as deezerSession/qobuzSession above, one call per sync pass —
+  // see deezerSession's comment for the null-means-"skip entirely" contract.
+  // Unlike those two, a "dead" outcome here can mean the *access* token was
+  // refreshed successfully mid-call (see establishTidalSession's
+  // onRefreshed) even though the overall session is still returned — that
+  // refreshed token is persisted below regardless of whether the session as
+  // a whole ended up usable, so it's never silently thrown away.
+  let tidalSession: TidalSession | null = null;
+  if (isHqAutoDownloadEnabled() && isUserHqProviderAllowed('tidal') && videos.length > 0) {
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      select: {
+        userId: true,
+        user: { select: { tidalAccessToken: true, tidalRefreshToken: true, tidalUserId: true, tidalCountryCode: true } },
+      },
+    });
+    if (playlist?.user.tidalAccessToken && playlist.user.tidalRefreshToken) {
+      let refreshedAccessToken: string | null = null;
+      tidalSession = await establishTidalSession(
+        {
+          tidalAccessToken: playlist.user.tidalAccessToken,
+          tidalRefreshToken: playlist.user.tidalRefreshToken,
+          tidalUserId: playlist.user.tidalUserId ?? '',
+          tidalCountryCode: playlist.user.tidalCountryCode ?? '',
+        },
+        (accessToken) => { refreshedAccessToken = accessToken; }
+      );
+      await prisma.user
+        .update({
+          where: { id: playlist.userId },
+          data: {
+            ...(refreshedAccessToken ? { tidalAccessToken: refreshedAccessToken } : {}),
+            tidalCredentialsValid: tidalSession !== null,
+            tidalCredentialsCheckedAt: new Date(),
+          },
         })
         .catch(() => {});
     }
@@ -237,6 +281,7 @@ export async function resolvePlaylistQuality(
         let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
         let deezerCandidate: Awaited<ReturnType<typeof findDeezerCandidate>> = null;
         let qobuzCandidate: Awaited<ReturnType<typeof findQobuzCandidate>> = null;
+        let tidalCandidate: Awaited<ReturnType<typeof findTidalCandidate>> = null;
         let bandcampCandidate: Awaited<ReturnType<typeof findBandcampCandidate>> = null;
         let replaced = false;
 
@@ -328,10 +373,32 @@ export async function resolvePlaylistQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && !qobuzCandidate) {
-          // Nothing above found anything (or there's no Deezer/Qobuz account
-          // connected for this playlist) — Bandcamp's free catalog is the
-          // last resort.
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && !qobuzCandidate && tidalSession) {
+          // slskd, JioSaavn, and this owner's Deezer/Qobuz accounts (if any)
+          // all came up empty — try their own Tidal account next (already
+          // confirmed usable once up front for this whole sync pass, see
+          // tidalSession above), ahead of Bandcamp's free catalog.
+          try {
+            tidalCandidate = await findTidalCandidate(tidalSession, searchArtist, searchTitle, video.bitrate, video.duration);
+            if (!tidalCandidate && hasCleanedFallback) {
+              tidalCandidate = await findTidalCandidate(tidalSession, strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
+            if (!tidalCandidate && hasQuotedFallback && quotedExtraction) {
+              tidalCandidate = await findTidalCandidate(tidalSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+            }
+            if (!tidalCandidate && hasDashFallback && dashExtraction) {
+              tidalCandidate = await findTidalCandidate(tidalSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+            }
+            if (tidalCandidate) replaced = await downloadAndReplaceViaTidal(video, tidalSession, tidalCandidate);
+          } catch (err) {
+            console.error(`[tidal] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          }
+        }
+
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && !qobuzCandidate && !tidalCandidate) {
+          // Nothing above found anything (or there's no Deezer/Qobuz/Tidal
+          // account connected for this playlist) — Bandcamp's free catalog
+          // is the last resort.
           try {
             bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
             if (!bandcampCandidate && hasCleanedFallback) {
@@ -358,7 +425,7 @@ export async function resolvePlaylistQuality(
           continue; // downloadAndReplace* already updated every flag/status itself
         }
 
-        if (!slskdCandidate && !jioSaavnCandidate && !bandcampCandidate && !deezerCandidate && !qobuzCandidate) {
+        if (!slskdCandidate && !jioSaavnCandidate && !bandcampCandidate && !deezerCandidate && !qobuzCandidate && !tidalCandidate) {
           // No source found anything eligible right now — a stable,
           // repeatable verdict, same as the free path below.
           await prisma.playlistVideo.update({

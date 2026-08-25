@@ -15,6 +15,8 @@ export interface User {
   deezerCookieValid: boolean | null;
   qobuzConnected: boolean;
   qobuzCredentialsValid: boolean | null;
+  tidalConnected: boolean;
+  tidalCredentialsValid: boolean | null;
 }
 
 interface AuthResponse {
@@ -25,11 +27,26 @@ interface MeResponse {
   user: User;
   lastfmScrobblingAvailable: boolean;
   lastfmDiscoverAvailable: boolean;
-  // Which per-user HQ providers ("deezer", "qobuz") the admin currently
-  // allows connecting at all — empty means hide the whole "HQ Download"
-  // profile tab, not just individual providers within it.
+  // Which per-user HQ providers ("deezer", "qobuz", "tidal") the admin
+  // currently allows connecting at all — empty means hide the whole
+  // "HQ Download" profile tab, not just individual providers within it.
   allowedHqProviders: string[];
 }
+
+export interface TidalStartResponse {
+  verificationUri: string;
+  userCode: string;
+  expiresInSec: number;
+  intervalSec: number;
+}
+
+// Mirrors the PollResult union in backend/src/services/tidal.ts — see
+// frontend/src/api/auth.ts's TidalPollResponse for the full rationale.
+export type TidalPollResponse =
+  | { status: 'pending' }
+  | { status: 'expired' }
+  | { status: 'error' }
+  | { status: 'connected'; user: User };
 
 // Mirrors frontend/src/api/auth.ts's subset actually needed on mobile —
 // register/verifyEmail/resendVerification aren't ported since there's no
@@ -104,6 +121,21 @@ export const authApi = {
 
   disconnectQobuz: async (): Promise<AuthResponse> => {
     const { data } = await client.post<AuthResponse>('/auth/qobuz/disconnect');
+    return data;
+  },
+
+  startTidalAuth: async (): Promise<TidalStartResponse> => {
+    const { data } = await client.post<TidalStartResponse>('/auth/tidal/start');
+    return data;
+  },
+
+  pollTidalAuth: async (): Promise<TidalPollResponse> => {
+    const { data } = await client.get<TidalPollResponse>('/auth/tidal/poll');
+    return data;
+  },
+
+  disconnectTidal: async (): Promise<AuthResponse> => {
+    const { data } = await client.post<AuthResponse>('/auth/tidal/disconnect');
     return data;
   },
 };

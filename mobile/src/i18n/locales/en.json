@@ -93,6 +93,20 @@
       "connectedInvalid": "Connected, but these credentials aren't working anymore. Enter them again below.",
       "connectedUnknown": "Connected — will be verified before your next sync.",
       "offlineNotice": "No internet connection right now — this will be verified automatically before your next sync."
+    },
+    "tidal": {
+      "description": "Connect your own Tidal account so this app can fetch missing high-quality (up to Hi-Res FLAC) tracks directly from Tidal as a last resort, when no other source has them. This only works with an eligible paid Tidal HiFi/HiFi Plus subscription, and only ever downloads tracks your account is already entitled to stream.",
+      "connect": "Connect Tidal",
+      "reconnect": "Reconnect Tidal",
+      "disconnect": "Disconnect",
+      "disconnected": "Disconnected from Tidal.",
+      "saved": "Tidal account connected.",
+      "waitingInstructions": "Open the link below and enter this code to finish connecting your Tidal account:",
+      "expired": "This code has expired — click \"Connect Tidal\" to get a new one.",
+      "connectedValid": "Connected — this login is currently working.",
+      "connectedInvalid": "Connected, but this login isn't working anymore. Reconnect below.",
+      "connectedUnknown": "Connected — will be verified before your next sync.",
+      "offlineNotice": "No internet connection right now — connecting to Tidal requires being online."
     }
   },
   "dashboard": {
@@ -469,7 +483,9 @@
       "user_logged_in_mobile": "Logged in (Mobile)",
       "user_logged_out_web": "Logged out (Web)",
       "user_logged_out_mobile": "Logged out (Mobile)",
-      "deezer_connected": "Connected Deezer"
+      "deezer_connected": "Connected Deezer",
+      "qobuz_connected": "Connected Qobuz",
+      "tidal_connected": "Connected Tidal"
     },
     "detailText": {
       "playlistImported": "Imported \"{{name}}\" ({{songCount}} songs)",
@@ -481,6 +497,7 @@
       "generatedCreated": "Generated \"{{name}}\" from \"{{sourceName}}\" ({{songCount}} songs, {{failedCount}} failed)",
       "deezerConnected": "Connected a Deezer account for HQ downloads",
       "qobuzConnected": "Connected a Qobuz account for HQ downloads",
+      "tidalConnected": "Connected a Tidal account for HQ downloads",
       "loggedIn": "Logged in as {{email}}",
       "loggedOut": "Logged out"
     }
@@ -516,7 +533,8 @@
       "allowedUserProvidersDescription": "Lets users connect their own account for these providers from their Profile, as an additional HQ fallback source. Disabling one here hides it from every user's Profile and stops it being used during sync, even for a user who already connected it.",
       "provider": {
         "deezer": "Deezer",
-        "qobuz": "Qobuz"
+        "qobuz": "Qobuz",
+        "tidal": "Tidal"
       }
     },
     "postgres": {

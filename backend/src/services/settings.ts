@@ -25,7 +25,7 @@ export interface LastfmSettings {
 // (see schema.prisma's hqAllowedUserProviders) — used to sanitize admin
 // input server-side (routes/admin.ts) so a typo or stale client can never
 // persist an unknown provider key.
-export const HQ_USER_PROVIDERS = ['deezer', 'qobuz'] as const;
+export const HQ_USER_PROVIDERS = ['deezer', 'qobuz', 'tidal'] as const;
 export type HqUserProvider = (typeof HQ_USER_PROVIDERS)[number];
 
 export interface HqSettings {

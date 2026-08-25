@@ -336,6 +336,20 @@
       "connectedInvalid": "Prijungta, bet šie prisijungimo duomenys nebeveikia. Įveskite juos iš naujo žemiau.",
       "connectedUnknown": "Prijungta — bus patikrinta prieš kitą sinchronizavimą.",
       "offlineNotice": "Šiuo metu nėra interneto ryšio — tai bus automatiškai patikrinta prieš kitą sinchronizavimą."
+    },
+    "tidal": {
+      "description": "Prijunkite savo Tidal paskyrą, kad programa galėtų kaip paskutinę priemonę atsisiųsti trūkstamus aukštos kokybės (iki Hi-Res FLAC) takelius tiesiai iš Tidal, kai jų nepavyksta rasti kitur. Tai veikia tik su tinkama mokama Tidal HiFi/HiFi Plus prenumerata ir atsisiunčia tik takelius, kuriuos jūsų paskyra jau turi teisę groti.",
+      "connect": "Prijungti Tidal",
+      "reconnect": "Prijungti iš naujo",
+      "disconnect": "Atsijungti",
+      "disconnected": "Atsijungta nuo Tidal.",
+      "saved": "Tidal paskyra prijungta.",
+      "waitingInstructions": "Atidarykite žemiau esančią nuorodą ir įveskite šį kodą, kad baigtumėte jungti savo Tidal paskyrą:",
+      "expired": "Šio kodo galiojimas baigėsi — spustelėkite „Prijungti Tidal“, kad gautumėte naują.",
+      "connectedValid": "Prijungta — šis prisijungimas šiuo metu veikia.",
+      "connectedInvalid": "Prijungta, bet šis prisijungimas nebeveikia. Prijunkite iš naujo žemiau.",
+      "connectedUnknown": "Prijungta — bus patikrinta prieš kitą sinchronizavimą.",
+      "offlineNotice": "Šiuo metu nėra interneto ryšio — norint prisijungti prie Tidal, reikia būti prisijungus prie interneto."
     }
   },
   "downloads": {
@@ -383,7 +397,8 @@
       "allowedUserProvidersDescription": "Leidžia vartotojams iš savo profilio prijungti savo paskyrą šiems tiekėjams — tai papildomas HQ šaltinis be aukščiau nurodytų. Išjungus tiekėją čia, jis dingsta iš kiekvieno vartotojo profilio ir nebenaudojamas sinchronizavimo metu, net jei vartotojas jį jau buvo prijungęs.",
       "provider": {
         "deezer": "Deezer",
-        "qobuz": "Qobuz"
+        "qobuz": "Qobuz",
+        "tidal": "Tidal"
       }
     }
   },
@@ -489,7 +504,9 @@
       "user_logged_out_web": "Atsijungė (Web)",
       "user_logged_out_mobile": "Atsijungė (Mobili app.)",
       "playlist_offline_enabled": "Įjungtas neprisijungimo режимas (Mobili app.)",
-      "deezer_connected": "Prijungtas Deezer"
+      "deezer_connected": "Prijungtas Deezer",
+      "qobuz_connected": "Prijungtas Qobuz",
+      "tidal_connected": "Prijungtas Tidal"
     },
     "detailText": {
       "playlistImported": "Importuota „{{name}}“ ({{songCount}} dainų)",
@@ -502,7 +519,8 @@
       "loggedOut": "Atsijungė",
       "offlineEnabled": "Įjungtas atsisiuntimas neprisijungus grojaraščiui „{{name}}“",
       "deezerConnected": "Prijungta Deezer paskyra HQ atsisiuntimams",
-      "qobuzConnected": "Prijungta Qobuz paskyra HQ atsisiuntimams"
+      "qobuzConnected": "Prijungta Qobuz paskyra HQ atsisiuntimams",
+      "tidalConnected": "Prijungta Tidal paskyra HQ atsisiuntimams"
     }
   },
   "dashboard": {

@@ -15,6 +15,8 @@ export interface User {
   deezerCookieValid: boolean | null;
   qobuzConnected: boolean;
   qobuzCredentialsValid: boolean | null;
+  tidalConnected: boolean;
+  tidalCredentialsValid: boolean | null;
 }
 
 interface AuthResponse {
@@ -28,11 +30,30 @@ interface MeResponse {
   // needed. Gates the read-only Discover feature and "Generate similar
   // playlist", as distinct from lastfmScrobblingAvailable above.
   lastfmDiscoverAvailable: boolean;
-  // Which per-user HQ providers ("deezer", "qobuz") the admin currently
-  // allows connecting at all — an empty array means the whole "HQ Download"
-  // profile tab should be hidden, not just individual providers within it.
+  // Which per-user HQ providers ("deezer", "qobuz", "tidal") the admin
+  // currently allows connecting at all — an empty array means the whole
+  // "HQ Download" profile tab should be hidden, not just individual
+  // providers within it.
   allowedHqProviders: string[];
 }
+
+export interface TidalStartResponse {
+  verificationUri: string;
+  userCode: string;
+  expiresInSec: number;
+  intervalSec: number;
+}
+
+// Mirrors the PollResult union in backend/src/services/tidal.ts, plus the
+// 'expired' case routes/auth.ts's GET /tidal/poll reports when there's no
+// pending device code left for this user (either it was never started, or
+// startedAt + expiresInSec has passed) — either way the client's only sane
+// move is to call startTidalAuth again for a fresh code.
+export type TidalPollResponse =
+  | { status: 'pending' }
+  | { status: 'expired' }
+  | { status: 'error' }
+  | { status: 'connected'; user: User };
 
 export type RegisterResponse =
   | { verificationRequired: true; message: string; email: string }
@@ -133,6 +154,21 @@ export const authApi = {
 
   disconnectQobuz: async (): Promise<AuthResponse> => {
     const { data } = await client.post<AuthResponse>('/auth/qobuz/disconnect');
+    return data;
+  },
+
+  startTidalAuth: async (): Promise<TidalStartResponse> => {
+    const { data } = await client.post<TidalStartResponse>('/auth/tidal/start');
+    return data;
+  },
+
+  pollTidalAuth: async (): Promise<TidalPollResponse> => {
+    const { data } = await client.get<TidalPollResponse>('/auth/tidal/poll');
+    return data;
+  },
+
+  disconnectTidal: async (): Promise<AuthResponse> => {
+    const { data } = await client.post<AuthResponse>('/auth/tidal/disconnect');
     return data;
   },
 };

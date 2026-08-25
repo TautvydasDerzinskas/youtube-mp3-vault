@@ -77,6 +77,25 @@ model User {
   qobuzPassword             String?
   qobuzCredentialsValid     Boolean?
   qobuzCredentialsCheckedAt DateTime?
+  // A user's own Tidal account tokens — opt-in, per-user, same rationale as
+  // deezerArlCookie/qobuzEmail above. Tidal has neither a copyable session
+  // cookie (Deezer) nor a real username/password login (Qobuz) usable here —
+  // it's a device-code OAuth2 flow, the same one Tidal's own TV/games-console
+  // apps use: the user opens a short link and enters a code this app shows
+  // them, see routes/auth.ts's /tidal/start+poll endpoints and
+  // services/tidal.ts. What's stored is the resulting access/refresh token
+  // pair (never a password) plus the userId/countryCode Tidal's API calls
+  // need alongside it; establishTidalSession refreshes the access token in
+  // place as needed rather than a fresh login every sync pass, since there's
+  // nothing to "log in" with here beyond the refresh token itself.
+  // tidalCredentialsValid follows the same null-until-first-check/
+  // most-recent-outcome contract as deezerCookieValid/qobuzCredentialsValid.
+  tidalAccessToken          String?
+  tidalRefreshToken         String?
+  tidalUserId               String?
+  tidalCountryCode          String?
+  tidalCredentialsValid     Boolean?
+  tidalCredentialsCheckedAt DateTime?
   createdAt                 DateTime   @default(now())
   updatedAt                 DateTime   @updatedAt
   playlists                 Playlist[]
@@ -276,16 +295,17 @@ model AppSettings {
 
   hqAutoDownloadEnabled Boolean @default(false)
 
-  // Which per-user, opt-in-with-own-credentials HQ providers (Deezer and
-  // Qobuz — see services/deezer.ts/services/qobuz.ts) users are allowed to
-  // connect at all. Unlike hqAutoDownloadEnabled above (a single app-wide
-  // on/off switch for the whole HQ-replace pipeline), this is a per-provider
-  // allow-list: disabling an entry here hides that provider's section from
-  // every user's own profile (see routes/auth.ts's /me) and makes
-  // resolvePlaylistQuality skip it outright during a sync, even for a user
-  // who already has credentials saved for it (see slskdQualityWorker.ts) —
-  // existing saved credentials are left alone, just unused while disabled.
-  // Qobuz isn't in the default array — admins opt into it explicitly.
+  // Which per-user, opt-in-with-own-credentials HQ providers (Deezer, Qobuz,
+  // and Tidal — see services/deezer.ts/services/qobuz.ts/services/tidal.ts)
+  // users are allowed to connect at all. Unlike hqAutoDownloadEnabled above
+  // (a single app-wide on/off switch for the whole HQ-replace pipeline), this
+  // is a per-provider allow-list: disabling an entry here hides that
+  // provider's section from every user's own profile (see routes/auth.ts's
+  // /me) and makes resolvePlaylistQuality skip it outright during a sync,
+  // even for a user who already has credentials saved for it (see
+  // slskdQualityWorker.ts) — existing saved credentials are left alone, just
+  // unused while disabled. Only Deezer is in the default array — admins opt
+  // into Qobuz/Tidal explicitly.
   hqAllowedUserProviders String[] @default(["deezer"])
 
   updatedAt DateTime @updatedAt

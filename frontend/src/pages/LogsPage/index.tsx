@@ -36,6 +36,7 @@ const ACTION_COLORS: Record<LogAction, 'default' | 'primary' | 'success' | 'warn
   user_logged_out_mobile: 'default',
   deezer_connected: 'success',
   qobuz_connected: 'success',
+  tidal_connected: 'success',
 };
 
 export default function LogsPage() {
@@ -96,6 +97,8 @@ export default function LogsPage() {
         return t('logs.detailText.deezerConnected');
       case 'qobuz_connected':
         return t('logs.detailText.qobuzConnected');
+      case 'tidal_connected':
+        return t('logs.detailText.tidalConnected');
       default:
         return JSON.stringify(d);
     }

@@ -9,6 +9,13 @@ import { isSmtpConfigured, isLastfmScrobblingConfigured, isLastfmDiscoverEnabled
 import { getAuthUrl, getSession } from '../services/lastfm';
 import { verifyDeezerLogin } from '../services/deezer';
 import { verifyQobuzLogin } from '../services/qobuz';
+import {
+  startDeviceAuth,
+  pollDeviceAuth,
+  setPendingDeviceAuth,
+  getPendingDeviceAuth,
+  clearPendingDeviceAuth,
+} from '../services/tidal';
 import { isOnline } from '../services/connectivity';
 import { removeExistingNonMusicVideos } from '../services/syncService';
 import { config } from '../config';
@@ -51,6 +58,8 @@ function toSafeUser(user: {
   deezerCookieValid?: boolean | null;
   qobuzEmail?: string | null;
   qobuzCredentialsValid?: boolean | null;
+  tidalAccessToken?: string | null;
+  tidalCredentialsValid?: boolean | null;
 }) {
   return {
     id: user.id,
@@ -72,6 +81,11 @@ function toSafeUser(user: {
     // just whether an account is connected, and its most recent login check.
     qobuzConnected: Boolean(user.qobuzEmail),
     qobuzCredentialsValid: user.qobuzCredentialsValid ?? null,
+    // Same shape again, minus ever echoing back the access token — just
+    // whether the device-code flow has been completed, and its most recent
+    // verify/refresh outcome (see services/tidal.ts's establishTidalSession).
+    tidalConnected: Boolean(user.tidalAccessToken),
+    tidalCredentialsValid: user.tidalCredentialsValid ?? null,
   };
 }
 
@@ -304,6 +318,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
         lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true, nowPlayingPublic: true,
         deezerArlCookie: true, deezerCookieValid: true,
         qobuzEmail: true, qobuzCredentialsValid: true,
+        tidalAccessToken: true, tidalCredentialsValid: true,
       },
     });
     if (!user) {
@@ -636,6 +651,109 @@ router.post('/qobuz/disconnect', requireAuth, async (req: AuthRequest, res, next
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: { qobuzEmail: null, qobuzPassword: null, qobuzCredentialsValid: null, qobuzCredentialsCheckedAt: null },
+    });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/auth/tidal/start ────────────────────────────────────────────
+// Kicks off Tidal's device-code flow (see services/tidal.ts's own doc
+// comment for why this is a code-entry flow rather than a form, unlike
+// Deezer's cookie paste or Qobuz's email/password). Returns the short
+// verification link + code for the client to display; the device code
+// itself stays server-side (see setPendingDeviceAuth) — the client only
+// ever gets back what a user is meant to see and type in.
+
+router.post('/tidal/start', requireAuth, authLimiter, async (req: AuthRequest, res, next) => {
+  try {
+    if (!isUserHqProviderAllowed('tidal')) {
+      res.status(403).json({ error: 'Tidal HQ downloads are currently disabled by the administrator' });
+      return;
+    }
+    if (!isOnline()) {
+      res.status(503).json({ error: 'No internet connectivity — try again once this server is back online' });
+      return;
+    }
+    const auth = await startDeviceAuth();
+    if (!auth) {
+      res.status(502).json({ error: "Couldn't start the Tidal login — try again" });
+      return;
+    }
+    setPendingDeviceAuth(req.userId!, auth);
+    res.json({
+      verificationUri: auth.verificationUri,
+      userCode: auth.userCode,
+      expiresInSec: auth.expiresInSec,
+      intervalSec: auth.intervalSec,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/auth/tidal/poll ──────────────────────────────────────────────
+// Meant to be called repeatedly (every intervalSec from the /start response)
+// while the user is off confirming the code on tidal.com — 'pending' just
+// means keep polling, 'expired' means the code from /start timed out (call
+// /start again for a fresh one), 'error' covers everything else (denied,
+// network failure). Only 'connected' — the user actually finished — saves
+// anything or clears the pending entry short of expiry/error.
+
+router.get('/tidal/poll', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const pending = getPendingDeviceAuth(req.userId!);
+    if (!pending) {
+      res.json({ status: 'expired' });
+      return;
+    }
+
+    const result = await pollDeviceAuth(pending.deviceCode);
+    if (result.status === 'pending') {
+      res.json({ status: 'pending' });
+      return;
+    }
+
+    clearPendingDeviceAuth(req.userId!);
+    if (result.status === 'error') {
+      res.json({ status: 'error' });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        tidalAccessToken: result.tokens.accessToken,
+        tidalRefreshToken: result.tokens.refreshToken,
+        tidalUserId: result.tokens.userId,
+        tidalCountryCode: result.tokens.countryCode,
+        tidalCredentialsValid: true,
+        tidalCredentialsCheckedAt: new Date(),
+      },
+    });
+    void createLog({ userId: user.id, action: 'tidal_connected', details: {} });
+    res.json({ status: 'connected', user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/auth/tidal/disconnect ───────────────────────────────────────
+
+router.post('/tidal/disconnect', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    clearPendingDeviceAuth(req.userId!);
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        tidalAccessToken: null,
+        tidalRefreshToken: null,
+        tidalUserId: null,
+        tidalCountryCode: null,
+        tidalCredentialsValid: null,
+        tidalCredentialsCheckedAt: null,
+      },
     });
     res.json({ user: toSafeUser(user) });
   } catch (err) {

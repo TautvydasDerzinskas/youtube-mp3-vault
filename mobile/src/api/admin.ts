@@ -33,7 +33,8 @@ export type LogAction =
   | 'user_logged_out_web'
   | 'user_logged_out_mobile'
   | 'deezer_connected'
-  | 'qobuz_connected';
+  | 'qobuz_connected'
+  | 'tidal_connected';
 
 export interface LogEntry {
   id: string;
@@ -69,9 +70,9 @@ export interface LastfmSettings {
 }
 
 // Per-user, opt-in-with-own-credentials HQ providers users can connect from
-// their own Profile — Deezer and Qobuz. See
+// their own Profile — Deezer, Qobuz, and Tidal. See
 // backend/src/services/settings.ts's HQ_USER_PROVIDERS.
-export const HQ_USER_PROVIDERS = ['deezer', 'qobuz'] as const;
+export const HQ_USER_PROVIDERS = ['deezer', 'qobuz', 'tidal'] as const;
 export type HqUserProvider = (typeof HQ_USER_PROVIDERS)[number];
 
 export interface HqSettings {

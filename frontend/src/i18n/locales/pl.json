@@ -350,6 +350,20 @@
       "connectedInvalid": "Połączono, ale te dane logowania już nie działają. Wprowadź je ponownie poniżej.",
       "connectedUnknown": "Połączono — zostanie zweryfikowane przed następną synchronizacją.",
       "offlineNotice": "Brak połączenia z internetem — zostanie to automatycznie zweryfikowane przed następną synchronizacją."
+    },
+    "tidal": {
+      "description": "Połącz własne konto Tidal, aby aplikacja mogła jako ostatnią deskę ratunku pobierać brakujące utwory w wysokiej jakości (do Hi-Res FLAC) bezpośrednio z Tidal, gdy nie znajdzie ich nigdzie indziej. Działa to tylko z odpowiednią płatną subskrypcją Tidal HiFi/HiFi Plus i pobiera wyłącznie utwory, do których Twoje konto już ma prawo dostępu.",
+      "connect": "Połącz z Tidal",
+      "reconnect": "Połącz ponownie",
+      "disconnect": "Rozłącz",
+      "disconnected": "Rozłączono z Tidal.",
+      "saved": "Konto Tidal połączone.",
+      "waitingInstructions": "Otwórz poniższy link i wprowadź ten kod, aby zakończyć łączenie konta Tidal:",
+      "expired": "Ten kod wygasł — kliknij „Połącz z Tidal”, aby otrzymać nowy.",
+      "connectedValid": "Połączono — to logowanie obecnie działa.",
+      "connectedInvalid": "Połączono, ale to logowanie już nie działa. Połącz ponownie poniżej.",
+      "connectedUnknown": "Połączono — zostanie zweryfikowane przed następną synchronizacją.",
+      "offlineNotice": "Brak połączenia z internetem — połączenie z Tidal wymaga dostępu do internetu."
     }
   },
   "downloads": {
@@ -397,7 +411,8 @@
       "allowedUserProvidersDescription": "Pozwala użytkownikom połączyć własne konto tych dostawców z poziomu swojego profilu, jako dodatkowe źródło HQ oprócz powyższych. Wyłączenie dostawcy tutaj ukrywa go w profilu każdego użytkownika i przestaje być używany podczas synchronizacji, nawet jeśli użytkownik już go połączył.",
       "provider": {
         "deezer": "Deezer",
-        "qobuz": "Qobuz"
+        "qobuz": "Qobuz",
+        "tidal": "Tidal"
       }
     }
   },
@@ -503,7 +518,9 @@
       "user_logged_out_web": "Wylogowano się (Web)",
       "user_logged_out_mobile": "Wylogowano się (Mobile)",
       "playlist_offline_enabled": "Włączono tryb offline (Mobile)",
-      "deezer_connected": "Połączono Deezer"
+      "deezer_connected": "Połączono Deezer",
+      "qobuz_connected": "Połączono Qobuz",
+      "tidal_connected": "Połączono Tidal"
     },
     "detailText": {
       "playlistImported": "Zaimportowano „{{name}}” ({{songCount}} utworów)",
@@ -516,7 +533,8 @@
       "loggedOut": "Wylogowano się",
       "offlineEnabled": "Włączono pobieranie offline dla „{{name}}”",
       "deezerConnected": "Połączono konto Deezer do pobierania HQ",
-      "qobuzConnected": "Połączono konto Qobuz do pobierania HQ"
+      "qobuzConnected": "Połączono konto Qobuz do pobierania HQ",
+      "tidalConnected": "Połączono konto Tidal do pobierania HQ"
     }
   },
   "dashboard": {
