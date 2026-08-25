@@ -309,6 +309,19 @@
       "connectedInvalid": "Connected, but this cookie isn't working anymore. Paste a fresh one below.",
       "connectedUnknown": "Connected — will be verified before your next sync.",
       "offlineNotice": "No internet connection right now — this will be verified automatically before your next sync."
+    },
+    "qobuz": {
+      "description": "Connect your own Qobuz account so this app can fetch missing high-quality (up to Hi-Res FLAC) tracks directly from Qobuz as a last resort, when no other source has them. This only works with an eligible paid Qobuz subscription, and only ever downloads tracks your account is already entitled to stream.",
+      "emailLabel": "Qobuz email",
+      "passwordLabel": "Qobuz password",
+      "save": "Save",
+      "disconnect": "Disconnect",
+      "disconnected": "Disconnected from Qobuz.",
+      "saved": "Qobuz account connected.",
+      "connectedValid": "Connected — these credentials are currently working.",
+      "connectedInvalid": "Connected, but these credentials aren't working anymore. Enter them again below.",
+      "connectedUnknown": "Connected — will be verified before your next sync.",
+      "offlineNotice": "No internet connection right now — this will be verified automatically before your next sync."
     }
   },
   "downloads": {
@@ -355,7 +368,8 @@
       "allowedUserProviders": "Allowed user HQ scan providers",
       "allowedUserProvidersDescription": "Lets users connect their own account for these providers from their Profile, as an additional HQ fallback source beyond the ones above. Disabling one here hides it from every user's Profile and stops it being used during sync, even for a user who already connected it.",
       "provider": {
-        "deezer": "Deezer"
+        "deezer": "Deezer",
+        "qobuz": "Qobuz"
       }
     }
   },
@@ -473,7 +487,8 @@
       "loggedIn": "Logged in as {{email}}",
       "loggedOut": "Logged out",
       "offlineEnabled": "Enabled offline downloads for \"{{name}}\"",
-      "deezerConnected": "Connected a Deezer account for HQ downloads"
+      "deezerConnected": "Connected a Deezer account for HQ downloads",
+      "qobuzConnected": "Connected a Qobuz account for HQ downloads"
     }
   },
   "dashboard": {

@@ -8,6 +8,8 @@ import { findJioSaavnCandidate, downloadAndReplace as downloadAndReplaceViaJioSa
 import { findBandcampCandidate, downloadAndReplace as downloadAndReplaceViaBandcamp } from './bandcampReplace';
 import { establishDeezerSession, type DeezerSession } from './deezer';
 import { findDeezerCandidate, downloadAndReplace as downloadAndReplaceViaDeezer } from './deezerReplace';
+import { establishQobuzSession, type QobuzSession } from './qobuz';
+import { findQobuzCandidate, downloadAndReplace as downloadAndReplaceViaQobuz } from './qobuzReplace';
 import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle, normalizeArtistSeparators } from './trackMatching';
 
 // Checks slskd for a better-quality mp3 of each downloaded video in this
@@ -44,13 +46,15 @@ import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extract
 // bitrate (see BANDCAMP_STREAM_BITRATE_KBPS), so it's never preferred over a
 // source that might have genuinely better quality for the same track. If
 // that also comes up empty and this playlist's owner has connected their own
-// Deezer account (services/deezer.ts/deezerReplace.ts), Deezer is tried
-// last — unlike the other two, it's per-user, not app-wide, since it
-// streams tracks that specific account is entitled to. Its cookie is
-// verified once per call, up front (see deezerSession below), not
-// per-video: a dead/expired cookie should stop being retried for the rest
-// of this sync pass rather than failing the same way on every remaining
-// video. That path in particular can take a while per video (a real slskd
+// Deezer and/or Qobuz account (services/deezer.ts/deezerReplace.ts,
+// services/qobuz.ts/qobuzReplace.ts), those are tried last, Deezer before
+// Qobuz — unlike the other two, they're per-user, not app-wide, since they
+// stream tracks that specific account is entitled to. Each session is
+// established (login verified) once per call, up front (see deezerSession/
+// qobuzSession below), not per-video: dead/expired credentials should stop
+// being retried for the rest of this sync pass rather than failing the same
+// way on every remaining video. That path in particular can take a while per
+// video (a real slskd
 // search plus, when a match is found, an actual file transfer) —
 // onProgress (only syncService.ts's downloadPendingVideos passes one)
 // reports this video's 1-indexed position and running total before each
@@ -105,6 +109,25 @@ export async function resolvePlaylistQuality(
         .update({
           where: { id: playlist.userId },
           data: { deezerCookieValid: deezerSession !== null, deezerCookieCheckedAt: new Date() },
+        })
+        .catch(() => {});
+    }
+  }
+
+  // Same shape as deezerSession above, one call per sync pass — see that
+  // block's comment for the null-means-"skip entirely" contract.
+  let qobuzSession: QobuzSession | null = null;
+  if (isHqAutoDownloadEnabled() && isUserHqProviderAllowed('qobuz') && videos.length > 0) {
+    const playlist = await prisma.playlist.findUnique({
+      where: { id: playlistId },
+      select: { userId: true, user: { select: { qobuzEmail: true, qobuzPassword: true } } },
+    });
+    if (playlist?.user.qobuzEmail && playlist.user.qobuzPassword) {
+      qobuzSession = await establishQobuzSession(playlist.user.qobuzEmail, playlist.user.qobuzPassword);
+      await prisma.user
+        .update({
+          where: { id: playlist.userId },
+          data: { qobuzCredentialsValid: qobuzSession !== null, qobuzCredentialsCheckedAt: new Date() },
         })
         .catch(() => {});
     }
@@ -213,6 +236,7 @@ export async function resolvePlaylistQuality(
         let slskdCandidate: Awaited<ReturnType<typeof findExactMatchCandidate>> = null;
         let jioSaavnCandidate: Awaited<ReturnType<typeof findJioSaavnCandidate>> = null;
         let deezerCandidate: Awaited<ReturnType<typeof findDeezerCandidate>> = null;
+        let qobuzCandidate: Awaited<ReturnType<typeof findQobuzCandidate>> = null;
         let bandcampCandidate: Awaited<ReturnType<typeof findBandcampCandidate>> = null;
         let replaced = false;
 
@@ -264,7 +288,7 @@ export async function resolvePlaylistQuality(
           // slskd and JioSaavn both came up empty — try this playlist's
           // owner's own Deezer account next (already confirmed usable once
           // up front for this whole sync pass, see deezerSession above),
-          // ahead of Bandcamp's free catalog.
+          // ahead of Qobuz and Bandcamp's free catalog.
           try {
             deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration);
             if (!deezerCandidate && hasCleanedFallback) {
@@ -282,8 +306,30 @@ export async function resolvePlaylistQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate) {
-          // Nothing above found anything (or there's no Deezer account
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && qobuzSession) {
+          // slskd, JioSaavn, and this owner's Deezer account (if any) all
+          // came up empty — try their own Qobuz account next (already
+          // confirmed usable once up front for this whole sync pass, see
+          // qobuzSession above), ahead of Bandcamp's free catalog.
+          try {
+            qobuzCandidate = await findQobuzCandidate(qobuzSession, searchArtist, searchTitle, video.bitrate, video.duration);
+            if (!qobuzCandidate && hasCleanedFallback) {
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, strippedArtist, strippedTitle, video.bitrate, video.duration);
+            }
+            if (!qobuzCandidate && hasQuotedFallback && quotedExtraction) {
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+            }
+            if (!qobuzCandidate && hasDashFallback && dashExtraction) {
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+            }
+            if (qobuzCandidate) replaced = await downloadAndReplaceViaQobuz(video, qobuzSession, qobuzCandidate);
+          } catch (err) {
+            console.error(`[qobuz] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
+          }
+        }
+
+        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && !qobuzCandidate) {
+          // Nothing above found anything (or there's no Deezer/Qobuz account
           // connected for this playlist) — Bandcamp's free catalog is the
           // last resort.
           try {
@@ -312,7 +358,7 @@ export async function resolvePlaylistQuality(
           continue; // downloadAndReplace* already updated every flag/status itself
         }
 
-        if (!slskdCandidate && !jioSaavnCandidate && !bandcampCandidate && !deezerCandidate) {
+        if (!slskdCandidate && !jioSaavnCandidate && !bandcampCandidate && !deezerCandidate && !qobuzCandidate) {
           // No source found anything eligible right now — a stable,
           // repeatable verdict, same as the free path below.
           await prisma.playlistVideo.update({

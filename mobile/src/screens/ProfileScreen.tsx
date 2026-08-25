@@ -23,7 +23,7 @@ export function ProfileScreen() {
   const { logout, lastfmScrobblingAvailable, allowedHqProviders } = useAuth();
   const [tab, setTab] = useState<ProfileTabKey>('profile');
   // Hides the whole tab once the admin has disabled every per-user HQ
-  // provider (currently just Deezer) — see HqDownloadTabContent.
+  // provider (Deezer, Qobuz) — see HqDownloadTabContent.
   const showHqDownloadTab = allowedHqProviders.length > 0;
 
   const buttons = [

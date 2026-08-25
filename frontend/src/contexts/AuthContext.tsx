@@ -29,6 +29,8 @@ interface AuthContextType {
   setNowPlayingPublic: (enabled: boolean) => Promise<void>;
   saveDeezerCookie: (arlCookie: string) => Promise<void>;
   disconnectDeezer: () => Promise<void>;
+  saveQobuzCredentials: (email: string, password: string) => Promise<void>;
+  disconnectQobuz: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -128,12 +130,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(applyUser(user));
   };
 
+  const saveQobuzCredentials = async (email: string, password: string) => {
+    const { user } = await authApi.saveQobuzCredentials(email, password);
+    setUser(applyUser(user));
+  };
+
+  const disconnectQobuz = async () => {
+    const { user } = await authApi.disconnectQobuz();
+    setUser(applyUser(user));
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders, login, register, verifyEmail,
         resendVerification, logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
         setAutoDeleteNonMusic, setNowPlayingPublic, saveDeezerCookie, disconnectDeezer,
+        saveQobuzCredentials, disconnectQobuz,
       }}
     >
       {children}

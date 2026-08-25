@@ -16,7 +16,8 @@ export type LogAction =
   | 'user_logged_in_mobile'
   | 'user_logged_out_web'
   | 'user_logged_out_mobile'
-  | 'deezer_connected';
+  | 'deezer_connected'
+  | 'qobuz_connected';
 
 export type ClientPlatform = 'web' | 'mobile';
 

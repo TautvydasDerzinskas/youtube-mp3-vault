@@ -29,6 +29,7 @@ const ACTION_BG: Record<LogAction, string | null> = {
   user_logged_out_web: null,
   user_logged_out_mobile: null,
   deezer_connected: '#2e7d32',
+  qobuz_connected: '#2e7d32',
 };
 
 function formatDetails(log: LogEntry, t: (key: string, options?: Record<string, unknown>) => string): string {
@@ -64,6 +65,8 @@ function formatDetails(log: LogEntry, t: (key: string, options?: Record<string, 
       return t('logs.detailText.loggedOut');
     case 'deezer_connected':
       return t('logs.detailText.deezerConnected');
+    case 'qobuz_connected':
+      return t('logs.detailText.qobuzConnected');
     default:
       return JSON.stringify(d);
   }

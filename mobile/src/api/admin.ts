@@ -32,7 +32,8 @@ export type LogAction =
   | 'user_logged_in_mobile'
   | 'user_logged_out_web'
   | 'user_logged_out_mobile'
-  | 'deezer_connected';
+  | 'deezer_connected'
+  | 'qobuz_connected';
 
 export interface LogEntry {
   id: string;
@@ -68,9 +69,9 @@ export interface LastfmSettings {
 }
 
 // Per-user, opt-in-with-own-credentials HQ providers users can connect from
-// their own Profile — currently just Deezer. See
+// their own Profile — Deezer and Qobuz. See
 // backend/src/services/settings.ts's HQ_USER_PROVIDERS.
-export const HQ_USER_PROVIDERS = ['deezer'] as const;
+export const HQ_USER_PROVIDERS = ['deezer', 'qobuz'] as const;
 export type HqUserProvider = (typeof HQ_USER_PROVIDERS)[number];
 
 export interface HqSettings {

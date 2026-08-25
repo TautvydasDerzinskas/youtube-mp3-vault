@@ -13,6 +13,8 @@ export interface User {
   nowPlayingPublic: boolean;
   deezerConnected: boolean;
   deezerCookieValid: boolean | null;
+  qobuzConnected: boolean;
+  qobuzCredentialsValid: boolean | null;
 }
 
 interface AuthResponse {
@@ -23,9 +25,9 @@ interface MeResponse {
   user: User;
   lastfmScrobblingAvailable: boolean;
   lastfmDiscoverAvailable: boolean;
-  // Which per-user HQ providers (currently just "deezer") the admin
-  // currently allows connecting at all — empty means hide the whole "HQ
-  // Download" profile tab, not just individual providers within it.
+  // Which per-user HQ providers ("deezer", "qobuz") the admin currently
+  // allows connecting at all — empty means hide the whole "HQ Download"
+  // profile tab, not just individual providers within it.
   allowedHqProviders: string[];
 }
 
@@ -92,6 +94,16 @@ export const authApi = {
 
   disconnectDeezer: async (): Promise<AuthResponse> => {
     const { data } = await client.post<AuthResponse>('/auth/deezer/disconnect');
+    return data;
+  },
+
+  saveQobuzCredentials: async (email: string, password: string): Promise<AuthResponse> => {
+    const { data } = await client.patch<AuthResponse>('/auth/qobuz', { email, password });
+    return data;
+  },
+
+  disconnectQobuz: async (): Promise<AuthResponse> => {
+    const { data } = await client.post<AuthResponse>('/auth/qobuz/disconnect');
     return data;
   },
 };

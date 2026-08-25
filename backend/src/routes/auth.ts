@@ -8,6 +8,7 @@ import { sendVerificationEmail } from '../services/mailer';
 import { isSmtpConfigured, isLastfmScrobblingConfigured, isLastfmDiscoverEnabled, isUserHqProviderAllowed, getHqSettings } from '../services/settings';
 import { getAuthUrl, getSession } from '../services/lastfm';
 import { verifyDeezerLogin } from '../services/deezer';
+import { verifyQobuzLogin } from '../services/qobuz';
 import { isOnline } from '../services/connectivity';
 import { removeExistingNonMusicVideos } from '../services/syncService';
 import { config } from '../config';
@@ -48,6 +49,8 @@ function toSafeUser(user: {
   nowPlayingPublic: boolean;
   deezerArlCookie?: string | null;
   deezerCookieValid?: boolean | null;
+  qobuzEmail?: string | null;
+  qobuzCredentialsValid?: boolean | null;
 }) {
   return {
     id: user.id,
@@ -65,6 +68,10 @@ function toSafeUser(user: {
     // for Last.fm above.
     deezerConnected: Boolean(user.deezerArlCookie),
     deezerCookieValid: user.deezerCookieValid ?? null,
+    // Same shape as Deezer, minus ever echoing back the stored password —
+    // just whether an account is connected, and its most recent login check.
+    qobuzConnected: Boolean(user.qobuzEmail),
+    qobuzCredentialsValid: user.qobuzCredentialsValid ?? null,
   };
 }
 
@@ -296,6 +303,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
         id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true,
         lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true, nowPlayingPublic: true,
         deezerArlCookie: true, deezerCookieValid: true,
+        qobuzEmail: true, qobuzCredentialsValid: true,
       },
     });
     if (!user) {
@@ -306,11 +314,11 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
       user: toSafeUser(user),
       lastfmScrobblingAvailable: isLastfmScrobblingConfigured(),
       lastfmDiscoverAvailable: isLastfmDiscoverEnabled(),
-      // Which per-user HQ provider sections (currently just Deezer) the
-      // admin currently allows connecting at all — see
-      // schema.prisma's hqAllowedUserProviders. An empty array means the
-      // client should hide the whole "HQ Download" profile tab, not just
-      // grey out individual providers within it.
+      // Which per-user HQ provider sections (Deezer, Qobuz) the admin
+      // currently allows connecting at all — see schema.prisma's
+      // hqAllowedUserProviders. An empty array means the client should hide
+      // the whole "HQ Download" profile tab, not just grey out individual
+      // providers within it.
       allowedHqProviders: getHqSettings().allowedUserProviders,
     });
   } catch (err) {
@@ -577,6 +585,57 @@ router.post('/deezer/disconnect', requireAuth, async (req: AuthRequest, res, nex
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: { deezerArlCookie: null, deezerCookieValid: null, deezerCookieCheckedAt: null },
+    });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PATCH /api/auth/qobuz ──────────────────────────────────────────────────
+// Saves a user's own Qobuz email/password (see services/qobuz.ts for what
+// this unlocks) and verifies it immediately when possible, same "check it
+// now, not just at the next sync" spirit as the Deezer endpoint above.
+// Offline, the credentials are still saved (qobuzCredentialsValid left
+// null/"unknown") — resolvePlaylistQuality will verify them the next time
+// it actually runs.
+
+router.patch('/qobuz', requireAuth, authLimiter, async (req: AuthRequest, res, next) => {
+  try {
+    if (!isUserHqProviderAllowed('qobuz')) {
+      res.status(403).json({ error: 'Qobuz HQ downloads are currently disabled by the administrator' });
+      return;
+    }
+    const { email, password } = req.body as { email?: unknown; password?: unknown };
+    if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
+      res.status(400).json({ error: 'email and password are required' });
+      return;
+    }
+    const trimmedEmail = email.trim();
+    const valid = isOnline() ? await verifyQobuzLogin(trimmedEmail, password) : null;
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        qobuzEmail: trimmedEmail,
+        qobuzPassword: password,
+        qobuzCredentialsValid: valid,
+        qobuzCredentialsCheckedAt: valid === null ? null : new Date(),
+      },
+    });
+    void createLog({ userId: user.id, action: 'qobuz_connected', details: { valid } });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/auth/qobuz/disconnect ────────────────────────────────────────
+
+router.post('/qobuz/disconnect', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { qobuzEmail: null, qobuzPassword: null, qobuzCredentialsValid: null, qobuzCredentialsCheckedAt: null },
     });
     res.json({ user: toSafeUser(user) });
   } catch (err) {

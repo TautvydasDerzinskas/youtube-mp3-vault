@@ -323,6 +323,19 @@
       "connectedInvalid": "Prijungta, bet šis slapukas nebeveikia. Įklijuokite naują žemiau.",
       "connectedUnknown": "Prijungta — bus patikrinta prieš kitą sinchronizavimą.",
       "offlineNotice": "Šiuo metu nėra interneto ryšio — tai bus automatiškai patikrinta prieš kitą sinchronizavimą."
+    },
+    "qobuz": {
+      "description": "Prijunkite savo Qobuz paskyrą, kad programa galėtų kaip paskutinę priemonę atsisiųsti trūkstamus aukštos kokybės (iki Hi-Res FLAC) takelius tiesiai iš Qobuz, kai jų nepavyksta rasti kitur. Tai veikia tik su tinkama mokama Qobuz prenumerata ir atsisiunčia tik takelius, kuriuos jūsų paskyra jau turi teisę groti.",
+      "emailLabel": "Qobuz el. paštas",
+      "passwordLabel": "Qobuz slaptažodis",
+      "save": "Išsaugoti",
+      "disconnect": "Atsijungti",
+      "disconnected": "Atsijungta nuo Qobuz.",
+      "saved": "Qobuz paskyra prijungta.",
+      "connectedValid": "Prijungta — šie prisijungimo duomenys šiuo metu veikia.",
+      "connectedInvalid": "Prijungta, bet šie prisijungimo duomenys nebeveikia. Įveskite juos iš naujo žemiau.",
+      "connectedUnknown": "Prijungta — bus patikrinta prieš kitą sinchronizavimą.",
+      "offlineNotice": "Šiuo metu nėra interneto ryšio — tai bus automatiškai patikrinta prieš kitą sinchronizavimą."
     }
   },
   "downloads": {
@@ -369,7 +382,8 @@
       "allowedUserProviders": "Leidžiami vartotojų HQ paieškos tiekėjai",
       "allowedUserProvidersDescription": "Leidžia vartotojams iš savo profilio prijungti savo paskyrą šiems tiekėjams — tai papildomas HQ šaltinis be aukščiau nurodytų. Išjungus tiekėją čia, jis dingsta iš kiekvieno vartotojo profilio ir nebenaudojamas sinchronizavimo metu, net jei vartotojas jį jau buvo prijungęs.",
       "provider": {
-        "deezer": "Deezer"
+        "deezer": "Deezer",
+        "qobuz": "Qobuz"
       }
     }
   },
@@ -487,7 +501,8 @@
       "loggedIn": "Prisijungė kaip {{email}}",
       "loggedOut": "Atsijungė",
       "offlineEnabled": "Įjungtas atsisiuntimas neprisijungus grojaraščiui „{{name}}“",
-      "deezerConnected": "Prijungta Deezer paskyra HQ atsisiuntimams"
+      "deezerConnected": "Prijungta Deezer paskyra HQ atsisiuntimams",
+      "qobuzConnected": "Prijungta Qobuz paskyra HQ atsisiuntimams"
     }
   },
   "dashboard": {

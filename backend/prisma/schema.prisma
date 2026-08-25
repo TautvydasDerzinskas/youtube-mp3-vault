@@ -64,6 +64,19 @@ model User {
   deezerArlCookie           String?
   deezerCookieValid         Boolean?
   deezerCookieCheckedAt     DateTime?
+  // A user's own Qobuz account email/password — opt-in, per-user, same
+  // rationale as deezerArlCookie above. Unlike Deezer, Qobuz has no
+  // long-lived cookie an end user can copy out of their browser, so the
+  // credential here is the account's real login instead of a session
+  // token; see services/qobuz.ts for how it's used (a fresh user/login call
+  // establishes a session, never persisted beyond one sync pass) and
+  // routes/auth.ts's /qobuz endpoints for how it's saved. qobuzCredentialsValid
+  // follows the same null-until-first-check/most-recent-outcome contract as
+  // deezerCookieValid.
+  qobuzEmail                String?
+  qobuzPassword             String?
+  qobuzCredentialsValid     Boolean?
+  qobuzCredentialsCheckedAt DateTime?
   createdAt                 DateTime   @default(now())
   updatedAt                 DateTime   @updatedAt
   playlists                 Playlist[]
@@ -263,15 +276,16 @@ model AppSettings {
 
   hqAutoDownloadEnabled Boolean @default(false)
 
-  // Which per-user, opt-in-with-own-credentials HQ providers (currently
-  // just Deezer — see services/deezer.ts) users are allowed to connect at
-  // all. Unlike hqAutoDownloadEnabled above (a single app-wide on/off
-  // switch for the whole HQ-replace pipeline), this is a per-provider
+  // Which per-user, opt-in-with-own-credentials HQ providers (Deezer and
+  // Qobuz — see services/deezer.ts/services/qobuz.ts) users are allowed to
+  // connect at all. Unlike hqAutoDownloadEnabled above (a single app-wide
+  // on/off switch for the whole HQ-replace pipeline), this is a per-provider
   // allow-list: disabling an entry here hides that provider's section from
   // every user's own profile (see routes/auth.ts's /me) and makes
   // resolvePlaylistQuality skip it outright during a sync, even for a user
   // who already has credentials saved for it (see slskdQualityWorker.ts) —
   // existing saved credentials are left alone, just unused while disabled.
+  // Qobuz isn't in the default array — admins opt into it explicitly.
   hqAllowedUserProviders String[] @default(["deezer"])
 
   updatedAt DateTime @updatedAt

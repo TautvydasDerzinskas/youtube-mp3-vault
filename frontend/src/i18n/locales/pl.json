@@ -337,6 +337,19 @@
       "connectedInvalid": "Połączono, ale to ciasteczko już nie działa. Wklej nowe poniżej.",
       "connectedUnknown": "Połączono — zostanie zweryfikowane przed następną synchronizacją.",
       "offlineNotice": "Brak połączenia z internetem — zostanie to automatycznie zweryfikowane przed następną synchronizacją."
+    },
+    "qobuz": {
+      "description": "Połącz własne konto Qobuz, aby aplikacja mogła jako ostatnią deskę ratunku pobierać brakujące utwory w wysokiej jakości (do Hi-Res FLAC) bezpośrednio z Qobuz, gdy nie znajdzie ich nigdzie indziej. Działa to tylko z odpowiednią płatną subskrypcją Qobuz i pobiera wyłącznie utwory, do których Twoje konto już ma prawo dostępu.",
+      "emailLabel": "E-mail Qobuz",
+      "passwordLabel": "Hasło Qobuz",
+      "save": "Zapisz",
+      "disconnect": "Rozłącz",
+      "disconnected": "Rozłączono z Qobuz.",
+      "saved": "Konto Qobuz połączone.",
+      "connectedValid": "Połączono — te dane logowania obecnie działają.",
+      "connectedInvalid": "Połączono, ale te dane logowania już nie działają. Wprowadź je ponownie poniżej.",
+      "connectedUnknown": "Połączono — zostanie zweryfikowane przed następną synchronizacją.",
+      "offlineNotice": "Brak połączenia z internetem — zostanie to automatycznie zweryfikowane przed następną synchronizacją."
     }
   },
   "downloads": {
@@ -383,7 +396,8 @@
       "allowedUserProviders": "Dozwoleni dostawcy skanowania HQ dla użytkowników",
       "allowedUserProvidersDescription": "Pozwala użytkownikom połączyć własne konto tych dostawców z poziomu swojego profilu, jako dodatkowe źródło HQ oprócz powyższych. Wyłączenie dostawcy tutaj ukrywa go w profilu każdego użytkownika i przestaje być używany podczas synchronizacji, nawet jeśli użytkownik już go połączył.",
       "provider": {
-        "deezer": "Deezer"
+        "deezer": "Deezer",
+        "qobuz": "Qobuz"
       }
     }
   },
@@ -501,7 +515,8 @@
       "loggedIn": "Zalogowano się jako {{email}}",
       "loggedOut": "Wylogowano się",
       "offlineEnabled": "Włączono pobieranie offline dla „{{name}}”",
-      "deezerConnected": "Połączono konto Deezer do pobierania HQ"
+      "deezerConnected": "Połączono konto Deezer do pobierania HQ",
+      "qobuzConnected": "Połączono konto Qobuz do pobierania HQ"
     }
   },
   "dashboard": {
