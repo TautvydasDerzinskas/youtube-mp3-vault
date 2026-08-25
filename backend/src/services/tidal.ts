@@ -387,9 +387,20 @@ export async function getBestTidalTrackUrl(session: TidalSession, trackId: strin
       const res = await fetchWithTimeout(`${API_BASE}tracks/${trackId}/playbackinfopostpaywall?${params}`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
       });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        // Temporary diagnostic: every quality tier has been failing for every
+        // track since this provider launched, and the swallowed status/body
+        // made it impossible to tell a 402/403 (no active subscription) apart
+        // from a 401 (bad token/scope) or something else entirely — remove
+        // once the real cause is confirmed from a live run.
+        console.error(`[tidal] playbackinfopostpaywall ${quality} -> HTTP ${res.status} for track ${trackId}: ${(await res.text()).slice(0, 300)}`);
+        continue;
+      }
       const resp = (await res.json()) as StreamRespond;
-      if (!resp.manifest) continue;
+      if (!resp.manifest) {
+        console.error(`[tidal] playbackinfopostpaywall ${quality} -> no manifest for track ${trackId}: ${JSON.stringify(resp).slice(0, 300)}`);
+        continue;
+      }
 
       if (resp.manifestMimeType?.includes('vnd.tidal.bt')) {
         const manifest = JSON.parse(Buffer.from(resp.manifest, 'base64').toString('utf8'));
@@ -403,7 +414,9 @@ export async function getBestTidalTrackUrl(session: TidalSession, trackId: strin
         if (urls.length === 0) continue;
         return { urls, encryptionKey: '', quality: resp.audioQuality };
       }
-    } catch {
+      console.error(`[tidal] playbackinfopostpaywall ${quality} -> unrecognized manifestMimeType "${resp.manifestMimeType}" for track ${trackId}`);
+    } catch (err) {
+      console.error(`[tidal] playbackinfopostpaywall ${quality} -> request failed for track ${trackId}: ${(err as Error).message}`);
       continue;
     }
   }
