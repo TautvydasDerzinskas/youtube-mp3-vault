@@ -17,6 +17,7 @@ export default function TriggersPage() {
 
   const [reimportTriggering, setReimportTriggering] = useState(false);
   const [tagRebuildTriggering, setTagRebuildTriggering] = useState(false);
+  const [originalTitleBackfillTriggering, setOriginalTitleBackfillTriggering] = useState(false);
 
   useEffect(() => {
     adminApi.listUsers().then(setUsers).catch(() => setUsers('error'));
@@ -58,6 +59,18 @@ export default function TriggersPage() {
       showError(err.response?.data?.error ?? t('triggers.tagRebuild.genericError'));
     } finally {
       setTagRebuildTriggering(false);
+    }
+  };
+
+  const handleTriggerOriginalTitleBackfill = async () => {
+    setOriginalTitleBackfillTriggering(true);
+    try {
+      await adminApi.triggerOriginalTitleBackfill();
+      showSuccess(t('triggers.originalTitleBackfill.started'));
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('triggers.originalTitleBackfill.genericError'));
+    } finally {
+      setOriginalTitleBackfillTriggering(false);
     }
   };
 
@@ -127,6 +140,22 @@ export default function TriggersPage() {
           sx={{ alignSelf: 'flex-start' }}
         >
           {tagRebuildTriggering ? <CircularProgress size={20} color="inherit" /> : t('triggers.tagRebuild.trigger')}
+        </Button>
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
+      <Typography variant="subtitle1" fontWeight={600} mb={1}>{t('triggers.originalTitleBackfill.title')}</Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>{t('triggers.originalTitleBackfill.description')}</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Button
+          variant="contained"
+          color="warning"
+          disabled={originalTitleBackfillTriggering}
+          onClick={handleTriggerOriginalTitleBackfill}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          {originalTitleBackfillTriggering ? <CircularProgress size={20} color="inherit" /> : t('triggers.originalTitleBackfill.trigger')}
         </Button>
       </Box>
     </Box>

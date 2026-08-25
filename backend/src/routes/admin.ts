@@ -4,6 +4,7 @@ import { requireAuth, requireAdmin, AuthRequest } from '../middleware/auth';
 import { prisma, switchDatabase, buildDatabaseUrl } from '../services/prisma';
 import { withDownloadStats } from '../services/playlistStats';
 import { startSoftReimport, startTagRebuild } from '../services/reimport';
+import { startOriginalTitleBackfill } from '../services/originalTitleBackfill';
 import { toCsv, parseCsv } from '../services/csv';
 import {
   getSmtpSettings, updateSmtpSettings, getPostgresSettings, persistPostgresSettings, SmtpSettings,
@@ -158,6 +159,22 @@ router.post('/playlists/:id/rebuild-tags', async (req, res, next) => {
       return;
     }
 
+    res.json({ started: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/backfill-original-titles
+// Global (not per-playlist) — re-fetches the raw YouTube title for every
+// PlaylistVideo row whose originalTitle was never populated, via a
+// metadata-only yt-dlp call per video. See services/originalTitleBackfill.ts.
+router.post('/backfill-original-titles', async (_req, res, next) => {
+  try {
+    if (!startOriginalTitleBackfill()) {
+      res.status(409).json({ error: 'A backfill is already in progress' });
+      return;
+    }
     res.json({ started: true });
   } catch (err) {
     next(err);

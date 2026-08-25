@@ -138,6 +138,10 @@ export const adminApi = {
     await client.post(`/admin/playlists/${playlistId}/rebuild-tags`);
   },
 
+  triggerOriginalTitleBackfill: async (): Promise<void> => {
+    await client.post('/admin/backfill-original-titles');
+  },
+
   listLogs: async (params: { userId?: string; from?: string; to?: string }): Promise<LogEntry[]> => {
     const { data } = await client.get<{ logs: LogEntry[] }>('/admin/logs', { params });
     return data.logs;

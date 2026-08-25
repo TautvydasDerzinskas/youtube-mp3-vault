@@ -436,6 +436,13 @@
       "trigger": "Rebuild ID3 tags",
       "started": "Tag rebuild started.",
       "genericError": "Failed to start tag rebuild."
+    },
+    "originalTitleBackfill": {
+      "title": "Backfill original titles",
+      "description": "Re-fetches the raw YouTube title for every track across all playlists whose original title was never saved. No re-download, applies system-wide, not just the selected playlist.",
+      "trigger": "Trigger backfill",
+      "started": "Backfill started.",
+      "genericError": "Failed to start the backfill."
     }
   },
   "export": {

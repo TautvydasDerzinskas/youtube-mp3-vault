@@ -441,6 +441,13 @@
       "trigger": "Rebuild ID3 Tags",
       "started": "Tag rebuild started. Progress will show on the playlist's own page.",
       "genericError": "Failed to start tag rebuild. The playlist may already be syncing."
+    },
+    "originalTitleBackfill": {
+      "title": "Backfill Original Titles",
+      "description": "Re-fetches the raw YouTube title for every track across all playlists whose original title was never saved (rows created before that was tracked) — no re-download, just a metadata lookup per track. Applies system-wide, not just the selected playlist.",
+      "trigger": "Backfill Original Titles",
+      "started": "Backfill started. Check the server logs for progress.",
+      "genericError": "Failed to start the backfill. It may already be running."
     }
   },
   "export": {

@@ -486,6 +486,13 @@
       "trigger": "Przebuduj tagi ID3",
       "started": "Rozpoczęto przebudowę tagów.",
       "genericError": "Nie udało się rozpocząć przebudowy tagów."
+    },
+    "originalTitleBackfill": {
+      "title": "Uzupełnij oryginalne tytuły",
+      "description": "Ponownie pobiera surowy tytuł YouTube dla każdego utworu we wszystkich playlistach, którego oryginalny tytuł nigdy nie został zapisany. Bez ponownego pobierania, dotyczy całego systemu, nie tylko wybranej playlisty.",
+      "trigger": "Uruchom uzupełnianie",
+      "started": "Uzupełnianie rozpoczęte.",
+      "genericError": "Nie udało się rozpocząć uzupełniania."
     }
   },
   "export": {

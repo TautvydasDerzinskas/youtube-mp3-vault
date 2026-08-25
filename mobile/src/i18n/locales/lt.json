@@ -461,6 +461,13 @@
       "trigger": "Atkurti ID3 žymes",
       "started": "ID3 žymių atkūrimas pradėtas.",
       "genericError": "Nepavyko pradėti ID3 žymių atkūrimo."
+    },
+    "originalTitleBackfill": {
+      "title": "Užpildyti originalius pavadinimus",
+      "description": "Iš naujo gauna tikrąjį YouTube pavadinimą kiekvienam takeliui visuose grojaraščiuose, kurio originalus pavadinimas niekada nebuvo išsaugotas. Be pakartotinio atsisiuntimo, taikoma visai sistemai, ne tik pasirinktam grojaraščiui.",
+      "trigger": "Paleisti užpildymą",
+      "started": "Užpildymas pradėtas.",
+      "genericError": "Nepavyko pradėti užpildymo."
     }
   },
   "export": {

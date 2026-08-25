@@ -18,7 +18,9 @@ interface Result {
 // re-download) or a narrower ID3 tag rebuild (just re-writes tags from
 // whatever's currently in the database, no network activity at all). Web's
 // two <select> dropdowns become tap-to-open Menus here, the closest mobile
-// equivalent react-native-paper offers.
+// equivalent react-native-paper offers. The third trigger below,
+// originalTitleBackfill, is global rather than per-playlist, so it doesn't
+// depend on selectedUser/selectedPlaylist at all.
 export function AdminTriggersScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -35,6 +37,8 @@ export function AdminTriggersScreen() {
   const [reimportResult, setReimportResult] = useState<Result | null>(null);
   const [tagRebuildTriggering, setTagRebuildTriggering] = useState(false);
   const [tagRebuildResult, setTagRebuildResult] = useState<Result | null>(null);
+  const [originalTitleBackfillTriggering, setOriginalTitleBackfillTriggering] = useState(false);
+  const [originalTitleBackfillResult, setOriginalTitleBackfillResult] = useState<Result | null>(null);
 
   useEffect(() => {
     adminApi.listUsers().then(setUsers).catch(() => setUsers('error'));
@@ -79,6 +83,22 @@ export function AdminTriggersScreen() {
       setTagRebuildResult({ type: 'error', message: err?.response?.data?.error ?? t('triggers.tagRebuild.genericError') });
     } finally {
       setTagRebuildTriggering(false);
+    }
+  };
+
+  const handleTriggerOriginalTitleBackfill = async () => {
+    setOriginalTitleBackfillTriggering(true);
+    setOriginalTitleBackfillResult(null);
+    try {
+      await adminApi.triggerOriginalTitleBackfill();
+      setOriginalTitleBackfillResult({ type: 'success', message: t('triggers.originalTitleBackfill.started') });
+    } catch (err: any) {
+      setOriginalTitleBackfillResult({
+        type: 'error',
+        message: err?.response?.data?.error ?? t('triggers.originalTitleBackfill.genericError'),
+      });
+    } finally {
+      setOriginalTitleBackfillTriggering(false);
     }
   };
 
@@ -196,6 +216,32 @@ export function AdminTriggersScreen() {
         style={styles.triggerButton}
       >
         {t('triggers.tagRebuild.trigger')}
+      </Button>
+
+      <Divider style={styles.divider} />
+
+      <Text variant="titleMedium">{t('triggers.originalTitleBackfill.title')}</Text>
+      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}>
+        {t('triggers.originalTitleBackfill.description')}
+      </Text>
+      {originalTitleBackfillResult && (
+        <Banner
+          visible
+          icon={originalTitleBackfillResult.type === 'success' ? 'check-circle-outline' : 'alert-circle-outline'}
+          style={styles.banner}
+        >
+          {originalTitleBackfillResult.message}
+        </Banner>
+      )}
+      <Button
+        mode="contained"
+        buttonColor={theme.colors.error}
+        disabled={originalTitleBackfillTriggering}
+        loading={originalTitleBackfillTriggering}
+        onPress={handleTriggerOriginalTitleBackfill}
+        style={styles.triggerButton}
+      >
+        {t('triggers.originalTitleBackfill.trigger')}
       </Button>
     </ScrollView>
   );
