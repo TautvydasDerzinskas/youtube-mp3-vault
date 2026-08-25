@@ -1,46 +1,27 @@
 import { prisma } from './prisma';
-import { runYtDlp, potProviderExtractorArgs } from './ytdlpProcess';
+import { fetchPlaylist } from './youtube';
 
 // Admin-triggered backfill for PlaylistVideo rows created before the
-// originalTitle column existed — re-fetches each one's raw YouTube title via
-// a metadata-only yt-dlp call (no download) and writes it back. Only ever
-// invoked via routes/admin.ts's POST /backfill-original-titles (Triggers
-// page in the admin UI) — deliberately no CLI entry point for this one.
+// originalTitle column existed — re-fetches the raw YouTube title for each
+// one and writes it back. Only ever invoked via routes/admin.ts's POST
+// /backfill-original-titles (Triggers page in the admin UI) — deliberately
+// no CLI entry point for this one.
+//
+// Fetches per PLAYLIST, not per video — the same `--flat-playlist` listing
+// fetchPlaylist already uses for a regular sync returns every video's title
+// in one yt-dlp call, so a playlist with 50 rows missing originalTitle costs
+// exactly 1 request here, not 50. (originalTitle is set from this same
+// flat-playlist listing at normal sync time too — see syncService.ts's
+// refreshPlaylistFromYoutube — this is just backfilling it for older rows
+// that predate the column, using the identical source of truth.)
 
-// Single-video metadata call, not a whole playlist — 60s is generous even
-// accounting for a slow bot-check standoff (see ytdlpProcess.ts's own
-// rationale for why every yt-dlp call needs a hard ceiling at all).
-const FETCH_TIMEOUT_MS = 60_000;
-// A deliberate pause between requests — this is a burst of individual
-// per-video lookups against YouTube in a way normal sync traffic never is,
-// and going too fast risks tripping bot-protection for the rest of the
-// app's own yt-dlp calls, not just this job.
-const DELAY_BETWEEN_REQUESTS_MS = 1_500;
+// A pause between playlist fetches — this is still a burst of extra
+// requests against YouTube compared to normal sync traffic, even though
+// it's now one request per playlist rather than one per video.
+const DELAY_BETWEEN_PLAYLISTS_MS = 1_500;
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function fetchTitle(youtubeId: string): Promise<string | null> {
-  const args = [
-    '--skip-download',
-    '--dump-json',
-    '--no-warnings',
-    '--ignore-errors',
-    '--extractor-args', 'youtube:player_client=default,android,-tv',
-    ...potProviderExtractorArgs(),
-    `https://www.youtube.com/watch?v=${youtubeId}`,
-  ];
-
-  const { code, stdout } = await runYtDlp(args, FETCH_TIMEOUT_MS);
-  if (code !== 0 || !stdout.trim()) return null;
-
-  try {
-    const info = JSON.parse(stdout.trim().split('\n')[0]);
-    return typeof info.title === 'string' && info.title ? info.title : null;
-  } catch {
-    return null;
-  }
 }
 
 export interface OriginalTitleBackfillSummary {
@@ -50,38 +31,62 @@ export interface OriginalTitleBackfillSummary {
 }
 
 export async function runOriginalTitleBackfill(): Promise<OriginalTitleBackfillSummary> {
-  const videos = await prisma.playlistVideo.findMany({
-    where: { originalTitle: null, downloadStatus: { not: 'removed' } },
+  // Only a playlist with a real YouTube counterpart can be re-fetched this
+  // way — a generated playlist (Playlist.sourcePlaylistId) has no youtubeId
+  // to build a listing URL from. playlistGenerator.ts already populates
+  // originalTitle at creation time for those anyway, so this should be a
+  // rare/empty gap in practice, not something worth a separate per-video
+  // fallback for.
+  const playlists = await prisma.playlist.findMany({
+    where: {
+      youtubeId: { not: null },
+      videos: { some: { originalTitle: null, downloadStatus: { not: 'removed' } } },
+    },
     select: { id: true, youtubeId: true },
   });
 
-  console.log(`[backfill] ${videos.length} video(s) missing originalTitle`);
+  console.log(`[backfill] ${playlists.length} playlist(s) with videos missing originalTitle`);
 
   let filled = 0;
   let unavailable = 0;
   let failed = 0;
 
-  // Sequential, not parallel — this is already a burst of extra per-video
-  // requests against YouTube (see DELAY_BETWEEN_REQUESTS_MS above); running
-  // them concurrently would only make that worse for no real benefit, since
-  // this is a one-time cleanup pass, not something latency-sensitive.
-  for (const [index, video] of videos.entries()) {
-    if (index > 0) await sleep(DELAY_BETWEEN_REQUESTS_MS);
+  // Sequential, not parallel — same rate-limiting reasoning as every other
+  // yt-dlp-driven pass in this app.
+  for (const [index, playlist] of playlists.entries()) {
+    if (index > 0) await sleep(DELAY_BETWEEN_PLAYLISTS_MS);
 
+    const missing = await prisma.playlistVideo.findMany({
+      where: { playlistId: playlist.id, originalTitle: null, downloadStatus: { not: 'removed' } },
+      select: { id: true, youtubeId: true },
+    });
+    if (missing.length === 0) continue; // could no longer be true by the time this playlist's turn comes up
+
+    let titleById: Map<string, string>;
     try {
-      const title = await fetchTitle(video.youtubeId);
+      const info = await fetchPlaylist(`https://www.youtube.com/playlist?list=${playlist.youtubeId}`);
+      titleById = new Map(info.videos.map(v => [v.id, v.title]));
+    } catch (err) {
+      console.error(`[backfill] playlist ${playlist.id}: failed to fetch —`, (err as Error).message);
+      failed += missing.length;
+      continue;
+    }
+
+    for (const video of missing) {
+      const title = titleById.get(video.youtubeId);
       if (!title) {
-        console.warn(`[backfill] ${video.youtubeId}: no longer available on YouTube — skipping`);
+        console.warn(`[backfill] ${video.youtubeId}: no longer available in its playlist's current listing — skipping`);
         unavailable++;
         continue;
       }
 
-      console.log(`[backfill] ${video.youtubeId}: "${title}"`);
-      await prisma.playlistVideo.update({ where: { id: video.id }, data: { originalTitle: title } });
-      filled++;
-    } catch (err) {
-      console.error(`[backfill] ${video.youtubeId}: failed —`, (err as Error).message);
-      failed++;
+      try {
+        await prisma.playlistVideo.update({ where: { id: video.id }, data: { originalTitle: title } });
+        filled++;
+      } catch (err) {
+        console.error(`[backfill] ${video.youtubeId}: failed to save —`, (err as Error).message);
+        failed++;
+      }
     }
   }
 
