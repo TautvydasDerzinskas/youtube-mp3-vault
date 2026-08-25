@@ -11,15 +11,23 @@ import { createWriteStream } from 'fs';
 // startDeviceAuth/pollDeviceAuth below and routes/auth.ts's /tidal/start+poll
 // endpoints), which nets an access/refresh token pair scoped to that user's
 // own account, same as sitting down at a smart TV and logging in. The
-// clientId/clientSecret pair below is a reverse-engineered "Fire TV" app
-// credential lifted straight from apiKey.py (marked `valid: true` there) —
+// clientId/clientSecret pair below is a reverse-engineered app credential —
 // not a public developer API, same category of unofficial-API reliance as
 // Qobuz's scraped app_id/app_secret (see qobuz.ts) or Deezer's arl cookie.
-const CLIENT_ID = '7m7Ap0JC9j1cOM3n';
-const CLIENT_SECRET = 'vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY=';
+// Originally the Fire TV pair from apiKey.py; swapped for the pair
+// github.com/oskvr37/tiddl uses (base64 blob in its auth/client.py) since
+// the Fire TV one — being the most widely embedded public Tidal credential —
+// is the more likely one to have been throttled/blocked.
+const CLIENT_ID = '4N3n6Q1x95LL5K7p';
+const CLIENT_SECRET = 'oKOXfJW371cX6xaZ0PyhgGNBdNLlBZd4AKKYougMjik=';
 
 const AUTH_BASE = 'https://auth.tidal.com/v1/oauth2';
-const API_BASE = 'https://api.tidalhifi.com/v1/';
+// Was api.tidalhifi.com (the legacy host TIDALDL-PY uses) — switched to match
+// verifyAccessToken's /sessions call below, which is the one call in this
+// file known to work against these stored credentials, and to match tiddl
+// (github.com/oskvr37/tiddl), a currently-maintained reference that uses
+// this host uniformly for every endpoint including playbackinfopostpaywall.
+const API_BASE = 'https://api.tidal.com/v1/';
 
 // Same rationale as every other per-request network timeout in this app
 // (see deezer.ts/qobuz.ts/jiosaavn.ts/slskd.ts): a stalled request shouldn't
