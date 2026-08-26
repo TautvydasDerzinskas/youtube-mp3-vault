@@ -46,6 +46,21 @@ export function TrackRow({
     // competes for stacking order.
     <Box style={style} sx={{ '&:hover': { zIndex: 1 } }}>
       <TrackRowContent
+        // react-window keys its own row wrapper by index, not by item
+        // identity (no itemKey/rowKey prop exists in its v2 List API to
+        // override this — confirmed directly in its source, which renders
+        // each visible row with `key: <loop index>`). When a search/genre
+        // filter reorders `tracks`, the row at a given index can silently
+        // start showing a different track while this component instance
+        // (and all its state — an open rename dialog, an in-flight search,
+        // ...) gets reused as-is, since React only remounts on a key
+        // change. That let a rename submitted right after such a reorder
+        // target whatever track now occupied the slot instead of the one
+        // the dialog was actually opened for. Keying by the track's own id
+        // forces a full remount (fresh state) the moment the slot's
+        // occupant actually changes, rather than recycling stale state
+        // across two unrelated tracks.
+        key={v.id}
         video={v}
         playlistId={playlistId}
         isCurrentTrack={isCurrentTrack}
