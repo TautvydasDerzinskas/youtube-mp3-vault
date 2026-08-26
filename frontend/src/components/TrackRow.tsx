@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Avatar, IconButton, Tooltip, SxProps, Theme } from '@mui/material';
-import { keyframes } from '@emotion/react';
+import { Box, Typography, Avatar, IconButton, Tooltip, LinearProgress, SxProps, Theme } from '@mui/material';
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, HighQuality as HqIcon,
@@ -37,11 +36,6 @@ export interface TrackRowProps {
 // linger for long after the search actually finishes, cheap enough (one
 // single-video GET) not to matter if a search runs for a while.
 const SEARCH_POLL_INTERVAL_MS = 2000;
-
-const spinBorder = keyframes`
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-`;
 
 /**
  * The one track row component — every list of playable-from-disk tracks in
@@ -150,41 +144,16 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
           bgcolor: isCurrentTrack ? 'action.selected' : 'action.hover',
           // Only the synced (playable-from-disk) rows get the pop — it's a
           // cue that this row is actually clickable-to-play, not just
-          // decoration. A transform doesn't affect layout, so it never
-          // pushes neighboring rows around; the z-index bump just keeps it
-          // drawing on top of them instead of being clipped by their
-          // (equally opaque) backgrounds. Skipped entirely while searching
-          // — one animation at a time reads more clearly than two competing.
-          ...(v.downloadStatus === 'done' && !searching && { transform: 'scale(1.015)', zIndex: 1, boxShadow: 4 }),
+          // decoration. translateY (not scale) keeps the row's width
+          // unchanged so it can never overflow its container horizontally;
+          // lifting it and adding shadow reads as the row floating above its
+          // neighbors, which themselves stay put since transforms don't
+          // affect layout. The z-index bump keeps it drawing on top of them
+          // instead of being clipped by their (equally opaque) backgrounds.
+          // Skipped entirely while searching — one animation at a time reads
+          // more clearly than two competing.
+          ...(v.downloadStatus === 'done' && !searching && { transform: 'translateY(-3px)', zIndex: 1, boxShadow: 6 }),
         },
-        // The "in progress" cue for Search for HQ: a rotating gradient ring.
-        // Two stacked pseudo-elements, both behind the row's own content —
-        // CSS paints negative-z-index descendants *above* the element's own
-        // background (per the stacking-order spec) but still below in-flow
-        // content, so the row's own bgcolor above can't mask anything here.
-        // ::before is the actual rotating gradient, oversized (200% in each
-        // dimension) so its corners always cover the row through a full
-        // rotation; ::after sits on top of it (less-negative z-index) with
-        // an ordinary opaque fill inset 2px from the row's edge, leaving
-        // only that 2px margin of ::before visible as a moving ring.
-        ...(searching && {
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            zIndex: -2,
-            inset: '-50%',
-            background: (theme: Theme) =>
-              `conic-gradient(from 0deg, transparent 0%, transparent 65%, ${theme.palette.primary.main} 90%, transparent 100%)`,
-            animation: `${spinBorder} 1.6s linear infinite`,
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            zIndex: -1,
-            inset: '2px',
-            bgcolor: 'background.default',
-          },
-        }),
         ...sx,
       }}
     >
@@ -280,6 +249,9 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
           </Tooltip>
         )}
       </Box>
+      {searching && (
+        <LinearProgress sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3 }} />
+      )}
     </Box>
     <TrackContextMenu
       playlistId={trackPlaylistId}

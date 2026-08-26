@@ -35,7 +35,16 @@ export function TrackRow({
   const isCurrentTrack = nowPlaying?.playlistId === trackPlaylistId && nowPlaying?.videoId === v.id;
 
   return (
-    <Box style={style}>
+    // react-window gives every row its own absolutely-positioned sibling
+    // (style.position), each stacking in plain DOM order since none carries
+    // its own z-index — so the inner row's own hover z-index bump (which
+    // only promotes it within *this* wrapper, its sole child) never affects
+    // how this wrapper compares to the *other* rows' wrappers, and a later
+    // (lower) row still paints over a hovered one above it. :hover on this
+    // wrapper fires from the same pointer-over-a-descendant bubbling as the
+    // inner row's own :hover, so this promotes the row that actually
+    // competes for stacking order.
+    <Box style={style} sx={{ '&:hover': { zIndex: 1 } }}>
       <TrackRowContent
         video={v}
         playlistId={playlistId}
