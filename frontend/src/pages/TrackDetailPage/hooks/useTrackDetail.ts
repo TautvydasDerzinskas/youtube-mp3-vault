@@ -42,5 +42,16 @@ export function useTrackDetail() {
     setRecommendations(prev => (Array.isArray(prev) ? prev.filter(r => r.id !== videoId) : prev));
   };
 
-  return { playlistId: id ?? '', video, recommendations, discover, remixes, usedIn, removeRecommendation };
+  // Patches a recommended track's HQ-related fields once a "Search for HQ"
+  // run finishes — see TrackRow's onUpdated callback. RecommendedTrack is a
+  // narrower shape than PlaylistVideo (see toQueueTrack in
+  // RecommendedTracks.tsx), so this merges just the fields a search could
+  // actually change rather than replacing the whole entry.
+  const updateRecommendation = (video: PlaylistVideo) => {
+    setRecommendations(prev => (Array.isArray(prev) ? prev.map(r => (r.id === video.id
+      ? { ...r, betterQualityExists: video.betterQualityExists, hqFileDownloaded: video.hqFileDownloaded, bitrate: video.bitrate, fileSize: video.fileSize, downloadError: video.downloadError }
+      : r)) : prev));
+  };
+
+  return { playlistId: id ?? '', video, recommendations, discover, remixes, usedIn, removeRecommendation, updateRecommendation };
 }

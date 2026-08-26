@@ -73,8 +73,14 @@ export function usePlaylistDetail(playlistId: string) {
     setVideos(prev => (Array.isArray(prev) ? prev.filter(v => v.id !== videoId) : prev));
   };
 
+  // Patches a single track in local state once a "Search for HQ" run
+  // finishes — see TrackRow's onUpdated callback.
+  const updateVideo = (video: PlaylistVideo) => {
+    setVideos(prev => (Array.isArray(prev) ? prev.map(v => (v.id === video.id ? video : v)) : prev));
+  };
+
   return {
     playlist, videos, currentVideos, filteredTracks, orderedPlayableTracks, firstPlayableTrack,
-    sort, setSort, searchQuery, setSearchQuery, reload: load, removeVideo,
+    sort, setSort, searchQuery, setSearchQuery, reload: load, removeVideo, updateVideo,
   };
 }

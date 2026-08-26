@@ -20,6 +20,7 @@ import {
   cleanupMediaFiles,
   deleteTrackEverywhere,
 } from '../services/syncService';
+import { isTrackHqSearching, startTrackHqSearch } from '../services/slskdQualityWorker';
 import { startGeneratePlaylist } from '../services/playlistGenerator';
 import { createLog } from '../services/auditLog';
 
@@ -477,7 +478,48 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
       res.status(404).json({ error: 'Video not found' });
       return;
     }
-    res.json({ video });
+    // searchingHq lets the frontend poll this same endpoint after triggering
+    // POST .../search-hq (below) — the moment it flips back to false, this
+    // response already carries whatever the search changed (bitrate,
+    // hqFileDownloaded, mediaFileId, ...), so no separate "fetch the
+    // updated video" round trip is needed.
+    res.json({ video, searchingHq: isTrackHqSearching(video.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/playlists/:id/videos/:videoId/search-hq ────────────────────────
+// Manually triggers the same HQ provider search resolvePlaylistQuality runs
+// for every video during a playlist's regular sync/scan pass — see
+// searchTrackQuality in slskdQualityWorker.ts — for exactly the one video
+// the user right-clicked (or long-pressed) and chose "Search for HQ" on.
+// Fire-and-forget, same shape as /scan-hq: responds immediately, the
+// frontend polls GET .../videos/:videoId's new searchingHq field to know
+// when it's done.
+router.post('/:id/videos/:videoId/search-hq', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id, isAvailable: true, downloadStatus: 'done' },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+    if (isTrackHqSearching(video.id)) {
+      res.status(409).json({ error: 'Already searching for a better-quality file' });
+      return;
+    }
+
+    startTrackHqSearch(video.id);
+    res.status(202).json({});
   } catch (err) {
     next(err);
   }

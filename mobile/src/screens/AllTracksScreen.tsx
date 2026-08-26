@@ -21,7 +21,7 @@ export function AllTracksScreen() {
   const route = useRoute<AllTracksRouteProp>();
   const {
     status, summary, filteredTracks, playableQueue, sort, setSort, searchQuery, setSearchQuery,
-    genreFilter, setGenreFilter, removeVideo,
+    genreFilter, setGenreFilter, removeVideo, updateVideo,
   } = useAllTracksDetail(route.params?.genreKey);
 
   if (status === 'loading') {
@@ -62,7 +62,7 @@ export function AllTracksScreen() {
       <FlatList
         data={filteredTracks}
         keyExtractor={(v) => v.id}
-        renderItem={({ item }) => <TrackRow track={item} queue={playableQueue} onDeleted={removeVideo} />}
+        renderItem={({ item }) => <TrackRow track={item} queue={playableQueue} onDeleted={removeVideo} onUpdated={updateVideo} />}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={[styles.empty, { color: theme.colors.onSurfaceVariant }]}>{t('playlists.detail.noTracks')}</Text>

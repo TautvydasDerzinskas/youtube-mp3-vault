@@ -16,6 +16,7 @@ export interface TrackRowProps {
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: PlaylistVideo[]) => void;
   onDeleted?: (videoId: string) => void;
+  onUpdated?: (video: PlaylistVideo) => void;
 }
 
 // Thin react-window adapter — the only reason this file exists separately
@@ -27,7 +28,7 @@ export interface TrackRowProps {
 // fixed-height row slot (style.height) so the shared component's border
 // lands exactly at the slot's bottom edge instead of floating above it.
 export function TrackRow({
-  index, style, tracks, playlistId, playableTracks, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted,
+  index, style, tracks, playlistId, playableTracks, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated,
 }: RowComponentProps<TrackRowProps>) {
   const v = tracks[index];
   const trackPlaylistId = v.playlistId ?? playlistId ?? '';
@@ -42,6 +43,7 @@ export function TrackRow({
         isAudioPlaying={isAudioPlaying}
         onTogglePlay={() => onTogglePlay(trackPlaylistId, v, playableTracks)}
         onDeleted={onDeleted}
+        onUpdated={onUpdated}
         sx={{ height: '100%' }}
       />
     </Box>

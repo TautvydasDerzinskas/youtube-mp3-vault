@@ -184,9 +184,16 @@ export const playlistsApi = {
     return data;
   },
 
-  getVideo: async (playlistId: string, videoId: string): Promise<{ video: PlaylistVideo }> => {
-    const { data } = await client.get<{ video: PlaylistVideo }>(`/playlists/${playlistId}/videos/${videoId}`);
+  getVideo: async (playlistId: string, videoId: string): Promise<{ video: PlaylistVideo; searchingHq: boolean }> => {
+    const { data } = await client.get<{ video: PlaylistVideo; searchingHq: boolean }>(`/playlists/${playlistId}/videos/${videoId}`);
     return data;
+  },
+
+  // Fire-and-forget — kicks off the same HQ provider search a playlist's
+  // "Scan for HQ" runs for every video, for just this one. Poll getVideo's
+  // searchingHq field to know when it's done.
+  searchTrackHq: async (playlistId: string, videoId: string): Promise<void> => {
+    await client.post(`/playlists/${playlistId}/videos/${videoId}/search-hq`);
   },
 
   getRecommendations: async (playlistId: string, videoId: string): Promise<{ recommendations: RecommendedTrack[] }> => {

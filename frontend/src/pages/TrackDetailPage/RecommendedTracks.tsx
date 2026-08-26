@@ -1,6 +1,6 @@
 import { Box, Typography, List, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { RecommendedTrack } from '../../api/youtube';
+import { PlaylistVideo, RecommendedTrack } from '../../api/youtube';
 import { NowPlaying } from '../PlaylistsPage/types';
 import { QueueTrack } from '../../contexts/PlayerContext';
 import { TrackRow } from '../../components/TrackRow';
@@ -39,6 +39,7 @@ interface RecommendedTracksProps {
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: QueueTrack, queue?: QueueTrack[]) => void;
   onDeleted?: (videoId: string) => void;
+  onUpdated?: (video: PlaylistVideo) => void;
 }
 
 /**
@@ -51,7 +52,7 @@ interface RecommendedTracksProps {
  * same component the playlist page's own track list renders, so a track
  * looks and behaves identically here as it does there.
  */
-export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted }: RecommendedTracksProps) {
+export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated }: RecommendedTracksProps) {
   const { t } = useTranslation();
 
   if (state === 'loading') {
@@ -74,6 +75,7 @@ export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onToggleP
             <TrackRow key={rec.id} playlistId={rec.playlistId} video={queue[index]} isCurrentTrack={isCurrentTrack}
               isAudioPlaying={isAudioPlaying} onTogglePlay={() => onTogglePlay(rec.playlistId, queue[index], queue)}
               onDeleted={onDeleted}
+              onUpdated={onUpdated}
               sx={{ '&:last-of-type': { borderBottom: 'none' } }} />
           );
         })}

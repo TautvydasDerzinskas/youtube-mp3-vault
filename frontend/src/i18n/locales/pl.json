@@ -168,6 +168,11 @@
       "renameTrack": "Zmień nazwę utworu",
       "deleteTrack": "Usuń utwór",
       "searchForHq": "Szukaj HQ",
+      "searchingHq": "Wyszukiwanie…",
+      "alreadyHasHq": "Już HQ",
+      "searchHqError": "Nie udało się rozpocząć wyszukiwania HQ.",
+      "hqFoundForTrack": "Znaleziono wersję \"{{title}}\" w wyższej jakości.",
+      "hqNotFoundForTrack": "Nie znaleziono wersji \"{{title}}\" w wyższej jakości.",
       "deleteTrackConfirm": {
         "title": "Usunąć utwór?",
         "message": "To trwale usunie pobrany plik \"{{title}}\" i usunie go ze wszystkich playlist, w których się znajduje, w tym z playlist innych użytkowników korzystających z tego samego pliku. Tej operacji nie można cofnąć."

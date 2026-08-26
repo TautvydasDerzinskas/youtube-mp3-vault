@@ -16,17 +16,18 @@ interface TrackListProps {
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: PlaylistVideo, queue?: PlaylistVideo[]) => void;
   onDeleted?: (videoId: string) => void;
+  onUpdated?: (video: PlaylistVideo) => void;
   listRef?: React.RefObject<ListImperativeAPI>;
 }
 
 const ROW_HEIGHT = 56;
 
-export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, listRef }: TrackListProps) {
+export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated, listRef }: TrackListProps) {
   const { t } = useTranslation();
 
   const rowProps = useMemo((): TrackRowProps => (
-    { tracks, playlistId, playableTracks, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted }
-  ), [tracks, playlistId, playableTracks, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted]);
+    { tracks, playlistId, playableTracks, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated }
+  ), [tracks, playlistId, playableTracks, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated]);
 
   if (tracks.length === 0) {
     return (

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box, Typography, Avatar, IconButton, Tooltip, SxProps, Theme } from '@mui/material';
+import { keyframes } from '@emotion/react';
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, HighQuality as HqIcon,
@@ -9,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
 import { formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON, isLowBitrate } from '../pages/PlaylistsPage/utils';
+import { useToast } from '../contexts/ToastContext';
 import { TrackContextMenu } from './TrackContextMenu';
 
 export interface TrackRowProps {
@@ -24,8 +26,22 @@ export interface TrackRowProps {
   // Lets the caller drop a deleted track from its own local list immediately
   // — see TrackContextMenu's own doc comment.
   onDeleted?: (videoId: string) => void;
+  // Lets the caller patch this row's data in its own local list once a
+  // "Search for HQ" run finishes — same rationale as onDeleted, but for an
+  // update rather than a removal.
+  onUpdated?: (video: PlaylistVideo) => void;
   sx?: SxProps<Theme>;
 }
+
+// 2s between polls — frequent enough that the row's spinning border doesn't
+// linger for long after the search actually finishes, cheap enough (one
+// single-video GET) not to matter if a search runs for a while.
+const SEARCH_POLL_INTERVAL_MS = 2000;
+
+const spinBorder = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
 
 /**
  * The one track row component — every list of playable-from-disk tracks in
@@ -36,11 +52,58 @@ export interface TrackRowProps {
  * react-window adapter that wraps this for the one list that needs
  * virtualization — that's the only reason a second file exists at all.
  */
-export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onDeleted, sx }: TrackRowProps) {
+export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onDeleted, onUpdated, sx }: TrackRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showSuccess, showInfo, showError } = useToast();
   const trackPlaylistId = v.playlistId ?? playlistId ?? '';
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  // Fire-and-forget POST kicks the search off server-side, then this polls
+  // GET .../videos/:videoId (the same single-video endpoint TrackDetailPage
+  // already uses) until its searchingHq field flips back to false — that
+  // response already carries whatever changed (bitrate, hqFileDownloaded,
+  // mediaFileId, ...), so no separate "fetch the updated video" call is
+  // needed once it's done. See backend's searchTrackQuality for what
+  // actually runs during this window.
+  const handleSearchHq = async () => {
+    // A found-and-replaced file would disrupt playback out from under the
+    // user mid-song — stop it up front rather than let that happen silently.
+    if (isCurrentTrack && isAudioPlaying) onTogglePlay();
+
+    setSearching(true);
+    try {
+      await playlistsApi.searchTrackHq(trackPlaylistId, v.id);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.videoList.searchHqError'));
+      setSearching(false);
+      return;
+    }
+
+    const hadHq = v.hqFileDownloaded || v.betterQualityExists;
+    const poll = async () => {
+      try {
+        const { video: fresh, searchingHq } = await playlistsApi.getVideo(trackPlaylistId, v.id);
+        if (searchingHq) {
+          setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+          return;
+        }
+        setSearching(false);
+        onUpdated?.(fresh);
+        const foundHq = fresh.hqFileDownloaded || fresh.betterQualityExists;
+        if (foundHq && !hadHq) {
+          showSuccess(t('playlists.videoList.hqFoundForTrack', { title: fresh.title }));
+        } else if (!foundHq) {
+          showInfo(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
+        }
+      } catch {
+        // Network hiccup — stop polling silently rather than spin forever.
+        setSearching(false);
+      }
+    };
+    setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+  };
 
   return (
     <>
@@ -49,6 +112,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       onContextMenu={(e) => { e.preventDefault(); setMenuPos({ top: e.clientY, left: e.clientX }); }}
       sx={{
         display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5,
+        position: 'relative', zIndex: 0,
         borderBottom: '1px solid #2a2a2a', cursor: 'pointer',
         opacity: v.downloadStatus === 'removed' ? 0.35 : 1,
         bgcolor: isCurrentTrack ? 'action.selected' : 'transparent',
@@ -60,20 +124,51 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
           // decoration. A transform doesn't affect layout, so it never
           // pushes neighboring rows around; the z-index bump just keeps it
           // drawing on top of them instead of being clipped by their
-          // (equally opaque) backgrounds.
-          ...(v.downloadStatus === 'done' && { transform: 'scale(1.015)', zIndex: 1, boxShadow: 4 }),
+          // (equally opaque) backgrounds. Skipped entirely while searching
+          // — one animation at a time reads more clearly than two competing.
+          ...(v.downloadStatus === 'done' && !searching && { transform: 'scale(1.015)', zIndex: 1, boxShadow: 4 }),
         },
+        // The "in progress" cue for Search for HQ: a rotating gradient ring.
+        // Two stacked pseudo-elements, both behind the row's own content —
+        // CSS paints negative-z-index descendants *above* the element's own
+        // background (per the stacking-order spec) but still below in-flow
+        // content, so the row's own bgcolor above can't mask anything here.
+        // ::before is the actual rotating gradient, oversized (200% in each
+        // dimension) so its corners always cover the row through a full
+        // rotation; ::after sits on top of it (less-negative z-index) with
+        // an ordinary opaque fill inset 2px from the row's edge, leaving
+        // only that 2px margin of ::before visible as a moving ring.
+        ...(searching && {
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            zIndex: -2,
+            inset: '-50%',
+            background: (theme: Theme) =>
+              `conic-gradient(from 0deg, transparent 0%, transparent 65%, ${theme.palette.primary.main} 90%, transparent 100%)`,
+            animation: `${spinBorder} 1.6s linear infinite`,
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            zIndex: -1,
+            inset: '2px',
+            bgcolor: 'background.default',
+          },
+        }),
         ...sx,
       }}
     >
       <Box sx={{ width: 40, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
         {v.downloadStatus === 'done' && (
           <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-            <IconButton onClick={(e) => { e.stopPropagation(); onTogglePlay(); }} sx={{ color: 'primary.main' }}>
-              {isCurrentTrack && isAudioPlaying
-                ? <PauseTrackIcon sx={{ fontSize: 28 }} />
-                : <PlayArrowIcon sx={{ fontSize: 28 }} />}
-            </IconButton>
+            <span>
+              <IconButton disabled={searching} onClick={(e) => { e.stopPropagation(); onTogglePlay(); }} sx={{ color: 'primary.main' }}>
+                {isCurrentTrack && isAudioPlaying
+                  ? <PauseTrackIcon sx={{ fontSize: 28 }} />
+                  : <PlayArrowIcon sx={{ fontSize: 28 }} />}
+              </IconButton>
+            </span>
           </Tooltip>
         )}
       </Box>
@@ -163,6 +258,8 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       position={menuPos}
       onClose={() => setMenuPos(null)}
       onDeleted={onDeleted}
+      searching={searching}
+      onSearchHq={handleSearchHq}
     />
     </>
   );

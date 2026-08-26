@@ -245,6 +245,11 @@
       "renameTrack": "Rename track",
       "deleteTrack": "Delete track",
       "searchForHq": "Search for HQ",
+      "searchingHq": "Searching…",
+      "alreadyHasHq": "Already HQ",
+      "searchHqError": "Failed to start the HQ search.",
+      "hqFoundForTrack": "Found a higher-quality version of \"{{title}}\".",
+      "hqNotFoundForTrack": "No higher-quality version of \"{{title}}\" found.",
       "deleteTrackConfirm": {
         "title": "Delete track?",
         "message": "This permanently deletes the downloaded file for \"{{title}}\" and removes it from every playlist it appears in, including other users' playlists that share the same file. This can't be undone."

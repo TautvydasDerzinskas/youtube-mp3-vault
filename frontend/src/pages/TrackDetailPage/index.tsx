@@ -10,7 +10,7 @@ import { RemixLinks } from './RemixLinks';
 
 export default function TrackDetailPage() {
   const { t } = useTranslation();
-  const { playlistId, video, recommendations, discover, remixes, usedIn, removeRecommendation } = useTrackDetail();
+  const { playlistId, video, recommendations, discover, remixes, usedIn, removeRecommendation, updateRecommendation } = useTrackDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
 
   if (!playlistId) return <Navigate to="/playlists" replace />;
@@ -33,7 +33,7 @@ export default function TrackDetailPage() {
         onTogglePlay={() => handleTogglePlay(playlistId, video)}
         usedIn={usedIn}
       />
-      <RecommendedTracks state={recommendations} nowPlaying={nowPlaying} isAudioPlaying={isAudioPlaying} onTogglePlay={handleTogglePlay} onDeleted={removeRecommendation} />
+      <RecommendedTracks state={recommendations} nowPlaying={nowPlaying} isAudioPlaying={isAudioPlaying} onTogglePlay={handleTogglePlay} onDeleted={removeRecommendation} onUpdated={updateRecommendation} />
       <DiscoverTracks state={discover} />
       <RemixLinks state={remixes} />
     </Box>
