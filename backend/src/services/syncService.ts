@@ -899,6 +899,43 @@ export async function removeExistingNonMusicVideos(userId: string): Promise<void
   }
 }
 
+// Permanently deletes a track's shared file and hides every playlist_video
+// row — across every playlist, any user's — that references this youtubeId.
+// resolveMediaFile dedupes by youtubeId globally (see its own comment), so
+// the physical file backing this track is the same one every other
+// playlist's copy of the same video plays from; once it's gone from disk,
+// every one of those rows would otherwise be left pointing at a MediaFile
+// that no longer resolves, so all of them have to be hidden here too, not
+// just the single row the caller's request was about.
+//
+// downloadStatus: 'deleted' (a value distinct from 'removed') is
+// deliberate: refreshPlaylistFromYoutube's step 3b revives any 'removed' row
+// back to 'pending' the moment YouTube's scrape shows the video is still
+// really there — exactly the resurrection this needs to avoid, since the
+// video is still legitimately sitting in the user's real YouTube playlist,
+// only the local copy is gone. isAvailable: false on top is the same
+// resync-proof "give up without ever being retried" signal
+// downloadPendingVideos already uses for a permanently-unavailable video
+// (see its own comment) — every query that lists/counts visible videos
+// (dashboard, /videos, playlistStats) already treats isAvailable: false as
+// hidden, so this reuses that existing mechanism rather than inventing a
+// second one.
+export async function deleteTrackEverywhere(youtubeId: string): Promise<void> {
+  await prisma.playlistVideo.updateMany({
+    where: { youtubeId },
+    data: { downloadStatus: 'deleted', isAvailable: false, mediaFileId: null, fileSize: null, bitrate: null },
+  });
+
+  // Only resolvable now that every row above has been detached from it —
+  // tryDeleteMediaFile no-ops on a still-referenced row (see its own
+  // comment), which before the updateMany above would have been every row
+  // sharing this youtubeId.
+  const mediaFile = await prisma.mediaFile.findUnique({ where: { youtubeId } });
+  if (mediaFile) {
+    await tryDeleteMediaFile(mediaFile.id);
+  }
+}
+
 /** Distinct MediaFile ids currently used by a playlist's downloaded videos — snapshot before deleting the playlist. */
 export async function mediaFilesUsedBy(playlistId: string): Promise<string[]> {
   const videos = await prisma.playlistVideo.findMany({

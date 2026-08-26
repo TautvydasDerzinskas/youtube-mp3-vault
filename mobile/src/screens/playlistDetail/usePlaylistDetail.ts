@@ -66,8 +66,15 @@ export function usePlaylistDetail(playlistId: string) {
   );
   const firstPlayableTrack = orderedPlayableTracks[0] ?? null;
 
+  // Drops a just-deleted track from local state immediately, rather than
+  // waiting for the next poll/refetch — see TrackContextMenu's onDeleted
+  // callback.
+  const removeVideo = (videoId: string) => {
+    setVideos(prev => (Array.isArray(prev) ? prev.filter(v => v.id !== videoId) : prev));
+  };
+
   return {
     playlist, videos, currentVideos, filteredTracks, orderedPlayableTracks, firstPlayableTrack,
-    sort, setSort, searchQuery, setSearchQuery, reload: load,
+    sort, setSort, searchQuery, setSearchQuery, reload: load, removeVideo,
   };
 }

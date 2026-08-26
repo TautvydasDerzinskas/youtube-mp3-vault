@@ -154,7 +154,16 @@
       "downloadMp3": "Download MP3",
       "lowQuality": "Low source quality (~{{bitrate}}kbps)",
       "hqAvailable": "A higher-quality version of this file is available",
-      "hqDownloaded": "Upgraded to a higher-quality file"
+      "hqDownloaded": "Upgraded to a higher-quality file",
+      "renameTrack": "Rename track",
+      "deleteTrack": "Delete track",
+      "searchForHq": "Search for HQ",
+      "deleteTrackConfirm": {
+        "title": "Delete track?",
+        "message": "This permanently deletes the downloaded file for \"{{title}}\" and removes it from every playlist it appears in, including other users' playlists that share the same file. This can't be undone."
+      },
+      "trackDeleted": "Deleted \"{{title}}\".",
+      "trackDeleteError": "Failed to delete track."
     },
     "miniPlayer": {
       "close": "Close player",

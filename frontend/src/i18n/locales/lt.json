@@ -159,7 +159,16 @@
       "downloadMp3": "Atsisiųsti MP3",
       "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)",
       "hqAvailable": "Yra prieinama aukštesnės kokybės šio failo versija",
-      "hqDownloaded": "Atnaujinta į aukštesnės kokybės failą"
+      "hqDownloaded": "Atnaujinta į aukštesnės kokybės failą",
+      "renameTrack": "Pervadinti kūrinį",
+      "deleteTrack": "Ištrinti kūrinį",
+      "searchForHq": "Ieškoti HQ",
+      "deleteTrackConfirm": {
+        "title": "Ištrinti kūrinį?",
+        "message": "Tai visam laikui ištrins atsisiųstą failą \"{{title}}\" ir pašalins jį iš visų grojaraščių, kuriuose jis yra, įskaitant kitų vartotojų grojaraščius, kurie naudoja tą patį failą. Šio veiksmo atšaukti negalima."
+      },
+      "trackDeleted": "Ištrinta \"{{title}}\".",
+      "trackDeleteError": "Nepavyko ištrinti kūrinio."
     },
     "miniPlayer": {
       "close": "Uždaryti grotuvą",

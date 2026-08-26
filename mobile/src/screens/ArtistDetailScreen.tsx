@@ -19,7 +19,7 @@ export function ArtistDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<ArtistDetailRouteProp>();
   const { key } = route.params;
-  const { artist, playableQueue } = useArtistDetail(key);
+  const { artist, playableQueue, removeVideo } = useArtistDetail(key);
 
   useEffect(() => {
     if (artist !== 'loading' && artist !== 'error') {
@@ -47,7 +47,7 @@ export function ArtistDetailScreen() {
       <FlatList
         data={artist.videos}
         keyExtractor={(v) => v.id}
-        renderItem={({ item }) => <TrackRow track={item} queue={playableQueue} />}
+        renderItem={({ item }) => <TrackRow track={item} queue={playableQueue} onDeleted={removeVideo} />}
         ListHeaderComponent={<ArtistDetailHeader artist={artist} />}
         contentContainerStyle={styles.list}
         ListEmptyComponent={

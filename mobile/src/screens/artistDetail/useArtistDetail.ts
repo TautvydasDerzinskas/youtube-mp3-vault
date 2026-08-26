@@ -16,5 +16,11 @@ export function useArtistDetail(key: string) {
     [artist]
   );
 
-  return { artist, playableQueue };
+  // Drops a just-deleted track from local state immediately — see
+  // TrackContextMenu's onDeleted callback.
+  const removeVideo = (videoId: string) => {
+    setArtist(prev => (prev === 'loading' || prev === 'error' ? prev : { ...prev, videos: prev.videos.filter(v => v.id !== videoId) }));
+  };
+
+  return { artist, playableQueue, removeVideo };
 }

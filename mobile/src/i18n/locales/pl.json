@@ -267,7 +267,16 @@
     },
     "videoList": {
       "play": "Odtwórz",
-      "pause": "Wstrzymaj"
+      "pause": "Wstrzymaj",
+      "renameTrack": "Zmień nazwę utworu",
+      "deleteTrack": "Usuń utwór",
+      "searchForHq": "Szukaj HQ",
+      "deleteTrackConfirm": {
+        "title": "Usunąć utwór?",
+        "message": "To trwale usunie pobrany plik \"{{title}}\" i usunie go ze wszystkich playlist, w których się znajduje, w tym z playlist innych użytkowników korzystających z tego samego pliku. Tej operacji nie można cofnąć."
+      },
+      "trackDeleted": "Usunięto \"{{title}}\".",
+      "trackDeleteError": "Nie udało się usunąć utworu."
     },
     "deleteConfirm": {
       "title": "Usunąć playlistę?",

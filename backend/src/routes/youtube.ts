@@ -18,6 +18,7 @@ import {
   setSyncPaused,
   mediaFilesUsedBy,
   cleanupMediaFiles,
+  deleteTrackEverywhere,
 } from '../services/syncService';
 import { startGeneratePlaylist } from '../services/playlistGenerator';
 import { createLog } from '../services/auditLog';
@@ -477,6 +478,43 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
       return;
     }
     res.json({ video });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── DELETE /api/playlists/:id/videos/:videoId — delete a track everywhere ───
+// Unlike removing a video from just this playlist, this permanently deletes
+// the shared physical file and hides every playlist_video row — across
+// every playlist, any user's — that references the same underlying YouTube
+// video, since the file itself is deduped and shared globally by youtubeId
+// (see deleteTrackEverywhere's own comment in syncService.ts).
+router.delete('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id, isAvailable: true },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+
+    await deleteTrackEverywhere(video.youtubeId);
+    res.status(204).send();
+
+    void createLog({
+      userId: req.userId!,
+      action: 'track_deleted',
+      playlistId: playlist.id,
+      details: { youtubeId: video.youtubeId, title: video.title },
+    });
   } catch (err) {
     next(err);
   }

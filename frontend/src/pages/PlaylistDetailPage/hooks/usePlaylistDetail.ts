@@ -36,6 +36,12 @@ export function usePlaylistDetail() {
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
+  // Drops a just-deleted track from local state immediately, rather than
+  // waiting for a full refetch — see TrackContextMenu's onDeleted callback.
+  const removeVideo = (videoId: string) => {
+    setVideos(prev => (Array.isArray(prev) ? prev.filter(v => v.id !== videoId) : prev));
+  };
+
   // Independent of the current sort/filter/search state above (unlike
   // playableTracks) — "play first" always means the actual first track of
   // the playlist itself, not whatever happens to be first in a filtered or
@@ -53,5 +59,6 @@ export function usePlaylistDetail() {
     sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
     orderedPlayableTracks, firstPlayableTrack,
+    removeVideo,
   };
 }

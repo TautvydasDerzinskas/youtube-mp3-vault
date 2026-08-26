@@ -241,7 +241,16 @@
     },
     "videoList": {
       "play": "Play",
-      "pause": "Pause"
+      "pause": "Pause",
+      "renameTrack": "Rename track",
+      "deleteTrack": "Delete track",
+      "searchForHq": "Search for HQ",
+      "deleteTrackConfirm": {
+        "title": "Delete track?",
+        "message": "This permanently deletes the downloaded file for \"{{title}}\" and removes it from every playlist it appears in, including other users' playlists that share the same file. This can't be undone."
+      },
+      "trackDeleted": "Deleted \"{{title}}\".",
+      "trackDeleteError": "Failed to delete track."
     },
     "deleteConfirm": {
       "title": "Remove playlist?",

@@ -36,5 +36,11 @@ export function useTrackDetail() {
       .catch(() => setUsedIn('error'));
   }, [id, trackId]);
 
-  return { playlistId: id ?? '', video, recommendations, discover, remixes, usedIn };
+  // Drops a just-deleted recommended track from local state immediately —
+  // see TrackContextMenu's onDeleted callback.
+  const removeRecommendation = (videoId: string) => {
+    setRecommendations(prev => (Array.isArray(prev) ? prev.filter(r => r.id !== videoId) : prev));
+  };
+
+  return { playlistId: id ?? '', video, recommendations, discover, remixes, usedIn, removeRecommendation };
 }

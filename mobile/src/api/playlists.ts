@@ -235,6 +235,14 @@ export const playlistsApi = {
     return data;
   },
 
+  // Permanently deletes the shared file and hides this track everywhere —
+  // including other playlists (any user's) that happen to share the same
+  // underlying YouTube video — see deleteTrackEverywhere in the backend's
+  // syncService.ts for why that's unavoidable given the shared file store.
+  deleteTrack: async (playlistId: string, videoId: string): Promise<void> => {
+    await client.delete(`/playlists/${playlistId}/videos/${videoId}`);
+  },
+
   // Persists the offline toggle server-side (Playlist.offlineEnabled) so a
   // reinstalled app / new phone can restore which playlists to re-download
   // (see OfflineDownloadsContext's startup reconciliation), and — enable

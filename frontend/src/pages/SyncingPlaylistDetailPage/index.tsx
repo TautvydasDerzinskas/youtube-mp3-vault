@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useSyncingPlaylistDetail } from './hooks/useSyncingPlaylistDetail';
-import { TrackRow } from '../PlaylistsPage/TrackRow';
+import { TrackRow } from '../../components/TrackRow';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
 
 // The dedicated "this playlist is busy right now" view — separate from

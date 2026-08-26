@@ -164,7 +164,16 @@
       "lowQuality": "Niska jakość źródła (~{{bitrate}}kbps)",
       "downloadMp3": "Pobierz MP3",
       "hqAvailable": "Dostępna jest wersja tego pliku w wyższej jakości",
-      "hqDownloaded": "Zaktualizowano do pliku w wyższej jakości"
+      "hqDownloaded": "Zaktualizowano do pliku w wyższej jakości",
+      "renameTrack": "Zmień nazwę utworu",
+      "deleteTrack": "Usuń utwór",
+      "searchForHq": "Szukaj HQ",
+      "deleteTrackConfirm": {
+        "title": "Usunąć utwór?",
+        "message": "To trwale usunie pobrany plik \"{{title}}\" i usunie go ze wszystkich playlist, w których się znajduje, w tym z playlist innych użytkowników korzystających z tego samego pliku. Tej operacji nie można cofnąć."
+      },
+      "trackDeleted": "Usunięto \"{{title}}\".",
+      "trackDeleteError": "Nie udało się usunąć utworu."
     },
     "miniPlayer": {
       "close": "Zamknij odtwarzacz",

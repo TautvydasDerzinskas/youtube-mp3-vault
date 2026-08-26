@@ -26,7 +26,7 @@ export function PlaylistDetailScreen() {
 
   const {
     playlist, videos, filteredTracks, orderedPlayableTracks, firstPlayableTrack,
-    sort, setSort, searchQuery, setSearchQuery,
+    sort, setSort, searchQuery, setSearchQuery, removeVideo,
   } = usePlaylistDetail(playlistId);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export function PlaylistDetailScreen() {
       <FlatList
         data={filteredTracks}
         keyExtractor={(v) => v.id}
-        renderItem={({ item }) => <TrackRow track={item} playlistId={playlistId} queue={playableQueue} />}
+        renderItem={({ item }) => <TrackRow track={item} playlistId={playlistId} queue={playableQueue} onDeleted={removeVideo} />}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={[styles.empty, { color: theme.colors.onSurfaceVariant }]}>{t('playlists.detail.noTracks')}</Text>

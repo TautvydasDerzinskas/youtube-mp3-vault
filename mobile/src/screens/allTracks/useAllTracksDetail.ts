@@ -46,11 +46,17 @@ export function useAllTracksDetail(initialGenreKey?: string) {
 
   const playableQueue = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
+  // Drops a just-deleted track from local state immediately — see
+  // TrackContextMenu's onDeleted callback.
+  const removeVideo = (videoId: string) => {
+    setData(prev => (prev === 'loading' || prev === 'error' ? prev : { ...prev, videos: prev.videos.filter(v => v.id !== videoId) }));
+  };
+
   return {
     status: data === 'loading' ? 'loading' as const : data === 'error' ? 'error' as const : 'ready' as const,
     summary: data === 'loading' || data === 'error' ? null : data.summary,
     filteredTracks, playableQueue,
     sort, setSort, searchQuery, setSearchQuery,
-    genreFilter, setGenreFilter,
+    genreFilter, setGenreFilter, removeVideo,
   };
 }

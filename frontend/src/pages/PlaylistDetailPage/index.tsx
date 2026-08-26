@@ -15,6 +15,7 @@ export default function PlaylistDetailPage() {
     genreCounts, selectedGenres, toggleGenre, clearGenres,
     sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks, orderedPlayableTracks, firstPlayableTrack,
+    removeVideo,
   } = usePlaylistDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay, isShuffle } = usePlayer();
   const isPlaylistPlaying = nowPlaying?.playlistId === playlistId && isAudioPlaying;
@@ -122,6 +123,7 @@ export default function PlaylistDetailPage() {
           nowPlaying={nowPlaying}
           isAudioPlaying={isAudioPlaying}
           onTogglePlay={handleTogglePlay}
+          onDeleted={removeVideo}
           listRef={listRef}
         />
       </Box>

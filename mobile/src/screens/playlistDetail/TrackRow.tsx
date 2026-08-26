@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -5,6 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PlaylistVideo } from '../../api/playlists';
 import { usePlayer, QueueTrack } from '../../contexts/PlayerContext';
 import { formatDuration } from '../../utils/format';
+import { TrackContextMenu } from '../../components/TrackContextMenu';
 
 const STATUS_ICON: Record<string, { icon: keyof typeof MaterialCommunityIcons.glyphMap; color: 'error' | 'onSurfaceVariant' | 'primary' }> = {
   failed: { icon: 'alert-circle-outline', color: 'error' },
@@ -20,17 +22,23 @@ interface TrackRowProps {
   // multiple playlists — mirrors web's TrackRow.tsx exactly.
   playlistId?: string;
   queue: QueueTrack[];
+  // Lets the caller drop a deleted track from its own local list immediately
+  // — see TrackContextMenu's own doc comment. Optional: not every call site
+  // holds mutable list state to update.
+  onDeleted?: (videoId: string) => void;
 }
 
 // Mirrors frontend/src/pages/PlaylistDetailPage/TrackRow.tsx — thumbnail,
-// title/artist, duration, download-status icon, HQ badge, tap-to-navigate.
-// No YouTube-link/MP3-download row actions (those are web-only affordances
-// tied to browser behavior — opening an external link / triggering a file
-// download reads differently on mobile, so left out of this pass).
-export function TrackRow({ track, playlistId, queue }: TrackRowProps) {
+// title/artist, duration, download-status icon, HQ badge, tap-to-navigate,
+// long-press-for-menu (web's equivalent is right-click). No YouTube-link/
+// MP3-download row actions (those are web-only affordances tied to browser
+// behavior — opening an external link / triggering a file download reads
+// differently on mobile, so left out of this pass).
+export function TrackRow({ track, playlistId, queue, onDeleted }: TrackRowProps) {
   const theme = useTheme();
   const navigation = useNavigation();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   const trackPlaylistId = track.playlistId ?? playlistId ?? '';
   const isCurrent = nowPlaying?.playlistId === trackPlaylistId && nowPlaying?.videoId === track.id;
@@ -38,8 +46,10 @@ export function TrackRow({ track, playlistId, queue }: TrackRowProps) {
   const status = STATUS_ICON[track.downloadStatus];
 
   return (
+    <>
     <Pressable
       onPress={() => navigation.navigate('TrackDetail', { playlistId: trackPlaylistId, trackId: track.id })}
+      onLongPress={(e) => setMenuPos({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
       style={styles.row}
     >
       <View style={styles.playSlot}>
@@ -86,6 +96,14 @@ export function TrackRow({ track, playlistId, queue }: TrackRowProps) {
         {track.duration ? formatDuration(track.duration) : ''}
       </Text>
     </Pressable>
+    <TrackContextMenu
+      playlistId={trackPlaylistId}
+      video={track}
+      position={menuPos}
+      onDismiss={() => setMenuPos(null)}
+      onDeleted={onDeleted}
+    />
+    </>
   );
 }
 

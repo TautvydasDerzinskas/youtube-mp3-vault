@@ -1,10 +1,9 @@
 import { Box, Typography, List, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { RecommendedTrack } from '../../api/youtube';
 import { NowPlaying } from '../PlaylistsPage/types';
 import { QueueTrack } from '../../contexts/PlayerContext';
-import { TrackRow } from '../PlaylistsPage/TrackRow';
+import { TrackRow } from '../../components/TrackRow';
 
 function toQueueTrack(rec: RecommendedTrack): QueueTrack {
   return {
@@ -39,6 +38,7 @@ interface RecommendedTracksProps {
   nowPlaying: NowPlaying | null;
   isAudioPlaying: boolean;
   onTogglePlay: (playlistId: string, video: QueueTrack, queue?: QueueTrack[]) => void;
+  onDeleted?: (videoId: string) => void;
 }
 
 /**
@@ -51,9 +51,8 @@ interface RecommendedTracksProps {
  * same component the playlist page's own track list renders, so a track
  * looks and behaves identically here as it does there.
  */
-export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onTogglePlay }: RecommendedTracksProps) {
+export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted }: RecommendedTracksProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   if (state === 'loading') {
     return <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}><CircularProgress size={24} /></Box>;
@@ -74,8 +73,8 @@ export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onToggleP
           return (
             <TrackRow key={rec.id} playlistId={rec.playlistId} video={queue[index]} isCurrentTrack={isCurrentTrack}
               isAudioPlaying={isAudioPlaying} onTogglePlay={() => onTogglePlay(rec.playlistId, queue[index], queue)}
-              onClick={() => navigate(`/playlists/${rec.playlistId}/${rec.id}`)}
-              sx={{ borderRadius: 0, borderBottom: '1px solid #2a2a2a', '&:last-of-type': { borderBottom: 'none' } }} />
+              onDeleted={onDeleted}
+              sx={{ '&:last-of-type': { borderBottom: 'none' } }} />
           );
         })}
       </List>
