@@ -34,11 +34,25 @@ export function useAllTracksDetail() {
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
+  // Drops a just-deleted track from local state immediately, rather than
+  // waiting for a full refetch — same rationale as usePlaylistDetail's
+  // removeVideo, see TrackContextMenu's onDeleted callback.
+  const removeVideo = (videoId: string) => {
+    setData(prev => (prev === 'loading' || prev === 'error' ? prev : { ...prev, videos: prev.videos.filter(v => v.id !== videoId) }));
+  };
+
+  // Patches a single track in local state once a "Search for HQ" run
+  // finishes — see TrackRow's onUpdated callback.
+  const updateVideo = (video: PlaylistVideo) => {
+    setData(prev => (prev === 'loading' || prev === 'error' ? prev : { ...prev, videos: prev.videos.map(v => (v.id === video.id ? video : v)) }));
+  };
+
   return {
     status: data === 'loading' ? 'loading' as const : data === 'error' ? 'error' as const : 'ready' as const,
     summary: data === 'loading' || data === 'error' ? null : data.summary,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
     sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
+    removeVideo, updateVideo,
   };
 }

@@ -20,6 +20,24 @@ export function foldForMatch(s: string): string {
     .trim();
 }
 
+// foldForMatch's stripping regex is ASCII-only, so a string written entirely
+// in a non-Latin script (Cyrillic, Greek, CJK, Arabic, Hebrew, etc.) folds
+// down to "" - nothing survives. Comparing folded strings with plain `===`
+// then means ANY two such strings "match" trivially ("" === ""), regardless
+// of how unrelated they actually are - verified real case: a Cyrillic track
+// title fold-matched a completely unrelated Cyrillic title this way, false-
+// positiving a Tidal HQ replace onto the wrong song. Used wherever a
+// fold-based equality check feeds MATCH_TIERS below, so a script that
+// entirely disappears under folding can never satisfy those tiers via this
+// artifact - it just falls through to a stricter/looser tier instead (tier 1
+// still catches an exact, unfolded match; the fuzzy tier's own token-overlap
+// check already returns 0 on an empty set, see titleSimilarity above).
+function foldsEqualNonEmpty(a: string, b: string): boolean {
+  const fa = foldForMatch(a);
+  const fb = foldForMatch(b);
+  return fa !== '' && fa === fb;
+}
+
 function titleTokens(s: string): Set<string> {
   return new Set(foldForMatch(s).split(' ').filter(Boolean));
 }
@@ -623,8 +641,9 @@ export const MATCH_TIERS: MatchTier[] = [
   },
   {
     // Same, but diacritic/punctuation-folded — catches "Café" vs "Cafe",
-    // "Don't" vs "Dont", smart quotes vs straight quotes, etc.
-    textMatch: (ca, ct, a, t) => foldForMatch(ca) === foldForMatch(a) && foldForMatch(ct) === foldForMatch(t),
+    // "Don't" vs "Dont", smart quotes vs straight quotes, etc. Non-empty
+    // guarded — see foldsEqualNonEmpty's own doc comment.
+    textMatch: (ca, ct, a, t) => foldsEqualNonEmpty(ca, a) && foldsEqualNonEmpty(ct, t),
     durationStrictness: 'sanity',
     requireKnownDuration: false,
     minBitrateImprovementKbps: 0,
@@ -632,8 +651,8 @@ export const MATCH_TIERS: MatchTier[] = [
   {
     // Title still has to match exactly (folded); artist is now allowed to be
     // a superset/subset of ours, tolerating extra featured-artist credits on
-    // either side.
-    textMatch: (ca, ct, a, t) => artistIsSupersetMatch(ca, a) && foldForMatch(ct) === foldForMatch(t),
+    // either side. Non-empty guarded — see foldsEqualNonEmpty's own doc comment.
+    textMatch: (ca, ct, a, t) => artistIsSupersetMatch(ca, a) && foldsEqualNonEmpty(ct, t),
     durationStrictness: 'moderate',
     requireKnownDuration: false,
     minBitrateImprovementKbps: 32,

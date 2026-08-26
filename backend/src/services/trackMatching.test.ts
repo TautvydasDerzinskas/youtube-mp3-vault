@@ -3,6 +3,8 @@ import {
   artistIsSupersetMatch,
   extractDashArtistTitle,
   extractQuotedArtistTitle,
+  foldForMatch,
+  MATCH_TIERS,
   normalizeArtistSeparators,
   splitArtistTitle,
   stripFeaturedArtists,
@@ -291,5 +293,34 @@ describe('artistIsSupersetMatch', () => {
   it('rejects when either side is empty', () => {
     expect(artistIsSupersetMatch('', 'Moon')).toBe(false);
     expect(artistIsSupersetMatch('Moon', '')).toBe(false);
+  });
+});
+
+describe('MATCH_TIERS', () => {
+  it('folds a fully non-Latin-script string down to empty', () => {
+    // Documents *why* the regression test below matters: foldForMatch's
+    // stripping regex is ASCII-only, so a purely Cyrillic string survives
+    // with nothing left.
+    expect(foldForMatch('УННВ')).toBe('');
+    expect(foldForMatch('Мысли')).toBe('');
+  });
+
+  it('does not match two unrelated Cyrillic-titled tracks just because they both fold to empty', () => {
+    // Regression: tier 2/3's foldForMatch-based equality used to compare
+    // "" === "" for any pair of fully Cyrillic (or Greek/CJK/Arabic/Hebrew)
+    // strings, matching them trivially regardless of actual content. Real
+    // case that slipped through before the fix: "УННВ - Мысли" fold-matched
+    // "Увула - Ты и твоя тень" and got auto-replaced from Tidal.
+    const candidateArtist = 'Увула';
+    const candidateTitle = 'Ты и твоя тень';
+    const ourArtist = 'УННВ';
+    const ourTitle = 'Мысли';
+    for (const tier of MATCH_TIERS) {
+      expect(tier.textMatch(candidateArtist, candidateTitle, ourArtist, ourTitle)).toBe(false);
+    }
+  });
+
+  it('still matches an exact Cyrillic artist+title pair on the unfolded tier', () => {
+    expect(MATCH_TIERS[0].textMatch('УННВ', 'Мысли', 'УННВ', 'Мысли')).toBe(true);
   });
 });

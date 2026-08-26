@@ -13,7 +13,7 @@ export default function AllTracksPage() {
   const {
     status, summary, genreCounts, selectedGenres, toggleGenre, clearGenres,
     sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
-    filteredTracks, playableTracks,
+    filteredTracks, playableTracks, removeVideo, updateVideo,
   } = useAllTracksDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
   const location = useLocation();
@@ -81,6 +81,8 @@ export default function AllTracksPage() {
           nowPlaying={nowPlaying}
           isAudioPlaying={isAudioPlaying}
           onTogglePlay={handleTogglePlay}
+          onDeleted={removeVideo}
+          onUpdated={updateVideo}
           listRef={listRef}
         />
       </Box>
