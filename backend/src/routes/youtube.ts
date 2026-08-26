@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { prisma } from '../services/prisma';
 import { normalizePlaylistUrl, fetchPlaylist, searchRemixes, resolveTopMatch } from '../services/youtube';
-import { parseArtistAndTitle } from '../services/musicbrainz';
+import { parseArtistAndTitle, deriveFallbackMetadata } from '../services/musicbrainz';
 import { getSimilarTracks, scrobble, scrobbleBatch, ScrobbleEntry } from '../services/lastfm';
 import { getSharedFilePath, sanitizeFilename } from '../services/downloader';
 import { isLastfmDiscoverEnabled } from '../services/settings';
@@ -20,14 +20,14 @@ import {
   cleanupMediaFiles,
   deleteTrackEverywhere,
 } from '../services/syncService';
-import { isTrackHqSearching, startTrackHqSearch } from '../services/slskdQualityWorker';
+import { isTrackBusy, startTrackHqSearch, startTrackRename } from '../services/slskdQualityWorker';
 import { startGeneratePlaylist } from '../services/playlistGenerator';
 import { createLog } from '../services/auditLog';
 
 const router = Router();
 
 const VIDEO_SELECT_WITHOUT_EMBEDDING = {
-  id: true, playlistId: true, youtubeId: true, title: true, duration: true,
+  id: true, playlistId: true, youtubeId: true, title: true, originalTitle: true, duration: true,
   thumbnailUrl: true, position: true, isAvailable: true, channelName: true,
   downloadStatus: true, downloadError: true, mediaFileId: true, fileSize: true,
   bitrate: true, addedAt: true, artist: true, album: true, trackNumber: true,
@@ -479,11 +479,42 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
       return;
     }
     // searchingHq lets the frontend poll this same endpoint after triggering
-    // POST .../search-hq (below) — the moment it flips back to false, this
-    // response already carries whatever the search changed (bitrate,
-    // hqFileDownloaded, mediaFileId, ...), so no separate "fetch the
-    // updated video" round trip is needed.
-    res.json({ video, searchingHq: isTrackHqSearching(video.id) });
+    // POST .../search-hq or .../rename (below) — the moment it flips back to
+    // false, this response already carries whatever changed (bitrate,
+    // hqFileDownloaded, mediaFileId, artist, title, metadataStatus, ...), so
+    // no separate "fetch the updated video" round trip is needed.
+    res.json({ video, searchingHq: isTrackBusy(video.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/playlists/:id/videos/:videoId/suggested-name ────────────────────
+// Backs the "Rename track" modal's suggested-artist/title section — a purely
+// local, instant guess (see deriveFallbackMetadata's own doc comment: the
+// same heuristic parse + title-casing a first-ever automatic metadata pass
+// falls back to when MusicBrainz has no match), deliberately not a live
+// MusicBrainz lookup, which is both rate-limited (~1req/s, see
+// musicbrainz.ts) and too slow to block a modal opening on.
+router.get('/:id/videos/:videoId/suggested-name', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id, isAvailable: true },
+      select: { originalTitle: true, title: true, channelName: true },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+    const suggested = deriveFallbackMetadata(video.originalTitle ?? video.title, video.channelName);
+    res.json(suggested);
   } catch (err) {
     next(err);
   }
@@ -513,13 +544,62 @@ router.post('/:id/videos/:videoId/search-hq', requireAuth, async (req: AuthReque
       res.status(404).json({ error: 'Video not found' });
       return;
     }
-    if (isTrackHqSearching(video.id)) {
+    if (isTrackBusy(video.id)) {
       res.status(409).json({ error: 'Already searching for a better-quality file' });
       return;
     }
 
     startTrackHqSearch(video.id);
     res.status(202).json({});
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/playlists/:id/videos/:videoId/rename ────────────────────────────
+// The track context menu's "Rename track" action — persists the user's
+// manually-typed artist/title (see renameTrack in slskdQualityWorker.ts for
+// what happens next: a fresh MusicBrainz attempt if this track's metadata
+// wasn't already resolved, then an HQ search with the corrected name if it
+// doesn't already have one). Fire-and-forget, identical shape to /search-hq
+// — same isTrackBusy guard/searchingHq polling field, since both end in the
+// same kind of background work from the frontend's point of view.
+router.post('/:id/videos/:videoId/rename', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id, isAvailable: true },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+    if (isTrackBusy(video.id)) {
+      res.status(409).json({ error: 'Already busy with another action' });
+      return;
+    }
+    const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+    if (!title) {
+      res.status(400).json({ error: 'Title is required' });
+      return;
+    }
+    const artist = typeof req.body.artist === 'string' && req.body.artist.trim() ? req.body.artist.trim() : null;
+
+    startTrackRename(video.id, artist, title);
+    res.status(202).json({});
+
+    void createLog({
+      userId: req.userId!,
+      action: 'track_renamed',
+      playlistId: playlist.id,
+      details: { youtubeId: video.youtubeId, from: { artist: video.artist, title: video.title }, to: { artist, title } },
+    });
   } catch (err) {
     next(err);
   }

@@ -17,7 +17,7 @@ interface RecommendedTracksProps {
 // recommendations only ever surface already-downloaded library tracks).
 function toPlaylistVideo(rec: RecommendedTrack): PlaylistVideo {
   return {
-    id: rec.id, youtubeId: rec.youtubeId, title: rec.title, duration: rec.duration,
+    id: rec.id, youtubeId: rec.youtubeId, title: rec.title, originalTitle: null, duration: rec.duration,
     thumbnailUrl: rec.thumbnailUrl, position: 0, isAvailable: true, downloadStatus: 'done',
     downloadError: null, fileSize: null, bitrate: null, addedAt: new Date().toISOString(),
     artist: rec.artist, album: null, trackNumber: null, genres: rec.genres, releaseYear: null,

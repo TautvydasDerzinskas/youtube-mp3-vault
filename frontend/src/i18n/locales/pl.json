@@ -173,6 +173,15 @@
       "searchHqError": "Nie udało się rozpocząć wyszukiwania HQ.",
       "hqFoundForTrack": "Znaleziono wersję \"{{title}}\" w wyższej jakości.",
       "hqNotFoundForTrack": "Nie znaleziono wersji \"{{title}}\" w wyższej jakości.",
+      "renameInfoBox": "Dobre nazewnictwo artysty/tytułu znacznie zwiększa szansę na dopasowanie metadanych MusicBrainz i znalezienie pliku HQ.",
+      "originalTitle": "Oryginalny tytuł z YouTube",
+      "suggestedName": "Sugerowana nazwa",
+      "useSuggested": "Użyj sugerowanej",
+      "artistLabel": "Artysta",
+      "titleLabel": "Tytuł",
+      "rename": "Zmień nazwę",
+      "renameError": "Nie udało się zmienić nazwy utworu.",
+      "trackRenamed": "Zmieniono nazwę na \"{{title}}\".",
       "deleteTrackConfirm": {
         "title": "Usunąć utwór?",
         "message": "To trwale usunie pobrany plik \"{{title}}\" i usunie go ze wszystkich playlist, w których się znajduje, w tym z playlist innych użytkowników korzystających z tego samego pliku. Tej operacji nie można cofnąć."

@@ -12,6 +12,7 @@ export function toPlaylistVideo(entry: OfflineTrackEntry, playlistId: string): P
     id: entry.trackId,
     youtubeId: entry.youtubeId,
     title: entry.title,
+    originalTitle: null,
     duration: entry.duration,
     thumbnailUrl: entry.thumbnailUrl,
     position: entry.position,

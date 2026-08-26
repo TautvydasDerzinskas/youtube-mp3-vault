@@ -11,6 +11,11 @@ function toQueueTrack(rec: RecommendedTrack): QueueTrack {
     playlistId: rec.playlistId,
     youtubeId: rec.youtubeId,
     title: rec.title,
+    // Not exposed by the /recommendations endpoint — same class of
+    // simplification as album/trackNumber below (this is a synthesized
+    // preview shape, not the real row). The rename modal falls back to
+    // `title` whenever this is null, so it degrades gracefully here.
+    originalTitle: null,
     duration: rec.duration,
     thumbnailUrl: rec.thumbnailUrl,
     position: rec.position,

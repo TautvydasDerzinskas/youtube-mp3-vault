@@ -6,6 +6,8 @@ import { getTrackCorrection } from './lastfm';
 import { writeTrackTags } from './id3Tags';
 import { buildCleanFilename, renameSharedFile } from './downloader';
 
+type VideoWithMediaFile = Prisma.PlaylistVideoGetPayload<{ include: { mediaFile: true } }>;
+
 // Renames the shared mp3 to match freshly-resolved (or corrected) artist/
 // title, keeping the on-disk name in sync every time metadata changes —
 // both the first resolution and a later admin-forced reimport correction go
@@ -86,61 +88,120 @@ export async function resolvePlaylistMetadata(
     if (!isOnline()) return;
     onProgress?.(index + 1, videos.length, video.title);
 
-    // Prefer the untouched original YouTube title as the search input — once
-    // a video's `title` has been cleaned by an earlier pass (artist/junk
-    // suffix stripped), re-deriving the search artist from it alone would
-    // lose information a fresh pass could otherwise recover from. Falls back
-    // to `title` for rows that predate the originalTitle column, where the
-    // two are identical anyway for a video that's never been processed.
-    const searchTitle = video.originalTitle ?? video.title;
+    const outcome = await resolveVideoMetadata(video);
+    if (outcome === 'processed') onVideoProcessed?.(video.id);
+  }
+}
 
-    try {
-      const meta = await lookupTrackMetadata(searchTitle, video.channelName, video.artist);
-      if (meta) {
-        await prisma.playlistVideo.update({
-          where: { id: video.id },
-          data: {
-            artist: meta.artist, title: meta.title, album: meta.album, trackNumber: meta.trackNumber,
-            releaseYear: meta.releaseYear, mbRecordingId: meta.mbRecordingId,
-            metadataStatus: 'found', metadataFetchedAt: new Date(),
-          },
+// 'processed' vs 'skipped' mirrors slskdQualityWorker.ts's
+// QualityCheckOutcome/onVideoProcessed contract — 'skipped' only for a video
+// that vanished from the DB mid-lookup (Prisma P2025), not a real verdict.
+type MetadataResolveOutcome = 'processed' | 'skipped';
+
+// One video's worth of resolvePlaylistMetadata's loop body — pulled out so
+// the rename flow (see resolveMetadataForRename below) can share the
+// found/not-found/error persistence logic without duplicating it.
+async function resolveVideoMetadata(video: VideoWithMediaFile): Promise<MetadataResolveOutcome> {
+  // Prefer the untouched original YouTube title as the search input — once
+  // a video's `title` has been cleaned by an earlier pass (artist/junk
+  // suffix stripped), re-deriving the search artist from it alone would
+  // lose information a fresh pass could otherwise recover from. Falls back
+  // to `title` for rows that predate the originalTitle column, where the
+  // two are identical anyway for a video that's never been processed.
+  const searchTitle = video.originalTitle ?? video.title;
+
+  try {
+    const meta = await lookupTrackMetadata(searchTitle, video.channelName, video.artist);
+    if (meta) {
+      await prisma.playlistVideo.update({
+        where: { id: video.id },
+        data: {
+          artist: meta.artist, title: meta.title, album: meta.album, trackNumber: meta.trackNumber,
+          releaseYear: meta.releaseYear, mbRecordingId: meta.mbRecordingId,
+          metadataStatus: 'found', metadataFetchedAt: new Date(),
+        },
+      });
+      // Re-tag the file with our own cleaned-up metadata now that it's
+      // resolved — only meaningful once the mp3 actually exists on disk.
+      if (video.downloadStatus === 'done' && video.mediaFile) {
+        const filename = await renameToCleanFilename(video.mediaFile, meta.artist, meta.title);
+        writeTrackTags(filename, {
+          title: meta.title, artist: meta.artist, album: meta.album,
+          trackNumber: meta.trackNumber, releaseYear: meta.releaseYear, genres: video.genres,
         });
-        // Re-tag the file with our own cleaned-up metadata now that it's
-        // resolved — only meaningful once the mp3 actually exists on disk.
-        if (video.downloadStatus === 'done' && video.mediaFile) {
-          const filename = await renameToCleanFilename(video.mediaFile, meta.artist, meta.title);
-          writeTrackTags(filename, {
-            title: meta.title, artist: meta.artist, album: meta.album,
-            trackNumber: meta.trackNumber, releaseYear: meta.releaseYear, genres: video.genres,
-          });
-        }
-      } else {
-        const fallback = await resolveFallbackMetadata(searchTitle, video.channelName);
-        // Never regress a known artist to null — a rematch finding less than
-        // we already knew (e.g. because the title's already been cleaned)
-        // shouldn't erase previously-good data.
-        const artist = fallback.artist ?? video.artist;
-        await prisma.playlistVideo.update({
-          where: { id: video.id },
-          data: { artist, title: fallback.title, metadataStatus: 'not_found', metadataFetchedAt: new Date() },
-        });
-        if (video.downloadStatus === 'done' && video.mediaFile) {
-          const filename = await renameToCleanFilename(video.mediaFile, artist, fallback.title);
-          writeTrackTags(filename, {
-            title: fallback.title, artist, album: video.album,
-            trackNumber: video.trackNumber, releaseYear: video.releaseYear, genres: video.genres,
-          });
-        }
       }
-      onVideoProcessed?.(video.id);
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') continue;
-
-      console.error(`[metadata] Failed for ${video.youtubeId}:`, (err as Error).message);
-      await prisma.playlistVideo
-        .update({ where: { id: video.id }, data: { metadataStatus: 'error', metadataFetchedAt: new Date() } })
-        .catch(() => {});
-      onVideoProcessed?.(video.id);
+    } else {
+      const fallback = await resolveFallbackMetadata(searchTitle, video.channelName);
+      // Never regress a known artist to null — a rematch finding less than
+      // we already knew (e.g. because the title's already been cleaned)
+      // shouldn't erase previously-good data.
+      const artist = fallback.artist ?? video.artist;
+      await prisma.playlistVideo.update({
+        where: { id: video.id },
+        data: { artist, title: fallback.title, metadataStatus: 'not_found', metadataFetchedAt: new Date() },
+      });
+      if (video.downloadStatus === 'done' && video.mediaFile) {
+        const filename = await renameToCleanFilename(video.mediaFile, artist, fallback.title);
+        writeTrackTags(filename, {
+          title: fallback.title, artist, album: video.album,
+          trackNumber: video.trackNumber, releaseYear: video.releaseYear, genres: video.genres,
+        });
+      }
     }
+    return 'processed';
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') return 'skipped';
+
+    console.error(`[metadata] Failed for ${video.youtubeId}:`, (err as Error).message);
+    await prisma.playlistVideo
+      .update({ where: { id: video.id }, data: { metadataStatus: 'error', metadataFetchedAt: new Date() } })
+      .catch(() => {});
+    return 'processed';
+  }
+}
+
+// Used by the track context menu's "Rename track" action (see
+// slskdQualityWorker.ts's renameTrack) — re-attempts a MusicBrainz match
+// seeded with the user's own manually-provided artist/title, as opposed to
+// resolveVideoMetadata's automatic originalTitle-based search, since the
+// whole point of a manual rename is "the automatic parse got this wrong,
+// here's what it should actually be." A real MB match still wins with its
+// own canonical artist/title/album/etc. over the user's input (same as
+// resolveVideoMetadata's found-path always does) — but if MB has nothing,
+// the user's typed values are kept as-is rather than being run back through
+// the local-heuristic-fallback pass a first-ever automatic resolution would
+// use, since that fallback exists to *guess* an artist/title from scratch,
+// not to second-guess a human who already typed one.
+export async function resolveMetadataForRename(video: VideoWithMediaFile, artist: string | null, title: string): Promise<void> {
+  const meta = await lookupTrackMetadata(title, video.channelName, artist);
+  if (meta) {
+    await prisma.playlistVideo.update({
+      where: { id: video.id },
+      data: {
+        artist: meta.artist, title: meta.title, album: meta.album, trackNumber: meta.trackNumber,
+        releaseYear: meta.releaseYear, mbRecordingId: meta.mbRecordingId,
+        metadataStatus: 'found', metadataFetchedAt: new Date(),
+      },
+    });
+    if (video.downloadStatus === 'done' && video.mediaFile) {
+      const filename = await renameToCleanFilename(video.mediaFile, meta.artist, meta.title);
+      writeTrackTags(filename, {
+        title: meta.title, artist: meta.artist, album: meta.album,
+        trackNumber: meta.trackNumber, releaseYear: meta.releaseYear, genres: video.genres,
+      });
+    }
+    return;
+  }
+
+  await prisma.playlistVideo.update({
+    where: { id: video.id },
+    data: { metadataStatus: 'not_found', metadataFetchedAt: new Date() },
+  });
+  if (video.downloadStatus === 'done' && video.mediaFile) {
+    const filename = await renameToCleanFilename(video.mediaFile, artist, title);
+    writeTrackTags(filename, {
+      title, artist, album: video.album,
+      trackNumber: video.trackNumber, releaseYear: video.releaseYear, genres: video.genres,
+    });
   }
 }

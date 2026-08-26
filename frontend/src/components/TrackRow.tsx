@@ -60,13 +60,45 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [searching, setSearching] = useState(false);
 
-  // Fire-and-forget POST kicks the search off server-side, then this polls
-  // GET .../videos/:videoId (the same single-video endpoint TrackDetailPage
+  // Shared tail end of both Search for HQ and Rename track — polls GET
+  // .../videos/:videoId (the same single-video endpoint TrackDetailPage
   // already uses) until its searchingHq field flips back to false — that
   // response already carries whatever changed (bitrate, hqFileDownloaded,
-  // mediaFileId, ...), so no separate "fetch the updated video" call is
-  // needed once it's done. See backend's searchTrackQuality for what
-  // actually runs during this window.
+  // mediaFileId, artist, title, ...), so no separate "fetch the updated
+  // video" call is needed once it's done. `mode` only controls which
+  // toast(s) fire — rename always confirms the rename itself, and either
+  // mode reports a newly-found HQ upgrade the same way (search additionally
+  // reports "found nothing", which doesn't apply to rename: not finding an
+  // HQ upgrade was never rename's main point, so staying quiet about it
+  // there avoids implying the rename itself came up short).
+  const pollForCompletion = (mode: 'search' | 'rename') => {
+    const hadHq = v.hqFileDownloaded || v.betterQualityExists;
+    const poll = async () => {
+      try {
+        const { video: fresh, searchingHq } = await playlistsApi.getVideo(trackPlaylistId, v.id);
+        if (searchingHq) {
+          setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+          return;
+        }
+        setSearching(false);
+        onUpdated?.(fresh);
+        if (mode === 'rename') {
+          showSuccess(t('playlists.videoList.trackRenamed', { title: fresh.title }));
+        }
+        const foundHq = fresh.hqFileDownloaded || fresh.betterQualityExists;
+        if (foundHq && !hadHq) {
+          showSuccess(t('playlists.videoList.hqFoundForTrack', { title: fresh.title }));
+        } else if (mode === 'search' && !foundHq) {
+          showInfo(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
+        }
+      } catch {
+        // Network hiccup — stop polling silently rather than spin forever.
+        setSearching(false);
+      }
+    };
+    setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+  };
+
   const handleSearchHq = async () => {
     // A found-and-replaced file would disrupt playback out from under the
     // user mid-song — stop it up front rather than let that happen silently.
@@ -80,29 +112,26 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       setSearching(false);
       return;
     }
+    pollForCompletion('search');
+  };
 
-    const hadHq = v.hqFileDownloaded || v.betterQualityExists;
-    const poll = async () => {
-      try {
-        const { video: fresh, searchingHq } = await playlistsApi.getVideo(trackPlaylistId, v.id);
-        if (searchingHq) {
-          setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
-          return;
-        }
-        setSearching(false);
-        onUpdated?.(fresh);
-        const foundHq = fresh.hqFileDownloaded || fresh.betterQualityExists;
-        if (foundHq && !hadHq) {
-          showSuccess(t('playlists.videoList.hqFoundForTrack', { title: fresh.title }));
-        } else if (!foundHq) {
-          showInfo(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
-        }
-      } catch {
-        // Network hiccup — stop polling silently rather than spin forever.
-        setSearching(false);
-      }
-    };
-    setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+  // Called from RenameTrackDialog (via TrackContextMenu) — only awaits the
+  // initial POST, not the background metadata/HQ-search follow-up it kicks
+  // off, so the dialog can close right away and let this row's own spinning
+  // border carry the rest of the "in progress" indicator (same one Search
+  // for HQ uses). Rethrows on failure so the dialog can show the error
+  // inline instead of closing.
+  const handleRename = async (artist: string | null, title: string) => {
+    if (isCurrentTrack && isAudioPlaying) onTogglePlay();
+
+    setSearching(true);
+    try {
+      await playlistsApi.renameTrack(trackPlaylistId, v.id, artist, title);
+    } catch (err) {
+      setSearching(false);
+      throw err;
+    }
+    pollForCompletion('rename');
   };
 
   return (
@@ -260,6 +289,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       onDeleted={onDeleted}
       searching={searching}
       onSearchHq={handleSearchHq}
+      onRename={handleRename}
     />
     </>
   );

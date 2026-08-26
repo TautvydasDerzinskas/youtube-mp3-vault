@@ -78,10 +78,40 @@ export function TrackRow({ track, playlistId, queue, onDeleted, onUpdated }: Tra
   }, [searching, pulseAnim]);
   const borderOpacity = pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] });
 
-  // Fire-and-forget POST kicks the search off server-side, then this polls
-  // getVideo (the same single-video endpoint TrackDetailScreen already
-  // uses) until its searchingHq field flips back to false — see web's
-  // TrackRow for the fuller version of this comment.
+  // Shared tail end of both Search for HQ and Rename track — polls getVideo
+  // (the same single-video endpoint TrackDetailScreen already uses) until
+  // its searchingHq field flips back to false. `mode` only controls which
+  // toast(s) fire — see web's TrackRow for the fuller version of this
+  // comment.
+  const pollForCompletion = (mode: 'search' | 'rename') => {
+    const hadHq = track.hqFileDownloaded || track.betterQualityExists;
+    const poll = async () => {
+      try {
+        const { video: fresh, searchingHq } = await playlistsApi.getVideo(trackPlaylistId, track.id);
+        if (searchingHq) {
+          setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+          return;
+        }
+        setSearching(false);
+        onUpdated?.(fresh);
+        if (mode === 'rename') {
+          showToast(t('playlists.videoList.trackRenamed', { title: fresh.title }));
+        }
+        const foundHq = fresh.hqFileDownloaded || fresh.betterQualityExists;
+        if (foundHq && !hadHq) {
+          showToast(t('playlists.videoList.hqFoundForTrack', { title: fresh.title }));
+        } else if (mode === 'search' && !foundHq) {
+          showToast(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
+        }
+      } catch {
+        setSearching(false);
+      }
+    };
+    setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+  };
+
+  // Fire-and-forget POST kicks the search off server-side, then polls for
+  // completion — see pollForCompletion above.
   const handleSearchHq = async () => {
     if (isCurrent && isAudioPlaying) handleTogglePlay(trackPlaylistId, track, queue);
 
@@ -93,28 +123,26 @@ export function TrackRow({ track, playlistId, queue, onDeleted, onUpdated }: Tra
       setSearching(false);
       return;
     }
+    pollForCompletion('search');
+  };
 
-    const hadHq = track.hqFileDownloaded || track.betterQualityExists;
-    const poll = async () => {
-      try {
-        const { video: fresh, searchingHq } = await playlistsApi.getVideo(trackPlaylistId, track.id);
-        if (searchingHq) {
-          setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
-          return;
-        }
-        setSearching(false);
-        onUpdated?.(fresh);
-        const foundHq = fresh.hqFileDownloaded || fresh.betterQualityExists;
-        if (foundHq && !hadHq) {
-          showToast(t('playlists.videoList.hqFoundForTrack', { title: fresh.title }));
-        } else if (!foundHq) {
-          showToast(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
-        }
-      } catch {
-        setSearching(false);
-      }
-    };
-    setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+  // Called from RenameTrackDialog (via TrackContextMenu) — only awaits the
+  // initial POST, not the background metadata/HQ-search follow-up it kicks
+  // off, so the dialog can dismiss right away and let this row's own
+  // pulsing border carry the rest of the "in progress" indicator (same one
+  // Search for HQ uses). Rethrows on failure so the dialog can show the
+  // error inline instead of dismissing.
+  const handleRename = async (artist: string | null, title: string) => {
+    if (isCurrent && isAudioPlaying) handleTogglePlay(trackPlaylistId, track, queue);
+
+    setSearching(true);
+    try {
+      await playlistsApi.renameTrack(trackPlaylistId, track.id, artist, title);
+    } catch (err) {
+      setSearching(false);
+      throw err;
+    }
+    pollForCompletion('rename');
   };
 
   return (
@@ -185,6 +213,7 @@ export function TrackRow({ track, playlistId, queue, onDeleted, onUpdated }: Tra
       onDeleted={onDeleted}
       searching={searching}
       onSearchHq={handleSearchHq}
+      onRename={handleRename}
     />
     </>
   );

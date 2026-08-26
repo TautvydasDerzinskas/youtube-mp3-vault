@@ -13,6 +13,7 @@ import { findQobuzCandidate, downloadAndReplace as downloadAndReplaceViaQobuz } 
 import { establishTidalSession, type TidalSession } from './tidal';
 import { findTidalCandidate, downloadAndReplace as downloadAndReplaceViaTidal } from './tidalReplace';
 import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle, normalizeArtistSeparators } from './trackMatching';
+import { resolveMetadataForRename } from './metadataWorker';
 
 // Shared groundwork for both resolvePlaylistQuality (a whole playlist,
 // looping video by video) and searchTrackQuality (a single track, manually
@@ -519,30 +520,34 @@ export async function resolvePlaylistQuality(
   }
 }
 
-// In-flight guard for searchTrackQuality below — prevents the same track
-// being searched twice concurrently (e.g. a double-click on "Search for HQ"
-// before the row's own UI has re-rendered to disable it) and lets the route
-// report a live "still searching" status back to the frontend (see
-// isTrackHqSearching) so it knows when to stop polling and pick up the
-// refreshed video. Keyed by PlaylistVideo id, not youtubeId — unlike
-// deleteTrackEverywhere, a manual single-track search only ever touches the
-// one row the user actually clicked, not every playlist sharing that file.
-const activeTrackSearches = new Set<string>();
+// In-flight guard shared by searchTrackQuality and renameTrack below —
+// prevents the same track being operated on twice concurrently (e.g. a
+// double-click on "Search for HQ"/"Rename track" before the row's own UI
+// has re-rendered to disable it) and lets the route report a live "still
+// busy" status back to the frontend (see isTrackBusy) so it knows when to
+// stop polling and pick up the refreshed video. Keyed by PlaylistVideo id,
+// not youtubeId — unlike deleteTrackEverywhere, neither of these ever
+// touches another playlist's copy of the same file. Named generically
+// (rather than e.g. activeTrackSearches) since it now guards two distinct
+// operations that both end in the frontend's one "searchingHq" polling flag
+// — the JSON field name predates renameTrack but still accurately describes
+// what a rename ends with (see renameTrack's own doc comment).
+const activeTrackOperations = new Set<string>();
 
-export function isTrackHqSearching(videoId: string): boolean {
-  return activeTrackSearches.has(videoId);
+export function isTrackBusy(videoId: string): boolean {
+  return activeTrackOperations.has(videoId);
 }
 
 // Fire-and-forget entry point for the track context menu's "Search for HQ"
-// action — the route adds videoId to activeTrackSearches synchronously
+// action — the route adds videoId to activeTrackOperations synchronously
 // (before responding) so a near-simultaneous second click is rejected
 // before this even starts; this function only clears it once the search
 // genuinely finishes, success or failure alike.
 export function startTrackHqSearch(videoId: string): void {
-  activeTrackSearches.add(videoId);
+  activeTrackOperations.add(videoId);
   searchTrackQuality(videoId)
     .catch((err) => console.error(`[hq] Track search failed for ${videoId}:`, (err as Error).message))
-    .finally(() => activeTrackSearches.delete(videoId));
+    .finally(() => activeTrackOperations.delete(videoId));
 }
 
 // The single-track equivalent of resolvePlaylistQuality's loop body — same
@@ -559,4 +564,47 @@ async function searchTrackQuality(videoId: string): Promise<void> {
   const video = await prisma.playlistVideo.findUniqueOrThrow({ where: { id: videoId } });
   const sessions = await buildHqSessions(video.playlistId, 1);
   await checkVideoQuality(video, sessions);
+}
+
+// Fire-and-forget entry point for the track context menu's "Rename track"
+// action — same activeTrackOperations guard/lifecycle as startTrackHqSearch.
+export function startTrackRename(videoId: string, artist: string | null, title: string): void {
+  activeTrackOperations.add(videoId);
+  renameTrack(videoId, artist, title)
+    .catch((err) => console.error(`[rename] Track rename failed for ${videoId}:`, (err as Error).message))
+    .finally(() => activeTrackOperations.delete(videoId));
+}
+
+// Persists the user's manually-typed artist/title, then follows up with
+// whichever of the two automatic passes this track hasn't already resolved
+// — a rename exists specifically to fix a bad auto-parsed name, so both the
+// metadata match and the HQ search deserve a fresh shot at it with the
+// corrected name, but only for the piece(s) actually still missing (see
+// TrackContextMenu's own "already resolved" disable condition, which uses
+// this same pair of checks to decide whether Rename is worth offering at
+// all). Reuses searchTrackQuality's exact provider cascade for the HQ half,
+// and metadataWorker.ts's resolveMetadataForRename for the metadata half.
+export async function renameTrack(videoId: string, artist: string | null, title: string): Promise<void> {
+  const video = await prisma.playlistVideo.update({
+    where: { id: videoId },
+    data: { artist, title },
+    include: { mediaFile: true },
+  });
+
+  if (video.metadataStatus !== 'found' && isOnline()) {
+    await resolveMetadataForRename(video, artist, title);
+  }
+
+  // Re-read after the metadata step above, which may have changed
+  // artist/title again (a real MusicBrainz match always wins over the
+  // user's typed input) and could in principle also be the very thing that
+  // already answers "is there an HQ upgrade" for some future provider that
+  // keys off mbRecordingId — reading fresh keeps the HQ step working from
+  // whatever's actually true right now rather than a stale in-memory copy.
+  const fresh = await prisma.playlistVideo.findUniqueOrThrow({ where: { id: videoId } });
+  const alreadyHasHq = fresh.hqFileDownloaded || fresh.betterQualityExists;
+  if (fresh.downloadStatus === 'done' && !alreadyHasHq && isOnline()) {
+    const sessions = await buildHqSessions(fresh.playlistId, 1);
+    await checkVideoQuality(fresh, sessions);
+  }
 }

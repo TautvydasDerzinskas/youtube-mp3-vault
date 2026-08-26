@@ -60,6 +60,11 @@ export interface PlaylistVideo {
   id: string;
   youtubeId: string;
   title: string;
+  // The raw YouTube title exactly as it was when this row was first created
+  // — see schema.prisma's own doc comment. Used by the rename modal to show
+  // what the video was actually titled on YouTube, alongside the (possibly
+  // long since cleaned-up) `title` above.
+  originalTitle: string | null;
   duration: number | null;
   thumbnailUrl: string | null;
   position: number;
@@ -194,6 +199,24 @@ export const playlistsApi = {
   // searchingHq field to know when it's done.
   searchTrackHq: async (playlistId: string, videoId: string): Promise<void> => {
     await client.post(`/playlists/${playlistId}/videos/${videoId}/search-hq`);
+  },
+
+  // Instant, local best-guess artist/title for the rename modal's suggestion
+  // box — not a live MusicBrainz lookup (see the backend route's own doc
+  // comment for why).
+  getSuggestedName: async (playlistId: string, videoId: string): Promise<{ artist: string | null; title: string }> => {
+    const { data } = await client.get<{ artist: string | null; title: string }>(
+      `/playlists/${playlistId}/videos/${videoId}/suggested-name`
+    );
+    return data;
+  },
+
+  // Fire-and-forget, same polling contract as searchTrackHq — see the
+  // backend route's own doc comment for what runs after this (a fresh
+  // MusicBrainz attempt and/or HQ search, whichever this track doesn't
+  // already have).
+  renameTrack: async (playlistId: string, videoId: string, artist: string | null, title: string): Promise<void> => {
+    await client.post(`/playlists/${playlistId}/videos/${videoId}/rename`, { artist, title });
   },
 
   getRecommendations: async (playlistId: string, videoId: string): Promise<{ recommendations: RecommendedTrack[] }> => {

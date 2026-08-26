@@ -163,6 +163,15 @@
       "searchHqError": "Failed to start the HQ search.",
       "hqFoundForTrack": "Found a higher-quality version of \"{{title}}\".",
       "hqNotFoundForTrack": "No higher-quality version of \"{{title}}\" found.",
+      "renameInfoBox": "Good artist/title naming makes both MusicBrainz metadata matching and the HQ file search much more likely to succeed.",
+      "originalTitle": "Original YouTube title",
+      "suggestedName": "Suggested name",
+      "useSuggested": "Use suggested",
+      "artistLabel": "Artist",
+      "titleLabel": "Title",
+      "rename": "Rename",
+      "renameError": "Failed to rename track.",
+      "trackRenamed": "Renamed to \"{{title}}\".",
       "deleteTrackConfirm": {
         "title": "Delete track?",
         "message": "This permanently deletes the downloaded file for \"{{title}}\" and removes it from every playlist it appears in, including other users' playlists that share the same file. This can't be undone."

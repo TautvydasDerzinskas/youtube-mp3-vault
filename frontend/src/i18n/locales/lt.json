@@ -168,6 +168,15 @@
       "searchHqError": "Nepavyko pradėti HQ paieškos.",
       "hqFoundForTrack": "Rasta aukštesnės kokybės \"{{title}}\" versija.",
       "hqNotFoundForTrack": "Aukštesnės kokybės \"{{title}}\" versijos nerasta.",
+      "renameInfoBox": "Geras atlikėjo/pavadinimo įvedimas žymiai padidina tikimybę sėkmingai rasti MusicBrainz metaduomenis ir HQ failą.",
+      "originalTitle": "Originalus YouTube pavadinimas",
+      "suggestedName": "Siūlomas pavadinimas",
+      "useSuggested": "Naudoti siūlomą",
+      "artistLabel": "Atlikėjas",
+      "titleLabel": "Pavadinimas",
+      "rename": "Pervadinti",
+      "renameError": "Nepavyko pervadinti kūrinio.",
+      "trackRenamed": "Pervadinta į \"{{title}}\".",
       "deleteTrackConfirm": {
         "title": "Ištrinti kūrinį?",
         "message": "Tai visam laikui ištrins atsisiųstą failą \"{{title}}\" ir pašalins jį iš visų grojaraščių, kuriuose jis yra, įskaitant kitų vartotojų grojaraščius, kurie naudoja tą patį failą. Šio veiksmo atšaukti negalima."

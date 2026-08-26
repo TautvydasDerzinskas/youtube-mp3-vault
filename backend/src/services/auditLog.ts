@@ -7,6 +7,7 @@ export type LogAction =
   | 'playlist_renamed'
   | 'playlist_deleted'
   | 'track_deleted'
+  | 'track_renamed'
   | 'playlist_synced'
   | 'playlist_sync_paused'
   | 'playlist_offline_enabled'

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDialog } from './ConfirmDialog';
+import { RenameTrackDialog } from './RenameTrackDialog';
 
 interface TrackContextMenuProps {
   playlistId: string;
@@ -18,24 +19,28 @@ interface TrackContextMenuProps {
   // instead of waiting for a refetch — optional since some TrackRow call
   // sites (e.g. Similar Songs) don't hold mutable list state to update.
   onDeleted?: (videoId: string) => void;
-  // True while TrackRow's own "Search for HQ" poll loop is running — Delete
-  // is disabled for the duration (a mid-search file replacement racing a
-  // delete could leave things in a confusing state) and Search for HQ
-  // itself shows a "Searching…" label and can't be re-triggered.
+  // True while TrackRow's own "Search for HQ"/"Rename track" poll loop is
+  // running — Delete is disabled for the duration (a mid-operation file
+  // replacement racing a delete could leave things in a confusing state)
+  // and Search for HQ itself shows a "Searching…" label and can't be
+  // re-triggered.
   searching: boolean;
   onSearchHq: () => void;
+  // Kicks off the rename (POST + the row's own polling lifecycle) — see
+  // RenameTrackDialog's own doc comment for why this only needs to resolve
+  // once the initial request succeeds, not the full background follow-up.
+  onRename: (artist: string | null, title: string) => Promise<void>;
 }
 
 // Right-click track menu — shared by every list that renders TrackRow (see
 // that component's own doc comment for why there's only one of it) so a
 // track's menu looks and behaves identically everywhere it's rendered.
-// Rename is a disabled placeholder for now; Delete and Search for HQ are
-// both wired up.
-export function TrackContextMenu({ playlistId, video, position, onClose, onDeleted, searching, onSearchHq }: TrackContextMenuProps) {
+export function TrackContextMenu({ playlistId, video, position, onClose, onDeleted, searching, onSearchHq, onRename }: TrackContextMenuProps) {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [renaming, setRenaming] = useState(false);
 
   // Already downloaded the HQ file, or already know a better one exists
   // (found but not auto-downloaded) — either way there's nothing a fresh
@@ -46,6 +51,15 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
     : alreadyHasHq
     ? 'playlists.videoList.alreadyHasHq'
     : 'playlists.videoList.searchForHq';
+
+  // Renaming only has something to offer while at least one of the two
+  // automatic passes hasn't already resolved this track — once MusicBrainz
+  // has matched it *and* an HQ version has been found, a better name can't
+  // change either outcome (see renameTrack in the backend's
+  // slskdQualityWorker.ts, which independently re-runs only the piece(s)
+  // still missing after a rename for exactly this reason).
+  const hasMetadata = video.metadataStatus === 'found';
+  const canRename = !hasMetadata || !alreadyHasHq;
 
   const handleConfirmDelete = async () => {
     setDeleting(true);
@@ -70,7 +84,7 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
         anchorPosition={position ?? undefined}
         onClick={(e) => e.stopPropagation()}
       >
-        <MenuItem disabled>
+        <MenuItem disabled={searching || !canRename} onClick={() => { onClose(); setRenaming(true); }}>
           <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('playlists.videoList.renameTrack')}</ListItemText>
         </MenuItem>
@@ -92,6 +106,15 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
           loading={deleting}
           onConfirm={handleConfirmDelete}
           onCancel={() => setConfirming(false)}
+        />
+      )}
+      {renaming && (
+        <RenameTrackDialog
+          playlistId={playlistId}
+          video={video}
+          open={renaming}
+          onClose={() => setRenaming(false)}
+          onRename={onRename}
         />
       )}
     </>
