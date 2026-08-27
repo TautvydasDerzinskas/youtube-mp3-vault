@@ -73,6 +73,16 @@ export async function findDeezerCandidate(
     }
   }
 
+  // Temporary diagnostic: search returned real candidates but none passed
+  // any tier — logs each one's title/duration next to ours so a rejection
+  // (text mismatch vs. duration outside tolerance, see
+  // durationToleranceSeconds in trackMatching.ts) is visible without
+  // guessing. Remove once the "Silvana Imam - Tänd Alla Ljus" no-match
+  // report is root-caused.
+  console.log(
+    `[deezer] No match for "${artist} - ${title}" (our duration=${videoDurationSec ?? 'unknown'}s) among ${tracks.length} candidate(s): ` +
+    tracks.map((t) => `"${t.artist} - ${t.title}" (${t.durationSec ?? 'unknown'}s)`).join('; ')
+  );
   return null;
 }
 
