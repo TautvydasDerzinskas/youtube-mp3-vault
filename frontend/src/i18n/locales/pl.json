@@ -175,6 +175,7 @@
       "hqNotFoundForTrack": "Nie znaleziono wersji \"{{title}}\" w wyższej jakości.",
       "renameInfoBox": "Dobre nazewnictwo artysty/tytułu znacznie zwiększa szansę na dopasowanie metadanych MusicBrainz i znalezienie pliku HQ.",
       "originalTitle": "Oryginalny tytuł z YouTube",
+      "currentTrack": "Obecny utwór",
       "suggestedName": "Sugerowana nazwa",
       "useSuggested": "Użyj sugerowanej",
       "artistLabel": "Artysta",
@@ -192,7 +193,9 @@
         "title": "Brak dokładnego dopasowania, ale znaleziono podobne utwory",
         "infoBox": "Nie znaleziono dokładnego dopasowania, ale znaleziono te podobne utwory. Wybranie jednego z nich zastąpi artystę/tytuł tego utworu wybraną pozycją i pobierze plik w wyższej jakości pod nową nazwą.",
         "confirmTitle": "Zmienić nazwę utworu?",
-        "confirmMessage": "Zmienić nazwę tego utworu na \"{{name}}\"? Wyszukiwanie HQ zostanie uruchomione ponownie pod nową nazwą."
+        "confirmMessage": "Zmienić nazwę tego utworu na \"{{name}}\"? Wyszukiwanie HQ zostanie uruchomione ponownie pod nową nazwą.",
+        "preview": "Odtwórz podgląd",
+        "stopPreview": "Zatrzymaj podgląd"
       }
     },
     "miniPlayer": {

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListItemButton, ListItemText, Chip,
   Box, Typography, IconButton, Tooltip, Alert,
 } from '@mui/material';
-import { YouTube as YouTubeIcon } from '@mui/icons-material';
+import { YouTube as YouTubeIcon, PlayArrow as PlayArrowIcon, Stop as StopIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { CloseHqCandidate, PlaylistVideo } from '../api/youtube';
 import { youtubeWatchUrl, formatDuration } from '../pages/PlaylistsPage/utils';
@@ -23,10 +23,11 @@ const PROVIDER_LABEL: Record<CloseHqCandidate['provider'], string> = {
 };
 
 interface CloseHqCandidatesDialogProps {
-  // Only the original-title/YouTube-link/duration comparison row needs
-  // this — see RenameTrackDialog's identical original-title row, which this
-  // one is deliberately styled to match.
-  video: Pick<PlaylistVideo, 'youtubeId' | 'originalTitle' | 'title' | 'duration'>;
+  // Only the original-title/current-track/YouTube-link/duration comparison
+  // rows need this — see RenameTrackDialog's identical original-title row,
+  // which this one is deliberately styled to match. `artist` is needed
+  // alongside `title` to build the "current track" comparison line below.
+  video: Pick<PlaylistVideo, 'youtubeId' | 'originalTitle' | 'title' | 'artist' | 'duration'>;
   candidates: CloseHqCandidate[];
   onDismiss: () => void;
   // Renames the track to the picked candidate's artist/title (reusing the
@@ -54,6 +55,38 @@ export function CloseHqCandidatesDialog({ video, candidates, onDismiss, onSelect
   const { t } = useTranslation();
   const [selected, setSelected] = useState<CloseHqCandidate | null>(null);
 
+  // A single shared <audio> element for every candidate's preview clip
+  // rather than one per row — only one can ever be playing at a time, and
+  // reusing one element means switching candidates just swaps `.src` instead
+  // of juggling N separate playback states. `playingKey` (the same
+  // provider-artist-title key each row is already keyed by) is what the
+  // per-row play/stop icon reflects.
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
+
+  const togglePreview = (e: React.MouseEvent, key: string, url: string) => {
+    e.stopPropagation(); // don't also trigger the row's own onClick (opens the rename confirm)
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playingKey === key) {
+      audio.pause();
+      return;
+    }
+    audio.src = url;
+    audio.play().catch(() => {}); // e.g. blocked by the browser's autoplay policy — nothing to recover from
+    setPlayingKey(key);
+  };
+
+  // Original YouTube title vs. what the track is actually stored as right
+  // now — these drift apart over time (a manual rename, or metadata
+  // resolution cleaning up the raw upload title), and the candidates below
+  // are matched against the CURRENT name, not the YouTube one, so showing
+  // both when they've diverged is what actually explains why a given
+  // candidate looked close enough to suggest.
+  const originalLabel = video.originalTitle ?? video.title;
+  const currentLabel = video.artist ? `${video.artist} - ${video.title}` : video.title;
+  const currentDiffersFromOriginal = currentLabel.trim().toLowerCase() !== originalLabel.trim().toLowerCase();
+
   return (
     <>
       <Dialog open={candidates.length > 0 && !selected} onClose={onDismiss} maxWidth="sm" fullWidth>
@@ -61,11 +94,16 @@ export function CloseHqCandidatesDialog({ video, candidates, onDismiss, onSelect
         <DialogContent>
           <Alert severity="info" sx={{ mb: 2 }}>{t('playlists.videoList.closeHqCandidates.infoBox')}</Alert>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" noWrap title={video.originalTitle ?? video.title} sx={{ minWidth: 0, flexGrow: 1 }}>
-              {t('playlists.videoList.originalTitle')}: {video.originalTitle ?? video.title}
-              {video.duration ? ` (${formatDuration(video.duration)})` : ''}
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: currentDiffersFromOriginal ? 1.5 : 2 }}>
+            <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                {t('playlists.videoList.originalTitle')}
+              </Typography>
+              <Typography variant="body2" noWrap title={originalLabel} sx={{ color: 'text.primary' }}>
+                {originalLabel}
+                {video.duration ? ` (${formatDuration(video.duration)})` : ''}
+              </Typography>
+            </Box>
             <Tooltip title={t('playlists.videoList.watchOnYouTube')}>
               <IconButton size="small" component="a" href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer">
                 <YouTubeIcon fontSize="small" />
@@ -73,26 +111,50 @@ export function CloseHqCandidatesDialog({ video, candidates, onDismiss, onSelect
             </Tooltip>
           </Box>
 
+          {currentDiffersFromOriginal && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                {t('playlists.videoList.currentTrack')}
+              </Typography>
+              <Typography variant="body2" noWrap title={currentLabel} sx={{ color: 'text.primary' }}>
+                {currentLabel}
+              </Typography>
+            </Box>
+          )}
+
           <List disablePadding>
-            {candidates.map((c) => (
-              <ListItemButton
-                key={`${c.provider}-${c.artist}-${c.title}`}
-                onClick={() => setSelected(c)}
-                sx={{ borderRadius: 1, mb: 0.5, border: '1px solid', borderColor: '#2a2a2a' }}
-              >
-                <ListItemText
-                  primary={`${c.artist} - ${c.title}`}
-                  secondary={c.durationSec ? formatDuration(c.durationSec) : undefined}
-                />
-                <Chip label={PROVIDER_LABEL[c.provider]} size="small" variant="outlined" sx={{ ml: 1 }} />
-              </ListItemButton>
-            ))}
+            {candidates.map((c) => {
+              const key = `${c.provider}-${c.artist}-${c.title}`;
+              const isPlaying = playingKey === key;
+              return (
+                <ListItemButton
+                  key={key}
+                  onClick={() => { audioRef.current?.pause(); setSelected(c); }}
+                  sx={{ borderRadius: 1, mb: 0.5, border: '1px solid', borderColor: '#2a2a2a' }}
+                >
+                  {c.previewUrl && (
+                    <Tooltip title={t(isPlaying ? 'playlists.videoList.closeHqCandidates.stopPreview' : 'playlists.videoList.closeHqCandidates.preview')}>
+                      <IconButton size="small" onClick={(e) => togglePreview(e, key, c.previewUrl!)} sx={{ mr: 1 }}>
+                        {isPlaying ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <ListItemText
+                    primary={`${c.artist} - ${c.title}`}
+                    secondary={c.durationSec ? formatDuration(c.durationSec) : undefined}
+                  />
+                  <Chip label={PROVIDER_LABEL[c.provider]} size="small" variant="outlined" sx={{ ml: 1 }} />
+                </ListItemButton>
+              );
+            })}
           </List>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={onDismiss}>{t('common.close')}</Button>
         </DialogActions>
       </Dialog>
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption -- a 30s label-free preview clip, not real content */}
+      <audio ref={audioRef} onEnded={() => setPlayingKey(null)} onPause={() => setPlayingKey(null)} style={{ display: 'none' }} />
       {selected && (
         <ConfirmDialog
           title={t('playlists.videoList.closeHqCandidates.confirmTitle')}

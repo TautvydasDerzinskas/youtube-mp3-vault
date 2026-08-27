@@ -228,6 +228,15 @@ export interface DeezerSearchResult {
   artist: string;
   album: string;
   durationSec: number | null;
+  // A 30-second, DRM-free mp3 clip — Deezer's own public search response
+  // already includes this on every item, unauthenticated, meant for exactly
+  // this kind of "preview before you commit" use (their own web player uses
+  // the same field for anonymous visitors) — unlike the actual full-length
+  // track, which is Blowfish-encrypted and only resolvable through a signed,
+  // per-account call (see getSongDownloadUrl/downloadAndDecryptTrack below).
+  // Null on the rare item missing one rather than omitted, so callers don't
+  // need an `in` check.
+  previewUrl: string | null;
 }
 
 // Deezer's public search API — no cookie/login needed, used purely to find
@@ -247,6 +256,7 @@ export async function searchDeezerTracks(query: string, limit = 10): Promise<Dee
       artist: item.artist?.name ?? '',
       album: item.album?.title ?? '',
       durationSec: typeof item.duration === 'number' ? item.duration : null,
+      previewUrl: typeof item.preview === 'string' && item.preview ? item.preview : null,
     }));
   } catch {
     return [];

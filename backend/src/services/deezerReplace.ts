@@ -92,7 +92,7 @@ export async function findDeezerCandidate(
     }
   }
 
-  nearMisses?.push(...tracks.map((t) => ({ artist: t.artist, title: t.title, durationSec: t.durationSec })));
+  nearMisses?.push(...tracks.map((t) => ({ artist: t.artist, title: t.title, durationSec: t.durationSec, previewUrl: t.previewUrl })));
   return null;
 }
 

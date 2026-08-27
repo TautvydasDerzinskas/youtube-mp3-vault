@@ -461,7 +461,7 @@ async function checkVideoQuality(
               const key = foldForMatch(`${c.artist} - ${c.title}`);
               if (!key || seen.has(key)) continue;
               seen.add(key);
-              closeCandidatesOut.push({ provider, artist: c.artist, title: c.title, durationSec: c.durationSec });
+              closeCandidatesOut.push({ provider, artist: c.artist, title: c.title, durationSec: c.durationSec, previewUrl: c.previewUrl ?? null });
             }
           };
           collect('slskd', slskdNearMisses);

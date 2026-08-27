@@ -165,6 +165,7 @@
       "hqNotFoundForTrack": "No higher-quality version of \"{{title}}\" found.",
       "renameInfoBox": "Good artist/title naming makes both MusicBrainz metadata matching and the HQ file search much more likely to succeed.",
       "originalTitle": "Original YouTube title",
+      "currentTrack": "Current track",
       "suggestedName": "Suggested name",
       "useSuggested": "Use suggested",
       "artistLabel": "Artist",
@@ -182,7 +183,9 @@
         "title": "No exact match, but found similar tracks",
         "infoBox": "An exact match wasn't found, but these close matches were. Selecting one replaces this track's artist/title with the one shown and downloads the higher-quality file under that name.",
         "confirmTitle": "Rename track?",
-        "confirmMessage": "Rename this track to \"{{name}}\"? The HQ search will run again under the new name."
+        "confirmMessage": "Rename this track to \"{{name}}\"? The HQ search will run again under the new name.",
+        "preview": "Play preview",
+        "stopPreview": "Stop preview"
       }
     },
     "miniPlayer": {

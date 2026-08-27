@@ -266,6 +266,7 @@
       "hqNotFoundForTrack": "Aukštesnės kokybės \"{{title}}\" versijos nerasta.",
       "renameInfoBox": "Geras atlikėjo/pavadinimo įvedimas žymiai padidina tikimybę sėkmingai rasti MusicBrainz metaduomenis ir HQ failą.",
       "originalTitle": "Originalus YouTube pavadinimas",
+      "currentTrack": "Dabartinis įrašas",
       "suggestedName": "Siūlomas pavadinimas",
       "useSuggested": "Naudoti siūlomą",
       "artistLabel": "Atlikėjas",
@@ -283,7 +284,9 @@
         "title": "Tikslaus atitikmens nėra, bet rasta panašių kūrinių",
         "infoBox": "Tikslaus atitikmens nepavyko rasti, bet rasta panašių. Pasirinkus vieną iš jų, šio kūrinio atlikėjas ir pavadinimas bus pakeisti į rodomą, o aukštesnės kokybės failas atsisiųstas su nauju pavadinimu.",
         "confirmTitle": "Pervadinti kūrinį?",
-        "confirmMessage": "Pervadinti šį kūrinį į \"{{name}}\"? HQ paieška bus paleista iš naujo su nauju pavadinimu."
+        "confirmMessage": "Pervadinti šį kūrinį į \"{{name}}\"? HQ paieška bus paleista iš naujo su nauju pavadinimu.",
+        "preview": "Groti pavyzdį",
+        "stopPreview": "Sustabdyti pavyzdį"
       }
     },
     "deleteConfirm": {

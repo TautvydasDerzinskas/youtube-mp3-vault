@@ -65,6 +65,11 @@ export interface CloseHqCandidate {
   artist: string;
   title: string;
   durationSec: number | null;
+  // A 30-second preview clip to play inline before committing to a rename —
+  // only ever set for a Deezer candidate right now (see DeezerSearchResult's
+  // own doc comment on the backend for why the other providers don't have
+  // one available this cheaply).
+  previewUrl: string | null;
 }
 
 export interface PlaylistVideo {

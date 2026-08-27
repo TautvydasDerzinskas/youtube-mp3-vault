@@ -708,6 +708,11 @@ export interface NearMissCandidate {
   // So the frontend can show it right next to our own video duration for
   // at-a-glance comparison — not every source reports one, hence nullable.
   durationSec: number | null;
+  // A short preview clip the frontend can play inline before renaming to
+  // this candidate — only Deezer's search results carry one right now (see
+  // DeezerSearchResult's own doc comment); every other source leaves this
+  // undefined rather than forcing every caller to pass `previewUrl: null`.
+  previewUrl?: string | null;
 }
 
 const FUZZY_TITLE_SIMILARITY_THRESHOLD = 0.82;
