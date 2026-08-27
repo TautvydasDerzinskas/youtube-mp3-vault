@@ -33,9 +33,10 @@ export interface Playlist {
 // one-click rename suggestion (see CloseHqCandidatesSheet). Mirrors the
 // backend's own CloseHqCandidate in slskdQualityWorker.ts.
 export interface CloseHqCandidate {
-  provider: 'slskd' | 'jiosaavn' | 'deezer' | 'qobuz' | 'tidal';
+  provider: 'slskd' | 'deezer' | 'qobuz' | 'tidal';
   artist: string;
   title: string;
+  durationSec: number | null;
 }
 
 export interface PlaylistVideo {

@@ -41,13 +41,15 @@ export function TrackContextMenu({ playlistId, video, position, onDismiss, onDel
   const [deleting, setDeleting] = useState(false);
   const [renaming, setRenaming] = useState(false);
 
-  // Already downloaded the HQ file, or already know a better one exists
-  // (found but not auto-downloaded) — either way there's nothing a fresh
-  // search would tell us that we don't already know.
-  const alreadyHasHq = video.hqFileDownloaded || video.betterQualityExists;
+  // Search for HQ is only pointless once the file is actually downloaded —
+  // "found but not downloaded" (betterQualityExists) means a past pass
+  // matched something but couldn't deliver it (peer offline, a transfer
+  // that timed out, ...), which is exactly the case a manual retry can
+  // still help with, so that alone must never disable this action.
+  const hqDownloaded = video.hqFileDownloaded;
   const searchHqLabel = searching
     ? 'playlists.videoList.searchingHq'
-    : alreadyHasHq
+    : hqDownloaded
     ? 'playlists.videoList.alreadyHasHq'
     : 'playlists.videoList.searchForHq';
 
@@ -55,6 +57,10 @@ export function TrackContextMenu({ playlistId, video, position, onDismiss, onDel
   // automatic passes hasn't already resolved this track — see the backend's
   // renameTrack (slskdQualityWorker.ts), which independently re-runs only
   // the piece(s) still missing after a rename for exactly this reason.
+  // Unlike Search for HQ above, a found-but-undownloaded match still counts
+  // as "resolved" here — a rename wouldn't do anything a manual re-search
+  // couldn't.
+  const alreadyHasHq = video.hqFileDownloaded || video.betterQualityExists;
   const hasMetadata = video.metadataStatus === 'found';
   const canRename = !hasMetadata || !alreadyHasHq;
 
@@ -79,7 +85,7 @@ export function TrackContextMenu({ playlistId, video, position, onDismiss, onDel
           onPress={() => { onDismiss(); setRenaming(true); }} />
         <Menu.Item leadingIcon="delete-outline" disabled={searching} title={t('playlists.videoList.deleteTrack')}
           onPress={() => { onDismiss(); setConfirming(true); }} />
-        <Menu.Item leadingIcon="quality-high" disabled={searching || alreadyHasHq || video.downloadStatus !== 'done'}
+        <Menu.Item leadingIcon="quality-high" disabled={searching || hqDownloaded || video.downloadStatus !== 'done'}
           title={t(searchHqLabel)}
           onPress={() => { onDismiss(); onSearchHq(); }} />
       </Menu>

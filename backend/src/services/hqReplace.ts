@@ -79,6 +79,17 @@ export async function findExactMatchCandidate(
   // doesn't want this (the batch sync pass), which skips the collection
   // entirely.
   nearMisses?: NearMissCandidate[],
+  // What to actually compare a candidate against — defaults to `artist`/
+  // `title` above. The caller only ever passes something different when
+  // retrying with a cleaned-up query (see checkVideoQuality's
+  // hasCleanedFallback and stripFeaturedArtists' own doc comment): cleaning
+  // a cluttered "(feat. X)" out of the query is meant to help the search
+  // itself return better results, not to change what counts as a match —
+  // the real candidate's own title still legitimately has that feat. credit,
+  // so comparing against the un-cleaned original is what actually verifies
+  // it's the same recording.
+  matchArtist: string = artist,
+  matchTitle: string = title,
 ): Promise<HqCandidate | null> {
   if (!isOnline() || !isSlskdConfigured()) return null;
 
@@ -113,7 +124,7 @@ export async function findExactMatchCandidate(
 
         const parsed = splitArtistTitle(stripUploadNoise(baseNameFromSlskdPath(filename)));
         if (!parsed.artist) continue;
-        if (!tier.textMatch(parsed.artist, parsed.title, artist, title)) continue;
+        if (!tier.textMatch(parsed.artist, parsed.title, matchArtist, matchTitle)) continue;
 
         const candidateDurationSec = typeof file?.length === 'number' ? file.length : null;
         if (!isDurationPlausible(candidateDurationSec, videoDurationSec, tier.durationStrictness, tier.requireKnownDuration)) continue;
@@ -132,7 +143,10 @@ export async function findExactMatchCandidate(
       for (const file of response.files ?? []) {
         if (!audioFormatOf(file?.filename ?? '')) continue;
         const parsed = splitArtistTitle(stripUploadNoise(baseNameFromSlskdPath(file.filename)));
-        if (parsed.artist) nearMisses.push({ artist: parsed.artist, title: parsed.title });
+        if (parsed.artist) {
+          const durationSec = typeof file?.length === 'number' ? file.length : null;
+          nearMisses.push({ artist: parsed.artist, title: parsed.title, durationSec });
+        }
       }
     }
   }

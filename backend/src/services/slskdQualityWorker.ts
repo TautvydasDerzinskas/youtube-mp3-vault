@@ -137,7 +137,10 @@ type QualityCheckOutcome = 'processed' | 'skipped';
 // CLOSE_HQ_CANDIDATES_LIMIT total so that list stays a manageable, glanceable
 // picker rather than dumping every near-miss every source turned up.
 export interface CloseHqCandidate extends NearMissCandidate {
-  provider: 'slskd' | 'jiosaavn' | 'deezer' | 'qobuz' | 'tidal';
+  // JioSaavn deliberately excluded — its Indian-market-skewed catalog kept
+  // surfacing suggestions that plainly weren't the same song at all, worse
+  // than not suggesting anything.
+  provider: 'slskd' | 'deezer' | 'qobuz' | 'tidal';
 }
 
 const CLOSE_HQ_CANDIDATES_LIMIT = 5;
@@ -165,8 +168,8 @@ async function checkVideoQuality(
   // the one place that duration backstop still earns its keep.
   trustedName = false,
   // Populated (not replaced) by searchTrackQuality below with deduped
-  // Deezer/Qobuz/Tidal near-misses once the whole cascade finishes without a
-  // real download — see CloseHqCandidate's own doc comment. Left undefined
+  // near-misses once the whole cascade finishes without a real download —
+  // see CloseHqCandidate's own doc comment. Left undefined
   // everywhere else, which skips collecting the raw candidates at all.
   closeCandidatesOut?: CloseHqCandidate[],
 ): Promise<QualityCheckOutcome> {
@@ -280,7 +283,6 @@ async function checkVideoQuality(
         // findTidalCandidate skip the collection entirely, same cost as before
         // this feature existed for the batch pass.
         const slskdNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
-        const jioSaavnNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
         const deezerNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
         const qobuzNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
         const tidalNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
@@ -296,7 +298,15 @@ async function checkVideoQuality(
         try {
           slskdCandidate = await findExactMatchCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers, slskdNearMisses);
           if (!slskdCandidate && hasCleanedFallback) {
-            slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, slskdNearMisses);
+            // Search with the cleaned (feat.-stripped) query — a provider's
+            // own search can rank/return worse results for a cluttered
+            // query — but still verify a hit against our REAL, uncleaned
+            // title/artist: the candidate's own title legitimately keeps
+            // its "(feat. X)" credit, and no tier tolerates the title side
+            // of that gap (only the artist side has a superset allowance —
+            // see artistIsSupersetMatch), so comparing against the cleaned
+            // text here would reject the very match this fallback exists to find.
+            slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, slskdNearMisses, searchArtist, searchTitle);
           }
           if (!slskdCandidate && hasQuotedFallback && quotedExtraction) {
             slskdCandidate = await findExactMatchCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, slskdNearMisses);
@@ -319,15 +329,17 @@ async function checkVideoQuality(
           // no better than no match at all, so the other sources still
           // deserve a shot at this video in the same pass.
           try {
-            jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
+            jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!jioSaavnCandidate && hasCleanedFallback) {
-              jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
+              // See the identical comment on the slskd cleaned-fallback call
+              // above — same reasoning, search cleaned, compare uncleaned.
+              jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, searchArtist, searchTitle);
             }
             if (!jioSaavnCandidate && hasQuotedFallback && quotedExtraction) {
-              jioSaavnCandidate = await findJioSaavnCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
+              jioSaavnCandidate = await findJioSaavnCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (!jioSaavnCandidate && hasDashFallback && dashExtraction) {
-              jioSaavnCandidate = await findJioSaavnCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
+              jioSaavnCandidate = await findJioSaavnCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (jioSaavnCandidate) replaced = await downloadAndReplaceViaJioSaavn(video, jioSaavnCandidate);
           } catch (err) {
@@ -344,7 +356,9 @@ async function checkVideoQuality(
           try {
             deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers, deezerNearMisses);
             if (!deezerCandidate && hasCleanedFallback) {
-              deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, deezerNearMisses);
+              // See the identical comment on the slskd cleaned-fallback call
+              // above — same reasoning, search cleaned, compare uncleaned.
+              deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, deezerNearMisses, searchArtist, searchTitle);
             }
             if (!deezerCandidate && hasQuotedFallback && quotedExtraction) {
               deezerCandidate = await findDeezerCandidate(deezerSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, deezerNearMisses);
@@ -367,7 +381,9 @@ async function checkVideoQuality(
           try {
             qobuzCandidate = await findQobuzCandidate(qobuzSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers, qobuzNearMisses);
             if (!qobuzCandidate && hasCleanedFallback) {
-              qobuzCandidate = await findQobuzCandidate(qobuzSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, qobuzNearMisses);
+              // See the identical comment on the slskd cleaned-fallback call
+              // above — same reasoning, search cleaned, compare uncleaned.
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, qobuzNearMisses, searchArtist, searchTitle);
             }
             if (!qobuzCandidate && hasQuotedFallback && quotedExtraction) {
               qobuzCandidate = await findQobuzCandidate(qobuzSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, qobuzNearMisses);
@@ -390,7 +406,9 @@ async function checkVideoQuality(
           try {
             tidalCandidate = await findTidalCandidate(tidalSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers, tidalNearMisses);
             if (!tidalCandidate && hasCleanedFallback) {
-              tidalCandidate = await findTidalCandidate(tidalSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, tidalNearMisses);
+              // See the identical comment on the slskd cleaned-fallback call
+              // above — same reasoning, search cleaned, compare uncleaned.
+              tidalCandidate = await findTidalCandidate(tidalSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, tidalNearMisses, searchArtist, searchTitle);
             }
             if (!tidalCandidate && hasQuotedFallback && quotedExtraction) {
               tidalCandidate = await findTidalCandidate(tidalSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, tidalNearMisses);
@@ -412,7 +430,9 @@ async function checkVideoQuality(
           try {
             bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!bandcampCandidate && hasCleanedFallback) {
-              bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
+              // See the identical comment on the slskd cleaned-fallback call
+              // above — same reasoning, search cleaned, compare uncleaned.
+              bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, searchArtist, searchTitle);
             }
             if (!bandcampCandidate && hasQuotedFallback && quotedExtraction) {
               bandcampCandidate = await findBandcampCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
@@ -431,8 +451,8 @@ async function checkVideoQuality(
         // when the whole cascade above still came up empty-handed.
         if (closeCandidatesOut && !replaced) {
           const seen = new Set<string>();
-          // Same priority order as the cascade above — slskd/JioSaavn first
-          // (most current/broadest catalogs), then the connected per-account
+          // Same priority order as the cascade above — slskd first (most
+          // current/broadest catalog), then the connected per-account
           // providers — so when the CLOSE_HQ_CANDIDATES_LIMIT cap trims the
           // list, it trims the least-preferred sources first.
           const collect = (provider: CloseHqCandidate['provider'], misses: NearMissCandidate[] | undefined) => {
@@ -441,11 +461,10 @@ async function checkVideoQuality(
               const key = foldForMatch(`${c.artist} - ${c.title}`);
               if (!key || seen.has(key)) continue;
               seen.add(key);
-              closeCandidatesOut.push({ provider, artist: c.artist, title: c.title });
+              closeCandidatesOut.push({ provider, artist: c.artist, title: c.title, durationSec: c.durationSec });
             }
           };
           collect('slskd', slskdNearMisses);
-          collect('jiosaavn', jioSaavnNearMisses);
           collect('deezer', deezerNearMisses);
           collect('qobuz', qobuzNearMisses);
           collect('tidal', tidalNearMisses);
@@ -618,7 +637,7 @@ export function isTrackBusy(videoId: string): boolean {
   return activeTrackOperations.has(videoId);
 }
 
-// Last search's Deezer/Qobuz/Tidal near-misses for a track, keyed by
+// Last search's near-misses for a track, keyed by
 // PlaylistVideo id — populated by searchTrackQuality below once a search
 // finishes with no real match, read by routes/youtube.ts's GET
 // .../videos/:videoId (polled the same way as searchingHq) so the frontend

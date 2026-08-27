@@ -48,6 +48,17 @@ export async function findQobuzCandidate(
   // caller that doesn't want this (the batch sync pass), which skips the
   // collection entirely.
   nearMisses?: NearMissCandidate[],
+  // What to actually compare a candidate against — defaults to `artist`/
+  // `title` above. The caller only ever passes something different when
+  // retrying with a cleaned-up query (see checkVideoQuality's
+  // hasCleanedFallback and stripFeaturedArtists' own doc comment): cleaning
+  // a cluttered "(feat. X)" out of the query is meant to help the search
+  // itself return better results, not to change what counts as a match —
+  // the real candidate's own title still legitimately has that feat. credit,
+  // so comparing against the un-cleaned original is what actually verifies
+  // it's the same recording.
+  matchArtist: string = artist,
+  matchTitle: string = title,
 ): Promise<QobuzHqCandidate | null> {
   if (!isOnline()) return null;
   if (!artist.trim() || !title.trim()) return null;
@@ -64,7 +75,7 @@ export async function findQobuzCandidate(
 
   for (const tier of tiers) {
     for (const track of tracks) {
-      if (!tier.textMatch(track.artist, track.title, artist, title)) continue;
+      if (!tier.textMatch(track.artist, track.title, matchArtist, matchTitle)) continue;
       if (!isDurationPlausible(track.durationSec, videoDurationSec, tier.durationStrictness, tier.requireKnownDuration)) continue;
 
       console.log(`[qobuz] Found: "${artist} - ${title}" -> "${track.artist} - ${track.title}"`);
@@ -72,7 +83,7 @@ export async function findQobuzCandidate(
     }
   }
 
-  nearMisses?.push(...tracks.map((t) => ({ artist: t.artist, title: t.title })));
+  nearMisses?.push(...tracks.map((t) => ({ artist: t.artist, title: t.title, durationSec: t.durationSec })));
   return null;
 }
 

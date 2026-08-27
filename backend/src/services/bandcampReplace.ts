@@ -66,6 +66,17 @@ export async function findBandcampCandidate(
   // Overridable so the rename-triggered HQ search can pass
   // MATCH_TIERS_TRUSTED_NAME instead — see that constant's own doc comment.
   tiers: MatchTier[] = MATCH_TIERS,
+  // What to actually compare a candidate against — defaults to `artist`/
+  // `title` above. The caller only ever passes something different when
+  // retrying with a cleaned-up query (see checkVideoQuality's
+  // hasCleanedFallback and stripFeaturedArtists' own doc comment): cleaning
+  // a cluttered "(feat. X)" out of the query is meant to help the search
+  // itself return better results, not to change what counts as a match —
+  // the real candidate's own title still legitimately has that feat. credit,
+  // so comparing against the un-cleaned original is what actually verifies
+  // it's the same recording.
+  matchArtist: string = artist,
+  matchTitle: string = title,
 ): Promise<BandcampHqCandidate | null> {
   if (!isOnline()) return null;
   if (!artist.trim() || !title.trim()) return null;
@@ -85,7 +96,7 @@ export async function findBandcampCandidate(
     if (currentBitrate !== null && MAX_PLAUSIBLE_MP3_BITRATE_KBPS <= currentBitrate + tier.minBitrateImprovementKbps) continue;
 
     for (const result of results) {
-      if (!tier.textMatch(result.artist, result.title, artist, title)) continue;
+      if (!tier.textMatch(result.artist, result.title, matchArtist, matchTitle)) continue;
 
       const details = await getBandcampTrackDetails(result.url);
       if (!details) continue;

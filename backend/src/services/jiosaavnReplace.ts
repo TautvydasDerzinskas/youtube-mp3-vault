@@ -8,7 +8,7 @@ import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { searchJioSaavnTrack, type JioSaavnLink } from './jiosaavn';
 import { MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
-import { MATCH_TIERS, isDurationPlausible, type MatchTier, type NearMissCandidate } from './trackMatching';
+import { MATCH_TIERS, isDurationPlausible, type MatchTier } from './trackMatching';
 import { transcodeToMp3 } from './audioTranscode';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
 
@@ -66,11 +66,17 @@ export async function findJioSaavnCandidate(
   // Overridable so the rename-triggered HQ search can pass
   // MATCH_TIERS_TRUSTED_NAME instead — see that constant's own doc comment.
   tiers: MatchTier[] = MATCH_TIERS,
-  // Populated with every raw search result whenever none of them clear any
-  // tier — see NearMissCandidate's own doc comment. Left undefined by every
-  // caller that doesn't want this (the batch sync pass), which skips the
-  // collection entirely.
-  nearMisses?: NearMissCandidate[],
+  // What to actually compare a candidate against — defaults to `artist`/
+  // `title` above. The caller only ever passes something different when
+  // retrying with a cleaned-up query (see checkVideoQuality's
+  // hasCleanedFallback and stripFeaturedArtists' own doc comment): cleaning
+  // a cluttered "(feat. X)" out of the query is meant to help the search
+  // itself return better results, not to change what counts as a match —
+  // the real candidate's own title still legitimately has that feat. credit,
+  // so comparing against the un-cleaned original is what actually verifies
+  // it's the same recording.
+  matchArtist: string = artist,
+  matchTitle: string = title,
 ): Promise<JioSaavnHqCandidate | null> {
   if (!isOnline()) return null;
   if (!artist.trim() || !title.trim()) return null;
@@ -82,7 +88,7 @@ export async function findJioSaavnCandidate(
     let best: { track: (typeof tracks)[number]; media: JioSaavnLink; bitrate: number } | null = null;
 
     for (const track of tracks) {
-      if (!tier.textMatch(track.artist, track.title, artist, title)) continue;
+      if (!tier.textMatch(track.artist, track.title, matchArtist, matchTitle)) continue;
       if (!isDurationPlausible(track.duration, videoDurationSec, tier.durationStrictness, tier.requireKnownDuration)) continue;
 
       const media = pickBestMediaLink(track.media);
@@ -99,7 +105,6 @@ export async function findJioSaavnCandidate(
     }
   }
 
-  nearMisses?.push(...tracks.map((t) => ({ artist: t.artist, title: t.title })));
   return null;
 }
 

@@ -484,10 +484,10 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
     // hqFileDownloaded, mediaFileId, artist, title, metadataStatus, ...), so
     // no separate "fetch the updated video" round trip is needed.
     // closeHqCandidates rides along the same poll: once searchingHq flips
-    // false after a manual "Search for HQ", a non-empty list here means
-    // Deezer/Qobuz/Tidal found real results that just didn't clear the match
-    // bar — see getCloseHqCandidates's own doc comment. Always empty unless
-    // that specific search just ran, so this costs nothing on every other read.
+    // false after a manual "Search for HQ", a non-empty list here means a
+    // provider found real results that just didn't clear the match bar —
+    // see getCloseHqCandidates's own doc comment. Always empty unless that
+    // specific search just ran, so this costs nothing on every other read.
     res.json({ video, searchingHq: isTrackBusy(video.id), closeHqCandidates: getCloseHqCandidates(video.id) });
   } catch (err) {
     next(err);

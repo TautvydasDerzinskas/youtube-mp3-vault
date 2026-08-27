@@ -42,13 +42,15 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
   const [deleting, setDeleting] = useState(false);
   const [renaming, setRenaming] = useState(false);
 
-  // Already downloaded the HQ file, or already know a better one exists
-  // (found but not auto-downloaded) — either way there's nothing a fresh
-  // search would tell us that we don't already know.
-  const alreadyHasHq = video.hqFileDownloaded || video.betterQualityExists;
+  // Search for HQ is only pointless once the file is actually downloaded —
+  // "found but not downloaded" (betterQualityExists) means a past pass
+  // matched something but couldn't deliver it (peer offline, a transfer
+  // that timed out, ...), which is exactly the case a manual retry can
+  // still help with, so that alone must never disable this action.
+  const hqDownloaded = video.hqFileDownloaded;
   const searchHqLabel = searching
     ? 'playlists.videoList.searchingHq'
-    : alreadyHasHq
+    : hqDownloaded
     ? 'playlists.videoList.alreadyHasHq'
     : 'playlists.videoList.searchForHq';
 
@@ -57,7 +59,10 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
   // has matched it *and* an HQ version has been found, a better name can't
   // change either outcome (see renameTrack in the backend's
   // slskdQualityWorker.ts, which independently re-runs only the piece(s)
-  // still missing after a rename for exactly this reason).
+  // still missing after a rename for exactly this reason). Unlike Search
+  // for HQ above, a found-but-undownloaded match still counts as "resolved"
+  // here — a rename wouldn't do anything a manual re-search couldn't.
+  const alreadyHasHq = video.hqFileDownloaded || video.betterQualityExists;
   const hasMetadata = video.metadataStatus === 'found';
   const canRename = !hasMetadata || !alreadyHasHq;
 
@@ -92,7 +97,7 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
           <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
           <ListItemText>{t('playlists.videoList.deleteTrack')}</ListItemText>
         </MenuItem>
-        <MenuItem disabled={searching || alreadyHasHq || video.downloadStatus !== 'done'} onClick={() => { onClose(); onSearchHq(); }}>
+        <MenuItem disabled={searching || hqDownloaded || video.downloadStatus !== 'done'} onClick={() => { onClose(); onSearchHq(); }}>
           <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t(searchHqLabel)}</ListItemText>
         </MenuItem>

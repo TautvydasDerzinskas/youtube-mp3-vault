@@ -3,26 +3,26 @@ import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Banner, Button, Chip, Dialog, IconButton, List, Portal, Text } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { CloseHqCandidate, PlaylistVideo } from '../api/playlists';
-import { youtubeWatchUrl } from '../utils/format';
+import { youtubeWatchUrl, formatDuration } from '../utils/format';
 import { ConfirmDialog } from './ConfirmDialog';
 
 // Brand names — deliberately not run through i18n, same as web's own
 // PROVIDER_LABEL in CloseHqCandidatesDialog.tsx. "Soulseek" (not "slskd",
 // the daemon's own name) since that's the network name a user would
-// actually recognize.
+// actually recognize. No JioSaavn entry — see CloseHqCandidate's own doc
+// comment on the backend for why it's excluded from this list.
 const PROVIDER_LABEL: Record<CloseHqCandidate['provider'], string> = {
   slskd: 'Soulseek',
-  jiosaavn: 'JioSaavn',
   deezer: 'Deezer',
   qobuz: 'Qobuz',
   tidal: 'Tidal',
 };
 
 interface CloseHqCandidatesDialogProps {
-  // Only the original-title/YouTube-link comparison row needs this — see
-  // RenameTrackDialog's identical row, which this one is deliberately
-  // styled to match.
-  video: Pick<PlaylistVideo, 'youtubeId' | 'originalTitle' | 'title'>;
+  // Only the original-title/YouTube-link/duration comparison row needs
+  // this — see RenameTrackDialog's identical original-title row, which this
+  // one is deliberately styled to match.
+  video: Pick<PlaylistVideo, 'youtubeId' | 'originalTitle' | 'title' | 'duration'>;
   candidates: CloseHqCandidate[];
   onDismiss: () => void;
   // Renames the track to the picked candidate's artist/title (reusing the
@@ -35,11 +35,14 @@ interface CloseHqCandidatesDialogProps {
 /**
  * Mirrors frontend/src/components/CloseHqCandidatesDialog.tsx — shown after
  * a manual "Search for HQ" comes up with no downloadable match, but one of
- * the providers it searches (Soulseek, JioSaavn, or a connected Deezer/
- * Qobuz/Tidal account) turned up real search results that just didn't clear
- * the match-confidence bar (see CloseHqCandidate's own doc comment on the
- * backend). Picking one asks for confirmation, then renames the track to
- * match it.
+ * the providers it searches (Soulseek or a connected Deezer/Qobuz/Tidal
+ * account) turned up real search results that just didn't clear the
+ * match-confidence bar (see CloseHqCandidate's own doc comment on the
+ * backend). Each candidate's own reported duration is shown alongside our
+ * video's, right next to the original title, so a duration mismatch (the
+ * most common reason a same-titled candidate isn't actually the same
+ * recording) is visible at a glance. Picking one asks for confirmation,
+ * then renames the track to match it.
  */
 export function CloseHqCandidatesDialog({ video, candidates, onDismiss, onSelect }: CloseHqCandidatesDialogProps) {
   const { t } = useTranslation();
@@ -56,6 +59,7 @@ export function CloseHqCandidatesDialog({ video, candidates, onDismiss, onSelect
           <View style={styles.originalTitleRow}>
             <Text variant="bodySmall" style={styles.originalTitleText} numberOfLines={2}>
               {t('playlists.videoList.originalTitle')}: {video.originalTitle ?? video.title}
+              {video.duration ? ` (${formatDuration(video.duration)})` : ''}
             </Text>
             <IconButton icon="youtube" size={20} onPress={() => Linking.openURL(youtubeWatchUrl(video.youtubeId))} />
           </View>
@@ -66,6 +70,7 @@ export function CloseHqCandidatesDialog({ video, candidates, onDismiss, onSelect
               <List.Item
                 key={`${c.provider}-${c.artist}-${c.title}`}
                 title={`${c.artist} - ${c.title}`}
+                description={c.durationSec ? formatDuration(c.durationSec) : undefined}
                 onPress={() => setSelected(c)}
                 right={() => (
                   <View style={styles.chipWrap}>
