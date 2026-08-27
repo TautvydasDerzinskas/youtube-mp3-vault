@@ -12,7 +12,10 @@ import { establishQobuzSession, type QobuzSession } from './qobuz';
 import { findQobuzCandidate, downloadAndReplace as downloadAndReplaceViaQobuz } from './qobuzReplace';
 import { establishTidalSession, type TidalSession } from './tidal';
 import { findTidalCandidate, downloadAndReplace as downloadAndReplaceViaTidal } from './tidalReplace';
-import { stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle, normalizeArtistSeparators } from './trackMatching';
+import {
+  stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle,
+  normalizeArtistSeparators, MATCH_TIERS, MATCH_TIERS_TRUSTED_NAME,
+} from './trackMatching';
 import { resolveMetadataForRename } from './metadataWorker';
 
 // Shared groundwork for both resolvePlaylistQuality (a whole playlist,
@@ -135,8 +138,19 @@ async function checkVideoQuality(
   video: PrismaPlaylistVideo,
   sessions: HqSessions,
   onHqFound?: (videoId: string) => void,
+  // Set only by renameTrack below, for the search that immediately follows
+  // a manual "Rename track" — a human just typed and confirmed this
+  // artist/title, so the duration-tolerance backstop against "same title,
+  // different recording" (see MATCH_TIERS_TRUSTED_NAME's own doc comment)
+  // is redundant there and can only cost a legitimate match against, say, a
+  // YouTube upload with a much longer intro than the canonical release.
+  // Every other caller (the batch sync pass, the standalone "Search for HQ"
+  // action on an unrenamed track) keeps the normal tiers, since there the
+  // artist/title is still whatever automatic parsing produced.
+  trustedName = false,
 ): Promise<QualityCheckOutcome> {
   const { deezerSession, qobuzSession, tidalSession } = sessions;
+  const tiers = trustedName ? MATCH_TIERS_TRUSTED_NAME : MATCH_TIERS;
   {
     // Already at (or somehow above) the ceiling this app treats as the
     // highest plausible real mp3 bitrate — slskd.ts's own search discards
@@ -249,15 +263,15 @@ async function checkVideoQuality(
         // "no match"/"download failed" cases (see hqReplace.ts and
         // jiosaavnReplace.ts) — this is a backstop for the unexpected case.
         try {
-          slskdCandidate = await findExactMatchCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
+          slskdCandidate = await findExactMatchCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
           if (!slskdCandidate && hasCleanedFallback) {
-            slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+            slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
           }
           if (!slskdCandidate && hasQuotedFallback && quotedExtraction) {
-            slskdCandidate = await findExactMatchCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+            slskdCandidate = await findExactMatchCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
           }
           if (!slskdCandidate && hasDashFallback && dashExtraction) {
-            slskdCandidate = await findExactMatchCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+            slskdCandidate = await findExactMatchCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
           }
           if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
         } catch (err) {
@@ -268,15 +282,15 @@ async function checkVideoQuality(
           // slskd came up empty (or errored) — fall back to JioSaavn's free
           // public catalog before giving up on this video for this pass.
           try {
-            jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
+            jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!jioSaavnCandidate && hasCleanedFallback) {
-              jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+              jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
             }
             if (!jioSaavnCandidate && hasQuotedFallback && quotedExtraction) {
-              jioSaavnCandidate = await findJioSaavnCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+              jioSaavnCandidate = await findJioSaavnCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (!jioSaavnCandidate && hasDashFallback && dashExtraction) {
-              jioSaavnCandidate = await findJioSaavnCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+              jioSaavnCandidate = await findJioSaavnCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (jioSaavnCandidate) replaced = await downloadAndReplaceViaJioSaavn(video, jioSaavnCandidate);
           } catch (err) {
@@ -290,15 +304,15 @@ async function checkVideoQuality(
           // up front for this whole sync pass, see deezerSession above),
           // ahead of Qobuz and Bandcamp's free catalog.
           try {
-            deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration);
+            deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!deezerCandidate && hasCleanedFallback) {
-              deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration);
+              deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
             }
             if (!deezerCandidate && hasQuotedFallback && quotedExtraction) {
-              deezerCandidate = await findDeezerCandidate(deezerSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+              deezerCandidate = await findDeezerCandidate(deezerSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (!deezerCandidate && hasDashFallback && dashExtraction) {
-              deezerCandidate = await findDeezerCandidate(deezerSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+              deezerCandidate = await findDeezerCandidate(deezerSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (deezerCandidate) replaced = await downloadAndReplaceViaDeezer(video, deezerSession, deezerCandidate);
           } catch (err) {
@@ -312,15 +326,15 @@ async function checkVideoQuality(
           // confirmed usable once up front for this whole sync pass, see
           // qobuzSession above), ahead of Bandcamp's free catalog.
           try {
-            qobuzCandidate = await findQobuzCandidate(qobuzSession, searchArtist, searchTitle, video.bitrate, video.duration);
+            qobuzCandidate = await findQobuzCandidate(qobuzSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!qobuzCandidate && hasCleanedFallback) {
-              qobuzCandidate = await findQobuzCandidate(qobuzSession, strippedArtist, strippedTitle, video.bitrate, video.duration);
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
             }
             if (!qobuzCandidate && hasQuotedFallback && quotedExtraction) {
-              qobuzCandidate = await findQobuzCandidate(qobuzSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (!qobuzCandidate && hasDashFallback && dashExtraction) {
-              qobuzCandidate = await findQobuzCandidate(qobuzSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (qobuzCandidate) replaced = await downloadAndReplaceViaQobuz(video, qobuzSession, qobuzCandidate);
           } catch (err) {
@@ -334,15 +348,15 @@ async function checkVideoQuality(
           // confirmed usable once up front for this whole sync pass, see
           // tidalSession above), ahead of Bandcamp's free catalog.
           try {
-            tidalCandidate = await findTidalCandidate(tidalSession, searchArtist, searchTitle, video.bitrate, video.duration);
+            tidalCandidate = await findTidalCandidate(tidalSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!tidalCandidate && hasCleanedFallback) {
-              tidalCandidate = await findTidalCandidate(tidalSession, strippedArtist, strippedTitle, video.bitrate, video.duration);
+              tidalCandidate = await findTidalCandidate(tidalSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
             }
             if (!tidalCandidate && hasQuotedFallback && quotedExtraction) {
-              tidalCandidate = await findTidalCandidate(tidalSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+              tidalCandidate = await findTidalCandidate(tidalSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (!tidalCandidate && hasDashFallback && dashExtraction) {
-              tidalCandidate = await findTidalCandidate(tidalSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+              tidalCandidate = await findTidalCandidate(tidalSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (tidalCandidate) replaced = await downloadAndReplaceViaTidal(video, tidalSession, tidalCandidate);
           } catch (err) {
@@ -355,15 +369,15 @@ async function checkVideoQuality(
           // account connected for this playlist) — Bandcamp's free catalog
           // is the last resort.
           try {
-            bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration);
+            bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!bandcampCandidate && hasCleanedFallback) {
-              bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration);
+              bandcampCandidate = await findBandcampCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
             }
             if (!bandcampCandidate && hasQuotedFallback && quotedExtraction) {
-              bandcampCandidate = await findBandcampCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration);
+              bandcampCandidate = await findBandcampCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (!bandcampCandidate && hasDashFallback && dashExtraction) {
-              bandcampCandidate = await findBandcampCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration);
+              bandcampCandidate = await findBandcampCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
             }
             if (bandcampCandidate) replaced = await downloadAndReplaceViaBandcamp(video, bandcampCandidate);
           } catch (err) {
@@ -605,6 +619,9 @@ export async function renameTrack(videoId: string, artist: string | null, title:
   const alreadyHasHq = fresh.hqFileDownloaded || fresh.betterQualityExists;
   if (fresh.downloadStatus === 'done' && !alreadyHasHq && isOnline()) {
     const sessions = await buildHqSessions(fresh.playlistId, 1);
-    await checkVideoQuality(fresh, sessions);
+    // trustedName: true — see checkVideoQuality's own doc comment on that
+    // parameter for why a rename gets to skip the duration backstop that
+    // every other caller keeps.
+    await checkVideoQuality(fresh, sessions, undefined, true);
   }
 }

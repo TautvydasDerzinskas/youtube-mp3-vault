@@ -10,7 +10,7 @@ import {
   type QobuzSession,
 } from './qobuz';
 import { MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
-import { MATCH_TIERS, isDurationPlausible } from './trackMatching';
+import { MATCH_TIERS, isDurationPlausible, type MatchTier } from './trackMatching';
 import { transcodeToMp3 } from './audioTranscode';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
 
@@ -40,6 +40,9 @@ export async function findQobuzCandidate(
   title: string,
   currentBitrate: number | null,
   videoDurationSec: number | null,
+  // Overridable so the rename-triggered HQ search can pass
+  // MATCH_TIERS_TRUSTED_NAME instead — see that constant's own doc comment.
+  tiers: MatchTier[] = MATCH_TIERS,
 ): Promise<QobuzHqCandidate | null> {
   if (!isOnline()) return null;
   if (!artist.trim() || !title.trim()) return null;
@@ -54,7 +57,7 @@ export async function findQobuzCandidate(
   const tracks = await searchQobuzTracks(query, QOBUZ_SEARCH_LIMIT);
   if (tracks.length === 0) return null;
 
-  for (const tier of MATCH_TIERS) {
+  for (const tier of tiers) {
     for (const track of tracks) {
       if (!tier.textMatch(track.artist, track.title, artist, title)) continue;
       if (!isDurationPlausible(track.durationSec, videoDurationSec, tier.durationStrictness, tier.requireKnownDuration)) continue;

@@ -6,7 +6,7 @@ import { isOnline } from './connectivity';
 import { config } from '../config';
 import { slskdClient, isSlskdConfigured, MAX_PLAUSIBLE_MP3_BITRATE_KBPS, LOSSLESS_EXTENSIONS } from './slskd';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
-import { isDurationPlausible, MATCH_TIERS, splitArtistTitle, stripUploadNoise } from './trackMatching';
+import { isDurationPlausible, MATCH_TIERS, splitArtistTitle, stripUploadNoise, type MatchTier } from './trackMatching';
 import { transcodeToMp3 } from './audioTranscode';
 
 // Generous ceiling for a single track transfer, polled every couple of
@@ -70,6 +70,9 @@ export async function findExactMatchCandidate(
   title: string,
   currentBitrate: number | null,
   videoDurationSec: number | null,
+  // Overridable so the rename-triggered HQ search can pass
+  // MATCH_TIERS_TRUSTED_NAME instead — see that constant's own doc comment.
+  tiers: MatchTier[] = MATCH_TIERS,
 ): Promise<HqCandidate | null> {
   if (!isOnline() || !isSlskdConfigured()) return null;
 
@@ -79,7 +82,7 @@ export async function findExactMatchCandidate(
   const result = await slskdClient.search(searchText);
   if (!result) return null;
 
-  for (const tier of MATCH_TIERS) {
+  for (const tier of tiers) {
     let best: HqCandidate | null = null;
     for (const response of result.responses) {
       for (const file of response.files ?? []) {

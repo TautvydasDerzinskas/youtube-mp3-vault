@@ -13,7 +13,7 @@ import {
   BANDCAMP_STREAM_BITRATE_KBPS,
 } from './bandcamp';
 import { MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
-import { MATCH_TIERS, isDurationPlausible } from './trackMatching';
+import { MATCH_TIERS, isDurationPlausible, type MatchTier } from './trackMatching';
 import { transcodeToMp3 } from './audioTranscode';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
 
@@ -63,6 +63,9 @@ export async function findBandcampCandidate(
   title: string,
   currentBitrate: number | null,
   videoDurationSec: number | null,
+  // Overridable so the rename-triggered HQ search can pass
+  // MATCH_TIERS_TRUSTED_NAME instead — see that constant's own doc comment.
+  tiers: MatchTier[] = MATCH_TIERS,
 ): Promise<BandcampHqCandidate | null> {
   if (!isOnline()) return null;
   if (!artist.trim() || !title.trim()) return null;
@@ -74,7 +77,7 @@ export async function findBandcampCandidate(
   const results = await searchBandcampTracks(`${artist} ${title}`.trim(), BANDCAMP_SEARCH_LIMIT);
   if (results.length === 0) return null;
 
-  for (const tier of MATCH_TIERS) {
+  for (const tier of tiers) {
     // Best case for this tier (a Free Download match) still couldn't clear
     // its improvement bar — skip straight past it without even running text
     // match, same page-fetch-avoidance role this check played before, just

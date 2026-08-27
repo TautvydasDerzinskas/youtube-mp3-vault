@@ -579,7 +579,9 @@ export function stripDecorativeSymbols(text: string): string {
   return cleaned || text;
 }
 
-export type DurationStrictness = 'sanity' | 'moderate' | 'tight';
+// 'skip' is deliberately not reachable from automatic matching — see
+// MATCH_TIERS_TRUSTED_NAME's own doc comment for the one case that uses it.
+export type DurationStrictness = 'sanity' | 'moderate' | 'tight' | 'skip';
 
 // How close a candidate's reported length has to be to our stored video
 // duration to corroborate a match, in seconds. YouTube video duration can
@@ -595,6 +597,7 @@ export function durationToleranceSeconds(videoDurationSec: number, strictness: D
     case 'sanity': return Math.max(20, videoDurationSec * 0.15);
     case 'moderate': return Math.max(12, videoDurationSec * 0.10);
     case 'tight': return Math.max(8, videoDurationSec * 0.07);
+    case 'skip': return Infinity;
   }
 }
 
@@ -668,5 +671,23 @@ export const MATCH_TIERS: MatchTier[] = [
     minBitrateImprovementKbps: 32,
   },
 ];
+
+// Same text-matching tiers as MATCH_TIERS, but the duration check is
+// skipped for every tier whose text match already requires an exact (or
+// artist-superset) title match — used only for the HQ search that follows a
+// manual "Rename track" action (see renameTrack in slskdQualityWorker.ts).
+// Duration exists on those tiers purely as a backstop against "same title,
+// different recording" (a radio edit vs. album version, a YouTube upload
+// with a much longer intro than the canonical release, etc.) when the
+// identification itself came from *automatic* matching — once a human has
+// just manually typed and confirmed the artist/title, that backstop no
+// longer earns its keep and can only cost a legitimate match. The fuzzy
+// title-similarity tier is deliberately left untouched even here: there,
+// duration is real corroborating evidence for a text match that's only
+// approximate to begin with, not just an edition-mismatch guard, so it
+// stays required no matter how the search was triggered.
+export const MATCH_TIERS_TRUSTED_NAME: MatchTier[] = MATCH_TIERS.map((tier, i) => (
+  i < MATCH_TIERS.length - 1 ? { ...tier, durationStrictness: 'skip' } : tier
+));
 
 const FUZZY_TITLE_SIMILARITY_THRESHOLD = 0.82;
