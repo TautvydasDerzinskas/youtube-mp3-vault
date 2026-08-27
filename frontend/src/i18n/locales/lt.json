@@ -182,7 +182,13 @@
         "message": "Tai visam laikui ištrins atsisiųstą failą \"{{title}}\" ir pašalins jį iš visų grojaraščių, kuriuose jis yra, įskaitant kitų vartotojų grojaraščius, kurie naudoja tą patį failą. Šio veiksmo atšaukti negalima."
       },
       "trackDeleted": "Ištrinta \"{{title}}\".",
-      "trackDeleteError": "Nepavyko ištrinti kūrinio."
+      "trackDeleteError": "Nepavyko ištrinti kūrinio.",
+      "closeHqCandidates": {
+        "title": "Tikslaus atitikmens nėra, bet rasta panašių kūrinių",
+        "infoBox": "Tikslaus atitikmens nepavyko rasti, bet rasta panašių. Pasirinkus vieną iš jų, šio kūrinio atlikėjas ir pavadinimas bus pakeisti į rodomą, o aukštesnės kokybės failas atsisiųstas su nauju pavadinimu.",
+        "confirmTitle": "Pervadinti kūrinį?",
+        "confirmMessage": "Pervadinti šį kūrinį į \"{{name}}\"? HQ paieška bus paleista iš naujo su nauju pavadinimu."
+      }
     },
     "miniPlayer": {
       "close": "Uždaryti grotuvą",

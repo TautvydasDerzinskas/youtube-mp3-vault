@@ -10,7 +10,7 @@ import {
   type QobuzSession,
 } from './qobuz';
 import { MAX_PLAUSIBLE_MP3_BITRATE_KBPS } from './slskd';
-import { MATCH_TIERS, isDurationPlausible, type MatchTier } from './trackMatching';
+import { MATCH_TIERS, isDurationPlausible, type MatchTier, type NearMissCandidate } from './trackMatching';
 import { transcodeToMp3 } from './audioTranscode';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
 
@@ -43,6 +43,11 @@ export async function findQobuzCandidate(
   // Overridable so the rename-triggered HQ search can pass
   // MATCH_TIERS_TRUSTED_NAME instead — see that constant's own doc comment.
   tiers: MatchTier[] = MATCH_TIERS,
+  // Populated with every raw search result whenever none of them clear any
+  // tier — see NearMissCandidate's own doc comment. Left undefined by every
+  // caller that doesn't want this (the batch sync pass), which skips the
+  // collection entirely.
+  nearMisses?: NearMissCandidate[],
 ): Promise<QobuzHqCandidate | null> {
   if (!isOnline()) return null;
   if (!artist.trim() || !title.trim()) return null;
@@ -67,6 +72,7 @@ export async function findQobuzCandidate(
     }
   }
 
+  nearMisses?.push(...tracks.map((t) => ({ artist: t.artist, title: t.title })));
   return null;
 }
 

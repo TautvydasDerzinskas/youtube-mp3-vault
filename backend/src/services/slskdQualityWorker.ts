@@ -14,7 +14,7 @@ import { establishTidalSession, type TidalSession } from './tidal';
 import { findTidalCandidate, downloadAndReplace as downloadAndReplaceViaTidal } from './tidalReplace';
 import {
   stripFeaturedArtists, stripUploadNoise, stripDecorativeSymbols, extractQuotedArtistTitle, extractDashArtistTitle,
-  normalizeArtistSeparators, MATCH_TIERS, MATCH_TIERS_TRUSTED_NAME,
+  normalizeArtistSeparators, foldForMatch, MATCH_TIERS, MATCH_TIERS_TRUSTED_NAME, type NearMissCandidate,
 } from './trackMatching';
 import { resolveMetadataForRename } from './metadataWorker';
 
@@ -128,6 +128,20 @@ async function buildHqSessions(playlistId: string, videoCount: number): Promise<
 // vanished from the DB mid-check).
 type QualityCheckOutcome = 'processed' | 'skipped';
 
+// Surfaced by searchTrackQuality below (never the batch pass) when any
+// provider in the cascade turned up real search results for this track that
+// didn't clear any MATCH_TIERS tier — see NearMissCandidate's own doc
+// comment. `provider` is which one it came from, used to dedupe-and-tag the
+// list the frontend renders as one-click rename suggestions
+// (routes/youtube.ts's GET .../videos/:videoId response), capped at
+// CLOSE_HQ_CANDIDATES_LIMIT total so that list stays a manageable, glanceable
+// picker rather than dumping every near-miss every source turned up.
+export interface CloseHqCandidate extends NearMissCandidate {
+  provider: 'slskd' | 'jiosaavn' | 'deezer' | 'qobuz' | 'tidal';
+}
+
+const CLOSE_HQ_CANDIDATES_LIMIT = 5;
+
 // Everything from "does this video's bitrate already max out" through
 // "write the final verdict" for exactly one video — shared by
 // resolvePlaylistQuality's whole-playlist loop below and searchTrackQuality
@@ -138,16 +152,23 @@ async function checkVideoQuality(
   video: PrismaPlaylistVideo,
   sessions: HqSessions,
   onHqFound?: (videoId: string) => void,
-  // Set only by renameTrack below, for the search that immediately follows
-  // a manual "Rename track" — a human just typed and confirmed this
-  // artist/title, so the duration-tolerance backstop against "same title,
-  // different recording" (see MATCH_TIERS_TRUSTED_NAME's own doc comment)
-  // is redundant there and can only cost a legitimate match against, say, a
-  // YouTube upload with a much longer intro than the canonical release.
-  // Every other caller (the batch sync pass, the standalone "Search for HQ"
-  // action on an unrenamed track) keeps the normal tiers, since there the
-  // artist/title is still whatever automatic parsing produced.
+  // Set true by both single-track entry points below — searchTrackQuality
+  // (the context menu's standalone "Search for HQ") and renameTrack (the
+  // search that follows a manual rename) — since either way a human just
+  // deliberately asked this one specific track to be searched, so the
+  // duration-tolerance backstop against "same title, different recording"
+  // (see MATCH_TIERS_TRUSTED_NAME's own doc comment) is redundant and can
+  // only cost a legitimate match against, say, a YouTube upload with a much
+  // longer intro than the canonical release. Only resolvePlaylistQuality's
+  // batch sync-pass loop keeps the normal tiers — an unattended pass over
+  // every track in a playlist has no human confirming each match, so it's
+  // the one place that duration backstop still earns its keep.
   trustedName = false,
+  // Populated (not replaced) by searchTrackQuality below with deduped
+  // Deezer/Qobuz/Tidal near-misses once the whole cascade finishes without a
+  // real download — see CloseHqCandidate's own doc comment. Left undefined
+  // everywhere else, which skips collecting the raw candidates at all.
+  closeCandidatesOut?: CloseHqCandidate[],
 ): Promise<QualityCheckOutcome> {
   const { deezerSession, qobuzSession, tidalSession } = sessions;
   const tiers = trustedName ? MATCH_TIERS_TRUSTED_NAME : MATCH_TIERS;
@@ -254,6 +275,16 @@ async function checkVideoQuality(
         let bandcampCandidate: Awaited<ReturnType<typeof findBandcampCandidate>> = null;
         let replaced = false;
 
+        // Only allocated when the caller actually wants them (searchTrackQuality)
+        // — undefined here means findDeezerCandidate/findQobuzCandidate/
+        // findTidalCandidate skip the collection entirely, same cost as before
+        // this feature existed for the batch pass.
+        const slskdNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
+        const jioSaavnNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
+        const deezerNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
+        const qobuzNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
+        const tidalNearMisses: NearMissCandidate[] | undefined = closeCandidatesOut ? [] : undefined;
+
         // Each source is isolated in its own try/catch — an unexpected
         // failure on one (a slskd daemon hiccup, a JioSaavn API error) is
         // logged and treated the same as "this source found nothing", not
@@ -263,34 +294,40 @@ async function checkVideoQuality(
         // "no match"/"download failed" cases (see hqReplace.ts and
         // jiosaavnReplace.ts) — this is a backstop for the unexpected case.
         try {
-          slskdCandidate = await findExactMatchCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
+          slskdCandidate = await findExactMatchCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers, slskdNearMisses);
           if (!slskdCandidate && hasCleanedFallback) {
-            slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
+            slskdCandidate = await findExactMatchCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, slskdNearMisses);
           }
           if (!slskdCandidate && hasQuotedFallback && quotedExtraction) {
-            slskdCandidate = await findExactMatchCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
+            slskdCandidate = await findExactMatchCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, slskdNearMisses);
           }
           if (!slskdCandidate && hasDashFallback && dashExtraction) {
-            slskdCandidate = await findExactMatchCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
+            slskdCandidate = await findExactMatchCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers, slskdNearMisses);
           }
           if (slskdCandidate) replaced = await downloadAndReplaceViaSlskd(video, slskdCandidate);
         } catch (err) {
           console.error(`[slskd] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
         }
 
-        if (!replaced && !slskdCandidate) {
-          // slskd came up empty (or errored) — fall back to JioSaavn's free
-          // public catalog before giving up on this video for this pass.
+        if (!replaced) {
+          // slskd came up empty, errored, or found a match but couldn't
+          // actually download it (peer offline, transfer stalled/timed out —
+          // see DOWNLOAD_MAX_WAIT_MS in hqReplace.ts) — either way, fall back
+          // to JioSaavn's free public catalog rather than giving up on this
+          // video for this pass. Gating on `!replaced` alone (not also
+          // `!slskdCandidate`) is deliberate: a match slskd can't deliver is
+          // no better than no match at all, so the other sources still
+          // deserve a shot at this video in the same pass.
           try {
-            jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
+            jioSaavnCandidate = await findJioSaavnCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
             if (!jioSaavnCandidate && hasCleanedFallback) {
-              jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
+              jioSaavnCandidate = await findJioSaavnCandidate(strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
             }
             if (!jioSaavnCandidate && hasQuotedFallback && quotedExtraction) {
-              jioSaavnCandidate = await findJioSaavnCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
+              jioSaavnCandidate = await findJioSaavnCandidate(quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
             }
             if (!jioSaavnCandidate && hasDashFallback && dashExtraction) {
-              jioSaavnCandidate = await findJioSaavnCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
+              jioSaavnCandidate = await findJioSaavnCandidate(dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers, jioSaavnNearMisses);
             }
             if (jioSaavnCandidate) replaced = await downloadAndReplaceViaJioSaavn(video, jioSaavnCandidate);
           } catch (err) {
@@ -298,21 +335,22 @@ async function checkVideoQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && deezerSession) {
-          // slskd and JioSaavn both came up empty — try this playlist's
-          // owner's own Deezer account next (already confirmed usable once
-          // up front for this whole sync pass, see deezerSession above),
-          // ahead of Qobuz and Bandcamp's free catalog.
+        if (!replaced && deezerSession) {
+          // slskd and JioSaavn both came up empty or couldn't deliver a
+          // download — try this playlist's owner's own Deezer account next
+          // (already confirmed usable once up front for this whole sync
+          // pass, see deezerSession above), ahead of Qobuz and Bandcamp's
+          // free catalog.
           try {
-            deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers);
+            deezerCandidate = await findDeezerCandidate(deezerSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers, deezerNearMisses);
             if (!deezerCandidate && hasCleanedFallback) {
-              deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
+              deezerCandidate = await findDeezerCandidate(deezerSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, deezerNearMisses);
             }
             if (!deezerCandidate && hasQuotedFallback && quotedExtraction) {
-              deezerCandidate = await findDeezerCandidate(deezerSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
+              deezerCandidate = await findDeezerCandidate(deezerSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, deezerNearMisses);
             }
             if (!deezerCandidate && hasDashFallback && dashExtraction) {
-              deezerCandidate = await findDeezerCandidate(deezerSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
+              deezerCandidate = await findDeezerCandidate(deezerSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers, deezerNearMisses);
             }
             if (deezerCandidate) replaced = await downloadAndReplaceViaDeezer(video, deezerSession, deezerCandidate);
           } catch (err) {
@@ -320,21 +358,22 @@ async function checkVideoQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && qobuzSession) {
+        if (!replaced && qobuzSession) {
           // slskd, JioSaavn, and this owner's Deezer account (if any) all
-          // came up empty — try their own Qobuz account next (already
-          // confirmed usable once up front for this whole sync pass, see
-          // qobuzSession above), ahead of Bandcamp's free catalog.
+          // came up empty or couldn't deliver a download — try their own
+          // Qobuz account next (already confirmed usable once up front for
+          // this whole sync pass, see qobuzSession above), ahead of
+          // Bandcamp's free catalog.
           try {
-            qobuzCandidate = await findQobuzCandidate(qobuzSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers);
+            qobuzCandidate = await findQobuzCandidate(qobuzSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers, qobuzNearMisses);
             if (!qobuzCandidate && hasCleanedFallback) {
-              qobuzCandidate = await findQobuzCandidate(qobuzSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, qobuzNearMisses);
             }
             if (!qobuzCandidate && hasQuotedFallback && quotedExtraction) {
-              qobuzCandidate = await findQobuzCandidate(qobuzSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, qobuzNearMisses);
             }
             if (!qobuzCandidate && hasDashFallback && dashExtraction) {
-              qobuzCandidate = await findQobuzCandidate(qobuzSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
+              qobuzCandidate = await findQobuzCandidate(qobuzSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers, qobuzNearMisses);
             }
             if (qobuzCandidate) replaced = await downloadAndReplaceViaQobuz(video, qobuzSession, qobuzCandidate);
           } catch (err) {
@@ -342,21 +381,22 @@ async function checkVideoQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && !qobuzCandidate && tidalSession) {
+        if (!replaced && tidalSession) {
           // slskd, JioSaavn, and this owner's Deezer/Qobuz accounts (if any)
-          // all came up empty — try their own Tidal account next (already
-          // confirmed usable once up front for this whole sync pass, see
-          // tidalSession above), ahead of Bandcamp's free catalog.
+          // all came up empty or couldn't deliver a download — try their own
+          // Tidal account next (already confirmed usable once up front for
+          // this whole sync pass, see tidalSession above), ahead of
+          // Bandcamp's free catalog.
           try {
-            tidalCandidate = await findTidalCandidate(tidalSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers);
+            tidalCandidate = await findTidalCandidate(tidalSession, searchArtist, searchTitle, video.bitrate, video.duration, tiers, tidalNearMisses);
             if (!tidalCandidate && hasCleanedFallback) {
-              tidalCandidate = await findTidalCandidate(tidalSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers);
+              tidalCandidate = await findTidalCandidate(tidalSession, strippedArtist, strippedTitle, video.bitrate, video.duration, tiers, tidalNearMisses);
             }
             if (!tidalCandidate && hasQuotedFallback && quotedExtraction) {
-              tidalCandidate = await findTidalCandidate(tidalSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers);
+              tidalCandidate = await findTidalCandidate(tidalSession, quotedExtraction.artist, quotedExtraction.title, video.bitrate, video.duration, tiers, tidalNearMisses);
             }
             if (!tidalCandidate && hasDashFallback && dashExtraction) {
-              tidalCandidate = await findTidalCandidate(tidalSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers);
+              tidalCandidate = await findTidalCandidate(tidalSession, dashExtraction.artist, dashExtraction.title, video.bitrate, video.duration, tiers, tidalNearMisses);
             }
             if (tidalCandidate) replaced = await downloadAndReplaceViaTidal(video, tidalSession, tidalCandidate);
           } catch (err) {
@@ -364,10 +404,11 @@ async function checkVideoQuality(
           }
         }
 
-        if (!replaced && !slskdCandidate && !jioSaavnCandidate && !deezerCandidate && !qobuzCandidate && !tidalCandidate) {
-          // Nothing above found anything (or there's no Deezer/Qobuz/Tidal
-          // account connected for this playlist) — Bandcamp's free catalog
-          // is the last resort.
+        if (!replaced) {
+          // Nothing above found anything (or found a match nobody could
+          // actually deliver, or there's no Deezer/Qobuz/Tidal account
+          // connected for this playlist) — Bandcamp's free catalog is the
+          // last resort.
           try {
             bandcampCandidate = await findBandcampCandidate(searchArtist, searchTitle, video.bitrate, video.duration, tiers);
             if (!bandcampCandidate && hasCleanedFallback) {
@@ -383,6 +424,31 @@ async function checkVideoQuality(
           } catch (err) {
             console.error(`[bandcamp] HQ search/download failed for ${video.youtubeId}:`, (err as Error).message);
           }
+        }
+
+        // A real download always makes any near-miss moot (the track just
+        // got its HQ upgrade under its existing name) — only worth surfacing
+        // when the whole cascade above still came up empty-handed.
+        if (closeCandidatesOut && !replaced) {
+          const seen = new Set<string>();
+          // Same priority order as the cascade above — slskd/JioSaavn first
+          // (most current/broadest catalogs), then the connected per-account
+          // providers — so when the CLOSE_HQ_CANDIDATES_LIMIT cap trims the
+          // list, it trims the least-preferred sources first.
+          const collect = (provider: CloseHqCandidate['provider'], misses: NearMissCandidate[] | undefined) => {
+            for (const c of misses ?? []) {
+              if (closeCandidatesOut.length >= CLOSE_HQ_CANDIDATES_LIMIT) return;
+              const key = foldForMatch(`${c.artist} - ${c.title}`);
+              if (!key || seen.has(key)) continue;
+              seen.add(key);
+              closeCandidatesOut.push({ provider, artist: c.artist, title: c.title });
+            }
+          };
+          collect('slskd', slskdNearMisses);
+          collect('jiosaavn', jioSaavnNearMisses);
+          collect('deezer', deezerNearMisses);
+          collect('qobuz', qobuzNearMisses);
+          collect('tidal', tidalNearMisses);
         }
 
         if (replaced) {
@@ -552,6 +618,25 @@ export function isTrackBusy(videoId: string): boolean {
   return activeTrackOperations.has(videoId);
 }
 
+// Last search's Deezer/Qobuz/Tidal near-misses for a track, keyed by
+// PlaylistVideo id — populated by searchTrackQuality below once a search
+// finishes with no real match, read by routes/youtube.ts's GET
+// .../videos/:videoId (polled the same way as searchingHq) so the frontend
+// can offer them as one-click rename suggestions. Deliberately in-memory,
+// not persisted: this is a suggestion tied to one specific search run, not
+// durable state about the track. Cleared whenever a new search or rename
+// starts for this video (a fresh action supersedes whatever the last one
+// suggested) and via dismissCloseHqCandidates once the frontend's shown it.
+const closeCandidatesByVideo = new Map<string, CloseHqCandidate[]>();
+
+export function getCloseHqCandidates(videoId: string): CloseHqCandidate[] {
+  return closeCandidatesByVideo.get(videoId) ?? [];
+}
+
+export function dismissCloseHqCandidates(videoId: string): void {
+  closeCandidatesByVideo.delete(videoId);
+}
+
 // Fire-and-forget entry point for the track context menu's "Search for HQ"
 // action — the route adds videoId to activeTrackOperations synchronously
 // (before responding) so a near-simultaneous second click is rejected
@@ -573,11 +658,17 @@ export function startTrackHqSearch(videoId: string): void {
 // always actually searches regardless of what a past check found (short of
 // the bitrate-ceiling short-circuit inside checkVideoQuality, which still
 // applies: an already-maxed-out track has nothing to gain from any source).
+// trustedName: true — same reasoning as renameTrack's own call below: a
+// human deliberately asked for this specific track, so the duration
+// backstop is relaxed here too, not just on the post-rename search.
 async function searchTrackQuality(videoId: string): Promise<void> {
   if (!isOnline()) return;
+  closeCandidatesByVideo.delete(videoId);
   const video = await prisma.playlistVideo.findUniqueOrThrow({ where: { id: videoId } });
   const sessions = await buildHqSessions(video.playlistId, 1);
-  await checkVideoQuality(video, sessions);
+  const closeCandidates: CloseHqCandidate[] = [];
+  await checkVideoQuality(video, sessions, undefined, true, closeCandidates);
+  if (closeCandidates.length > 0) closeCandidatesByVideo.set(videoId, closeCandidates);
 }
 
 // Fire-and-forget entry point for the track context menu's "Rename track"
@@ -599,6 +690,9 @@ export function startTrackRename(videoId: string, artist: string | null, title: 
 // all). Reuses searchTrackQuality's exact provider cascade for the HQ half,
 // and metadataWorker.ts's resolveMetadataForRename for the metadata half.
 export async function renameTrack(videoId: string, artist: string | null, title: string): Promise<void> {
+  // A rename supersedes whatever the last search suggested — most obviously
+  // when it's the rename the user picked from that very suggestion list.
+  closeCandidatesByVideo.delete(videoId);
   const video = await prisma.playlistVideo.update({
     where: { id: videoId },
     data: { artist, title },
@@ -620,8 +714,8 @@ export async function renameTrack(videoId: string, artist: string | null, title:
   if (fresh.downloadStatus === 'done' && !alreadyHasHq && isOnline()) {
     const sessions = await buildHqSessions(fresh.playlistId, 1);
     // trustedName: true — see checkVideoQuality's own doc comment on that
-    // parameter for why a rename gets to skip the duration backstop that
-    // every other caller keeps.
+    // parameter for why this (and searchTrackQuality above) skip the
+    // duration backstop that the batch sync pass keeps.
     await checkVideoQuality(fresh, sessions, undefined, true);
   }
 }

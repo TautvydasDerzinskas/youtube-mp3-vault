@@ -7,10 +7,11 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { playlistsApi, PlaylistVideo } from '../api/youtube';
+import { playlistsApi, PlaylistVideo, CloseHqCandidate } from '../api/youtube';
 import { formatDuration, formatGenre, youtubeWatchUrl, STATUS_ICON, isLowBitrate } from '../pages/PlaylistsPage/utils';
 import { useToast } from '../contexts/ToastContext';
 import { TrackContextMenu } from './TrackContextMenu';
+import { CloseHqCandidatesDialog } from './CloseHqCandidatesDialog';
 
 export interface TrackRowProps {
   video: PlaylistVideo;
@@ -53,6 +54,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
   const trackPlaylistId = v.playlistId ?? playlistId ?? '';
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [searching, setSearching] = useState(false);
+  const [closeCandidates, setCloseCandidates] = useState<CloseHqCandidate[]>([]);
 
   // Shared tail end of both Search for HQ and Rename track — polls GET
   // .../videos/:videoId (the same single-video endpoint TrackDetailPage
@@ -69,7 +71,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
     const hadHq = v.hqFileDownloaded || v.betterQualityExists;
     const poll = async () => {
       try {
-        const { video: fresh, searchingHq } = await playlistsApi.getVideo(trackPlaylistId, v.id);
+        const { video: fresh, searchingHq, closeHqCandidates } = await playlistsApi.getVideo(trackPlaylistId, v.id);
         if (searchingHq) {
           setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
           return;
@@ -83,7 +85,14 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
         if (foundHq && !hadHq) {
           showSuccess(t('playlists.videoList.hqFoundForTrack', { title: fresh.title }));
         } else if (mode === 'search' && !foundHq) {
-          showInfo(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
+          // Deezer/Qobuz/Tidal turning up real-but-unconfident results is a
+          // richer signal than plain "nothing found" — offer them as
+          // one-click rename suggestions instead of the plain toast.
+          if (closeHqCandidates.length > 0) {
+            setCloseCandidates(closeHqCandidates);
+          } else {
+            showInfo(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
+          }
         }
       } catch {
         // Network hiccup — stop polling silently rather than spin forever.
@@ -91,6 +100,24 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       }
     };
     setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
+  };
+
+  const handleDismissCloseCandidates = () => {
+    setCloseCandidates([]);
+    playlistsApi.dismissHqCandidates(trackPlaylistId, v.id).catch(() => {});
+  };
+
+  // Picking a suggestion is just a rename to that exact artist/title —
+  // reuses the row's own rename lifecycle (spinner, disabled menu actions,
+  // the "found"/"renamed" toasts from pollForCompletion above) rather than
+  // any separate code path.
+  const handleSelectCloseCandidate = async (artist: string, title: string) => {
+    setCloseCandidates([]);
+    try {
+      await handleRename(artist, title);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.videoList.renameError'));
+    }
   };
 
   const handleSearchHq = async () => {
@@ -263,6 +290,14 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       onSearchHq={handleSearchHq}
       onRename={handleRename}
     />
+    {closeCandidates.length > 0 && (
+      <CloseHqCandidatesDialog
+        video={v}
+        candidates={closeCandidates}
+        onDismiss={handleDismissCloseCandidates}
+        onSelect={handleSelectCloseCandidate}
+      />
+    )}
     </>
   );
 }

@@ -6,7 +6,7 @@ import { isOnline } from './connectivity';
 import { config } from '../config';
 import { slskdClient, isSlskdConfigured, MAX_PLAUSIBLE_MP3_BITRATE_KBPS, LOSSLESS_EXTENSIONS } from './slskd';
 import { publishToSharedStore, ensureSharedDirs, getTmpDir } from './downloader';
-import { isDurationPlausible, MATCH_TIERS, splitArtistTitle, stripUploadNoise, type MatchTier } from './trackMatching';
+import { isDurationPlausible, MATCH_TIERS, splitArtistTitle, stripUploadNoise, type MatchTier, type NearMissCandidate } from './trackMatching';
 import { transcodeToMp3 } from './audioTranscode';
 
 // Generous ceiling for a single track transfer, polled every couple of
@@ -73,6 +73,12 @@ export async function findExactMatchCandidate(
   // Overridable so the rename-triggered HQ search can pass
   // MATCH_TIERS_TRUSTED_NAME instead — see that constant's own doc comment.
   tiers: MatchTier[] = MATCH_TIERS,
+  // Populated with parsed artist/title pairs from every peer file that had a
+  // recognizable audio extension, whenever none of them clear any tier — see
+  // NearMissCandidate's own doc comment. Left undefined by every caller that
+  // doesn't want this (the batch sync pass), which skips the collection
+  // entirely.
+  nearMisses?: NearMissCandidate[],
 ): Promise<HqCandidate | null> {
   if (!isOnline() || !isSlskdConfigured()) return null;
 
@@ -118,6 +124,16 @@ export async function findExactMatchCandidate(
     if (best) {
       console.log(`[slskd] Found: "${artist} - ${title}" -> "${best.filename}" from ${best.username}`);
       return best;
+    }
+  }
+
+  if (nearMisses) {
+    for (const response of result.responses) {
+      for (const file of response.files ?? []) {
+        if (!audioFormatOf(file?.filename ?? '')) continue;
+        const parsed = splitArtistTitle(stripUploadNoise(baseNameFromSlskdPath(file.filename)));
+        if (parsed.artist) nearMisses.push({ artist: parsed.artist, title: parsed.title });
+      }
     }
   }
   return null;

@@ -20,7 +20,7 @@ import {
   cleanupMediaFiles,
   deleteTrackEverywhere,
 } from '../services/syncService';
-import { isTrackBusy, startTrackHqSearch, startTrackRename } from '../services/slskdQualityWorker';
+import { isTrackBusy, startTrackHqSearch, startTrackRename, getCloseHqCandidates, dismissCloseHqCandidates } from '../services/slskdQualityWorker';
 import { startGeneratePlaylist } from '../services/playlistGenerator';
 import { createLog } from '../services/auditLog';
 
@@ -483,7 +483,12 @@ router.get('/:id/videos/:videoId', requireAuth, async (req: AuthRequest, res, ne
     // false, this response already carries whatever changed (bitrate,
     // hqFileDownloaded, mediaFileId, artist, title, metadataStatus, ...), so
     // no separate "fetch the updated video" round trip is needed.
-    res.json({ video, searchingHq: isTrackBusy(video.id) });
+    // closeHqCandidates rides along the same poll: once searchingHq flips
+    // false after a manual "Search for HQ", a non-empty list here means
+    // Deezer/Qobuz/Tidal found real results that just didn't clear the match
+    // bar — see getCloseHqCandidates's own doc comment. Always empty unless
+    // that specific search just ran, so this costs nothing on every other read.
+    res.json({ video, searchingHq: isTrackBusy(video.id), closeHqCandidates: getCloseHqCandidates(video.id) });
   } catch (err) {
     next(err);
   }
@@ -551,6 +556,37 @@ router.post('/:id/videos/:videoId/search-hq', requireAuth, async (req: AuthReque
 
     startTrackHqSearch(video.id);
     res.status(202).json({});
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/playlists/:id/videos/:videoId/dismiss-hq-candidates ─────────────
+// Clears this video's closeHqCandidates (see GET .../videos/:videoId above)
+// without acting on any of them — called when the frontend's suggestion
+// modal is closed unpicked, so a later poll/page reload doesn't resurface
+// the same suggestions for a search the user already moved past. Picking a
+// candidate instead goes straight through POST .../rename, which clears the
+// same state itself (see renameTrack's own doc comment).
+router.post('/:id/videos/:videoId/dismiss-hq-candidates', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+      select: { id: true },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+    dismissCloseHqCandidates(video.id);
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

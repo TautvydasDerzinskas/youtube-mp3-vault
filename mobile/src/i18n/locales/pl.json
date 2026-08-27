@@ -164,7 +164,8 @@
   "common": {
     "comingSoon": "Wkrótce.",
     "cancel": "Anuluj",
-    "save": "Zapisz"
+    "save": "Zapisz",
+    "close": "Zamknij"
   },
   "player": {
     "nothingPlaying": "Nic nie jest odtwarzane"
@@ -290,7 +291,13 @@
         "message": "To trwale usunie pobrany plik \"{{title}}\" i usunie go ze wszystkich playlist, w których się znajduje, w tym z playlist innych użytkowników korzystających z tego samego pliku. Tej operacji nie można cofnąć."
       },
       "trackDeleted": "Usunięto \"{{title}}\".",
-      "trackDeleteError": "Nie udało się usunąć utworu."
+      "trackDeleteError": "Nie udało się usunąć utworu.",
+      "closeHqCandidates": {
+        "title": "Brak dokładnego dopasowania, ale znaleziono podobne utwory",
+        "infoBox": "Nie znaleziono dokładnego dopasowania, ale znaleziono te podobne utwory. Wybranie jednego z nich zastąpi artystę/tytuł tego utworu wybraną pozycją i pobierze plik w wyższej jakości pod nową nazwą.",
+        "confirmTitle": "Zmienić nazwę utworu?",
+        "confirmMessage": "Zmienić nazwę tego utworu na \"{{name}}\"? Wyszukiwanie HQ zostanie uruchomione ponownie pod nową nazwą."
+      }
     },
     "deleteConfirm": {
       "title": "Usunąć playlistę?",

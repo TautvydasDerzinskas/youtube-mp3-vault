@@ -56,6 +56,16 @@ export interface Playlist {
   sourcePlaylistName: string | null;
 }
 
+// A Deezer/Qobuz/Tidal search result for a track's manual "Search for HQ"
+// that didn't clear the backend's match-confidence bar — offered as a
+// one-click rename suggestion (see CloseHqCandidatesDialog). Mirrors the
+// backend's own CloseHqCandidate in slskdQualityWorker.ts.
+export interface CloseHqCandidate {
+  provider: 'slskd' | 'jiosaavn' | 'deezer' | 'qobuz' | 'tidal';
+  artist: string;
+  title: string;
+}
+
 export interface PlaylistVideo {
   id: string;
   youtubeId: string;
@@ -189,16 +199,30 @@ export const playlistsApi = {
     return data;
   },
 
-  getVideo: async (playlistId: string, videoId: string): Promise<{ video: PlaylistVideo; searchingHq: boolean }> => {
-    const { data } = await client.get<{ video: PlaylistVideo; searchingHq: boolean }>(`/playlists/${playlistId}/videos/${videoId}`);
+  getVideo: async (
+    playlistId: string,
+    videoId: string
+  ): Promise<{ video: PlaylistVideo; searchingHq: boolean; closeHqCandidates: CloseHqCandidate[] }> => {
+    const { data } = await client.get<{ video: PlaylistVideo; searchingHq: boolean; closeHqCandidates: CloseHqCandidate[] }>(
+      `/playlists/${playlistId}/videos/${videoId}`
+    );
     return data;
   },
 
   // Fire-and-forget — kicks off the same HQ provider search a playlist's
   // "Scan for HQ" runs for every video, for just this one. Poll getVideo's
-  // searchingHq field to know when it's done.
+  // searchingHq field to know when it's done — a non-empty closeHqCandidates
+  // in that same response means the search found Deezer/Qobuz/Tidal results
+  // that just didn't clear the match bar (see CloseHqCandidate's own doc
+  // comment on the backend).
   searchTrackHq: async (playlistId: string, videoId: string): Promise<void> => {
     await client.post(`/playlists/${playlistId}/videos/${videoId}/search-hq`);
+  },
+
+  // Dismisses the current closeHqCandidates suggestion for this track
+  // without acting on it, so a later poll/reload doesn't resurface it.
+  dismissHqCandidates: async (playlistId: string, videoId: string): Promise<void> => {
+    await client.post(`/playlists/${playlistId}/videos/${videoId}/dismiss-hq-candidates`);
   },
 
   // Instant, local best-guess artist/title for the rename modal's suggestion

@@ -690,4 +690,18 @@ export const MATCH_TIERS_TRUSTED_NAME: MatchTier[] = MATCH_TIERS.map((tier, i) =
   i < MATCH_TIERS.length - 1 ? { ...tier, durationStrictness: 'skip' } : tier
 ));
 
+// A provider search result that came back for a query but didn't clear any
+// MATCH_TIERS tier — findDeezerCandidate/findQobuzCandidate/findTidalCandidate
+// (the three per-account providers with clean catalog metadata, unlike
+// slskd/JioSaavn/Bandcamp's peer-filename/free-catalog parsing) collect these
+// into an optional out-array instead of just discarding them, so
+// slskdQualityWorker.ts's manual single-track search can offer them as
+// one-click rename suggestions: often the only thing standing between a
+// video and a real match is its own stored artist/title being slightly off
+// (a remix tag, a diacritic, a feat. credit) from the provider's canonical one.
+export interface NearMissCandidate {
+  artist: string;
+  title: string;
+}
+
 const FUZZY_TITLE_SIMILARITY_THRESHOLD = 0.82;

@@ -152,7 +152,8 @@
   "common": {
     "comingSoon": "Coming soon.",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "close": "Close"
   },
   "player": {
     "nothingPlaying": "Nothing playing"
@@ -264,7 +265,13 @@
         "message": "This permanently deletes the downloaded file for \"{{title}}\" and removes it from every playlist it appears in, including other users' playlists that share the same file. This can't be undone."
       },
       "trackDeleted": "Deleted \"{{title}}\".",
-      "trackDeleteError": "Failed to delete track."
+      "trackDeleteError": "Failed to delete track.",
+      "closeHqCandidates": {
+        "title": "No exact match, but found similar tracks",
+        "infoBox": "An exact match wasn't found, but these close matches were. Selecting one replaces this track's artist/title with the one shown and downloads the higher-quality file under that name.",
+        "confirmTitle": "Rename track?",
+        "confirmMessage": "Rename this track to \"{{name}}\"? The HQ search will run again under the new name."
+      }
     },
     "deleteConfirm": {
       "title": "Remove playlist?",
