@@ -5,7 +5,12 @@
     "save": "Išsaugoti",
     "close": "Uždaryti",
     "loading": "Kraunama…",
-    "logoutError": "Nepavyko atsijungti. Bandykite dar kartą."
+    "logoutError": "Nepavyko atsijungti. Bandykite dar kartą.",
+    "backToPlaylists": "Grįžti į grojaraščius",
+    "backToPlaylist": "Grįžti į grojaraštį",
+    "backToArtists": "Grįžti į atlikėjus",
+    "backToDashboard": "Grįžti į prietaisų skydelį",
+    "backToProfile": "Grįžti į profilį"
   },
   "mobileGate": {
     "downloadCta": "Atsisiųskite Android programėlę",
@@ -278,7 +283,6 @@
       "removed": "pašalinta"
     },
     "detail": {
-      "back": "Grįžti į grojaraščius",
       "failedToLoad": "Nepavyko įkelti šio grojaraščio.",
       "trackCount": "{{count}} dainų",
       "trackCountFiltered": "{{visible}} / {{total}} dainų",
@@ -302,7 +306,6 @@
       "searchPlaceholder": "Ieškoti pagal pavadinimą ar atlikėją…"
     },
     "trackDetail": {
-      "backToPlaylist": "Grįžti į grojaraštį",
       "failedToLoad": "Nepavyko įkelti šios dainos.",
       "recommendedTitle": "Panašios dainos",
       "discoverTitle": "Atraskite",
@@ -313,7 +316,6 @@
   },
   "profile": {
     "title": "Profilis",
-    "back": "Grįžti į grojaraščius",
     "tabProfile": "Profilis",
     "tabSettings": "Nustatymai",
     "tabLastfm": "Last.fm",
@@ -415,7 +417,6 @@
   },
   "downloads": {
     "title": "Atsisiuntimai",
-    "back": "Grįžti į grojaraščius",
     "downloadCta": "Atsisiųsti Android versiją",
     "description": "Atsisiųskite YoutubeVault programėlę Android telefonui, kad galėtumėte naršyti grojaraščius ir klausytis neprisijungę."
   },

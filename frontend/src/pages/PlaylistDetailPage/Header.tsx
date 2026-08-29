@@ -1,11 +1,11 @@
 import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip } from '@mui/material';
-import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon, PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material';
+import { MusicNote as MusicNoteIcon, PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
 import { GenreCount, SortOption, HqFilterOption } from './hooks/genreFilter';
 import { TrackFilterBar } from './TrackFilterBar';
+import { usePageBack } from '../../contexts/PageBackContext';
 
 interface HeaderProps {
   playlist: Playlist;
@@ -31,16 +31,10 @@ export function Header({
   onPlayFirst, canPlayFirst, isPlaying,
 }: HeaderProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  usePageBack('/playlists', t('common.backToPlaylists'));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>
-      <Tooltip title={t('playlists.detail.back')}>
-        <IconButton onClick={() => navigate('/playlists')} sx={{ mb: 1, ml: -1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-      </Tooltip>
-
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <Tooltip title={isPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
           <span>

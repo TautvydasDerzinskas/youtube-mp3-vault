@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Box, Tab, Tabs } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOnlineStatus } from '../PlaylistsPage/hooks/useOnlineStatus';
@@ -14,7 +14,6 @@ type TabKey = 'profile' | 'settings' | 'lastfm' | 'hq';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { lastfmScrobblingAvailable, allowedHqProviders } = useAuth();
   const online = useOnlineStatus();
   const showLastfmTab = lastfmScrobblingAvailable && online;
@@ -58,7 +57,7 @@ export default function ProfilePage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <ProfileHeader title={t('profile.title')} onBack={() => navigate('/dashboard')} />
+      <ProfileHeader title={t('profile.title')} backPath="/dashboard" backLabel={t('common.backToDashboard')} />
 
       <Box sx={{ maxWidth: 480 }}>
         <Tabs value={tab} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 3 }}>

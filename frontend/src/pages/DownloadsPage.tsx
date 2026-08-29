@@ -1,21 +1,16 @@
-import { Box, Typography, Button, Stack, IconButton, Tooltip } from '@mui/material';
-import { Android as AndroidIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { Box, Typography, Button, Stack } from '@mui/material';
+import { Android as AndroidIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { APK_URL } from '../constants';
+import { usePageBack } from '../contexts/PageBackContext';
 
 export default function DownloadsPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  usePageBack('/dashboard', t('common.backToDashboard'));
 
   return (
     <Box sx={{ p: 3, maxWidth: 480 }}>
       <Stack direction="row" alignItems="center" gap={1} mb={3}>
-        <Tooltip title={t('downloads.back')}>
-          <IconButton onClick={() => navigate('/dashboard')}>
-            <ArrowBackIcon />
-          </IconButton>
-        </Tooltip>
         <Typography variant="h5" fontWeight={700}>{t('downloads.title')}</Typography>
       </Stack>
 

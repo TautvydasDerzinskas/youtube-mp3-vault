@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { Box, TextField, Button, Alert } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -8,7 +7,6 @@ import { ProfileHeader } from './ProfileHeader';
 
 export default function ChangeEmailPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
   const { showSuccess } = useToast();
 
@@ -34,7 +32,7 @@ export default function ChangeEmailPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <ProfileHeader title={t('profile.changeEmailTitle')} onBack={() => navigate('/profile')} />
+      <ProfileHeader title={t('profile.changeEmailTitle')} backPath="/profile" backLabel={t('common.backToProfile')} />
 
       <Box sx={{ maxWidth: 480 }}>
         {user?.pendingEmail && (

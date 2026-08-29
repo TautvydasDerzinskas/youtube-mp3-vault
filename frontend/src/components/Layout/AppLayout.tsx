@@ -6,6 +6,7 @@ import { TopBar } from './TopBar';
 import { SIDEBAR_WIDTH, MOBILE_TOPBAR_HEIGHT } from './constants';
 import { MiniPlayer } from './MiniPlayer';
 import { PlayerProvider, usePlayer } from '../../contexts/PlayerContext';
+import { PageBackProvider } from '../../contexts/PageBackContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 function AppLayoutContent() {
@@ -87,7 +88,9 @@ function AppLayoutContent() {
 export default function AppLayout() {
   return (
     <PlayerProvider>
-      <AppLayoutContent />
+      <PageBackProvider>
+        <AppLayoutContent />
+      </PageBackProvider>
     </PlayerProvider>
   );
 }

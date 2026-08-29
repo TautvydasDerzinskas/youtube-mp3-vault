@@ -1,11 +1,12 @@
-import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip, CircularProgress, Alert, List, LinearProgress } from '@mui/material';
-import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { Box, Typography, Avatar, Chip, Stack, CircularProgress, Alert, List, LinearProgress } from '@mui/material';
+import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useSyncingPlaylistDetail } from './hooks/useSyncingPlaylistDetail';
 import { TrackRow } from '../../components/TrackRow';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
+import { usePageBack } from '../../contexts/PageBackContext';
 
 // The dedicated "this playlist is busy right now" view — separate from
 // PlaylistDetailPage on purpose, so that page's sort/filter/search logic
@@ -17,9 +18,9 @@ import { displayName, formatBytes } from '../PlaylistsPage/utils';
 // automatically once the sync/scan finishes (see the hook).
 export default function SyncingPlaylistDetailPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { playlistId, playlist, videos } = useSyncingPlaylistDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
+  usePageBack('/playlists', t('common.backToPlaylists'));
 
   if (!playlistId) return <Navigate to="/playlists" replace />;
 
@@ -63,12 +64,6 @@ export default function SyncingPlaylistDetailPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Tooltip title={t('playlists.detail.back')}>
-        <IconButton onClick={() => navigate('/playlists')} sx={{ mb: 1, ml: -1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-      </Tooltip>
-
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 3 }}>
         <Avatar src={playlist.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 96, height: 72, borderRadius: 2, flexShrink: 0 }}>
           <MusicNoteIcon sx={{ fontSize: 32 }} />

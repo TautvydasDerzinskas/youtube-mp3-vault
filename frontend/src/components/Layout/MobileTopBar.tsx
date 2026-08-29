@@ -19,6 +19,7 @@ import {
   Logout as LogoutIcon,
   MusicNote as MusicNoteIcon,
   Add as AddIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -27,6 +28,7 @@ import { useNavItems } from './useNavItems';
 import { NavList } from './NavList';
 import { UserMenu } from './UserMenu';
 import { NotificationBell } from './NotificationBell';
+import { usePageBackContext } from '../../contexts/PageBackContext';
 import { MOBILE_TOPBAR_HEIGHT } from './constants';
 
 export default function MobileTopBar() {
@@ -34,6 +36,7 @@ export default function MobileTopBar() {
   const navigate = useNavigate();
   const navItems = useNavItems();
   const logout = useLogout();
+  const { backTarget } = usePageBackContext();
   const [open, setOpen] = useState(false);
 
   const handleNavigate = (path: string) => {
@@ -66,6 +69,13 @@ export default function MobileTopBar() {
             {t('auth.appName')}
           </Typography>
         </Box>
+        {backTarget && (
+          <Tooltip title={backTarget.label}>
+            <IconButton color="inherit" onClick={() => handleNavigate(backTarget.path)}>
+              <ArrowBackIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title={t('playlists.importButton')}>
           <IconButton color="inherit" onClick={() => handleNavigate('/playlists?add=1')}>
             <AddIcon />

@@ -5,7 +5,12 @@
     "save": "Zapisz",
     "close": "Zamknij",
     "loading": "Ładowanie…",
-    "logoutError": "Nie udało się wylogować. Spróbuj ponownie."
+    "logoutError": "Nie udało się wylogować. Spróbuj ponownie.",
+    "backToPlaylists": "Wróć do playlist",
+    "backToPlaylist": "Wróć do playlisty",
+    "backToArtists": "Wróć do artystów",
+    "backToDashboard": "Wróć do panelu",
+    "backToProfile": "Wróć do profilu"
   },
   "mobileGate": {
     "downloadCta": "Pobierz aplikację na Androida",
@@ -291,7 +296,6 @@
       "removed": "usunięte"
     },
     "detail": {
-      "back": "Wróć do playlist",
       "failedToLoad": "Nie udało się załadować tej playlisty.",
       "trackCount": "{{count}} utworów",
       "trackCountFiltered": "{{visible}} / {{total}} utworów",
@@ -315,7 +319,6 @@
       "searchPlaceholder": "Szukaj wg nazwy lub wykonawcy…"
     },
     "trackDetail": {
-      "backToPlaylist": "Wróć do playlisty",
       "failedToLoad": "Nie udało się załadować tego utworu.",
       "recommendedTitle": "Podobne utwory",
       "discoverTitle": "Odkrywaj",
@@ -326,7 +329,6 @@
   },
   "profile": {
     "title": "Profil",
-    "back": "Wróć do playlist",
     "tabProfile": "Profil",
     "tabSettings": "Ustawienia",
     "tabLastfm": "Last.fm",
@@ -428,7 +430,6 @@
   },
   "downloads": {
     "title": "Pobieranie",
-    "back": "Wróć do playlist",
     "downloadCta": "Pobierz na Androida",
     "description": "Pobierz aplikację YoutubeVault na Androida, aby przeglądać playlisty i słuchać offline na telefonie."
   },

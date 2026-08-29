@@ -1,6 +1,6 @@
 import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip, CircularProgress } from '@mui/material';
 import {
-  MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon, YouTube as YouTubeIcon,
+  MusicNote as MusicNoteIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseIcon, Download as DownloadIcon,
   HighQuality as HqIcon,
 } from '@mui/icons-material';
@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { playlistsApi, PlaylistVideo, UsedInPlaylist } from '../../api/youtube';
 import { formatDuration, formatGenre, normalizeGenreKey, youtubeWatchUrl, allTracksGenreUrl, artistUrl, STATUS_ICON } from '../PlaylistsPage/utils';
+import { usePageBack } from '../../contexts/PageBackContext';
 
 interface HeaderProps {
   playlistId: string;
@@ -21,15 +22,10 @@ export function Header({ playlistId, video, isPlayingThis, onTogglePlay, usedIn 
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isPlayable = video.downloadStatus === 'done';
+  usePageBack(`/playlists/${playlistId}`, t('common.backToPlaylist'));
 
   return (
     <Box sx={{ mb: 4 }}>
-      <Tooltip title={t('playlists.trackDetail.backToPlaylist')}>
-        <IconButton onClick={() => navigate(`/playlists/${playlistId}`)} sx={{ mb: 1, ml: -1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-      </Tooltip>
-
       {/* Play, thumbnail and title/artist always stay on one line — long
           text ellipsizes (noWrap) instead of wrapping and pushing this row
           onto two lines. Everything else (chips/appears-in/actions) always

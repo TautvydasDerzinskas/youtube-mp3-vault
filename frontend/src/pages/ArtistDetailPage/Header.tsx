@@ -1,9 +1,10 @@
-import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip } from '@mui/material';
-import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { Box, Typography, Avatar, Chip, Stack } from '@mui/material';
+import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ArtistDetail } from '../../api/artists';
 import { allTracksGenreUrl } from '../PlaylistsPage/utils';
+import { usePageBack } from '../../contexts/PageBackContext';
 
 interface HeaderProps {
   artist: ArtistDetail;
@@ -12,15 +13,10 @@ interface HeaderProps {
 export function Header({ artist }: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  usePageBack('/artists', t('common.backToArtists'));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>
-      <Tooltip title={t('playlists.detail.back')}>
-        <IconButton onClick={() => navigate('/artists')} sx={{ mb: 1, ml: -1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-      </Tooltip>
-
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
         <Avatar src={artist.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 96, height: 96, borderRadius: 2, flexShrink: 0 }}>
           <MusicNoteIcon sx={{ fontSize: 32 }} />
