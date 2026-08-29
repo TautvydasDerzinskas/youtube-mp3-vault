@@ -162,10 +162,13 @@ async function checkVideoQuality(
   // duration-tolerance backstop against "same title, different recording"
   // (see MATCH_TIERS_TRUSTED_NAME's own doc comment) is redundant and can
   // only cost a legitimate match against, say, a YouTube upload with a much
-  // longer intro than the canonical release. Only resolvePlaylistQuality's
-  // batch sync-pass loop keeps the normal tiers — an unattended pass over
-  // every track in a playlist has no human confirming each match, so it's
-  // the one place that duration backstop still earns its keep.
+  // longer intro than the canonical release. resolvePlaylistQuality's batch
+  // sync-pass loop normally keeps the stricter tiers instead — an unattended
+  // pass over every track in a playlist has no human confirming each match —
+  // but also forwards this through as true when its caller opted into the
+  // "Scan for HQ" modal's "ignore duration" toggle, trading that backstop
+  // away across the whole pass in exchange for catching matches whose length
+  // genuinely differs from the stored YouTube duration.
   trustedName = false,
   // Populated (not replaced) by searchTrackQuality below with deduped
   // near-misses once the whole cascade finishes without a real download —
@@ -598,9 +601,16 @@ export async function resolvePlaylistQuality(
     // SyncPhase.processedIds).
     onVideoProcessed?: (videoId: string) => void;
     rescanAll?: boolean;
+    // Opt-in from the playlist-wide "Scan for HQ" modal's toggle — skips the
+    // duration-tolerance backstop for this whole pass, the same relaxation
+    // searchTrackQuality/renameTrack always apply for a single track (see
+    // checkVideoQuality's trustedName param). Off by default: an unattended
+    // pass over every track in a playlist has no human confirming each match,
+    // so normally it keeps that backstop (see MATCH_TIERS_TRUSTED_NAME).
+    ignoreDuration?: boolean;
   } = {}
 ): Promise<void> {
-  const { onProgress, onHqFound, onVideoProcessed, rescanAll = false } = options;
+  const { onProgress, onHqFound, onVideoProcessed, rescanAll = false, ignoreDuration = false } = options;
   const videos = await prisma.playlistVideo.findMany({
     where: rescanAll
       ? { playlistId, downloadStatus: 'done', hqFileDownloaded: false }
@@ -614,7 +624,7 @@ export async function resolvePlaylistQuality(
     if (!isOnline()) return;
     onProgress?.(index + 1, videos.length, video.artist ? `${video.artist} - ${video.title}` : video.title);
 
-    const outcome = await checkVideoQuality(video, sessions, onHqFound);
+    const outcome = await checkVideoQuality(video, sessions, onHqFound, ignoreDuration);
     if (outcome === 'processed') onVideoProcessed?.(video.id);
   }
 }

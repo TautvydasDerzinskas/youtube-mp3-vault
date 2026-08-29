@@ -1028,7 +1028,9 @@ router.post('/:id/scan-hq', requireAuth, async (req: AuthRequest, res, next) => 
     const [syncing] = await withDownloadStats([{ ...playlist, syncStatus: 'syncing' }]);
     res.json({ playlist: syncing });
 
-    scanForHqUpgrades(playlist.id);
+    // ignoreDuration: from the frontend's "Scan for HQ" modal toggle — off
+    // (matching current behavior) unless the request explicitly opts in.
+    scanForHqUpgrades(playlist.id, { ignoreDuration: req.body?.ignoreDuration === true });
   } catch (err) {
     next(err);
   }

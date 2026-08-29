@@ -85,11 +85,10 @@ export function usePlaylists() {
     }
   };
 
-  const handleScanHq = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
+  const handleScanHq = async (id: string, ignoreDuration: boolean) => {
     setSyncing(prev => new Set(prev).add(id));
     try {
-      const { playlist } = await playlistsApi.scanHq(id);
+      const { playlist } = await playlistsApi.scanHq(id, { ignoreDuration });
       updatePlaylist(playlist);
     } catch (err: any) {
       showError(err.response?.data?.error ?? t('playlists.scanHqError'));

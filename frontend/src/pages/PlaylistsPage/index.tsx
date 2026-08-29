@@ -14,6 +14,7 @@ import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
 import { AllTracksListItem } from './AllTracksListItem';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { ScanHqDialog } from './ScanHqDialog';
 import { SyncReportModal } from './SyncReportModal';
 import { displayName } from './utils';
 
@@ -27,6 +28,8 @@ export default function PlaylistsPage() {
   const [generating, setGenerating] = useState<Playlist | null>(null);
   const [generateLoading, setGenerateLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [scanningHq, setScanningHq] = useState<Playlist | null>(null);
+  const [scanHqLoading, setScanHqLoading] = useState(false);
   const online = useOnlineStatus();
   const { lastfmDiscoverAvailable } = useAuth();
   const canGenerateSimilar = online && lastfmDiscoverAvailable;
@@ -138,6 +141,14 @@ export default function PlaylistsPage() {
     }
   };
 
+  const handleConfirmScanHq = async (matchDuration: boolean) => {
+    if (!scanningHq) return;
+    setScanHqLoading(true);
+    await handleScanHq(scanningHq.id, !matchDuration);
+    setScanHqLoading(false);
+    setScanningHq(null);
+  };
+
   // Composed here (rather than threaded through usePlaylists) so the two hooks
   // stay independent: stop playback if the playlist being deleted is playing.
   const handleConfirmDelete = async () => {
@@ -202,7 +213,7 @@ export default function PlaylistsPage() {
           onRename={setRenaming}
           onSync={handleSync}
           onRetryFailed={handleRetryFailed}
-          onScanHq={handleScanHq}
+          onScanHq={(e, playlist) => { e.stopPropagation(); setScanningHq(playlist); }}
           onTogglePause={handleTogglePause}
           onDelete={setDeleting}
           onGenerateSimilar={(e, playlist) => { e.stopPropagation(); setGenerateError(null); setGenerating(playlist); }}
@@ -236,6 +247,13 @@ export default function PlaylistsPage() {
           loading={generateLoading}
           onConfirm={handleConfirmGenerate}
           onCancel={() => setGenerating(null)}
+        />
+      )}
+      {scanningHq && (
+        <ScanHqDialog
+          loading={scanHqLoading}
+          onConfirm={handleConfirmScanHq}
+          onCancel={() => setScanningHq(null)}
         />
       )}
       {unseenReports.length > 0 && (

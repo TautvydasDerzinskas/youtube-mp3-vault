@@ -297,6 +297,11 @@
       "title": "Generuoti panašų grojaraštį?",
       "message": "Kiekvienai „{{name}}“ dainai bus ieškoma alternatyvos ar panašaus takelio (per Last.fm, o jei nepavyks — remiksų/originalų iš YouTube) ir iš rezultatų sukuriamas naujas grojaraštis. Dideliems grojaraščiams tai gali užtrukti ilgai, o rezultatas paprastai būna mažesnis už originalą, nes ne kiekvienai dainai atsiranda geras atitikmuo."
     },
+    "scanHqConfirm": {
+      "title": "Ieškoti HQ failų?",
+      "message": "Bus iš naujo patikrintas kiekvienas šio grojaraščio atsisiųstas takelis, ar nėra geresnės kokybės versijos.",
+      "matchDurationLabel": "Reikalauti sutampančios trukmės"
+    },
     "justNow": "Ką tik",
     "minutesAgo": "prieš {{count}} min",
     "hoursAgo": "prieš {{count}} val",

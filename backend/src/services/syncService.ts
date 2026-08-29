@@ -454,10 +454,14 @@ export async function downloadPendingVideos(
   playlistId: string,
   options: {
     rescanAll?: boolean;
+    // Threaded straight through to resolvePlaylistQuality's own option of
+    // the same name — see there for what it changes. Only scanForHqUpgrades
+    // ever sets it, from the "Scan for HQ" modal's toggle.
+    ignoreDuration?: boolean;
     report?: { actionType: SyncActionType; startedAt: number; stats: SyncStats; priorFailedIds?: Set<string> };
   } = {}
 ): Promise<void> {
-  const { rescanAll = false, report } = options;
+  const { rescanAll = false, ignoreDuration = false, report } = options;
   try {
     // Based on how many videos this pass is actually about to attempt, not
     // the playlist's total size — a retry-failed pass on a huge playlist
@@ -643,6 +647,7 @@ export async function downloadPendingVideos(
         if (report) report.stats.newHqCount++;
       },
       rescanAll,
+      ignoreDuration,
     });
 
     await prisma.playlist.update({
@@ -793,9 +798,13 @@ export function retryFailedVideos(playlistId: string): void {
 // nothing pending to download most of the time — the frontend's syncPhase
 // reporting already makes the metadata/quality-check work visible
 // regardless.
-export function scanForHqUpgrades(playlistId: string): void {
+// ignoreDuration: from the "Scan for HQ" modal's toggle — see
+// downloadPendingVideos/resolvePlaylistQuality's own options of the same
+// name for what it does.
+export function scanForHqUpgrades(playlistId: string, options: { ignoreDuration?: boolean } = {}): void {
   if (activeSyncs.has(playlistId)) return;
   activeSyncs.add(playlistId);
+  const { ignoreDuration = false } = options;
 
   (async () => {
     const startedAt = Date.now();
@@ -807,6 +816,7 @@ export function scanForHqUpgrades(playlistId: string): void {
       });
       await downloadPendingVideos(playlistId, {
         rescanAll: true,
+        ignoreDuration,
         report: { actionType: 'scan_hq', startedAt, stats },
       });
       // downloadPendingVideos sets syncStatus → idle / error and writes the

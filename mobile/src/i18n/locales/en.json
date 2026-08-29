@@ -284,6 +284,11 @@
       "title": "Generate a similar playlist?",
       "message": "This looks for an alternative or similar track for every song in \"{{name}}\" (via Last.fm, falling back to remixes/originals on YouTube) and builds a new playlist from the results. It can take a long time for large playlists, and the result is usually smaller than the source, since not every song has a good alternative."
     },
+    "scanHqConfirm": {
+      "title": "Scan for HQ files?",
+      "message": "This re-checks every downloaded track in this playlist for a higher-quality version.",
+      "matchDurationLabel": "Require matching playback length"
+    },
     "justNow": "Just now",
     "minutesAgo": "{{count}}m ago",
     "hoursAgo": "{{count}}h ago",

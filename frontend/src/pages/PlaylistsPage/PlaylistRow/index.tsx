@@ -22,7 +22,7 @@ interface PlaylistRowProps {
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
-  onScanHq: (e: React.MouseEvent, id: string) => void;
+  onScanHq: (e: React.MouseEvent, playlist: Playlist) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
   onDelete: (playlist: Playlist) => void;
   onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;

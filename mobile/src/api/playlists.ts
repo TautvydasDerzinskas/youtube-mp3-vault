@@ -344,8 +344,10 @@ export const playlistsApi = {
     return data;
   },
 
-  scanHq: async (id: string): Promise<{ playlist: Playlist }> => {
-    const { data } = await client.post<{ playlist: Playlist }>(`/playlists/${id}/scan-hq`);
+  // ignoreDuration mirrors the single-track "Search for HQ" action's own
+  // behavior for this whole pass — see ScanHqDialog's toggle.
+  scanHq: async (id: string, options: { ignoreDuration?: boolean } = {}): Promise<{ playlist: Playlist }> => {
+    const { data } = await client.post<{ playlist: Playlist }>(`/playlists/${id}/scan-hq`, options);
     return data;
   },
 

@@ -35,7 +35,7 @@ interface ActionsProps {
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
-  onScanHq: (e: React.MouseEvent, id: string) => void;
+  onScanHq: (e: React.MouseEvent, playlist: Playlist) => void;
   onTogglePause: (e: React.MouseEvent, playlist: Playlist) => void;
   onDelete: (playlist: Playlist) => void;
   onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;
@@ -127,7 +127,7 @@ export function Actions({
             <ListItemText>{t('playlists.retryFailed', { count: playlist.failedCount })}</ListItemText>
           </MenuItem>
         )}
-        <MenuItem disabled={scanHqDisabled} onClick={e => { closeMenu(); onScanHq(e, playlist.id); }}>
+        <MenuItem disabled={scanHqDisabled} onClick={e => { closeMenu(); onScanHq(e, playlist); }}>
           <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('playlists.scanHq')}</ListItemText>
         </MenuItem>

@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useOfflineDownloads } from '../offline/OfflineDownloadsContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ScanHqDialog } from '../components/ScanHqDialog';
 import { usePlaylists } from './playlists/usePlaylists';
 import { PlaylistRow } from './playlists/PlaylistRow';
 import { AddPlaylistDialog } from './playlists/AddPlaylistDialog';
@@ -45,6 +46,8 @@ export function PlaylistsScreen() {
   const [generateLoading, setGenerateLoading] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [syncingOffline, setSyncingOffline] = useState<Playlist | null>(null);
+  const [scanningHq, setScanningHq] = useState<Playlist | null>(null);
+  const [scanHqLoading, setScanHqLoading] = useState(false);
   const { diffs: offlineDiffs } = useOfflineDownloads();
 
   const canGenerateSimilar = online && lastfmDiscoverAvailable;
@@ -134,6 +137,17 @@ export function PlaylistsScreen() {
     }
   };
 
+  const handleConfirmScanHq = async (matchDuration: boolean) => {
+    if (!scanningHq) return;
+    setScanHqLoading(true);
+    try {
+      await handleScanHq(scanningHq.id, !matchDuration);
+    } finally {
+      setScanHqLoading(false);
+      setScanningHq(null);
+    }
+  };
+
   const handleConfirmGenerate = async () => {
     if (!generating) return;
     setGenerateLoading(true);
@@ -188,7 +202,7 @@ export function PlaylistsScreen() {
               onPlayFirst={() => handlePlayFirst(item)}
               onSync={() => handleSync(item.id)}
               onRetryFailed={() => handleRetryFailed(item.id)}
-              onScanHq={() => handleScanHq(item.id)}
+              onScanHq={() => setScanningHq(item)}
               onTogglePause={() => handleTogglePause(item)}
               onRename={() => setRenaming(item)}
               onDelete={() => setDeleting(item)}
@@ -238,6 +252,19 @@ export function PlaylistsScreen() {
           loading={generateLoading}
           onConfirm={handleConfirmGenerate}
           onCancel={() => setGenerating(null)}
+        />
+      )}
+
+      {scanningHq && (
+        <ScanHqDialog
+          title={t('playlists.scanHqConfirm.title')}
+          message={t('playlists.scanHqConfirm.message')}
+          matchDurationLabel={t('playlists.scanHqConfirm.matchDurationLabel')}
+          confirmLabel={t('playlists.scanHq')}
+          cancelLabel={t('common.cancel')}
+          loading={scanHqLoading}
+          onConfirm={handleConfirmScanHq}
+          onCancel={() => setScanningHq(null)}
         />
       )}
 

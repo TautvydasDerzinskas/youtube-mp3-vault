@@ -71,8 +71,8 @@ export function usePlaylists() {
     updatePlaylist(playlist);
   }, [updatePlaylist]);
 
-  const handleScanHq = useCallback(async (id: string) => {
-    const { playlist } = await playlistsApi.scanHq(id);
+  const handleScanHq = useCallback(async (id: string, ignoreDuration: boolean) => {
+    const { playlist } = await playlistsApi.scanHq(id, { ignoreDuration });
     updatePlaylist(playlist);
   }, [updatePlaylist]);
 
