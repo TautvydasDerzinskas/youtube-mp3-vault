@@ -185,13 +185,41 @@ router.post('/plays/sync', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
-// ─── GET /api/playlists/sync-reports/unseen & POST .../:id/seen ──────────────
-// Declared before /:id for the same reason as plays/sync above. Backs the
-// Playlists page's stats modal — every sync/retry-failed/scan-hq run writes
-// one SyncReport on completion (see finalizeSyncReport in syncService.ts),
-// and it stays unseen until the user actually dismisses the modal for it, so
-// a run that finished while the page was closed is still waiting the next
-// time they open it, even weeks later.
+// ─── GET /api/playlists/sync-reports(/unseen) & POST .../seen(-all) ──────────
+// Declared before /:id for the same reason as plays/sync above. Backs both
+// the notification bell (global, every page) and the Playlists page's live
+// stats modal — every sync/retry-failed/scan-hq/import run writes one
+// SyncReport on completion (see finalizeSyncReport in syncService.ts), and it
+// stays unseen until the user actually views it, so a run that finished
+// while they weren't looking is still waiting the next time they check, even
+// weeks later.
+
+// All of the current user's reports, newest first, read and unread alike —
+// backs the notification bell's dropdown (see NotificationsContext in the
+// frontend), which needs the full recent history, not just what's still
+// unseen. Capped the same way failureDetails is elsewhere in this file: a
+// long-lived account's full history isn't what a notification dropdown is
+// for, just its recent activity.
+const SYNC_REPORTS_LIST_LIMIT = 50;
+
+router.get('/sync-reports', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const reports = await prisma.syncReport.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: 'desc' },
+      take: SYNC_REPORTS_LIST_LIMIT,
+      include: { playlist: { select: { title: true, customName: true } } },
+    });
+    res.json({
+      reports: reports.map(({ playlist, ...report }) => ({
+        ...report,
+        playlistName: playlist.customName ?? playlist.title,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get('/sync-reports/unseen', requireAuth, async (req: AuthRequest, res, next) => {
   try {
@@ -221,6 +249,21 @@ router.post('/sync-reports/:id/seen', requireAuth, async (req: AuthRequest, res,
       res.status(404).json({ error: 'Sync report not found' });
       return;
     }
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Marks every currently-unseen report as seen in one call — the
+// notification bell does this the moment it's opened, rather than requiring
+// a click into each individual notification (see NotificationBell.tsx).
+router.post('/sync-reports/seen-all', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    await prisma.syncReport.updateMany({
+      where: { userId: req.userId, seenAt: null },
+      data: { seenAt: new Date() },
+    });
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -326,7 +369,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
 
     // Return immediately — downloads happen in background
     res.status(201).json({ playlist: { ...playlist, downloadedCount: 0, failedCount: 0, totalSize: 0, totalDurationSec: 0, currentVideo: null, isPacing: false } });
-    startBackgroundDownload(playlist.id);
+    startBackgroundDownload(playlist.id, { report: true });
 
     void createLog({
       userId: req.userId!,

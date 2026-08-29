@@ -34,15 +34,12 @@ export default function PlaylistsPage() {
   const { lastfmDiscoverAvailable } = useAuth();
   const canGenerateSimilar = online && lastfmDiscoverAvailable;
 
-  // Fetched once on mount — whatever's unseen at that point is shown as a
-  // queue in SyncReportModal. Also re-checked below whenever a playlist
-  // that was busy stops being busy, so a run that finishes while the user
-  // is still sitting on this page pops the modal too, not just ones from
-  // before the page was opened.
+  // Populated only by the busy-transition effect below — a run that
+  // finishes while the user is already sitting on this page pops the modal
+  // live. Deliberately NOT fetched on mount any more: a run that finished
+  // before this page was even opened surfaces through the notification bell
+  // instead (see NotificationsContext), not retroactively as this modal.
   const [unseenReports, setUnseenReports] = useState<SyncReport[]>([]);
-  useEffect(() => {
-    syncReportsApi.listUnseen().then(setUnseenReports).catch(() => {});
-  }, []);
 
   const {
     playlists, loading, error, syncing, retrying, updatePlaylist, handleAdded, handleSync,

@@ -54,11 +54,12 @@ function isForeignKeyRestrictViolation(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003';
 }
 
-// The three user-triggerable actions that produce a SyncReport (see below) —
+// The user-triggerable actions that produce a SyncReport (see below) —
 // deliberately excludes the playlist-generation and soft-reimport flows,
 // which already have their own admin-log entries and aren't what the
-// Playlists page's stats modal is for.
-export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq';
+// notification bell / Playlists page's stats modal is for. 'import' covers
+// a newly-added playlist's first full download (see startBackgroundDownload).
+export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq' | 'import';
 
 export interface SyncFailureDetail {
   title: string;
@@ -442,11 +443,12 @@ export async function refreshPlaylistFromYoutube(
 // see that function's own doc comment (slskdQualityWorker.ts) for what it
 // changes; only scanForHqUpgrades sets it.
 //
-// `report` is how syncPlaylist/retryFailedVideos/scanForHqUpgrades opt into
-// a SyncReport for this run (see finalizeSyncReport) — omitted entirely by
-// callers that don't want one (soft reimport, playlist generation, and the
-// pause/resume continuation in startBackgroundDownload, none of which map
-// onto a single well-defined SyncActionType). `priorFailedIds` lets
+// `report` is how syncPlaylist/retryFailedVideos/scanForHqUpgrades/
+// startBackgroundDownload's initial-import call opt into a SyncReport for
+// this run (see finalizeSyncReport) — omitted entirely by callers that don't
+// want one (soft reimport, playlist generation, and the pause/resume
+// continuation in startBackgroundDownload, none of which map onto a single
+// well-defined SyncActionType). `priorFailedIds` lets
 // retryFailedVideos tell "recovered from a past failure" apart from
 // "downloaded for the first time" in the stats below, since both look
 // identical from inside this loop (downloadStatus: 'pending' either way).
@@ -675,10 +677,19 @@ export async function downloadPendingVideos(
   }
 }
 
-export function startBackgroundDownload(playlistId: string): void {
+// `report: true` opts this run into a SyncReport with actionType 'import' —
+// used only by the "Add Playlist" route, for a newly-created playlist's
+// first full download (see routes/youtube.ts). The pause/resume continuation
+// call (see /:id/resume) deliberately omits it: resuming an already-known
+// playlist isn't a distinct notification-worthy event the way finishing an
+// import for the first time is.
+export function startBackgroundDownload(playlistId: string, options: { report?: boolean } = {}): void {
   if (activeSyncs.has(playlistId)) return;
   activeSyncs.add(playlistId);
-  downloadPendingVideos(playlistId).finally(() => activeSyncs.delete(playlistId));
+  const { report = false } = options;
+
+  const reportOption = report ? { actionType: 'import' as const, startedAt: Date.now(), stats: createSyncStats() } : undefined;
+  downloadPendingVideos(playlistId, { report: reportOption }).finally(() => activeSyncs.delete(playlistId));
 }
 
 export async function syncPlaylist(playlistId: string): Promise<void> {

@@ -1,6 +1,6 @@
 import client from './client';
 
-export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq';
+export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq' | 'import';
 
 export interface SyncFailureDetail {
   title: string;
@@ -30,19 +30,35 @@ export interface SyncReport {
   failureDetails: SyncFailureDetail[];
   newHqCount: number;
   createdAt: string;
+  // Null until the user actually views it (opens the notification bell, or
+  // dismisses the live modal) — see NotificationsContext/NotificationBell.
+  seenAt: string | null;
 }
 
 export const syncReportsApi = {
-  // Every sync/retry-failed/scan-hq run the current user has triggered but
-  // not yet dismissed the stats modal for — see the Playlists page, which
-  // fetches this on mount so a run that finished while the page was closed
-  // is still waiting whenever they next open it.
+  // Every sync/retry-failed/scan-hq/import run the current user has
+  // triggered but not yet viewed — used by the Playlists page's live modal
+  // (a run that finishes while that page is open) and, for the initial
+  // unread-count poll, by the notification bell.
   listUnseen: async (): Promise<SyncReport[]> => {
     const { data } = await client.get<{ reports: SyncReport[] }>('/playlists/sync-reports/unseen');
     return data.reports;
   },
 
+  // Recent history for the current user, newest first, read and unread
+  // alike (capped server-side) — backs the notification bell's dropdown.
+  listAll: async (): Promise<SyncReport[]> => {
+    const { data } = await client.get<{ reports: SyncReport[] }>('/playlists/sync-reports');
+    return data.reports;
+  },
+
   markSeen: async (id: string): Promise<void> => {
     await client.post(`/playlists/sync-reports/${id}/seen`);
+  },
+
+  // Marks every currently-unseen report as seen in one call — the
+  // notification bell does this the moment it's opened.
+  markAllSeen: async (): Promise<void> => {
+    await client.post('/playlists/sync-reports/seen-all');
   },
 };

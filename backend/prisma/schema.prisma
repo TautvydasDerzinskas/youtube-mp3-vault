@@ -333,23 +333,26 @@ model Log {
   @@map("logs")
 }
 
-/// One row per completed sync / retry-failed / scan-hq run — the source for
-/// the stats modal shown on the Playlists page (see the /sync-reports
-/// endpoints in routes/youtube.ts and the writer in syncService.ts, which
-/// creates one of these when syncPlaylist/retryFailedVideos/scanForHqUpgrades
-/// finishes). Distinct from Log above: Log is an admin-only audit trail with
-/// a handful of summary fields; this is the user-facing, per-run detail
-/// report, keyed to a specific playlist rather than a generic action feed.
-/// seenAt stays null until the user actually dismisses the modal for it, so
-/// a run that finished right after they closed the app is still waiting the
-/// next time they open the Playlists page — even weeks later.
+/// One row per completed sync / retry-failed / scan-hq / import run — the
+/// source for both the notification bell (see NotificationsContext in the
+/// frontend) and the stats modal shown live on the Playlists page (see the
+/// /sync-reports endpoints in routes/youtube.ts and the writer in
+/// syncService.ts, which creates one of these when
+/// syncPlaylist/retryFailedVideos/scanForHqUpgrades/startBackgroundDownload's
+/// initial-import call finishes). Distinct from Log above: Log is an
+/// admin-only audit trail with a handful of summary fields; this is the
+/// user-facing, per-run detail report, keyed to a specific playlist rather
+/// than a generic action feed. seenAt stays null until the user actually
+/// views it (opens the notification bell, or dismisses the live modal), so a
+/// run that finished while they weren't looking is still waiting whenever
+/// they next check — even weeks later.
 model SyncReport {
   id         String   @id @default(uuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   playlistId String
   playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  actionType String   // sync | retry_failed | scan_hq — see SyncActionType in syncService.ts
+  actionType String   // sync | retry_failed | scan_hq | import — see SyncActionType in syncService.ts
   startedAt  DateTime
   durationMs Int
 

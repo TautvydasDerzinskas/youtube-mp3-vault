@@ -52,7 +52,11 @@
     "expandMenu": "Išskleisti meniu",
     "collapseMenu": "Suskleisti meniu",
     "expandSidebar": "Išskleisti šoninę juostą",
-    "collapseSidebar": "Suskleisti šoninę juostą"
+    "collapseSidebar": "Suskleisti šoninę juostą",
+    "notifications": "Pranešimai"
+  },
+  "notifications": {
+    "empty": "Kol kas pranešimų nėra."
   },
   "playlists": {
     "title": "Jūsų grojaraščiai",
@@ -220,7 +224,8 @@
       "actionTitle": {
         "sync": "Sinchronizavimas baigtas",
         "retry_failed": "Pakartojimas baigtas",
-        "scan_hq": "HQ paieška baigta"
+        "scan_hq": "HQ paieška baigta",
+        "import": "Importas baigtas"
       },
       "progress": "{{current}} iš {{total}}",
       "durationSeconds_one": "truko {{count}} sekundę",

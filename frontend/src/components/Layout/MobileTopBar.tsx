@@ -24,6 +24,7 @@ import { useLogout } from '../../hooks/useLogout';
 import { useNavItems } from './useNavItems';
 import { NavList } from './NavList';
 import { UserMenu } from './UserMenu';
+import { NotificationBell } from './NotificationBell';
 import { MOBILE_TOPBAR_HEIGHT } from './constants';
 
 export default function MobileTopBar() {
@@ -63,6 +64,7 @@ export default function MobileTopBar() {
             {t('auth.appName')}
           </Typography>
         </Box>
+        <NotificationBell />
         <UserMenu avatarSize={32} />
       </Toolbar>
 

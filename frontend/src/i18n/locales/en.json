@@ -52,7 +52,11 @@
     "expandMenu": "Expand menu",
     "collapseMenu": "Collapse menu",
     "expandSidebar": "Expand sidebar",
-    "collapseSidebar": "Collapse sidebar"
+    "collapseSidebar": "Collapse sidebar",
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "empty": "No notifications yet."
   },
   "playlists": {
     "title": "Your Playlists",
@@ -215,7 +219,8 @@
       "actionTitle": {
         "sync": "Sync complete",
         "retry_failed": "Retry complete",
-        "scan_hq": "HQ scan complete"
+        "scan_hq": "HQ scan complete",
+        "import": "Import complete"
       },
       "progress": "{{current}} of {{total}}",
       "durationSeconds_one": "took {{count}} second",
