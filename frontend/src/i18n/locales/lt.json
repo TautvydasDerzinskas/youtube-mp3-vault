@@ -137,6 +137,10 @@
       "title": "Visos dainos",
       "sourcedFromYoutube": "Šaltinis: YouTube"
     },
+    "history": {
+      "title": "Klausymo istorija",
+      "description": "Paskutinės 100 grotų dainų"
+    },
     "syncingPage": {
       "starting": "Pradedama sinchronizacija…",
       "waiting": "Dainos rodysis čia, kai tik bus apdorotos…"
@@ -299,6 +303,8 @@
       "sortArtistDesc": "Atlikėją (Ž-A)",
       "sortPlaysDesc": "Peržiūras (nuo didž. iki maž.)",
       "sortPlaysAsc": "Peržiūras (nuo maž. iki didž.)",
+      "sortPlayedDesc": "Paskutinį kartą grota (naujausius pirmiau)",
+      "sortPlayedAsc": "Paskutinį kartą grota (seniausius pirmiau)",
       "hqFilterLabel": "HQ",
       "hqFilterAll": "Visi",
       "hqFilterHqOnly": "Tik HQ",

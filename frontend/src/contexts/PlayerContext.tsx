@@ -77,6 +77,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current.play().catch(() => {});
   }, [current]);
 
+  // Enters this track into Listening History the instant it's picked, not
+  // when it finishes (that's markPlayed/handleTrackEnded below) — keyed on
+  // `current` the same way the effect above is, so it fires exactly once
+  // per distinct track (a repeat-mode restart doesn't change `current`, so
+  // it correctly doesn't re-bump this track's spot in the history list).
+  useEffect(() => {
+    if (!current) return;
+    playlistsApi.markPlayStarted(current.playlistId, current.video.id).catch(() => {});
+  }, [current]);
+
   useEffect(() => {
     if (!current) {
       document.title = 'YoutubeVault';

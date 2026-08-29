@@ -13,6 +13,7 @@ import { AddPlaylistDialog } from './AddPlaylistDialog';
 import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
 import { AllTracksListItem } from './AllTracksListItem';
+import { HistoryListItem } from './HistoryListItem';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ScanHqDialog } from './ScanHqDialog';
 import { SyncReportModal } from './SyncReportModal';
@@ -233,6 +234,7 @@ export default function PlaylistsPage() {
 
       <Divider sx={{ my: 2, borderColor: 'divider' }} />
       <AllTracksListItem refreshOn={playlists} />
+      <HistoryListItem refreshOn={playlists} />
 
       <AddPlaylistDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={handleAdded} />
       {renaming && (

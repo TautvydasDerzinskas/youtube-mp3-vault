@@ -133,6 +133,10 @@
       "title": "All Tracks",
       "sourcedFromYoutube": "Sourced from YouTube"
     },
+    "history": {
+      "title": "Listening history",
+      "description": "Your last 100 played tracks"
+    },
     "syncingPage": {
       "starting": "Starting sync…",
       "waiting": "Tracks will appear here as they're processed…"
@@ -286,6 +290,8 @@
       "sortArtistDesc": "Artist (Z-A)",
       "sortPlaysDesc": "Plays (High-Low)",
       "sortPlaysAsc": "Plays (Low-High)",
+      "sortPlayedDesc": "Last played (newest first)",
+      "sortPlayedAsc": "Last played (oldest first)",
       "hqFilterLabel": "HQ",
       "hqFilterAll": "All",
       "hqFilterHqOnly": "HQ only",

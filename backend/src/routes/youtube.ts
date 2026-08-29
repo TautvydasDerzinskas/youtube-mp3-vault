@@ -33,9 +33,14 @@ const VIDEO_SELECT_WITHOUT_EMBEDDING = {
   bitrate: true, addedAt: true, artist: true, album: true, trackNumber: true,
   genres: true, releaseYear: true, mbRecordingId: true, metadataStatus: true,
   metadataFetchedAt: true, audioAnalysisStatus: true, audioAnalysisFetchedAt: true,
-  playCount: true, lastPlayedAt: true, betterQualityExists: true, hqFileDownloaded: true,
+  playCount: true, lastPlayedAt: true, lastPlayStartedAt: true, betterQualityExists: true, hqFileDownloaded: true,
   createdAt: true, updatedAt: true,
 } as const;
+
+// Listening History is capped, not paginated — a simple recency list rather
+// than a full library view, so 100 keeps the page (and its summary box)
+// snappy without needing an index dedicated to this one query.
+const MAX_HISTORY_ITEMS = 100;
 
 // ─── GET /api/playlists ────────────────────────────────────────────────────────
 
@@ -96,6 +101,63 @@ router.get('/all-tracks/summary', requireAuth, async (req: AuthRequest, res, nex
       totalDurationSec: doneAggregate._sum.duration ?? 0,
       totalSize: doneAggregate._sum.fileSize ?? 0,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/playlists/history — the last MAX_HISTORY_ITEMS tracks played,
+// most-recently-started first. Declared before /:id for the same reason as
+// all-tracks above. A track only needs to have been *started* (see
+// lastPlayStartedAt/POST .../play-started below) to show up here — unlike
+// playCount/lastPlayedAt, this doesn't wait for a track to finish.
+
+router.get('/history', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const videos = await prisma.playlistVideo.findMany({
+      where: {
+        playlist: { userId: req.userId },
+        isAvailable: true,
+        downloadStatus: { not: 'removed' },
+        lastPlayStartedAt: { not: null },
+      },
+      orderBy: { lastPlayStartedAt: 'desc' },
+      take: MAX_HISTORY_ITEMS,
+      select: VIDEO_SELECT_WITHOUT_EMBEDDING,
+    });
+    const songCount = videos.length;
+    const totalDurationSec = videos
+      .filter((v) => v.downloadStatus === 'done')
+      .reduce((sum, v) => sum + (v.duration ?? 0), 0);
+    res.json({ videos, songCount, totalDurationSec });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Lightweight counterpart for the "Listening History" row shown in the
+// playlists list, same rationale as all-tracks/summary above. Sums over
+// exactly the same capped set /history itself returns (not an all-time
+// total), so the two numbers never disagree once a user has played more
+// than MAX_HISTORY_ITEMS distinct tracks.
+router.get('/history/summary', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const videos = await prisma.playlistVideo.findMany({
+      where: {
+        playlist: { userId: req.userId },
+        isAvailable: true,
+        downloadStatus: { not: 'removed' },
+        lastPlayStartedAt: { not: null },
+      },
+      orderBy: { lastPlayStartedAt: 'desc' },
+      take: MAX_HISTORY_ITEMS,
+      select: { duration: true, fileSize: true, downloadStatus: true },
+    });
+    const totalDurationSec = videos
+      .filter((v) => v.downloadStatus === 'done')
+      .reduce((sum, v) => sum + (v.duration ?? 0), 0);
+    const totalSize = videos.reduce((sum, v) => sum + (v.fileSize ?? 0), 0);
+    res.json({ songCount: videos.length, totalDurationSec, totalSize });
   } catch (err) {
     next(err);
   }
@@ -909,6 +971,38 @@ router.get('/:id/videos/:videoId/discover', requireAuth, async (req: AuthRequest
     );
 
     res.json({ enabled: true, discover });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Fired once per track the instant playback starts (see PlayerContext's
+// effect keyed on `current`) — separate from /played below, which only
+// fires on natural completion. Powers Listening History's "it's enough to
+// hit play" ordering; doesn't touch playCount/lastPlayedAt or scrobbling.
+router.post('/:id/videos/:videoId/play-started', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+
+    const updated = await prisma.playlistVideo.update({
+      where: { id: video.id },
+      data: { lastPlayStartedAt: new Date() },
+      select: { lastPlayStartedAt: true },
+    });
+    res.json(updated);
   } catch (err) {
     next(err);
   }

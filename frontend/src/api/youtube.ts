@@ -98,6 +98,9 @@ export interface PlaylistVideo {
   metadataStatus: 'pending' | 'found' | 'not_found' | 'error';
   playCount: number;
   lastPlayedAt: string | null;
+  // Set the instant playback starts, unlike lastPlayedAt above (finish-only)
+  // — backs Listening History's ordering. See getHistory/markPlayStarted.
+  lastPlayStartedAt: string | null;
   // A better-quality mp3 was found via slskd (or a configured commercial
   // HQ service) but not (yet) automatically downloaded — see
   // services/slskdQualityWorker.ts. Never true at the same time as
@@ -182,6 +185,22 @@ export const playlistsApi = {
   // avoids pulling every video's full metadata just to render that summary.
   getAllTracksSummary: async (): Promise<{ songCount: number; totalDurationSec: number; totalSize: number }> => {
     const { data } = await client.get<{ songCount: number; totalDurationSec: number; totalSize: number }>('/playlists/all-tracks/summary');
+    return data;
+  },
+
+  // The last MAX_HISTORY_ITEMS tracks played, most-recently-started first —
+  // same shape as getAllTracks, capped instead of exhaustive.
+  getHistory: async (): Promise<{ videos: PlaylistVideo[]; songCount: number; totalDurationSec: number }> => {
+    const { data } = await client.get<{ videos: PlaylistVideo[]; songCount: number; totalDurationSec: number }>(
+      '/playlists/history'
+    );
+    return data;
+  },
+
+  // Just the numbers the "Listening History" row in the playlists list
+  // needs — same rationale as getAllTracksSummary.
+  getHistorySummary: async (): Promise<{ songCount: number; totalDurationSec: number; totalSize: number }> => {
+    const { data } = await client.get<{ songCount: number; totalDurationSec: number; totalSize: number }>('/playlists/history/summary');
     return data;
   },
 
@@ -284,6 +303,15 @@ export const playlistsApi = {
   markPlayed: async (playlistId: string, videoId: string): Promise<{ playCount: number; lastPlayedAt: string }> => {
     const { data } = await client.post<{ playCount: number; lastPlayedAt: string }>(
       `/playlists/${playlistId}/videos/${videoId}/played`
+    );
+    return data;
+  },
+
+  // Fired the instant playback starts (see PlayerContext) — separate from
+  // markPlayed above, which only fires on natural completion.
+  markPlayStarted: async (playlistId: string, videoId: string): Promise<{ lastPlayStartedAt: string }> => {
+    const { data } = await client.post<{ lastPlayStartedAt: string }>(
+      `/playlists/${playlistId}/videos/${videoId}/play-started`
     );
     return data;
   },

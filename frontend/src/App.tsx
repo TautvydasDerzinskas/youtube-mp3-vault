@@ -9,6 +9,7 @@ import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import SyncingPlaylistDetailPage from './pages/SyncingPlaylistDetailPage';
 import AllTracksPage from './pages/AllTracksPage';
+import HistoryPage from './pages/HistoryPage';
 import ArtistsPage from './pages/ArtistsPage';
 import ArtistDetailPage from './pages/ArtistDetailPage';
 import GenresPage from './pages/GenresPage';
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="artists/:key" element={<ArtistDetailPage />} />
           <Route path="genres" element={<GenresPage />} />
           <Route path="all-tracks" element={<AllTracksPage />} />
+          <Route path="history" element={<HistoryPage />} />
           <Route path="playlists/:id" element={<PlaylistDetailPage />} />
           <Route path="playlists/:id/syncing" element={<SyncingPlaylistDetailPage />} />
           <Route path="playlists/:id/:trackId" element={<TrackDetailPage />} />

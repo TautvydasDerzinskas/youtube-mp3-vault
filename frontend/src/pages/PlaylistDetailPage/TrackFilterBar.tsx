@@ -47,6 +47,8 @@ export function TrackFilterBar({
           <MenuItem value="artist-desc">{t('playlists.detail.sortArtistDesc')}</MenuItem>
           <MenuItem value="plays-desc">{t('playlists.detail.sortPlaysDesc')}</MenuItem>
           <MenuItem value="plays-asc">{t('playlists.detail.sortPlaysAsc')}</MenuItem>
+          <MenuItem value="played-desc">{t('playlists.detail.sortPlayedDesc')}</MenuItem>
+          <MenuItem value="played-asc">{t('playlists.detail.sortPlayedAsc')}</MenuItem>
         </Select>
       </FormControl>
 

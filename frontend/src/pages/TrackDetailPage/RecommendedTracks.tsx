@@ -33,6 +33,7 @@ function toQueueTrack(rec: RecommendedTrack): QueueTrack {
     metadataStatus: 'pending',
     playCount: rec.playCount,
     lastPlayedAt: null,
+    lastPlayStartedAt: null,
     betterQualityExists: rec.betterQualityExists,
     hqFileDownloaded: rec.hqFileDownloaded,
   };

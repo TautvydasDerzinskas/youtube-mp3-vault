@@ -141,6 +141,10 @@
       "title": "Wszystkie utwory",
       "sourcedFromYoutube": "Źródło: YouTube"
     },
+    "history": {
+      "title": "Historia odtwarzania",
+      "description": "Ostatnie 100 odtworzonych utworów"
+    },
     "syncingPage": {
       "starting": "Rozpoczynanie synchronizacji…",
       "waiting": "Utwory pojawią się tutaj w miarę ich przetwarzania…"
@@ -312,6 +316,8 @@
       "sortArtistDesc": "Wykonawcy (Z-A)",
       "sortPlaysDesc": "Odtworzeń (malejąco)",
       "sortPlaysAsc": "Odtworzeń (rosnąco)",
+      "sortPlayedDesc": "Ostatnio odtwarzane (najpierw najnowsze)",
+      "sortPlayedAsc": "Ostatnio odtwarzane (najpierw najstarsze)",
       "hqFilterLabel": "HQ",
       "hqFilterAll": "Wszystkie",
       "hqFilterHqOnly": "Tylko HQ",

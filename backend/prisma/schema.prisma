@@ -234,6 +234,12 @@ model PlaylistVideo {
   // gated on any minimum-listened threshold: "finished" already implies that.
   playCount              Int        @default(0)
   lastPlayedAt           DateTime?
+  // Set the instant playback of this track starts (POST .../play-started) —
+  // deliberately separate from lastPlayedAt above, which only ever advances
+  // on natural completion. Backs the Listening History list/summary
+  // (GET /history, GET /history/summary), which wants "you hit play on
+  // this" ordering rather than "you finished it".
+  lastPlayStartedAt      DateTime?
   // Set once a slskd (Soulseek daemon) search turns up an mp3 result with a
   // higher bitrate than what we actually downloaded — see
   // services/slskd.ts/slskdQualityWorker.ts. Checked once per video, like

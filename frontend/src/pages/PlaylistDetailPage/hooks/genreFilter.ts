@@ -9,7 +9,8 @@ export const NO_GENRE_KEY = 'none';
 
 export type SortOption =
   | 'import-asc' | 'import-desc'
-  | 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'plays-asc' | 'plays-desc';
+  | 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'plays-asc' | 'plays-desc'
+  | 'played-asc' | 'played-desc';
 // "Import order" = addedAt, i.e. the order tracks were actually added to the
 // library — not YouTube's mutable per-playlist `position`, which only makes
 // sense within a single playlist and would collide across playlists on the
@@ -21,6 +22,7 @@ export const DEFAULT_SORT: SortOption = 'import-desc';
 const SORT_OPTIONS = new Set<SortOption>([
   'import-asc', 'import-desc',
   'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'plays-asc', 'plays-desc',
+  'played-asc', 'played-desc',
 ]);
 
 // 'hq' = only tracks with an HQ file actually downloaded (v.hqFileDownloaded).
@@ -41,23 +43,26 @@ function parseGenres(raw: string | null): Set<string> {
   return new Set((raw ?? '').split(',').map(normalizeGenreKey).filter(Boolean));
 }
 
-function parseSort(raw: string | null): SortOption {
-  return SORT_OPTIONS.has(raw as SortOption) ? (raw as SortOption) : DEFAULT_SORT;
+function parseSort(raw: string | null, defaultSort: SortOption): SortOption {
+  return SORT_OPTIONS.has(raw as SortOption) ? (raw as SortOption) : defaultSort;
 }
 
 function parseHqFilter(raw: string | null): HqFilterOption {
   return HQ_FILTER_OPTIONS.has(raw as HqFilterOption) ? (raw as HqFilterOption) : DEFAULT_HQ_FILTER;
 }
 
-// Shared by usePlaylistDetail and useAllTracksDetail — both read/write the
-// same URL param conventions (?genres=, ?sort=, ?hq=, ?q=), so every track
-// filter/sort control is deep-linkable and survives a refresh the same way
-// on either page.
-export function useTrackFilterParams() {
+// Shared by usePlaylistDetail, useAllTracksDetail, and useHistoryDetail —
+// all three read/write the same URL param conventions (?genres=, ?sort=,
+// ?hq=, ?q=), so every track filter/sort control is deep-linkable and
+// survives a refresh the same way on any of them. `defaultSort` lets a page
+// pick its own baseline order (History wants "most recently played" instead
+// of "most recently added") without a `?sort=` param in the URL looking like
+// a deliberate user choice.
+export function useTrackFilterParams(defaultSort: SortOption = DEFAULT_SORT) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedGenres = useMemo(() => parseGenres(searchParams.get(GENRES_PARAM)), [searchParams]);
-  const sort = useMemo(() => parseSort(searchParams.get(SORT_PARAM)), [searchParams]);
+  const sort = useMemo(() => parseSort(searchParams.get(SORT_PARAM), defaultSort), [searchParams, defaultSort]);
   const hqFilter = useMemo(() => parseHqFilter(searchParams.get(HQ_PARAM)), [searchParams]);
   const searchQuery = searchParams.get(SEARCH_PARAM) ?? '';
 
@@ -83,10 +88,10 @@ export function useTrackFilterParams() {
   const setSort = useCallback((next: SortOption) => {
     setSearchParams(prev => {
       const params = new URLSearchParams(prev);
-      if (next === DEFAULT_SORT) params.delete(SORT_PARAM); else params.set(SORT_PARAM, next);
+      if (next === defaultSort) params.delete(SORT_PARAM); else params.set(SORT_PARAM, next);
       return params;
     }, { replace: true });
-  }, [setSearchParams]);
+  }, [setSearchParams, defaultSort]);
 
   const setHqFilter = useCallback((next: HqFilterOption) => {
     setSearchParams(prev => {
@@ -168,5 +173,14 @@ export function sortTracks(videos: PlaylistVideo[], sort: SortOption): PlaylistV
     case 'artist-desc': return sorted.sort((a, b) => (b.artist ?? '').localeCompare(a.artist ?? '') || a.title.localeCompare(b.title));
     case 'plays-asc': return sorted.sort((a, b) => a.playCount - b.playCount || a.title.localeCompare(b.title));
     case 'plays-desc': return sorted.sort((a, b) => b.playCount - a.playCount || a.title.localeCompare(b.title));
+    // Never-played tracks (null) sort after everything with a real
+    // timestamp in both directions — there's no meaningful "earlier" or
+    // "later" for a track that was never started.
+    case 'played-asc': return sorted.sort((a, b) =>
+      (a.lastPlayStartedAt ? Date.parse(a.lastPlayStartedAt) : Infinity) -
+      (b.lastPlayStartedAt ? Date.parse(b.lastPlayStartedAt) : Infinity) || a.title.localeCompare(b.title));
+    case 'played-desc': return sorted.sort((a, b) =>
+      (b.lastPlayStartedAt ? Date.parse(b.lastPlayStartedAt) : -Infinity) -
+      (a.lastPlayStartedAt ? Date.parse(a.lastPlayStartedAt) : -Infinity) || a.title.localeCompare(b.title));
   }
 }
