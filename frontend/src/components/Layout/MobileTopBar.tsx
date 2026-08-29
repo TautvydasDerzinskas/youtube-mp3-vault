@@ -11,7 +11,6 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Avatar,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -21,15 +20,14 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { useLogout } from '../../hooks/useLogout';
 import { useNavItems } from './useNavItems';
 import { NavList } from './NavList';
+import { UserMenu } from './UserMenu';
 import { MOBILE_TOPBAR_HEIGHT } from './constants';
 
 export default function MobileTopBar() {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const navItems = useNavItems();
   const logout = useLogout();
@@ -65,13 +63,7 @@ export default function MobileTopBar() {
             {t('auth.appName')}
           </Typography>
         </Box>
-        <Avatar
-          alt={user?.displayName}
-          onClick={() => handleNavigate('/profile')}
-          sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 13, cursor: 'pointer' }}
-        >
-          {user?.displayName?.[0]?.toUpperCase()}
-        </Avatar>
+        <UserMenu avatarSize={32} />
       </Toolbar>
 
       <Collapse in={open}>

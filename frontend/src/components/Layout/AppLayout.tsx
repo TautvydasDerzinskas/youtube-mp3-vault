@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import MobileTopBar from './MobileTopBar';
+import { TopBar } from './TopBar';
 import { SIDEBAR_WIDTH, MOBILE_TOPBAR_HEIGHT } from './constants';
 import { MiniPlayer } from './MiniPlayer';
 import { PlayerProvider, usePlayer } from '../../contexts/PlayerContext';
@@ -48,6 +49,7 @@ function AppLayoutContent() {
           mt: isMobile ? `${MOBILE_TOPBAR_HEIGHT}px` : 0,
         }}
       >
+        {!isMobile && <TopBar />}
         <Outlet />
       </Box>
 
