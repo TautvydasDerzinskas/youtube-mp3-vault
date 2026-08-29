@@ -23,7 +23,8 @@ export default function DownloadsPage() {
         <Button
           component="a"
           href={APK_URL}
-          download
+          target="_blank"
+          rel="noopener noreferrer"
           variant="contained"
           size="large"
           startIcon={<AndroidIcon />}

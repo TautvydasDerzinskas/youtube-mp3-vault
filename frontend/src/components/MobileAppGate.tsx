@@ -43,7 +43,8 @@ export function MobileAppGate() {
       <Button
         component="a"
         href={APK_URL}
-        download
+        target="_blank"
+        rel="noopener noreferrer"
         sx={{ display: 'flex', flexDirection: 'column', gap: 1, textTransform: 'none' }}
       >
         <AndroidIcon sx={{ fontSize: 96, color: 'primary.main' }} />

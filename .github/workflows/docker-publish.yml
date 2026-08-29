@@ -136,19 +136,11 @@ jobs:
           cache-to: type=gha,mode=max
 
   publish-frontend:
-    needs: [changes, android-apk]
-    if: |
-      !failure() && !cancelled() &&
-      (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.mobile == 'true')
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download built APK
-        uses: actions/download-artifact@v4
-        with:
-          name: YoutubeVault-apk
-          path: frontend/public/download
 
       - uses: docker/setup-qemu-action@v3
         with:
@@ -199,7 +191,7 @@ jobs:
 
   android-apk:
     needs: changes
-    if: needs.changes.outputs.mobile == 'true' || needs.changes.outputs.frontend == 'true'
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     # Beyond the default contents: read — needed to create/update the
     # GitHub Release below.
@@ -219,25 +211,6 @@ jobs:
         env:
           SHA: ${{ github.sha }}
         run: echo "short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
-
-      - name: Determine build SHA
-        id: build_sha
-        env:
-          GH_TOKEN: ${{ github.token }}
-          MOBILE_CHANGED: ${{ needs.changes.outputs.mobile }}
-          CURRENT_SHA: ${{ steps.sha.outputs.short }}
-          REPO: ${{ github.repository }}
-        run: |
-          if [ "$MOBILE_CHANGED" = "true" ]; then
-            echo "sha=$CURRENT_SHA" >> "$GITHUB_OUTPUT"
-          else
-            latest_tag=$(gh release view --repo "$REPO" --json tagName -q .tagName 2>/dev/null || true)
-            if [ -n "$latest_tag" ]; then
-              echo "sha=${latest_tag#mobile-}" >> "$GITHUB_OUTPUT"
-            else
-              echo "sha=$CURRENT_SHA" >> "$GITHUB_OUTPUT"
-            fi
-          fi
 
       - name: Install dependencies
         working-directory: mobile
@@ -267,7 +240,7 @@ jobs:
       - name: Build release APK
         working-directory: mobile/android
         env:
-          EXPO_PUBLIC_BUILD_SHA: ${{ steps.build_sha.outputs.sha }}
+          EXPO_PUBLIC_BUILD_SHA: ${{ steps.sha.outputs.short }}
           EXPO_PUBLIC_GITHUB_REPO: ${{ github.repository }}
         run: ./gradlew assembleRelease --no-daemon
 
@@ -275,7 +248,6 @@ jobs:
         run: cp mobile/android/app/build/outputs/apk/release/app-release.apk YoutubeVault.apk
 
       - name: Publish GitHub Release
-        if: needs.changes.outputs.mobile == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: mobile-${{ steps.sha.outputs.short }}
