@@ -15,7 +15,7 @@ export function SongsOnRepeatCard({ songs, onSeeMore }: Props) {
 
   return (
     <Paper elevation={0} sx={{
-      p: 2.5, border: '1px solid', borderColor: 'divider', borderRadius: '8px',
+      p: 2.5, borderRadius: '8px',
       display: 'flex', flexDirection: 'column',
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>

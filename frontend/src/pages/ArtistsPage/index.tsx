@@ -109,8 +109,8 @@ export default function ArtistsPage() {
               elevation={0}
               sx={{
                 p: 2, display: 'flex', flexDirection: 'column', gap: 1, cursor: 'pointer',
-                border: '1px solid', borderColor: 'divider', borderRadius: '8px',
-                '&:hover': { borderColor: 'primary.dark' },
+                borderRadius: '8px', transition: 'background-color 0.2s',
+                '&:hover': { bgcolor: 'action.hover' },
               }}
             >
               <Avatar src={a.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 64, height: 64, borderRadius: 2 }}>

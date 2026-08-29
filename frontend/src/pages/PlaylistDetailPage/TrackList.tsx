@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PlaylistVideo } from '../../api/youtube';
 import { NowPlaying } from '../PlaylistsPage/types';
 import { TrackRow, TrackRowProps } from './TrackRow';
+import { TrackListHeader } from './TrackListHeader';
 
 interface TrackListProps {
   tracks: PlaylistVideo[];
@@ -38,15 +39,18 @@ export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAu
   }
 
   return (
-    <Box sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
-      <List
-        listRef={listRef}
-        rowCount={tracks.length}
-        rowHeight={ROW_HEIGHT}
-        rowComponent={TrackRow}
-        rowProps={rowProps}
-        style={{ height: '100%', width: '100%' }}
-      />
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <TrackListHeader />
+      <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+        <List
+          listRef={listRef}
+          rowCount={tracks.length}
+          rowHeight={ROW_HEIGHT}
+          rowComponent={TrackRow}
+          rowProps={rowProps}
+          style={{ height: '100%', width: '100%' }}
+        />
+      </Box>
     </Box>
   );
 }

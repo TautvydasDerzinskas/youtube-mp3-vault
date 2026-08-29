@@ -57,7 +57,7 @@ export default function Sidebar({ width }: SidebarProps) {
             <SidebarAudioGlow />
             <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 26, position: 'relative', flexShrink: 0 }} />
             <Typography variant="subtitle1" fontWeight={900} color="primary.main" noWrap
-              sx={{ position: 'relative', fontFamily: '"Aftika", "Inter", "Arial", sans-serif' }}>
+              sx={{ position: 'relative', fontFamily: '"YoutubeVault", "Inter", "Arial", sans-serif' }}>
               {t('auth.appName')}
             </Typography>
           </Box>

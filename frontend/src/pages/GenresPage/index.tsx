@@ -102,8 +102,8 @@ export default function GenresPage() {
                   elevation={0}
                   sx={{
                     p: 2, display: 'flex', flexDirection: 'column', gap: 0.5, cursor: 'pointer',
-                    border: '1px solid', borderColor: 'divider', borderRadius: '8px',
-                    '&:hover': { borderColor: 'primary.dark' },
+                    borderRadius: '8px', transition: 'background-color 0.2s',
+                    '&:hover': { bgcolor: 'action.hover' },
                   }}
                 >
                   <GenreIcon sx={{ fontSize: 20, color: 'primary.main' }} />

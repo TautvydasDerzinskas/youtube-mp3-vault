@@ -19,11 +19,9 @@ export function GenreCountCard({ count }: { count: number }) {
         justifyContent: 'center',
         gap: 1,
         cursor: 'pointer',
-        border: '1px solid',
-        borderColor: 'divider',
         borderRadius: '8px',
-        minHeight: 140,
-        '&:hover': { borderColor: 'primary.dark' },
+        minHeight: 140, transition: 'background-color 0.2s',
+        '&:hover': { bgcolor: 'action.hover' },
       }}
     >
       <GenreIcon sx={{ fontSize: 32, color: 'primary.main' }} />

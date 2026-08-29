@@ -35,8 +35,8 @@ export function AllTracksListItem({ refreshOn }: AllTracksListItemProps) {
   return (
     <Paper onClick={open} elevation={0}
       sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
-        border: '1px solid', borderColor: 'divider', borderRadius: '8px',
-        '&:hover': { borderColor: 'primary.dark' } }}>
+        borderRadius: '8px', transition: 'background-color 0.2s',
+        '&:hover': { bgcolor: 'action.hover' } }}>
       <Avatar variant="rounded" sx={{ width: 56, height: 40, borderRadius: 1, flexShrink: 0 }}>
         <MusicNoteIcon />
       </Avatar>
@@ -54,9 +54,9 @@ export function AllTracksListItem({ refreshOn }: AllTracksListItemProps) {
 
         <Stack direction="row" gap={1} sx={{ mt: 0.5 }}>
           <Chip label={t('playlists.detail.trackCount', { count: summary.songCount })}
-            size="small" variant="outlined" sx={{ fontSize: 11 }} />
+            size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
           {summary.totalSize > 0 && (
-            <Chip label={formatBytes(summary.totalSize)} size="small" variant="outlined" sx={{ fontSize: 11 }} />
+            <Chip label={formatBytes(summary.totalSize)} size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
           )}
         </Stack>
       </Box>

@@ -1,5 +1,19 @@
 import { createTheme } from '@mui/material/styles';
 
+// A custom palette color (MUI only auto-augments its own built-in ones —
+// primary/secondary/error/warning/info/success) for the HQ badge shown over
+// a track's thumbnail once a higher-quality file has actually been
+// downloaded (see TrackRow.tsx) — referenced as the token 'hq.main' rather
+// than a hardcoded hex, same as every other color in this app.
+declare module '@mui/material/styles' {
+  interface Palette {
+    hq: Palette['primary'];
+  }
+  interface PaletteOptions {
+    hq?: PaletteOptions['primary'];
+  }
+}
+
 // Headings use a purchased display font (self-hosted under the app's own
 // name rather than the font's actual name — see fonts.css) at its Black
 // weight — 'font-weight: 100 900' on that single face means any numeric
@@ -76,5 +90,10 @@ const theme = createTheme({
     },
   },
 });
+
+// augmentColor computes light/dark/contrastText the same way MUI's built-in
+// colors get them — custom palette keys don't go through that automatically,
+// so it's called explicitly here rather than hand-picking those shades.
+theme.palette.hq = theme.palette.augmentColor({ color: { main: '#e7ff07' } });
 
 export default theme;

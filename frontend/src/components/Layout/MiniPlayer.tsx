@@ -72,12 +72,8 @@ export function MiniPlayer({
     </Tooltip>
   );
   const closeButton = (
-    // ml: 'auto' — on desktop the <audio> element caps out at maxWidth: 500,
-    // so on a wide window there's leftover flex space past it that nothing
-    // else absorbs; without this, close just sits right after shuffle
-    // instead of at the container's actual right edge.
     <Tooltip title={t('playlists.miniPlayer.close')}>
-      <IconButton size="small" onClick={onClose} sx={{ flexShrink: 0, ml: 'auto' }}>
+      <IconButton size="small" onClick={onClose} sx={{ flexShrink: 0 }}>
         <CloseIcon sx={{ fontSize: 18 }} />
       </IconButton>
     </Tooltip>
@@ -126,25 +122,45 @@ export function MiniPlayer({
   }
 
   return (
+    // 3-column grid (not a plain flex row) so the center cluster
+    // (prev/audio/next/repeat/shuffle) sits at the bar's true horizontal
+    // center regardless of how wide the left (thumbnail+title) or right
+    // (close button) content actually is — the two 1fr columns always claim
+    // equal space either side of the auto-sized center one, unlike a flex
+    // row where the center's position would shift with its neighbors' sizes.
     <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
-      borderTop: 1, borderColor: 'divider', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
-      {thumbnail}
-      <Box sx={{ minWidth: 120, maxWidth: 280 }}>
-        {titleBlock}
+      borderTop: 1, borderColor: 'divider', px: 2, py: 1,
+      display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+        {thumbnail}
+        {/* A fixed width (not a min/max range) — the title/artist column
+            must never resize with content length, or every button after it
+            would shift left/right depending on how long the current track's
+            name happens to be. noWrap on the Typography inside (see
+            titleBlock above) ellipsizes whatever doesn't fit instead. */}
+        <Box sx={{ width: 220, flexShrink: 0, minWidth: 0 }}>
+          {titleBlock}
+        </Box>
       </Box>
-      {previousButton}
-      <audio
-        ref={audioRef}
-        controls
-        style={{ flexGrow: 1, height: 32, maxWidth: 500 }}
-        onPlay={onPlay}
-        onPause={onPause}
-        onEnded={onEnded}
-      />
-      {nextButton}
-      {repeatButton}
-      {shuffleButton}
-      {closeButton}
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {previousButton}
+        <audio
+          ref={audioRef}
+          controls
+          style={{ height: 32, width: 'clamp(240px, 30vw, 500px)' }}
+          onPlay={onPlay}
+          onPause={onPause}
+          onEnded={onEnded}
+        />
+        {nextButton}
+        {repeatButton}
+        {shuffleButton}
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        {closeButton}
+      </Box>
     </Box>
   );
 }

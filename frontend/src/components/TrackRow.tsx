@@ -3,7 +3,7 @@ import { Box, Typography, Avatar, IconButton, Tooltip, LinearProgress, SxProps, 
 import {
   MusicNote as MusicNoteIcon, Download as DownloadIcon, YouTube as YouTubeIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, HighQuality as HqIcon,
-  WarningAmber as WarningAmberIcon,
+  WarningAmber as WarningAmberIcon, MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +37,25 @@ export interface TrackRowProps {
 // linger for long after the search actually finishes, cheap enough (one
 // single-video GET) not to matter if a search runs for a while.
 const SEARCH_POLL_INTERVAL_MS = 2000;
+
+// Fixed column widths, shared with PlaylistDetailPage/TrackListHeader.tsx so
+// its header labels land exactly above the same columns here — thumbnail
+// width, gap, and every subsequent fixed-width column need to match exactly
+// for the two to stay pixel-aligned as either one changes.
+export const TRACK_ROW_LAYOUT = {
+  gap: 1.5, // MUI spacing units (×8px = 12px) — the row's own `gap` below
+  thumbnailWidth: 42,
+  playsWidth: 70,
+  yearWidth: 40,
+  genreWidth: 110,
+  durationWidth: 44,
+  // Reserves space for the busiest real case (low-bitrate warning + YouTube
+  // link + MP3 download, right-aligned within it) so the actions column
+  // after it never shifts left/right depending on which of those happen to
+  // render for a given row.
+  utilityClusterWidth: 96,
+  actionsWidth: 40,
+};
 
 /**
  * The one track row component — every list of playable-from-disk tracks in
@@ -161,45 +180,29 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       onClick={() => navigate(`/playlists/${trackPlaylistId}/${v.id}`)}
       onContextMenu={(e) => { e.preventDefault(); setMenuPos({ top: e.clientY, left: e.clientX }); }}
       sx={{
-        display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5,
+        display: 'flex', alignItems: 'center', gap: TRACK_ROW_LAYOUT.gap, px: 1.5,
         position: 'relative', zIndex: 0,
-        borderBottom: 1, borderColor: 'divider', cursor: 'pointer',
+        cursor: 'pointer',
         opacity: v.downloadStatus === 'removed' ? 0.35 : 1,
         bgcolor: isCurrentTrack ? 'action.selected' : 'transparent',
-        transition: 'transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',
-        '&:hover': {
-          bgcolor: isCurrentTrack ? 'action.selected' : 'action.hover',
-          // Only the synced (playable-from-disk) rows get the pop — it's a
-          // cue that this row is actually clickable-to-play, not just
-          // decoration. translateY (not scale) keeps the row's width
-          // unchanged so it can never overflow its container horizontally;
-          // lifting it and adding shadow reads as the row floating above its
-          // neighbors, which themselves stay put since transforms don't
-          // affect layout. The z-index bump keeps it drawing on top of them
-          // instead of being clipped by their (equally opaque) backgrounds.
-          // Skipped entirely while searching — one animation at a time reads
-          // more clearly than two competing.
-          ...(v.downloadStatus === 'done' && !searching && { transform: 'translateY(-3px)', zIndex: 1, boxShadow: 6 }),
-        },
+        transition: 'background-color 0.15s ease',
+        // Reveals the play/pause overlay button on the thumbnail (see
+        // .track-play-overlay below) on hover of the row, not just of the
+        // thumbnail itself. pointerEvents flips together with opacity — the
+        // button covers the whole thumbnail (inset: 0), so left at 'auto'
+        // by default it would silently swallow every click/hover on the
+        // thumbnail (including the HQ badge's own Tooltip) even while
+        // invisible; 'none' lets those pass through until it's actually shown.
+        '&:hover .track-play-overlay': { opacity: 1, pointerEvents: 'auto' },
+        // Same fill the sidebar itself uses (background.paper) — currently
+        // playing keeps its own selected highlight instead, so hovering it
+        // doesn't visually lose that indicator.
+        '&:hover': { bgcolor: isCurrentTrack ? 'action.selected' : 'background.paper' },
         ...sx,
       }}
     >
-      <Box sx={{ width: 40, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-        {v.downloadStatus === 'done' && (
-          <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-            <span>
-              <IconButton disabled={searching} onClick={(e) => { e.stopPropagation(); onTogglePlay(); }} sx={{ color: 'primary.main' }}>
-                {isCurrentTrack && isAudioPlaying
-                  ? <PauseTrackIcon sx={{ fontSize: 28 }} />
-                  : <PlayArrowIcon sx={{ fontSize: 28 }} />}
-              </IconButton>
-            </span>
-          </Tooltip>
-        )}
-      </Box>
-
       <Box sx={{ position: 'relative', flexShrink: 0 }}>
-        <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1 }}>
+        <Avatar src={v.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: TRACK_ROW_LAYOUT.thumbnailWidth, height: 30, borderRadius: 1 }}>
           <MusicNoteIcon sx={{ fontSize: 16 }} />
         </Avatar>
         {(v.hqFileDownloaded || v.betterQualityExists) && (
@@ -208,8 +211,32 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
               position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
               bgcolor: 'rgba(0,0,0,0.45)', borderRadius: 1,
             }}>
-              <HqIcon sx={{ fontSize: 18, color: v.hqFileDownloaded ? 'success.main' : 'grey.300' }} />
+              <HqIcon sx={{ fontSize: 18, color: v.hqFileDownloaded ? 'hq.main' : 'grey.300' }} />
             </Box>
+          </Tooltip>
+        )}
+        {/* Hidden by default (opacity: 0) — the row's own hover rule above
+            reveals it, overlaying the thumbnail (and any HQ badge showing
+            underneath) rather than sitting in its own reserved column. */}
+        {v.downloadStatus === 'done' && (
+          <Tooltip title={isCurrentTrack && isAudioPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
+            <span>
+              <IconButton
+                className="track-play-overlay"
+                disabled={searching}
+                onClick={(e) => { e.stopPropagation(); onTogglePlay(); }}
+                sx={{
+                  position: 'absolute', inset: 0, borderRadius: 1, p: 0,
+                  bgcolor: 'rgba(0,0,0,0.55)', color: '#fff',
+                  opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.65)' },
+                }}
+              >
+                {isCurrentTrack && isAudioPlaying
+                  ? <PauseTrackIcon sx={{ fontSize: 20 }} />
+                  : <PlayArrowIcon sx={{ fontSize: 20 }} />}
+              </IconButton>
+            </span>
           </Tooltip>
         )}
       </Box>
@@ -231,26 +258,26 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
 
       {v.playCount > 0 && (
         <Typography variant="caption" color="text.secondary" noWrap
-          sx={{ width: 70, flexShrink: 0, textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
+          sx={{ width: TRACK_ROW_LAYOUT.playsWidth, flexShrink: 0, textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
           {t('artists.detail.totalPlayCount', { count: v.playCount })}
         </Typography>
       )}
 
-      <Typography variant="caption" color="text.secondary" sx={{ width: 40, flexShrink: 0, textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+      <Typography variant="caption" color="text.secondary" sx={{ width: TRACK_ROW_LAYOUT.yearWidth, flexShrink: 0, textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
         {v.releaseYear ?? ''}
       </Typography>
 
       {v.genres.length > 0 && (
-        <Typography variant="caption" color="text.secondary" noWrap sx={{ width: 110, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
+        <Typography variant="caption" color="text.secondary" noWrap sx={{ width: TRACK_ROW_LAYOUT.genreWidth, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
           {v.genres.map(formatGenre).join(', ')}
         </Typography>
       )}
 
-      <Typography variant="caption" color="text.secondary" sx={{ width: 44, flexShrink: 0, textAlign: 'right' }}>
+      <Typography variant="caption" color="text.secondary" sx={{ width: TRACK_ROW_LAYOUT.durationWidth, flexShrink: 0, textAlign: 'right' }}>
         {formatDuration(v.duration)}
       </Typography>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+      <Box sx={{ width: TRACK_ROW_LAYOUT.utilityClusterWidth, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
         {v.downloadStatus !== 'done' && (
           <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
             <Box sx={{ display: 'flex' }}>{STATUS_ICON[v.downloadStatus] ?? null}</Box>
@@ -276,6 +303,15 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
           </Tooltip>
         )}
       </Box>
+
+      <Box sx={{ width: TRACK_ROW_LAYOUT.actionsWidth, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+        <Tooltip title={t('playlists.videoList.moreActions')}>
+          <IconButton size="small" onClick={(e) => { e.stopPropagation(); setMenuPos({ top: e.clientY, left: e.clientX }); }}>
+            <MoreVertIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
       {searching && (
         <LinearProgress sx={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3 }} />
       )}

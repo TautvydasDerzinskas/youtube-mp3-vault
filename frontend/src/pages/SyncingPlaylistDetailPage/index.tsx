@@ -76,8 +76,11 @@ export default function SyncingPlaylistDetailPage() {
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
           <Typography variant="h5" fontWeight={700} sx={{ wordBreak: 'break-word' }}>{displayName(playlist)}</Typography>
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 0.5 }}>
-            <Chip size="small" variant="outlined" label={t('playlists.detail.trackCount', { count: playlist.videoCount })} />
-            {playlist.totalSize > 0 && <Chip size="small" variant="outlined" label={formatBytes(playlist.totalSize)} />}
+            <Chip size="small" label={t('playlists.detail.trackCount', { count: playlist.videoCount })}
+              sx={{ bgcolor: 'divider', color: 'common.white' }} />
+            {playlist.totalSize > 0 && (
+              <Chip size="small" label={formatBytes(playlist.totalSize)} sx={{ bgcolor: 'divider', color: 'common.white' }} />
+            )}
           </Stack>
         </Box>
       </Box>
@@ -85,9 +88,12 @@ export default function SyncingPlaylistDetailPage() {
       <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: '8px' }}>
         <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1 }}>
           <Chip label={playlist.syncStatus === 'generating' ? t('playlists.generatingChip') : t('playlists.syncing')}
-            size="small" color="info" />
+            size="small"
+            color={playlist.syncStatus === 'generating' ? 'info' : undefined}
+            sx={playlist.syncStatus === 'generating' ? undefined : { bgcolor: 'common.black', color: 'common.white' }} />
           {phase?.phase === 'quality' && hqFoundSet.size > 0 && (
-            <Chip label={t('playlists.hqFoundSoFar', { count: hqFoundSet.size })} size="small" color="success" variant="outlined" />
+            <Chip label={t('playlists.hqFoundSoFar', { count: hqFoundSet.size })} size="small"
+              sx={{ bgcolor: 'hq.main', color: 'common.black' }} />
           )}
         </Stack>
         <Typography variant="body2" color="text.secondary" noWrap>{progressMessage}</Typography>
