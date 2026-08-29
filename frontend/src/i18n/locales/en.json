@@ -302,7 +302,11 @@
       "lastfm": "Last.fm",
       "deezer": "Deezer",
       "qobuz": "Qobuz",
-      "tidal": "Tidal"
+      "tidal": "Tidal",
+      "connectionStatus": {
+        "connected": "{{service}} — Connected",
+        "notConnected": "{{service}} — Not connected"
+      }
     },
     "avatarAlt": "Profile avatar",
     "displayName": "Display Name",

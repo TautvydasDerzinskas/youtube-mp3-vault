@@ -43,14 +43,19 @@ function AppLayoutContent() {
         component="main"
         sx={{
           flexGrow: 1,
-          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           backgroundColor: 'background.default',
-          pb: nowPlaying ? 7 : 0,
           mt: isMobile ? `${MOBILE_TOPBAR_HEIGHT}px` : 0,
         }}
       >
         {!isMobile && <TopBar />}
-        <Outlet />
+        {/* Only this inner box scrolls — TopBar above it stays fixed in place
+            regardless of how tall the routed page's own content is. */}
+        <Box sx={{ flexGrow: 1, overflow: 'auto', pb: nowPlaying ? 7 : 0 }}>
+          <Outlet />
+        </Box>
       </Box>
 
       {/* Mini player — lives at the layout level (not a page) so playback survives route changes */}

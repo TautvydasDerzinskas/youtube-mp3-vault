@@ -78,11 +78,11 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
           <Typography variant="caption" color="text.secondary" noWrap>{user?.email}</Typography>
         </Box>
         <Divider />
-        <MenuItem onClick={() => goToTab('profile')}>
+        <MenuItem onClick={() => goToTab('profile')} title={t('profile.tabProfile')}>
           <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('profile.tabProfile')}</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => goToTab('settings')}>
+        <MenuItem onClick={() => goToTab('settings')} title={t('profile.tabSettings')}>
           <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('profile.tabSettings')}</ListItemText>
         </MenuItem>
@@ -92,6 +92,7 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
             <Box
               key={svc.key}
               onClick={() => goToTab(svc.tab)}
+              title={t(connected[svc.key] ? 'profile.services.connectionStatus.connected' : 'profile.services.connectionStatus.notConnected', { service: t(svc.labelKey) })}
               sx={{
                 px: 1, py: 0.375, borderRadius: 1, fontSize: 11, fontWeight: 600, lineHeight: 1.4,
                 cursor: 'pointer', whiteSpace: 'nowrap', color: '#fff',

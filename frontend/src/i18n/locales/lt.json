@@ -316,7 +316,11 @@
       "lastfm": "Last.fm",
       "deezer": "Deezer",
       "qobuz": "Qobuz",
-      "tidal": "Tidal"
+      "tidal": "Tidal",
+      "connectionStatus": {
+        "connected": "{{service}} — prijungta",
+        "notConnected": "{{service}} — neprijungta"
+      }
     },
     "avatarAlt": "Profilio nuotrauka",
     "displayName": "Rodomas vardas",
