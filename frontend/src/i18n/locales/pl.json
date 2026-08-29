@@ -50,7 +50,9 @@
     "downloads": "Pobieranie",
     "logout": "Wyloguj się",
     "expandMenu": "Rozwiń menu",
-    "collapseMenu": "Zwiń menu"
+    "collapseMenu": "Zwiń menu",
+    "expandSidebar": "Rozwiń panel boczny",
+    "collapseSidebar": "Zwiń panel boczny"
   },
   "playlists": {
     "title": "Twoje playlisty",
@@ -318,6 +320,12 @@
     "tabSettings": "Ustawienia",
     "tabLastfm": "Last.fm",
     "tabHqDownload": "Pobieranie HQ",
+    "services": {
+      "lastfm": "Last.fm",
+      "deezer": "Deezer",
+      "qobuz": "Qobuz",
+      "tidal": "Tidal"
+    },
     "avatarAlt": "Awatar profilu",
     "displayName": "Nazwa wyświetlana",
     "displayNameHelper": "Nazwy wyświetlanej nie można zmienić",

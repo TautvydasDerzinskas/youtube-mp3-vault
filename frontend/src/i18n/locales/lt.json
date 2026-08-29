@@ -50,7 +50,9 @@
     "downloads": "Atsisiuntimai",
     "logout": "Atsijungti",
     "expandMenu": "Išskleisti meniu",
-    "collapseMenu": "Suskleisti meniu"
+    "collapseMenu": "Suskleisti meniu",
+    "expandSidebar": "Išskleisti šoninę juostą",
+    "collapseSidebar": "Suskleisti šoninę juostą"
   },
   "playlists": {
     "title": "Jūsų grojaraščiai",
@@ -304,6 +306,12 @@
     "tabSettings": "Nustatymai",
     "tabLastfm": "Last.fm",
     "tabHqDownload": "HQ atsisiuntimas",
+    "services": {
+      "lastfm": "Last.fm",
+      "deezer": "Deezer",
+      "qobuz": "Qobuz",
+      "tidal": "Tidal"
+    },
     "avatarAlt": "Profilio nuotrauka",
     "displayName": "Rodomas vardas",
     "displayNameHelper": "Rodomo vardo pakeisti negalima",

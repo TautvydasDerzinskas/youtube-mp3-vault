@@ -5,7 +5,6 @@ import {
   Repeat as RepeatIcon, Shuffle as ShuffleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { SIDEBAR_WIDTH } from './constants';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface MiniPlayerProps {
@@ -127,7 +126,7 @@ export function MiniPlayer({
   }
 
   return (
-    <Box sx={{ position: 'fixed', bottom: 0, left: SIDEBAR_WIDTH, right: 0, bgcolor: 'background.paper',
+    <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
       borderTop: '1px solid #2a2a2a', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
       {thumbnail}
       <Box sx={{ minWidth: 120, maxWidth: 280 }}>

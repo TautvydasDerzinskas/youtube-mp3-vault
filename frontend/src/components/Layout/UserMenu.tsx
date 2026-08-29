@@ -8,7 +8,7 @@ import { useGravatarUrl } from '../../hooks/useGravatarUrl';
 
 interface ServiceBadgeDef {
   key: 'lastfm' | 'deezer' | 'qobuz' | 'tidal';
-  label: string;
+  labelKey: string;
   color: string;
   // Only Tidal's brand is monochrome (black/white) — its "connected" pill
   // would otherwise be indistinguishable from the disconnected gray, so it
@@ -18,10 +18,10 @@ interface ServiceBadgeDef {
 }
 
 const SERVICE_BADGES: ServiceBadgeDef[] = [
-  { key: 'lastfm', label: 'Last.fm', color: '#d51007', tab: 'lastfm' },
-  { key: 'deezer', label: 'Deezer', color: '#a238ff', tab: 'hq' },
-  { key: 'qobuz', label: 'Qobuz', color: '#4f1d8c', tab: 'hq' },
-  { key: 'tidal', label: 'Tidal', color: '#000000', borderColor: '#ffffff', tab: 'hq' },
+  { key: 'lastfm', labelKey: 'profile.services.lastfm', color: '#d51007', tab: 'lastfm' },
+  { key: 'deezer', labelKey: 'profile.services.deezer', color: '#a238ff', tab: 'hq' },
+  { key: 'qobuz', labelKey: 'profile.services.qobuz', color: '#4f1d8c', tab: 'hq' },
+  { key: 'tidal', labelKey: 'profile.services.tidal', color: '#000000', borderColor: '#ffffff', tab: 'hq' },
 ];
 
 interface UserMenuProps {
@@ -100,7 +100,7 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
                 border: svc.borderColor && connected[svc.key] ? `1px solid ${svc.borderColor}` : 'none',
               }}
             >
-              {svc.label}
+              {t(svc.labelKey)}
             </Box>
           ))}
         </Box>

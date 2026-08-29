@@ -1,15 +1,19 @@
+import { useState } from 'react';
 import {
   Box,
   Drawer,
   Typography,
   Divider,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
+import { MusicNote as MusicNoteIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { SidebarAudioGlow } from './SidebarAudioGlow';
 import { useNavItems } from './useNavItems';
 import { NavList } from './NavList';
+import { SIDEBAR_COLLAPSED_WIDTH } from './constants';
 
 interface SidebarProps {
   width: number;
@@ -19,39 +23,56 @@ export default function Sidebar({ width }: SidebarProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const navItems = useNavItems();
+  const [collapsed, setCollapsed] = useState(false);
+  const currentWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : width;
 
   return (
     <Drawer
       variant="permanent"
       sx={{
-        width,
+        width: currentWidth,
         flexShrink: 0,
+        transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shortest }),
         '& .MuiDrawer-paper': {
-          width,
+          width: currentWidth,
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
+          overflowX: 'hidden',
+          transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shortest }),
         },
       }}
     >
-      {/* Logo */}
+      {/* Logo + collapse toggle */}
       <Box
-        onClick={() => navigate('/dashboard')}
-        sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1, position: 'relative', overflow: 'hidden',
-          cursor: 'pointer' }}
+        sx={{ pl: 2.5, pr: 1, py: 2.5, display: 'flex', alignItems: 'center', position: 'relative',
+          justifyContent: collapsed ? 'center' : 'space-between' }}
       >
-        <SidebarAudioGlow />
-        <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 28, position: 'relative' }} />
-        <Typography variant="h6" fontWeight={700} color="primary.main" sx={{ position: 'relative' }}>
-          {t('auth.appName')}
-        </Typography>
+        {!collapsed && (
+          <Box
+            onClick={() => navigate('/dashboard')}
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, overflow: 'hidden',
+              position: 'relative', cursor: 'pointer' }}
+          >
+            <SidebarAudioGlow />
+            <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 26, position: 'relative', flexShrink: 0 }} />
+            <Typography variant="subtitle1" fontWeight={700} color="primary.main" noWrap sx={{ position: 'relative' }}>
+              {t('auth.appName')}
+            </Typography>
+          </Box>
+        )}
+        <Tooltip title={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}>
+          <IconButton size="small" onClick={() => setCollapsed((v) => !v)} sx={{ flexShrink: 0 }}>
+            {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <Divider sx={{ borderColor: '#2a2a2a' }} />
 
       {/* Navigation */}
-      <Box sx={{ flexGrow: 1, pt: 1, px: 1, overflowY: 'auto' }}>
-        <NavList items={navItems} />
+      <Box sx={{ flexGrow: 1, pt: 1, px: collapsed ? 0.5 : 1, overflowY: 'auto', overflowX: 'hidden' }}>
+        <NavList items={navItems} collapsed={collapsed} />
       </Box>
     </Drawer>
   );

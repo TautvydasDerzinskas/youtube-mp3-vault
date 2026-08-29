@@ -50,7 +50,9 @@
     "downloads": "Downloads",
     "logout": "Logout",
     "expandMenu": "Expand menu",
-    "collapseMenu": "Collapse menu"
+    "collapseMenu": "Collapse menu",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
   },
   "playlists": {
     "title": "Your Playlists",
@@ -290,6 +292,12 @@
     "tabSettings": "Settings",
     "tabLastfm": "Last.fm",
     "tabHqDownload": "HQ Download",
+    "services": {
+      "lastfm": "Last.fm",
+      "deezer": "Deezer",
+      "qobuz": "Qobuz",
+      "tidal": "Tidal"
+    },
     "avatarAlt": "Profile avatar",
     "displayName": "Display Name",
     "displayNameHelper": "Display name can't be changed",
