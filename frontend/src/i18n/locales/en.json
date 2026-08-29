@@ -61,6 +61,7 @@
   "playlists": {
     "title": "Your Playlists",
     "addPlaylist": "Add Playlist",
+    "importButton": "Import",
     "failedToLoad": "Failed to load playlists.",
     "offlineBanner": "This service can't reach the internet right now, so syncing is unavailable. Playback of already-downloaded songs still works fine.",
     "emptyState": "No playlists yet. Click \"Add Playlist\" and paste a YouTube playlist URL.",

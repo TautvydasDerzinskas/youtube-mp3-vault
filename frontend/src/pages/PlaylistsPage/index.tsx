@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Typography, Button, Alert, CircularProgress, Stack, Divider } from '@mui/material';
 import { Add as AddIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Playlist, playlistsApi } from '../../api/youtube';
 import { SyncReport, syncReportsApi } from '../../api/syncReports';
 import { usePlaylists } from './hooks/usePlaylists';
@@ -21,7 +21,21 @@ import { displayName } from './utils';
 export default function PlaylistsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [addOpen, setAddOpen] = useState(false);
+
+  // Lets the top bar's global "Import" button (see TopBar/MobileTopBar) open
+  // this dialog from any page — it navigates here with ?add=1, which this
+  // opens once and then strips from the URL so it doesn't reopen on a later
+  // refresh/back-navigation to this same address.
+  useEffect(() => {
+    if (searchParams.get('add') !== '1') return;
+    setAddOpen(true);
+    const params = new URLSearchParams(searchParams);
+    params.delete('add');
+    setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [renaming, setRenaming] = useState<Playlist | null>(null);
   const [deleting, setDeleting] = useState<Playlist | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);

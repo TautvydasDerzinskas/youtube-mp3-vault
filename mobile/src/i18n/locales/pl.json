@@ -323,7 +323,8 @@
       "actionTitle": {
         "sync": "Synchronizacja zakończona",
         "retry_failed": "Ponowienie zakończone",
-        "scan_hq": "Skanowanie HQ zakończone"
+        "scan_hq": "Skanowanie HQ zakończone",
+        "import": "Import zakończony"
       },
       "progress": "{{current}} z {{total}}",
       "durationSeconds_one": "trwało {{count}} sekundę",

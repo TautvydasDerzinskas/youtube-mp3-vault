@@ -1,6 +1,6 @@
 import client from './client';
 
-export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq';
+export type SyncActionType = 'sync' | 'retry_failed' | 'scan_hq' | 'import';
 
 export interface SyncFailureDetail {
   title: string;
@@ -35,8 +35,8 @@ export interface SyncReport {
 // Mirrors frontend/src/api/syncReports.ts — same endpoints, same response
 // shapes (see backend/src/routes/youtube.ts's /sync-reports routes).
 export const syncReportsApi = {
-  // Every sync/retry-failed/scan-hq run the current user has triggered but
-  // not yet dismissed the stats modal for — see PlaylistsScreen, which
+  // Every sync/retry-failed/scan-hq/import run the current user has
+  // triggered but not yet dismissed the stats modal for — see PlaylistsScreen, which
   // fetches this on mount so a run that finished while the app was closed
   // is still waiting whenever they next open it.
   listUnseen: async (): Promise<SyncReport[]> => {

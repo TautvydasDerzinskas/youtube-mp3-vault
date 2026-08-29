@@ -297,7 +297,8 @@
       "actionTitle": {
         "sync": "Sync complete",
         "retry_failed": "Retry complete",
-        "scan_hq": "HQ scan complete"
+        "scan_hq": "HQ scan complete",
+        "import": "Import complete"
       },
       "progress": "{{current}} of {{total}}",
       "durationSeconds_one": "took {{count}} second",

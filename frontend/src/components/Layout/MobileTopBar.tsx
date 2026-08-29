@@ -11,12 +11,14 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Tooltip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Close as CloseIcon,
   Logout as LogoutIcon,
   MusicNote as MusicNoteIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +66,11 @@ export default function MobileTopBar() {
             {t('auth.appName')}
           </Typography>
         </Box>
+        <Tooltip title={t('playlists.importButton')}>
+          <IconButton color="inherit" onClick={() => handleNavigate('/playlists?add=1')}>
+            <AddIcon />
+          </IconButton>
+        </Tooltip>
         <NotificationBell />
         <UserMenu avatarSize={32} />
       </Toolbar>

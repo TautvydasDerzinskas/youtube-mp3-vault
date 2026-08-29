@@ -61,6 +61,7 @@
   "playlists": {
     "title": "Jūsų grojaraščiai",
     "addPlaylist": "Pridėti grojaraštį",
+    "importButton": "Importuoti",
     "failedToLoad": "Nepavyko įkelti grojaraščių.",
     "offlineBanner": "Šiuo metu paslauga neturi interneto ryšio, todėl sinchronizavimas negalimas. Jau atsisiųstų dainų grojimas veikia įprastai.",
     "emptyState": "Grojaraščių dar nėra. Spustelėkite „Pridėti grojaraštį“ ir įklijuokite YouTube grojaraščio nuorodą.",

@@ -61,6 +61,7 @@
   "playlists": {
     "title": "Twoje playlisty",
     "addPlaylist": "Dodaj playlistę",
+    "importButton": "Importuj",
     "failedToLoad": "Nie udało się załadować playlist.",
     "offlineBanner": "Usługa nie ma teraz połączenia z internetem, więc synchronizacja jest niedostępna. Odtwarzanie już pobranych utworów nadal działa normalnie.",
     "emptyState": "Nie masz jeszcze żadnych playlist. Kliknij „Dodaj playlistę” i wklej link do playlisty YouTube.",

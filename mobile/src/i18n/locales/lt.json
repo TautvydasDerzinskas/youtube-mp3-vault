@@ -310,7 +310,8 @@
       "actionTitle": {
         "sync": "Sinchronizavimas baigtas",
         "retry_failed": "Pakartojimas baigtas",
-        "scan_hq": "HQ paieška baigta"
+        "scan_hq": "HQ paieška baigta",
+        "import": "Importas baigtas"
       },
       "progress": "{{current}} iš {{total}}",
       "durationSeconds_one": "truko {{count}} sekundę",
