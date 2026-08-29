@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Paper, Tooltip, IconButton, Box } from '@mui/material';
 import { PlayArrow as PlayArrowIcon, Pause as PauseIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -45,28 +46,44 @@ export function PlaylistRow({
   const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isRetrying || isSyncingLocally;
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
   const isRowPlaying = nowPlaying?.playlistId === playlist.id && isAudioPlaying;
+  // Screen coordinates driving the shared "..."/right-click menu — see
+  // Actions.tsx's own doc comment on the props this feeds.
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
   const open = () => navigate(isBusy ? `/playlists/${playlist.id}/syncing` : `/playlists/${playlist.id}`);
 
-  const playButton = (
-    <Tooltip title={isRowPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
-      <span>
-        <IconButton size="small" disabled={playlist.downloadedCount === 0}
-          onClick={e => onPlayFirst(e, playlist)} sx={{ color: 'primary.main', flexShrink: 0 }}>
-          {isRowPlaying ? <PauseIcon /> : <PlayArrowIcon />}
-        </IconButton>
-      </span>
-    </Tooltip>
-  );
-
   return (
-    <Paper onClick={open} elevation={0}
+    <Paper onClick={open}
+      onContextMenu={e => { e.preventDefault(); setMenuPos({ top: e.clientY, left: e.clientX }); }}
+      elevation={0}
       sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
         borderRadius: '8px',
         opacity: isPausing ? 0.55 : 1, transition: 'background-color 0.2s, opacity 0.2s',
+        // Reveals the play/pause overlay button on the thumbnail (see
+        // .playlist-play-overlay below) on hover of the row, matching
+        // TrackRow's own thumbnail-hover play button.
+        '&:hover .playlist-play-overlay': { opacity: 1, pointerEvents: 'auto' },
         '&:hover': { bgcolor: 'action.hover' } }}>
-      <Box onClick={e => e.stopPropagation()}>{playButton}</Box>
-      <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
+      <Box sx={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+        <Thumbnail thumbnailUrl={playlist.thumbnailUrl} />
+        <Tooltip title={isRowPlaying ? t('playlists.videoList.pause') : t('playlists.videoList.play')}>
+          <span>
+            <IconButton
+              className="playlist-play-overlay"
+              disabled={playlist.downloadedCount === 0}
+              onClick={e => onPlayFirst(e, playlist)}
+              sx={{
+                position: 'absolute', inset: 0, borderRadius: 1, p: 0,
+                bgcolor: 'rgba(0,0,0,0.55)', color: '#fff',
+                opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.65)' },
+              }}
+            >
+              {isRowPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Box>
       <Info playlist={playlist} isBusy={isBusy} isPausing={isPausing} />
       <Actions
         playlist={playlist}
@@ -77,6 +94,8 @@ export function PlaylistRow({
         canGenerateSimilar={canGenerateSimilar}
         hasGeneratedPlaylist={hasGeneratedPlaylist}
         isLockedBySource={isLockedBySource}
+        menuPos={menuPos}
+        onMenuPosChange={setMenuPos}
         onOpen={open}
         onRename={onRename}
         onSync={onSync}

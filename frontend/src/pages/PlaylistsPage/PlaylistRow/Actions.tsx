@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Box, IconButton, Tooltip, CircularProgress, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, IconButton, Tooltip, CircularProgress, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import {
   Sync as SyncIcon, DeleteOutline as DeleteIcon, Edit as EditIcon, Replay as ReplayIcon,
   PauseCircleOutline as PauseIcon, PlayCircleOutline as ResumeIcon, MoreVert as MoreVertIcon,
@@ -12,6 +11,11 @@ interface ActionsProps {
   playlist: Playlist;
   isBusy: boolean;
   isPausing: boolean;
+  // Screen coordinates driving the shared "..."/right-click menu — lifted up
+  // to PlaylistRow so its own onContextMenu (anywhere on the row, not just
+  // this button) can open the exact same menu, mirroring TrackContextMenu.
+  menuPos: { top: number; left: number } | null;
+  onMenuPosChange: (pos: { top: number; left: number } | null) => void;
   // True while a retry-failed pass is running (or about to start) — retrying
   // never re-fetches from YouTube, only drains already-pending videos, so
   // it's never pausable (backend enforces this too, see /pause in
@@ -46,10 +50,10 @@ interface ActionsProps {
 // trailing "more actions" menu, kept as the very last item in the row.
 export function Actions({
   playlist, isBusy, isPausing, isRetrying, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
+  menuPos, onMenuPosChange,
   onOpen, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete, onGenerateSimilar,
 }: ActionsProps) {
   const { t } = useTranslation();
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
   // A generated playlist has no YouTube playlist behind it — that's the one
   // authoritative signal (unlike sourcePlaylistId, which goes null if the
@@ -86,19 +90,10 @@ export function Actions({
   // precondition is not already being busy.
   const scanHqDisabled = isBusy || !online || isLockedBySource;
 
-  const closeMenu = () => setMenuAnchor(null);
+  const closeMenu = () => onMenuPosChange(null);
 
   return (
     <Box onClick={e => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexShrink: 0 }}>
-      {showSync && (
-        <Tooltip title={!online ? t('playlists.offlineUnavailable') : isBusy ? t('playlists.syncing') : isLockedBySource ? t('playlists.unavailableWhileGenerating') : t('playlists.syncNow')}>
-          <span>
-            <IconButton size="small" onClick={e => onSync(e, playlist.id)} disabled={syncDisabled}>
-              {isBusy ? <CircularProgress size={16} /> : <SyncIcon fontSize="small" />}
-            </IconButton>
-          </span>
-        </Tooltip>
-      )}
       {showGenerateSimilar && (
         <Tooltip title={t('playlists.generateSimilar')}>
           <IconButton size="small" onClick={e => onGenerateSimilar(e, playlist)}>
@@ -107,10 +102,27 @@ export function Actions({
         </Tooltip>
       )}
 
-      <IconButton size="small" onClick={e => setMenuAnchor(e.currentTarget)} aria-label={t('playlists.moreActions')}>
+      <IconButton size="small" onClick={e => onMenuPosChange({ top: e.clientY, left: e.clientX })} aria-label={t('playlists.moreActions')}>
         <MoreVertIcon fontSize="small" />
       </IconButton>
-      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} onClick={e => e.stopPropagation()}>
+      <Menu
+        open={Boolean(menuPos)}
+        onClose={closeMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={menuPos ?? undefined}
+        onClick={e => e.stopPropagation()}
+      >
+        {showSync && (
+          <MenuItem disabled={syncDisabled} onClick={e => { closeMenu(); onSync(e, playlist.id); }}>
+            <ListItemIcon>{isBusy ? <CircularProgress size={16} /> : <SyncIcon fontSize="small" />}</ListItemIcon>
+            <ListItemText>{isBusy ? t('playlists.syncing') : t('playlists.syncNow')}</ListItemText>
+          </MenuItem>
+        )}
+        <MenuItem disabled={scanHqDisabled} onClick={e => { closeMenu(); onScanHq(e, playlist); }}>
+          <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('playlists.scanHq')}</ListItemText>
+        </MenuItem>
+        <Divider />
         {onOpen && (
           <MenuItem onClick={() => { closeMenu(); onOpen(); }}>
             <ListItemIcon><OpenIcon fontSize="small" /></ListItemIcon>
@@ -127,10 +139,6 @@ export function Actions({
             <ListItemText>{t('playlists.retryFailed', { count: playlist.failedCount })}</ListItemText>
           </MenuItem>
         )}
-        <MenuItem disabled={scanHqDisabled} onClick={e => { closeMenu(); onScanHq(e, playlist); }}>
-          <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>{t('playlists.scanHq')}</ListItemText>
-        </MenuItem>
         {showPauseToggle && (
           <MenuItem disabled={isPausing || !online} onClick={e => { closeMenu(); onTogglePause(e, playlist); }}>
             <ListItemIcon>{playlist.syncPaused ? <ResumeIcon fontSize="small" /> : <PauseIcon fontSize="small" />}</ListItemIcon>

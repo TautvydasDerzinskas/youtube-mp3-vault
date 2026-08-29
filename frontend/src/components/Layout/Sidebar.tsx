@@ -10,10 +10,11 @@ import {
 import { MusicNote as MusicNoteIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { SidebarAudioGlow } from './SidebarAudioGlow';
 import { useNavItems } from './useNavItems';
 import { NavList } from './NavList';
 import { SIDEBAR_COLLAPSED_WIDTH } from './constants';
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'sidebar_collapsed';
 
 interface SidebarProps {
   width: number;
@@ -23,8 +24,16 @@ export default function Sidebar({ width }: SidebarProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const navItems = useNavItems();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true');
   const currentWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : width;
+
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next));
+      return next;
+    });
+  };
 
   return (
     <Drawer
@@ -51,19 +60,17 @@ export default function Sidebar({ width }: SidebarProps) {
         {!collapsed && (
           <Box
             onClick={() => navigate('/dashboard')}
-            sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, overflow: 'hidden',
-              position: 'relative', cursor: 'pointer' }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, overflow: 'hidden', cursor: 'pointer' }}
           >
-            <SidebarAudioGlow />
-            <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 26, position: 'relative', flexShrink: 0 }} />
-            <Typography variant="subtitle1" fontWeight={900} color="primary.main" noWrap
-              sx={{ position: 'relative', fontFamily: '"YoutubeVault", "Inter", "Arial", sans-serif' }}>
+            <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 26, flexShrink: 0 }} />
+            <Typography variant="subtitle1" fontWeight={900} color="text.primary" noWrap
+              sx={{ fontFamily: '"YoutubeVault", "Inter", "Arial", sans-serif' }}>
               {t('auth.appName')}
             </Typography>
           </Box>
         )}
         <Tooltip title={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}>
-          <IconButton size="small" onClick={() => setCollapsed((v) => !v)} sx={{ flexShrink: 0 }}>
+          <IconButton size="small" onClick={toggleCollapsed} sx={{ flexShrink: 0 }}>
             {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
           </IconButton>
         </Tooltip>

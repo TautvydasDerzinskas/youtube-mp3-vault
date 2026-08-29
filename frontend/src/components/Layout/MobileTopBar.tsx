@@ -60,6 +60,13 @@ export default function MobileTopBar() {
         >
           {open ? <CloseIcon /> : <MenuIcon />}
         </IconButton>
+        {backTarget && (
+          <Tooltip title={backTarget.label}>
+            <IconButton color="inherit" onClick={() => handleNavigate(backTarget.path)}>
+              <ArrowBackIcon />
+            </IconButton>
+          </Tooltip>
+        )}
         <Box
           onClick={() => handleNavigate('/dashboard')}
           sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1, cursor: 'pointer' }}
@@ -69,13 +76,6 @@ export default function MobileTopBar() {
             {t('auth.appName')}
           </Typography>
         </Box>
-        {backTarget && (
-          <Tooltip title={backTarget.label}>
-            <IconButton color="inherit" onClick={() => handleNavigate(backTarget.path)}>
-              <ArrowBackIcon />
-            </IconButton>
-          </Tooltip>
-        )}
         <Tooltip title={t('playlists.importButton')}>
           <IconButton color="inherit" onClick={() => handleNavigate('/playlists?add=1')}>
             <AddIcon />

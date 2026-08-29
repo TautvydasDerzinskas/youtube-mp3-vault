@@ -53,5 +53,9 @@ export function useTrackDetail() {
       : r)) : prev));
   };
 
-  return { playlistId: id ?? '', video, recommendations, discover, remixes, usedIn, removeRecommendation, updateRecommendation };
+  // Patches the header's own video once a rename/"Search for HQ" run
+  // finishes — see useTrackActions' onUpdated callback.
+  const updateVideo = (fresh: PlaylistVideo) => setVideo(fresh);
+
+  return { playlistId: id ?? '', video, recommendations, discover, remixes, usedIn, removeRecommendation, updateRecommendation, updateVideo };
 }

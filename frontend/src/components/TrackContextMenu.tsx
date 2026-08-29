@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { Edit as EditIcon, DeleteOutline as DeleteIcon, HighQuality as ScanHqIcon } from '@mui/icons-material';
+import { Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
+import {
+  Edit as EditIcon, DeleteOutline as DeleteIcon, HighQuality as ScanHqIcon,
+  YouTube as YouTubeIcon, Download as DownloadIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
+import { youtubeWatchUrl } from '../pages/PlaylistsPage/utils';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDialog } from './ConfirmDialog';
 import { RenameTrackDialog } from './RenameTrackDialog';
@@ -101,6 +105,17 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
           <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t(searchHqLabel)}</ListItemText>
         </MenuItem>
+        <Divider />
+        <MenuItem component="a" href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" onClick={onClose}>
+          <ListItemIcon><YouTubeIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('playlists.videoList.watchOnYouTube')}</ListItemText>
+        </MenuItem>
+        {video.downloadStatus === 'done' && (
+          <MenuItem component="a" href={playlistsApi.downloadUrl(playlistId, video.id)} download onClick={onClose}>
+            <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>{t('playlists.videoList.downloadMp3')}</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
       {confirming && (
         <ConfirmDialog
