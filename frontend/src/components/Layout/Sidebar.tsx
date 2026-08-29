@@ -3,7 +3,6 @@ import {
   Box,
   Drawer,
   Typography,
-  Divider,
   IconButton,
   Tooltip,
 } from '@mui/material';
@@ -48,6 +47,7 @@ export default function Sidebar({ width }: SidebarProps) {
           display: 'flex',
           flexDirection: 'column',
           overflowX: 'hidden',
+          borderRight: 'none',
           transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shortest }),
         },
       }}
@@ -75,8 +75,6 @@ export default function Sidebar({ width }: SidebarProps) {
           </IconButton>
         </Tooltip>
       </Box>
-
-      <Divider sx={{ borderColor: 'divider' }} />
 
       {/* Navigation */}
       <Box sx={{ flexGrow: 1, pt: 1, px: collapsed ? 0.5 : 1, overflowY: 'auto', overflowX: 'hidden' }}>

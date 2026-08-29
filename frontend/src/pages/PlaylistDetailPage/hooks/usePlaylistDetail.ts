@@ -48,6 +48,10 @@ export function usePlaylistDetail() {
     setVideos(prev => (Array.isArray(prev) ? prev.map(v => (v.id === video.id ? video : v)) : prev));
   };
 
+  // Patches the header's own playlist once rename/pause-resume resolves —
+  // see PlaylistActionsMenu's onRename/onTogglePause callbacks.
+  const updatePlaylist = (fresh: Playlist) => setPlaylist(fresh);
+
   // Independent of the current sort/filter/search state above (unlike
   // playableTracks) — "play first" always means the actual first track of
   // the playlist itself, not whatever happens to be first in a filtered or
@@ -65,6 +69,6 @@ export function usePlaylistDetail() {
     sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
     orderedPlayableTracks, firstPlayableTrack,
-    removeVideo, updateVideo,
+    removeVideo, updateVideo, updatePlaylist,
   };
 }

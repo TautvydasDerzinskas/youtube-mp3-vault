@@ -1,11 +1,8 @@
-import { Box, IconButton, Tooltip, CircularProgress, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import {
-  Sync as SyncIcon, DeleteOutline as DeleteIcon, Edit as EditIcon, Replay as ReplayIcon,
-  PauseCircleOutline as PauseIcon, PlayCircleOutline as ResumeIcon, MoreVert as MoreVertIcon,
-  AutoAwesome as GenerateSimilarIcon, Launch as OpenIcon, HighQuality as ScanHqIcon,
-} from '@mui/icons-material';
+import { Box, IconButton, Tooltip } from '@mui/material';
+import { MoreVert as MoreVertIcon, AutoAwesome as GenerateSimilarIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
+import { PlaylistActionsMenu } from './PlaylistActionsMenu';
 
 interface ActionsProps {
   playlist: Playlist;
@@ -60,18 +57,6 @@ export function Actions({
   // source is later deleted, even though this is still very much a
   // generated playlist).
   const isGenerated = playlist.youtubeId === null;
-  const showSync = !isGenerated && !playlist.syncPaused;
-  // Unlike Sync, this never touches YouTube (retryFailedVideos only resets
-  // already-downloaded-once videos stuck at downloadStatus 'failed' back to
-  // pending) — so it works the same for a generated playlist as a regular
-  // one. It's the only way to retry those at all for a generated playlist:
-  // they get exactly one downloadPendingVideos pass during generation, then
-  // are excluded from both the weekly cron and (previously) this button, so
-  // any transient failure from that one pass — a video that failed but
-  // hadn't yet hit MAX_DOWNLOAD_ATTEMPTS — would otherwise sit unresolved
-  // forever with nothing left to ever retry it.
-  const showRetry = !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
-  const showPauseToggle = !isGenerated && !isRetrying && (isBusy || playlist.syncPaused);
   // Generating a similar playlist reads this playlist's video list, so it
   // only needs to have actually finished a sync pass at least once — not
   // 100% success. Requiring downloadedCount === videoCount meant a single
@@ -81,16 +66,6 @@ export function Actions({
   // completed a sync at all — see downloadPendingVideos.
   const hasCompletedSync = !isBusy && playlist.lastSyncedAt !== null;
   const showGenerateSimilar = !isGenerated && hasCompletedSync && canGenerateSimilar && !hasGeneratedPlaylist;
-  const renameDisabled = isPausing || isBusy || isLockedBySource;
-  const syncDisabled = isBusy || !online || isLockedBySource;
-  const deleteDisabled = isPausing || isBusy || isLockedBySource;
-  // Unlike Sync/Retry Failed, this never touches YouTube and isn't blocked
-  // by syncPaused (downloadPendingVideos's metadata/quality-check phases run
-  // unconditionally, regardless of pause state) — the only real
-  // precondition is not already being busy.
-  const scanHqDisabled = isBusy || !online || isLockedBySource;
-
-  const closeMenu = () => onMenuPosChange(null);
 
   return (
     <Box onClick={e => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexShrink: 0 }}>
@@ -105,51 +80,23 @@ export function Actions({
       <IconButton size="small" onClick={e => onMenuPosChange({ top: e.clientY, left: e.clientX })} aria-label={t('playlists.moreActions')}>
         <MoreVertIcon fontSize="small" />
       </IconButton>
-      <Menu
-        open={Boolean(menuPos)}
-        onClose={closeMenu}
-        anchorReference="anchorPosition"
-        anchorPosition={menuPos ?? undefined}
-        onClick={e => e.stopPropagation()}
-      >
-        {showSync && (
-          <MenuItem disabled={syncDisabled} onClick={e => { closeMenu(); onSync(e, playlist.id); }}>
-            <ListItemIcon>{isBusy ? <CircularProgress size={16} /> : <SyncIcon fontSize="small" />}</ListItemIcon>
-            <ListItemText>{isBusy ? t('playlists.syncing') : t('playlists.syncNow')}</ListItemText>
-          </MenuItem>
-        )}
-        <MenuItem disabled={scanHqDisabled} onClick={e => { closeMenu(); onScanHq(e, playlist); }}>
-          <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>{t('playlists.scanHq')}</ListItemText>
-        </MenuItem>
-        <Divider />
-        {onOpen && (
-          <MenuItem onClick={() => { closeMenu(); onOpen(); }}>
-            <ListItemIcon><OpenIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>{t('playlists.openPlaylist')}</ListItemText>
-          </MenuItem>
-        )}
-        <MenuItem disabled={renameDisabled} onClick={() => { closeMenu(); onRename(playlist); }}>
-          <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>{t('playlists.rename')}</ListItemText>
-        </MenuItem>
-        {showRetry && (
-          <MenuItem disabled={!online} onClick={e => { closeMenu(); onRetryFailed(e, playlist.id); }} sx={{ color: 'error.main' }}>
-            <ListItemIcon><ReplayIcon fontSize="small" color="error" /></ListItemIcon>
-            <ListItemText>{t('playlists.retryFailed', { count: playlist.failedCount })}</ListItemText>
-          </MenuItem>
-        )}
-        {showPauseToggle && (
-          <MenuItem disabled={isPausing || !online} onClick={e => { closeMenu(); onTogglePause(e, playlist); }}>
-            <ListItemIcon>{playlist.syncPaused ? <ResumeIcon fontSize="small" /> : <PauseIcon fontSize="small" />}</ListItemIcon>
-            <ListItemText>{playlist.syncPaused ? t('playlists.resumeSync') : t('playlists.pauseSync')}</ListItemText>
-          </MenuItem>
-        )}
-        <MenuItem disabled={deleteDisabled} onClick={() => { closeMenu(); onDelete(playlist); }} sx={{ color: 'error.main' }}>
-          <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
-          <ListItemText>{t('playlists.remove')}</ListItemText>
-        </MenuItem>
-      </Menu>
+      <PlaylistActionsMenu
+        playlist={playlist}
+        isBusy={isBusy}
+        isPausing={isPausing}
+        isRetrying={isRetrying}
+        online={online}
+        isLockedBySource={isLockedBySource}
+        menuPos={menuPos}
+        onMenuPosChange={onMenuPosChange}
+        onOpen={onOpen}
+        onRename={onRename}
+        onSync={onSync}
+        onRetryFailed={onRetryFailed}
+        onScanHq={onScanHq}
+        onTogglePause={onTogglePause}
+        onDelete={onDelete}
+      />
     </Box>
   );
 }

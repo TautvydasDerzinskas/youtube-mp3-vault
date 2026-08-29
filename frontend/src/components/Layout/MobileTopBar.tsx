@@ -50,7 +50,7 @@ export default function MobileTopBar() {
   };
 
   return (
-    <AppBar position="fixed" elevation={2} sx={{ backgroundColor: 'background.paper', backgroundImage: 'none' }}>
+    <AppBar position="fixed" color="default" elevation={2} sx={{ backgroundColor: 'background.paper', backgroundImage: 'none' }}>
       <Toolbar sx={{ minHeight: MOBILE_TOPBAR_HEIGHT, gap: 1 }}>
         <IconButton
           edge="start"

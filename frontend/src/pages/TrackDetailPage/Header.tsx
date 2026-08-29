@@ -3,7 +3,7 @@ import { Box, Typography, Avatar, Chip, Stack, IconButton, Tooltip, CircularProg
 import {
   MusicNote as MusicNoteIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseIcon,
-  HighQuality as HqIcon, MoreVert as MoreVertIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -104,11 +104,7 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
             {video.duration && <Chip size="small" variant="outlined" label={formatDuration(video.duration)} />}
             {video.hqFileDownloaded && (
               <Tooltip title={t('playlists.videoList.hqDownloaded')}>
-                <Chip
-                  size="small"
-                  icon={<HqIcon sx={{ fontSize: 16 }} />}
-                  sx={{ '& .MuiChip-label': { display: 'none' }, '& .MuiChip-icon': { m: 0, color: 'hq.main' } }}
-                />
+                <Chip size="small" variant="outlined" label={t('playlists.trackDetail.hqLabel')} />
               </Tooltip>
             )}
             <Chip size="small" variant="outlined" label={t('artists.detail.totalPlayCount', { count: video.playCount })} />

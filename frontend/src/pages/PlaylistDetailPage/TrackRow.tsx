@@ -68,7 +68,10 @@ export function TrackRow({
         onTogglePlay={() => onTogglePlay(trackPlaylistId, v, playableTracks)}
         onDeleted={onDeleted}
         onUpdated={onUpdated}
-        sx={{ height: '100%' }}
+        // 4px shorter top and bottom than the react-window slot itself (see
+        // TrackList.tsx's own ROW_HEIGHT comment) — the two together create
+        // an even 4px gap above and below every row.
+        sx={{ height: 'calc(100% - 8px)', my: 0.5 }}
       />
     </Box>
   );

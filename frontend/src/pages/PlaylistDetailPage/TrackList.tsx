@@ -21,7 +21,10 @@ interface TrackListProps {
   listRef?: React.RefObject<ListImperativeAPI>;
 }
 
-const ROW_HEIGHT = 56;
+// The row itself renders 8px shorter than this and centers within it (see
+// TrackRow.tsx's own sx) — the remaining 8px splits into a 4px gap above and
+// below every row, separating them from each other.
+const ROW_HEIGHT = 64;
 
 export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated, listRef }: TrackListProps) {
   const { t } = useTranslation();

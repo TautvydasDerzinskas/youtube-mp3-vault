@@ -1,23 +1,115 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ListImperativeAPI } from 'react-window';
 import { useTranslation } from 'react-i18next';
 import { usePlayer } from '../../contexts/PlayerContext';
+import { useToast } from '../../contexts/ToastContext';
+import { Playlist, playlistsApi } from '../../api/youtube';
+import { RenameDialog } from '../PlaylistsPage/RenameDialog';
+import { ScanHqDialog } from '../PlaylistsPage/ScanHqDialog';
+import { useOnlineStatus } from '../PlaylistsPage/hooks/useOnlineStatus';
+import { displayName } from '../PlaylistsPage/utils';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { usePlaylistDetail } from './hooks/usePlaylistDetail';
 import { Header } from './Header';
 import { TrackList } from './TrackList';
 
 export default function PlaylistDetailPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { showError } = useToast();
   const {
     playlistId, playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
     sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks, orderedPlayableTracks, firstPlayableTrack,
-    removeVideo, updateVideo,
+    removeVideo, updateVideo, updatePlaylist,
   } = usePlaylistDetail();
-  const { nowPlaying, isAudioPlaying, handleTogglePlay, isShuffle } = usePlayer();
+  const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist, isShuffle } = usePlayer();
+  const online = useOnlineStatus();
+
+  // "..." actions menu (Sync/Scan HQ/Rename/Retry Failed/Pause-Resume/
+  // Delete) — same shared PlaylistActionsMenu the playlist list row uses.
+  // Kept here (rather than in Header) since Header already follows the
+  // established pattern of owning presentation only, with index.tsx as the
+  // single owner of every mutation for this page (mirrors PlaylistsPage's
+  // own index.tsx/PlaylistRow split).
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  // Covers Sync/Retry Failed while their own request is in flight — this
+  // page's top-level redirect (below) already sends a *genuinely* busy
+  // playlist to the syncing route on load, so isBusy/isPausing/isRetrying
+  // are otherwise always false by the time this renders.
+  const [submitting, setSubmitting] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [scanningHq, setScanningHq] = useState(false);
+  const [scanHqLoading, setScanHqLoading] = useState(false);
+
+  // Sync and Scan HQ both kick off a live, still-mutating run — jump straight
+  // to the dedicated syncing view (same one this page's own top-level guard
+  // below redirects to) rather than leaving the user on a detail page whose
+  // sort/filter/search controls don't make sense against a list still being
+  // written to.
+  const handleSync = async (_e: React.MouseEvent, id: string) => {
+    setSubmitting(true);
+    try {
+      await playlistsApi.sync(id);
+      navigate(`/playlists/${id}/syncing`);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.syncError'));
+      setSubmitting(false);
+    }
+  };
+
+  const handleConfirmScanHq = async (matchDuration: boolean) => {
+    setScanHqLoading(true);
+    try {
+      await playlistsApi.scanHq(playlistId, { ignoreDuration: !matchDuration });
+      setScanningHq(false);
+      navigate(`/playlists/${playlistId}/syncing`);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.scanHqError'));
+    } finally {
+      setScanHqLoading(false);
+    }
+  };
+
+  const handleRetryFailed = async (_e: React.MouseEvent, id: string) => {
+    setSubmitting(true);
+    try {
+      const { playlist: updated } = await playlistsApi.retryFailed(id);
+      updatePlaylist(updated);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.retryError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleTogglePause = async (_e: React.MouseEvent, target: Playlist) => {
+    try {
+      const { playlist: updated } = target.syncPaused
+        ? await playlistsApi.resume(target.id)
+        : await playlistsApi.pause(target.id);
+      updatePlaylist(updated);
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.togglePauseError'));
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await playlistsApi.remove(playlistId);
+      stopIfPlaylist(playlistId);
+      navigate('/playlists');
+    } catch (err: any) {
+      showError(err.response?.data?.error ?? t('playlists.deleteError'));
+      setDeleteLoading(false);
+    }
+  };
   const isPlaylistPlaying = nowPlaying?.playlistId === playlistId && isAudioPlaying;
   const handlePlayFirst = () => {
     if (orderedPlayableTracks.length === 0) return;
@@ -112,6 +204,21 @@ export default function PlaylistDetailPage() {
         onPlayFirst={handlePlayFirst}
         canPlayFirst={firstPlayableTrack !== null}
         isPlaying={isPlaylistPlaying}
+        isBusy={submitting}
+        // This page's own top-level guard above already redirects a
+        // genuinely busy or mid-pause playlist to the syncing route on load
+        // — by the time the header renders, neither ever applies here.
+        isPausing={false}
+        isRetrying={false}
+        online={online}
+        menuPos={menuPos}
+        onMenuPosChange={setMenuPos}
+        onRename={() => setRenaming(true)}
+        onSync={handleSync}
+        onRetryFailed={handleRetryFailed}
+        onScanHq={() => setScanningHq(true)}
+        onTogglePause={handleTogglePause}
+        onDelete={() => setDeleting(true)}
       />
       {/* Takes whatever height Header didn't use — TrackList's own virtualized
           list is what actually scrolls, Header stays pinned above it. */}
@@ -128,6 +235,29 @@ export default function PlaylistDetailPage() {
           listRef={listRef}
         />
       </Box>
+
+      {renaming && (
+        <RenameDialog playlist={playlist} onClose={() => setRenaming(false)}
+          onRenamed={updated => { updatePlaylist(updated); setRenaming(false); }} />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          title={t('playlists.deleteConfirm.title')}
+          message={t('playlists.deleteConfirm.message', { name: displayName(playlist) })}
+          confirmLabel={t('playlists.remove')}
+          destructive
+          loading={deleteLoading}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleting(false)}
+        />
+      )}
+      {scanningHq && (
+        <ScanHqDialog
+          loading={scanHqLoading}
+          onConfirm={handleConfirmScanHq}
+          onCancel={() => setScanningHq(false)}
+        />
+      )}
     </Box>
   );
 }

@@ -64,7 +64,8 @@ export function Info({ playlist, isBusy, isPausing }: InfoProps) {
           <Chip label={t('playlists.generatingChip')} size="small" color="info" sx={{ fontSize: 11 }} />
         ) : isBusy ? (
           <>
-            <Chip label={t('playlists.syncing')} size="small" sx={{ fontSize: 11, bgcolor: 'common.black', color: 'common.white' }} />
+            <Chip label={playlist.syncPhase?.phase === 'quality' ? t('playlists.videoList.searchingHq') : t('playlists.syncing')}
+              size="small" sx={{ fontSize: 11, bgcolor: 'common.black', color: 'common.white' }} />
             {playlist.syncPhase?.phase === 'quality' && playlist.syncPhase.hqFoundIds.length > 0 && (
               <Chip label={t('playlists.hqFoundSoFar', { count: playlist.syncPhase.hqFoundIds.length })}
                 size="small" sx={{ fontSize: 11, bgcolor: 'hq.main', color: 'common.black' }} />

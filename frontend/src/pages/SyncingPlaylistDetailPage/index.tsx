@@ -82,7 +82,9 @@ export default function SyncingPlaylistDetailPage() {
 
       <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: '8px' }}>
         <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1 }}>
-          <Chip label={playlist.syncStatus === 'generating' ? t('playlists.generatingChip') : t('playlists.syncing')}
+          <Chip label={playlist.syncStatus === 'generating'
+              ? t('playlists.generatingChip')
+              : phase?.phase === 'quality' ? t('playlists.videoList.searchingHq') : t('playlists.syncing')}
             size="small"
             color={playlist.syncStatus === 'generating' ? 'info' : undefined}
             sx={playlist.syncStatus === 'generating' ? undefined : { bgcolor: 'common.black', color: 'common.white' }} />
@@ -115,7 +117,7 @@ export default function SyncingPlaylistDetailPage() {
             return (
               <TrackRow key={video.id} playlistId={playlistId} video={video} isCurrentTrack={isCurrentTrack}
                 isAudioPlaying={isAudioPlaying} onTogglePlay={() => handleTogglePlay(playlistId, video)}
-                sx={hqFoundSet.has(video.id) ? { bgcolor: 'rgba(76, 175, 80, 0.18)' } : undefined} />
+                sx={hqFoundSet.has(video.id) ? { bgcolor: 'hq.main' } : undefined} />
             );
           })}
         </List>
