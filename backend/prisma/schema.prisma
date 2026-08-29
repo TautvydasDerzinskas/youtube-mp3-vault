@@ -14,6 +14,10 @@ model User {
   passwordHash              String
   displayName               String
   language                  String     @default("en")
+  // 'light' | 'dark' — see frontend/src/theme.ts's getTheme(). Persisted
+  // per-user (not localStorage) so it follows the account across devices,
+  // same rationale as language above.
+  themeMode                 String     @default("light")
   emailVerified             Boolean    @default(false)
   emailVerificationToken    String?    @unique
   emailVerificationExpires  DateTime?

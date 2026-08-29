@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, Collapse, Divider, Menu, MenuItem, Tooltip } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { NavItem } from './useNavItems';
-import theme from '../../theme';
 
 interface NavListProps {
   items: NavItem[];
@@ -17,20 +16,22 @@ interface NavListProps {
   collapsed?: boolean;
 }
 
-// Derived from the theme's own primary color (not a separately-hardcoded
-// literal) so a future accent color change needs no edit here.
-const selectedSx = {
-  '&.Mui-selected': {
-    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-    '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.18) },
-  },
-};
-
 export function NavList({ items, onNavigate, collapsed = false }: NavListProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
   const [openPaths, setOpenPaths] = useState<Set<string>>(() => new Set());
   const [flyout, setFlyout] = useState<{ anchorEl: HTMLElement; item: NavItem } | null>(null);
+
+  // Derived from the theme's own primary color (not a separately-hardcoded
+  // literal) so a future accent color change (including per dark/light mode)
+  // needs no edit here.
+  const selectedSx = {
+    '&.Mui-selected': {
+      backgroundColor: alpha(theme.palette.primary.main, 0.12),
+      '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.18) },
+    },
+  };
 
   const go = (path: string) => {
     navigate(path);

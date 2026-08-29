@@ -334,6 +334,11 @@
     "savePassword": "Save Password",
     "passwordUpdated": "Password updated",
     "language": "Language",
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark"
+    },
     "logout": "Logout",
     "genericError": "Something went wrong. Please try again.",
     "settings": {

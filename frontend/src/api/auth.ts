@@ -5,6 +5,7 @@ export interface User {
   email: string;
   displayName: string;
   language: string;
+  themeMode: string;
   isAdmin: boolean;
   pendingEmail: string | null;
   lastfmUsername: string | null;
@@ -103,6 +104,11 @@ export const authApi = {
 
   updateLanguage: async (language: string): Promise<AuthResponse> => {
     const { data } = await client.patch<AuthResponse>('/auth/language', { language });
+    return data;
+  },
+
+  updateTheme: async (themeMode: string): Promise<AuthResponse> => {
+    const { data } = await client.patch<AuthResponse>('/auth/theme', { themeMode });
     return data;
   },
 

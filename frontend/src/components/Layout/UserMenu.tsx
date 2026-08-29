@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Avatar, Box, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
-import { Person as PersonIcon, Settings as SettingsIcon } from '@mui/icons-material';
+import { Person as PersonIcon, Settings as SettingsIcon, Palette as PaletteIcon, Check as CheckIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { useGravatarUrl } from '../../hooks/useGravatarUrl';
 
 interface ServiceBadgeDef {
@@ -35,17 +36,34 @@ interface UserMenuProps {
 // service, each clickable straight to the tab that manages it. Logout stays
 // reachable from the Profile page itself (see ProfileHeader.tsx) rather than
 // living here too.
+const THEME_MODES = ['light', 'dark'] as const;
+
 export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, updateTheme } = useAuth();
+  const { showError } = useToast();
   const navigate = useNavigate();
   const avatarUrl = useGravatarUrl(user?.email, 128);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [themeAnchorEl, setThemeAnchorEl] = useState<HTMLElement | null>(null);
+  const themeMode = user?.themeMode === 'dark' ? 'dark' : 'light';
 
   const closeMenu = () => setAnchorEl(null);
+  const closeThemeMenu = () => setThemeAnchorEl(null);
   const goToTab = (tab: string) => {
     closeMenu();
     navigate(`/profile?tab=${tab}`);
+  };
+
+  const handleThemeSelect = async (mode: (typeof THEME_MODES)[number]) => {
+    closeThemeMenu();
+    closeMenu();
+    if (mode === themeMode) return;
+    try {
+      await updateTheme(mode);
+    } catch {
+      showError(t('profile.genericError'));
+    }
   };
 
   const connected: Record<ServiceBadgeDef['key'], boolean> = {
@@ -82,6 +100,10 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
           <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('profile.tabProfile')}</ListItemText>
         </MenuItem>
+        <MenuItem onClick={(e) => setThemeAnchorEl(e.currentTarget)} title={t('profile.theme.label')}>
+          <ListItemIcon><PaletteIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('profile.theme.label')}</ListItemText>
+        </MenuItem>
         <MenuItem onClick={() => goToTab('settings')} title={t('profile.tabSettings')}>
           <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('profile.tabSettings')}</ListItemText>
@@ -105,6 +127,20 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
             </Box>
           ))}
         </Box>
+      </Menu>
+      <Menu
+        anchorEl={themeAnchorEl}
+        open={Boolean(themeAnchorEl)}
+        onClose={closeThemeMenu}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      >
+        {THEME_MODES.map(mode => (
+          <MenuItem key={mode} selected={themeMode === mode} onClick={() => handleThemeSelect(mode)}>
+            <ListItemIcon>{themeMode === mode && <CheckIcon fontSize="small" />}</ListItemIcon>
+            <ListItemText>{t(`profile.theme.${mode}`)}</ListItemText>
+          </MenuItem>
+        ))}
       </Menu>
     </>
   );

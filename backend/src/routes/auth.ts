@@ -39,6 +39,7 @@ const authLimiter = rateLimit({
 });
 
 const SUPPORTED_LANGUAGES = ['en', 'lt', 'pl'] as const;
+const SUPPORTED_THEME_MODES = ['light', 'dark'] as const;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const RESEND_VERIFICATION_MESSAGE =
   'If an account with that email needs verification, a new email has been sent.';
@@ -48,6 +49,7 @@ function toSafeUser(user: {
   email: string;
   displayName: string;
   language: string;
+  themeMode: string;
   isAdmin: boolean;
   pendingEmail: string | null;
   lastfmUsername: string | null;
@@ -66,6 +68,7 @@ function toSafeUser(user: {
     email: user.email,
     displayName: user.displayName,
     language: user.language,
+    themeMode: user.themeMode,
     isAdmin: user.isAdmin,
     pendingEmail: user.pendingEmail,
     lastfmUsername: user.lastfmUsername,
@@ -314,7 +317,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
       select: {
-        id: true, email: true, displayName: true, language: true, isAdmin: true, pendingEmail: true,
+        id: true, email: true, displayName: true, language: true, themeMode: true, isAdmin: true, pendingEmail: true,
         lastfmUsername: true, scrobblingEnabled: true, autoDeleteNonMusicEnabled: true, nowPlayingPublic: true,
         deezerArlCookie: true, deezerCookieValid: true,
         qobuzEmail: true, qobuzCredentialsValid: true,
@@ -353,6 +356,25 @@ router.patch('/language', requireAuth, async (req: AuthRequest, res, next) => {
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: { language },
+    });
+    res.json({ user: toSafeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/auth/theme
+router.patch('/theme', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { themeMode } = req.body as { themeMode?: unknown };
+    if (typeof themeMode !== 'string' || !SUPPORTED_THEME_MODES.includes(themeMode as any)) {
+      res.status(400).json({ error: `themeMode must be one of: ${SUPPORTED_THEME_MODES.join(', ')}` });
+      return;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { themeMode },
     });
     res.json({ user: toSafeUser(user) });
   } catch (err) {

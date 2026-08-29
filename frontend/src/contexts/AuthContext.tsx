@@ -22,6 +22,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateLanguage: (language: string) => Promise<void>;
+  updateTheme: (themeMode: string) => Promise<void>;
   updateProfile: (params: { currentPassword: string; email?: string; newPassword?: string }) => Promise<void>;
   disconnectLastfm: () => Promise<void>;
   setScrobbling: (enabled: boolean) => Promise<void>;
@@ -98,6 +99,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(applyUser(user));
   };
 
+  const updateTheme = async (themeMode: string) => {
+    const { user } = await authApi.updateTheme(themeMode);
+    setUser(applyUser(user));
+  };
+
   const updateProfile = async (params: { currentPassword: string; email?: string; newPassword?: string }) => {
     const { user } = await authApi.updateProfile(params);
     setUser(applyUser(user));
@@ -165,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user, loading, lastfmScrobblingAvailable, lastfmDiscoverAvailable, allowedHqProviders, login, register, verifyEmail,
-        resendVerification, logout, refreshUser, updateLanguage, updateProfile, disconnectLastfm, setScrobbling,
+        resendVerification, logout, refreshUser, updateLanguage, updateTheme, updateProfile, disconnectLastfm, setScrobbling,
         setAutoDeleteNonMusic, setNowPlayingPublic, saveDeezerCookie, disconnectDeezer,
         saveQobuzCredentials, disconnectQobuz, startTidalAuth, pollTidalAuth, disconnectTidal,
       }}

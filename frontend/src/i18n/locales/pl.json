@@ -360,6 +360,11 @@
     "savePassword": "Zapisz hasło",
     "passwordUpdated": "Hasło zaktualizowane",
     "language": "Język",
+    "theme": {
+      "label": "Motyw",
+      "light": "Jasny",
+      "dark": "Ciemny"
+    },
     "logout": "Wyloguj się",
     "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
     "settings": {

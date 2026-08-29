@@ -347,6 +347,11 @@
     "savePassword": "Išsaugoti slaptažodį",
     "passwordUpdated": "Slaptažodis atnaujintas",
     "language": "Kalba",
+    "theme": {
+      "label": "Tema",
+      "light": "Šviesi",
+      "dark": "Tamsi"
+    },
     "logout": "Atsijungti",
     "genericError": "Įvyko klaida. Bandykite dar kartą.",
     "settings": {
