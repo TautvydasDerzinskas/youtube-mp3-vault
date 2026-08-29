@@ -70,7 +70,7 @@ export function NotificationBell() {
               <Box
                 onClick={() => setExpandedId((prev) => (prev === report.id ? null : report.id))}
                 sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, cursor: 'pointer',
-                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.04)' } }}
+                  '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' } }}
               >
                 {visualUnreadIds.has(report.id) && (
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', flexShrink: 0 }} />

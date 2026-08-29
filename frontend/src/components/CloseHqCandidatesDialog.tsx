@@ -130,7 +130,7 @@ export function CloseHqCandidatesDialog({ video, candidates, onDismiss, onSelect
                 <ListItemButton
                   key={key}
                   onClick={() => { audioRef.current?.pause(); setSelected(c); }}
-                  sx={{ borderRadius: 1, mb: 0.5, border: '1px solid', borderColor: '#2a2a2a' }}
+                  sx={{ borderRadius: 1, mb: 0.5, border: '1px solid', borderColor: 'divider' }}
                 >
                   {c.previewUrl && (
                     <Tooltip title={t(isPlaying ? 'playlists.videoList.closeHqCandidates.stopPreview' : 'playlists.videoList.closeHqCandidates.preview')}>

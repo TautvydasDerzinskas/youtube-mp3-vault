@@ -20,7 +20,7 @@ export function ArtistCountCard({ count }: { count: number }) {
         gap: 1,
         cursor: 'pointer',
         border: '1px solid',
-        borderColor: '#2a2a2a',
+        borderColor: 'divider',
         borderRadius: '8px',
         minHeight: 140,
         '&:hover': { borderColor: 'primary.dark' },

@@ -103,7 +103,7 @@ export function MiniPlayer({
   if (isMobile) {
     return (
       <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
-        borderTop: '1px solid #2a2a2a', px: 1, py: 0.75, display: 'flex', alignItems: 'center', gap: 1, zIndex: 1200 }}>
+        borderTop: 1, borderColor: 'divider', px: 1, py: 0.75, display: 'flex', alignItems: 'center', gap: 1, zIndex: 1200 }}>
         {thumbnail}
         {previousButton}
         <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -127,7 +127,7 @@ export function MiniPlayer({
 
   return (
     <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
-      borderTop: '1px solid #2a2a2a', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
+      borderTop: 1, borderColor: 'divider', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
       {thumbnail}
       <Box sx={{ minWidth: 120, maxWidth: 280 }}>
         {titleBlock}

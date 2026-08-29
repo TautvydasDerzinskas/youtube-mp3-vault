@@ -82,7 +82,7 @@ export default function SyncingPlaylistDetailPage() {
         </Box>
       </Box>
 
-      <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px' }}>
+      <Box sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: '8px' }}>
         <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1 }}>
           <Chip label={playlist.syncStatus === 'generating' ? t('playlists.generatingChip') : t('playlists.syncing')}
             size="small" color="info" />

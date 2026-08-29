@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, Collapse, Divider, Menu, MenuItem, Tooltip } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { NavItem } from './useNavItems';
+import theme from '../../theme';
 
 interface NavListProps {
   items: NavItem[];
@@ -15,10 +17,12 @@ interface NavListProps {
   collapsed?: boolean;
 }
 
+// Derived from the theme's own primary color (not a separately-hardcoded
+// literal) so a future accent color change needs no edit here.
 const selectedSx = {
   '&.Mui-selected': {
-    backgroundColor: 'rgba(255, 0, 0, 0.12)',
-    '&:hover': { backgroundColor: 'rgba(255, 0, 0, 0.18)' },
+    backgroundColor: alpha(theme.palette.primary.main, 0.12),
+    '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.18) },
   },
 };
 
@@ -53,7 +57,7 @@ export function NavList({ items, onNavigate, collapsed = false }: NavListProps) 
       const highlighted = active || (hasChildren && withinRoute);
       return (
         <Box key={item.path}>
-          {item.dividerBefore && <Divider sx={{ my: 1, borderColor: '#2a2a2a' }} />}
+          {item.dividerBefore && <Divider sx={{ my: 1, borderColor: 'divider' }} />}
           <Tooltip title={item.label} placement="right">
             <ListItemButton
               selected={highlighted}
@@ -71,7 +75,7 @@ export function NavList({ items, onNavigate, collapsed = false }: NavListProps) 
 
     return (
       <Box key={item.path}>
-        {item.dividerBefore && <Divider sx={{ my: 1, borderColor: '#2a2a2a' }} />}
+        {item.dividerBefore && <Divider sx={{ my: 1, borderColor: 'divider' }} />}
         <ListItemButton
           selected={active}
           onClick={() => (hasChildren ? toggle(item.path) : go(item.path))}

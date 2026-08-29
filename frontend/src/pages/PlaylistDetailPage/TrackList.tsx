@@ -38,7 +38,7 @@ export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAu
   }
 
   return (
-    <Box sx={{ height: '100%', border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px', overflow: 'hidden' }}>
+    <Box sx={{ height: '100%', border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
       <List
         listRef={listRef}
         rowCount={tracks.length}

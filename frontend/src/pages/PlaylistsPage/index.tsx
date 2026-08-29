@@ -231,7 +231,7 @@ export default function PlaylistsPage() {
         />
       ))}
 
-      <Divider sx={{ my: 2, borderColor: '#2a2a2a' }} />
+      <Divider sx={{ my: 2, borderColor: 'divider' }} />
       <AllTracksListItem refreshOn={playlists} />
 
       <AddPlaylistDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={handleAdded} />

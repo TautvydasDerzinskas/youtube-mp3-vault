@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { usePlayer } from '../../contexts/PlayerContext';
+import theme from '../../theme';
+
+// Derived from the theme's own primary color (not a separately-hardcoded
+// rgb triple) so a future accent color change needs no edit here.
+const GLOW_COLOR_CENTER = alpha(theme.palette.primary.main, 0.55);
+const GLOW_COLOR_EDGE = alpha(theme.palette.primary.main, 0);
 
 export function SidebarAudioGlow() {
   const { analyserNode } = usePlayer();
@@ -38,7 +45,7 @@ export function SidebarAudioGlow() {
       sx={{
         position: 'absolute', inset: 0, margin: 'auto',
         width: 120, height: 120, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,23,23,0.55) 0%, rgba(255,23,23,0) 70%)',
+        background: `radial-gradient(circle, ${GLOW_COLOR_CENTER} 0%, ${GLOW_COLOR_EDGE} 70%)`,
         filter: 'blur(12px)',
         opacity: 0,
         transition: 'transform 0.08s ease-out, opacity 0.15s ease-out',

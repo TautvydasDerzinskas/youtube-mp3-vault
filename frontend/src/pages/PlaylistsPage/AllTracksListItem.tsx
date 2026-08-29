@@ -35,7 +35,7 @@ export function AllTracksListItem({ refreshOn }: AllTracksListItemProps) {
   return (
     <Paper onClick={open} elevation={0}
       sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
-        border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px',
+        border: '1px solid', borderColor: 'divider', borderRadius: '8px',
         '&:hover': { borderColor: 'primary.dark' } }}>
       <Avatar variant="rounded" sx={{ width: 56, height: 40, borderRadius: 1, flexShrink: 0 }}>
         <MusicNoteIcon />

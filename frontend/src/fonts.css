@@ -1,0 +1,31 @@
+/* Purchased display font, used for headings only (theme.ts's typography.h1-h6
+   and the sidebar's "YoutubeVault" wordmark) — body text uses Inter (loaded
+   via Google Fonts in index.html). Named after the app rather than the
+   font's own name deliberately, so it isn't obvious from devtools/network
+   requests which commercial font this actually is. Only the Black weight is
+   self-hosted for the theme's actual default; `font-weight: 100 900` on a
+   single static face means any numeric weight a component requests (e.g. an
+   inline `fontWeight={700}` prop layered on top of a heading variant) still
+   resolves to this one face instead of silently falling back to the next
+   font in the stack for a weight with no matching @font-face. */
+@font-face {
+  font-family: 'YoutubeVault';
+  src: url('/fonts/YoutubeVault-Black.woff2') format('woff2'),
+       url('/fonts/YoutubeVault-Black.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Self-hosted alternate weight, not wired into the theme by default — swap
+   theme.ts's heading fontFamily to 'YoutubeVault ExtraBold' instead of
+   'YoutubeVault' to use this one, per the two options the font was
+   purchased in. */
+@font-face {
+  font-family: 'YoutubeVault ExtraBold';
+  src: url('/fonts/YoutubeVault-ExtraBold.woff2') format('woff2'),
+       url('/fonts/YoutubeVault-ExtraBold.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

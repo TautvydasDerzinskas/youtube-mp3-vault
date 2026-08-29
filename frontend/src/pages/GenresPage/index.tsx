@@ -102,7 +102,7 @@ export default function GenresPage() {
                   elevation={0}
                   sx={{
                     p: 2, display: 'flex', flexDirection: 'column', gap: 0.5, cursor: 'pointer',
-                    border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px',
+                    border: '1px solid', borderColor: 'divider', borderRadius: '8px',
                     '&:hover': { borderColor: 'primary.dark' },
                   }}
                 >

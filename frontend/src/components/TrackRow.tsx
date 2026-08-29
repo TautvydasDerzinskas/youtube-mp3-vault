@@ -163,7 +163,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       sx={{
         display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5,
         position: 'relative', zIndex: 0,
-        borderBottom: '1px solid #2a2a2a', cursor: 'pointer',
+        borderBottom: 1, borderColor: 'divider', cursor: 'pointer',
         opacity: v.downloadStatus === 'removed' ? 0.35 : 1,
         bgcolor: isCurrentTrack ? 'action.selected' : 'transparent',
         transition: 'transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',

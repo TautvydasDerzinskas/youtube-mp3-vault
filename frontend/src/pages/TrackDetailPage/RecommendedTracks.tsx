@@ -73,7 +73,7 @@ export function RecommendedTracks({ state, nowPlaying, isAudioPlaying, onToggleP
         {t('playlists.trackDetail.recommendedTitle')}
       </Typography>
 
-      <List dense disablePadding sx={{ border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px', overflow: 'hidden' }}>
+      <List dense disablePadding sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
         {state.map((rec, index) => {
           const isCurrentTrack = nowPlaying?.playlistId === rec.playlistId && nowPlaying?.videoId === rec.id;
           return (

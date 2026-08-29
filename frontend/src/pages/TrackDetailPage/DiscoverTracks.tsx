@@ -25,11 +25,11 @@ export function DiscoverTracks({ state }: DiscoverTracksProps) {
         {t('playlists.trackDetail.discoverTitle')}
       </Typography>
 
-      <List dense disablePadding sx={{ border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px', overflow: 'hidden' }}>
+      <List dense disablePadding sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
         {state.map((item, index) => {
           const rowSx = {
             display: 'flex', alignItems: 'center', px: 2, py: 1,
-            borderBottom: '1px solid #2a2a2a', '&:last-of-type': { borderBottom: 'none' },
+            borderBottom: 1, borderColor: 'divider', '&:last-of-type': { borderBottom: 'none' },
           };
           const inner = (
             <>

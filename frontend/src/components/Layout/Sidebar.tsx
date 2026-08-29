@@ -56,7 +56,8 @@ export default function Sidebar({ width }: SidebarProps) {
           >
             <SidebarAudioGlow />
             <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 26, position: 'relative', flexShrink: 0 }} />
-            <Typography variant="subtitle1" fontWeight={700} color="primary.main" noWrap sx={{ position: 'relative' }}>
+            <Typography variant="subtitle1" fontWeight={900} color="primary.main" noWrap
+              sx={{ position: 'relative', fontFamily: '"Aftika", "Inter", "Arial", sans-serif' }}>
               {t('auth.appName')}
             </Typography>
           </Box>
@@ -68,7 +69,7 @@ export default function Sidebar({ width }: SidebarProps) {
         </Tooltip>
       </Box>
 
-      <Divider sx={{ borderColor: '#2a2a2a' }} />
+      <Divider sx={{ borderColor: 'divider' }} />
 
       {/* Navigation */}
       <Box sx={{ flexGrow: 1, pt: 1, px: collapsed ? 0.5 : 1, overflowY: 'auto', overflowX: 'hidden' }}>

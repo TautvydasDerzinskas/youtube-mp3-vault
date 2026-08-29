@@ -62,7 +62,7 @@ export function PlaylistRow({
   return (
     <Paper onClick={open} elevation={0}
       sx={{ mb: 1, px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
-        border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px',
+        border: '1px solid', borderColor: 'divider', borderRadius: '8px',
         opacity: isPausing ? 0.55 : 1, transition: 'opacity 0.2s',
         '&:hover': { borderColor: 'primary.dark' } }}>
       <Box onClick={e => e.stopPropagation()}>{playButton}</Box>

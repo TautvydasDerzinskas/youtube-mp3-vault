@@ -47,7 +47,7 @@ export default function MobileTopBar() {
   };
 
   return (
-    <AppBar position="fixed" elevation={2} sx={{ backgroundColor: '#161616', backgroundImage: 'none' }}>
+    <AppBar position="fixed" elevation={2} sx={{ backgroundColor: 'background.paper', backgroundImage: 'none' }}>
       <Toolbar sx={{ minHeight: MOBILE_TOPBAR_HEIGHT, gap: 1 }}>
         <IconButton
           edge="start"
@@ -79,7 +79,7 @@ export default function MobileTopBar() {
         <Box sx={{ px: 1, pb: 1 }}>
           <NavList items={navItems} onNavigate={() => setOpen(false)} />
 
-          <Divider sx={{ my: 1, borderColor: '#2a2a2a' }} />
+          <Divider sx={{ my: 1, borderColor: 'divider' }} />
 
           <List disablePadding>
             <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2 }}>

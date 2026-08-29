@@ -31,10 +31,10 @@ export function RemixLinks({ state }: RemixLinksProps) {
         {t('playlists.trackDetail.remixesTitle')}
       </Typography>
 
-      <List dense disablePadding sx={{ border: '1px solid', borderColor: '#2a2a2a', borderRadius: '8px', overflow: 'hidden' }}>
+      <List dense disablePadding sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px', overflow: 'hidden' }}>
         {state.map((remix) => (
           <ListItemButton key={remix.id} component="a" href={youtubeWatchUrl(remix.id)} target="_blank" rel="noopener noreferrer"
-            sx={{ borderBottom: '1px solid #2a2a2a', '&:last-of-type': { borderBottom: 'none' } }}>
+            sx={{ borderBottom: 1, borderColor: 'divider', '&:last-of-type': { borderBottom: 'none' } }}>
             <ListItemAvatar sx={{ minWidth: 52 }}>
               <Avatar src={remix.thumbnailUrl ?? undefined} variant="rounded" sx={{ width: 42, height: 30, borderRadius: 1 }}>
                 <MusicNoteIcon sx={{ fontSize: 16 }} />

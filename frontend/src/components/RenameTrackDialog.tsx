@@ -101,7 +101,7 @@ export function RenameTrackDialog({ playlistId, video, open, onClose, onRename }
         </Box>
 
         {hasSuggestion && suggestedResult && (
-          <Box sx={{ mb: 2, p: 1.5, border: '1px solid', borderColor: '#2a2a2a', borderRadius: 1 }}>
+          <Box sx={{ mb: 2, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
             <Typography variant="caption" color="text.secondary" display="block">
               {t('playlists.videoList.suggestedName')}
             </Typography>
