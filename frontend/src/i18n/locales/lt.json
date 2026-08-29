@@ -106,7 +106,7 @@
     "deleteError": "Nepavyko pašalinti šio grojaraščio.",
     "unavailableWhileSyncing": "Negalima sinchronizavimo metu",
     "unavailableWhileGenerating": "Negalima, kol iš šio grojaraščio generuojamas panašus grojaraštis",
-    "openPlaylist": "Atidaryti grojaraštį",
+    "openPlaylist": "Atidaryti",
     "moreActions": "Daugiau veiksmų",
     "generateSimilar": "Generuoti panašų grojaraštį",
     "generateSimilarStarted": "Kuriamas panašus grojaraštis… tai gali užtrukti, jei grojaraštis didelis.",
@@ -295,7 +295,10 @@
       "sortArtistDesc": "Atlikėją (Ž-A)",
       "sortPlaysDesc": "Peržiūras (nuo didž. iki maž.)",
       "sortPlaysAsc": "Peržiūras (nuo maž. iki didž.)",
-      "hqOnly": "Tik HQ",
+      "hqFilterLabel": "HQ",
+      "hqFilterAll": "Visi",
+      "hqFilterHqOnly": "Tik HQ",
+      "hqFilterLqOnly": "Tik LQ",
       "searchPlaceholder": "Ieškoti pagal pavadinimą ar atlikėją…"
     },
     "trackDetail": {

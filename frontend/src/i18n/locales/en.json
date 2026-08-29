@@ -105,7 +105,7 @@
     "deleteError": "Failed to remove this playlist.",
     "unavailableWhileSyncing": "Unavailable while syncing",
     "unavailableWhileGenerating": "Unavailable while a similar playlist is being generated from this one",
-    "openPlaylist": "Open playlist",
+    "openPlaylist": "Open",
     "moreActions": "More actions",
     "generateSimilar": "Generate similar playlist",
     "generateSimilarStarted": "Generating a similar playlist… this can take a while for large playlists.",
@@ -282,8 +282,11 @@
       "sortArtistDesc": "Artist (Z-A)",
       "sortPlaysDesc": "Plays (High-Low)",
       "sortPlaysAsc": "Plays (Low-High)",
-      "hqOnly": "HQ only",
-      "searchPlaceholder": "Search by name or artist…"
+      "hqFilterLabel": "HQ",
+      "hqFilterAll": "All",
+      "hqFilterHqOnly": "HQ only",
+      "hqFilterLqOnly": "LQ only",
+      "searchPlaceholder": "Search"
     },
     "trackDetail": {
       "backToPlaylist": "Back to playlist",
@@ -624,12 +627,12 @@
     "sortNameDesc": "Name (Z-A)",
     "sortSongCountDesc": "Song count (High-Low)",
     "sortSongCountAsc": "Song count (Low-High)",
-    "searchPlaceholder": "Search genres…",
+    "searchPlaceholder": "Search",
     "noResults": "No genres match your search."
   },
   "artists": {
     "title": "Artists",
-    "searchPlaceholder": "Search artists or songs…",
+    "searchPlaceholder": "Search",
     "empty": "No artists yet — import a playlist to see them here.",
     "noResults": "No artists match your search.",
     "failedToLoad": "Failed to load artists.",

@@ -1,10 +1,9 @@
 import {
   Box, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, TextField, InputAdornment,
-  Switch, FormControlLabel,
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { GenreCount, SortOption } from './hooks/genreFilter';
+import { GenreCount, SortOption, HqFilterOption } from './hooks/genreFilter';
 import { GenreFilterBar } from './GenreFilterBar';
 
 interface TrackFilterBarProps {
@@ -14,19 +13,19 @@ interface TrackFilterBarProps {
   onClearGenres: () => void;
   sort: SortOption;
   onSortChange: (sort: SortOption) => void;
-  hqOnly: boolean;
-  onHqOnlyChange: (hqOnly: boolean) => void;
+  hqFilter: HqFilterOption;
+  onHqFilterChange: (hqFilter: HqFilterOption) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
 }
 
 // Shared by PlaylistDetailPage and AllTracksPage. Layout is deliberately one
-// row — sort, genre, HQ toggle grouped on the left, search pushed to the far
+// row — sort, genre, HQ filter grouped on the left, search pushed to the far
 // right via the TextField's `ml: auto` — rather than stacked rows, so the
 // header stays a fixed, predictable height.
 export function TrackFilterBar({
   genreCounts, selectedGenres, onToggleGenre, onClearGenres,
-  sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
+  sort, onSortChange, hqFilter, onHqFilterChange, searchQuery, onSearchQueryChange,
 }: TrackFilterBarProps) {
   const { t } = useTranslation();
 
@@ -58,11 +57,19 @@ export function TrackFilterBar({
         onClearGenres={onClearGenres}
       />
 
-      <FormControlLabel
-        sx={{ ml: 0 }}
-        control={<Switch size="small" checked={hqOnly} onChange={(e) => onHqOnlyChange(e.target.checked)} />}
-        label={t('playlists.detail.hqOnly')}
-      />
+      <FormControl size="small" sx={{ minWidth: 140 }}>
+        <InputLabel id="track-hq-filter-label">{t('playlists.detail.hqFilterLabel')}</InputLabel>
+        <Select
+          labelId="track-hq-filter-label"
+          label={t('playlists.detail.hqFilterLabel')}
+          value={hqFilter}
+          onChange={(e: SelectChangeEvent) => onHqFilterChange(e.target.value as HqFilterOption)}
+        >
+          <MenuItem value="all">{t('playlists.detail.hqFilterAll')}</MenuItem>
+          <MenuItem value="hq">{t('playlists.detail.hqFilterHqOnly')}</MenuItem>
+          <MenuItem value="lq">{t('playlists.detail.hqFilterLqOnly')}</MenuItem>
+        </Select>
+      </FormControl>
 
       <TextField
         size="small"

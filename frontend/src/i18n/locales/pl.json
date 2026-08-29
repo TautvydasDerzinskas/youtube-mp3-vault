@@ -107,7 +107,7 @@
     "deleteError": "Nie udało się usunąć tej playlisty.",
     "unavailableWhileSyncing": "Niedostępne podczas synchronizacji",
     "unavailableWhileGenerating": "Niedostępne, dopóki generowana jest podobna playlista na podstawie tej",
-    "openPlaylist": "Otwórz playlistę",
+    "openPlaylist": "Otwórz",
     "moreActions": "Więcej opcji",
     "generateSimilar": "Wygeneruj podobną playlistę",
     "generateSimilarStarted": "Generowanie podobnej playlisty… może to chwilę potrwać w przypadku dużych playlist.",
@@ -308,7 +308,10 @@
       "sortArtistDesc": "Wykonawcy (Z-A)",
       "sortPlaysDesc": "Odtworzeń (malejąco)",
       "sortPlaysAsc": "Odtworzeń (rosnąco)",
-      "hqOnly": "Tylko HQ",
+      "hqFilterLabel": "HQ",
+      "hqFilterAll": "Wszystkie",
+      "hqFilterHqOnly": "Tylko HQ",
+      "hqFilterLqOnly": "Tylko LQ",
       "searchPlaceholder": "Szukaj wg nazwy lub wykonawcy…"
     },
     "trackDetail": {

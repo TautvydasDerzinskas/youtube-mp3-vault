@@ -20,7 +20,7 @@ export function useAllTracksDetail() {
 
   const {
     selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
   } = useTrackFilterParams();
 
   const videos = useMemo(() => (data === 'loading' || data === 'error' ? [] : data.videos), [data]);
@@ -28,9 +28,9 @@ export function useAllTracksDetail() {
   const genreCounts = useMemo(() => computeGenreCounts(videos), [videos]);
 
   const filteredTracks = useMemo(() => {
-    const filtered = filterBySearch(filterByHq(filterByGenres(videos, selectedGenres), hqOnly), searchQuery);
+    const filtered = filterBySearch(filterByHq(filterByGenres(videos, selectedGenres), hqFilter), searchQuery);
     return sortTracks(filtered, sort);
-  }, [videos, selectedGenres, hqOnly, searchQuery, sort]);
+  }, [videos, selectedGenres, hqFilter, searchQuery, sort]);
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
@@ -51,7 +51,7 @@ export function useAllTracksDetail() {
     status: data === 'loading' ? 'loading' as const : data === 'error' ? 'error' as const : 'ready' as const,
     summary: data === 'loading' || data === 'error' ? null : data.summary,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
     removeVideo, updateVideo,
   };

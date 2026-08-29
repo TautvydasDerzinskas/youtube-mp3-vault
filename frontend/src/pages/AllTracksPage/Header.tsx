@@ -2,7 +2,7 @@ import { Box, Typography, Avatar, Chip, IconButton, Tooltip } from '@mui/materia
 import { MusicNote as MusicNoteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { GenreCount, SortOption } from '../PlaylistDetailPage/hooks/genreFilter';
+import { GenreCount, SortOption, HqFilterOption } from '../PlaylistDetailPage/hooks/genreFilter';
 import { TrackFilterBar } from '../PlaylistDetailPage/TrackFilterBar';
 import { formatPlaybackTime } from '../PlaylistsPage/utils';
 import { AllTracksSummary } from './hooks/useAllTracksDetail';
@@ -16,8 +16,8 @@ interface HeaderProps {
   onClearGenres: () => void;
   sort: SortOption;
   onSortChange: (sort: SortOption) => void;
-  hqOnly: boolean;
-  onHqOnlyChange: (hqOnly: boolean) => void;
+  hqFilter: HqFilterOption;
+  onHqFilterChange: (hqFilter: HqFilterOption) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
 }
@@ -30,7 +30,7 @@ interface HeaderProps {
 // thing this page is explicitly meant to behave like a playlist page for.
 export function Header({
   summary, visibleCount, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
-  sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
+  sort, onSortChange, hqFilter, onHqFilterChange, searchQuery, onSearchQueryChange,
 }: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -73,8 +73,8 @@ export function Header({
         onClearGenres={onClearGenres}
         sort={sort}
         onSortChange={onSortChange}
-        hqOnly={hqOnly}
-        onHqOnlyChange={onHqOnlyChange}
+        hqFilter={hqFilter}
+        onHqFilterChange={onHqFilterChange}
         searchQuery={searchQuery}
         onSearchQueryChange={onSearchQueryChange}
       />

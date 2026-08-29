@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
-import { GenreCount, SortOption } from './hooks/genreFilter';
+import { GenreCount, SortOption, HqFilterOption } from './hooks/genreFilter';
 import { TrackFilterBar } from './TrackFilterBar';
 
 interface HeaderProps {
@@ -16,8 +16,8 @@ interface HeaderProps {
   onClearGenres: () => void;
   sort: SortOption;
   onSortChange: (sort: SortOption) => void;
-  hqOnly: boolean;
-  onHqOnlyChange: (hqOnly: boolean) => void;
+  hqFilter: HqFilterOption;
+  onHqFilterChange: (hqFilter: HqFilterOption) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   onPlayFirst: () => void;
@@ -27,7 +27,7 @@ interface HeaderProps {
 
 export function Header({
   playlist, visibleCount, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
-  sort, onSortChange, hqOnly, onHqOnlyChange, searchQuery, onSearchQueryChange,
+  sort, onSortChange, hqFilter, onHqFilterChange, searchQuery, onSearchQueryChange,
   onPlayFirst, canPlayFirst, isPlaying,
 }: HeaderProps) {
   const { t } = useTranslation();
@@ -84,8 +84,8 @@ export function Header({
         onClearGenres={onClearGenres}
         sort={sort}
         onSortChange={onSortChange}
-        hqOnly={hqOnly}
-        onHqOnlyChange={onHqOnlyChange}
+        hqFilter={hqFilter}
+        onHqFilterChange={onHqFilterChange}
         searchQuery={searchQuery}
         onSearchQueryChange={onSearchQueryChange}
       />

@@ -19,7 +19,7 @@ export function usePlaylistDetail() {
 
   const {
     selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
   } = useTrackFilterParams();
 
   const currentVideos = useMemo(
@@ -30,9 +30,9 @@ export function usePlaylistDetail() {
   const genreCounts = useMemo(() => computeGenreCounts(currentVideos), [currentVideos]);
 
   const filteredTracks = useMemo(() => {
-    const filtered = filterBySearch(filterByHq(filterByGenres(currentVideos, selectedGenres), hqOnly), searchQuery);
+    const filtered = filterBySearch(filterByHq(filterByGenres(currentVideos, selectedGenres), hqFilter), searchQuery);
     return sortTracks(filtered, sort);
-  }, [currentVideos, selectedGenres, hqOnly, searchQuery, sort]);
+  }, [currentVideos, selectedGenres, hqFilter, searchQuery, sort]);
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
@@ -62,7 +62,7 @@ export function usePlaylistDetail() {
     playlistId: id ?? '',
     playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqOnly, setHqOnly, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
     orderedPlayableTracks, firstPlayableTrack,
     removeVideo, updateVideo,

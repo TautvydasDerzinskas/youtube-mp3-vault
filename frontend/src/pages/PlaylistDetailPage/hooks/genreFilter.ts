@@ -23,6 +23,15 @@ const SORT_OPTIONS = new Set<SortOption>([
   'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'plays-asc', 'plays-desc',
 ]);
 
+// 'hq' = only tracks with an HQ file actually downloaded (v.hqFileDownloaded).
+// 'lq' = everything else, INCLUDING a track where betterQualityExists is true
+// (an HQ candidate was found but never downloaded) — what matters for this
+// filter is whether the file on disk is actually the HQ one, not whether an
+// upgrade is merely known about.
+export type HqFilterOption = 'all' | 'hq' | 'lq';
+export const DEFAULT_HQ_FILTER: HqFilterOption = 'all';
+const HQ_FILTER_OPTIONS = new Set<HqFilterOption>(['all', 'hq', 'lq']);
+
 const GENRES_PARAM = 'genres';
 const SORT_PARAM = 'sort';
 const HQ_PARAM = 'hq';
@@ -36,6 +45,10 @@ function parseSort(raw: string | null): SortOption {
   return SORT_OPTIONS.has(raw as SortOption) ? (raw as SortOption) : DEFAULT_SORT;
 }
 
+function parseHqFilter(raw: string | null): HqFilterOption {
+  return HQ_FILTER_OPTIONS.has(raw as HqFilterOption) ? (raw as HqFilterOption) : DEFAULT_HQ_FILTER;
+}
+
 // Shared by usePlaylistDetail and useAllTracksDetail — both read/write the
 // same URL param conventions (?genres=, ?sort=, ?hq=, ?q=), so every track
 // filter/sort control is deep-linkable and survives a refresh the same way
@@ -45,7 +58,7 @@ export function useTrackFilterParams() {
 
   const selectedGenres = useMemo(() => parseGenres(searchParams.get(GENRES_PARAM)), [searchParams]);
   const sort = useMemo(() => parseSort(searchParams.get(SORT_PARAM)), [searchParams]);
-  const hqOnly = searchParams.get(HQ_PARAM) === '1';
+  const hqFilter = useMemo(() => parseHqFilter(searchParams.get(HQ_PARAM)), [searchParams]);
   const searchQuery = searchParams.get(SEARCH_PARAM) ?? '';
 
   const toggleGenre = useCallback((genre: string) => {
@@ -75,10 +88,10 @@ export function useTrackFilterParams() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  const setHqOnly = useCallback((next: boolean) => {
+  const setHqFilter = useCallback((next: HqFilterOption) => {
     setSearchParams(prev => {
       const params = new URLSearchParams(prev);
-      if (next) params.set(HQ_PARAM, '1'); else params.delete(HQ_PARAM);
+      if (next === DEFAULT_HQ_FILTER) params.delete(HQ_PARAM); else params.set(HQ_PARAM, next);
       return params;
     }, { replace: true });
   }, [setSearchParams]);
@@ -94,7 +107,7 @@ export function useTrackFilterParams() {
   return {
     selectedGenres, toggleGenre, clearGenres,
     sort, setSort,
-    hqOnly, setHqOnly,
+    hqFilter, setHqFilter,
     searchQuery, setSearchQuery,
   };
 }
@@ -132,8 +145,10 @@ export function filterByGenres(videos: PlaylistVideo[], selectedGenres: Set<stri
     : v.genres.some(g => selectedGenres.has(normalizeGenreKey(g))));
 }
 
-export function filterByHq(videos: PlaylistVideo[], hqOnly: boolean): PlaylistVideo[] {
-  return hqOnly ? videos.filter(v => v.hqFileDownloaded) : videos;
+export function filterByHq(videos: PlaylistVideo[], hqFilter: HqFilterOption): PlaylistVideo[] {
+  if (hqFilter === 'hq') return videos.filter(v => v.hqFileDownloaded);
+  if (hqFilter === 'lq') return videos.filter(v => !v.hqFileDownloaded);
+  return videos;
 }
 
 export function filterBySearch(videos: PlaylistVideo[], query: string): PlaylistVideo[] {
