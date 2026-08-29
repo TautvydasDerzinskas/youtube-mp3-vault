@@ -30,7 +30,8 @@ export function usePlaylistDetail(playlistId: string) {
 
   useEffect(() => {
     if (playlist === 'loading' || playlist === 'error') return;
-    const isActive = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'retrying' || playlist.syncStatus === 'generating';
+    const isActive = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'retrying'
+      || playlist.syncStatus === 'generating' || playlist.syncStatus === 'scanning_hq';
     if (!isActive) return;
     const timer = setTimeout(async () => {
       try {

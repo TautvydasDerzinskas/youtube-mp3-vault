@@ -182,7 +182,8 @@ export default function PlaylistDetailPage() {
   // from under them. Only checked once at load, not on every poll tick —
   // this page doesn't poll at all, so a sync starting *while already sitting
   // here* isn't caught until the next navigation/reload.
-  if (playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || playlist.syncStatus === 'retrying') {
+  if (playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating'
+    || playlist.syncStatus === 'retrying' || playlist.syncStatus === 'scanning_hq') {
     return <Navigate to={`/playlists/${playlistId}/syncing`} replace />;
   }
 

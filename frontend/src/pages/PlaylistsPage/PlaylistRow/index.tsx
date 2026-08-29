@@ -43,7 +43,11 @@ export function PlaylistRow({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isRetrying = playlist.syncStatus === 'retrying' || isRetryingLocally;
-  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isRetrying || isSyncingLocally;
+  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating'
+    || playlist.syncStatus === 'scanning_hq' || isRetrying || isSyncingLocally;
+  // Deliberately excludes 'scanning_hq' — pausing doesn't affect a scan in
+  // progress (see PlaylistActionsMenu's showPauseToggle), so this row
+  // shouldn't dim/show "Pausing…" for a run the pause flag can't touch.
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
   const isRowPlaying = nowPlaying?.playlistId === playlist.id && isAudioPlaying;
   // Screen coordinates driving the shared "..."/right-click menu — see

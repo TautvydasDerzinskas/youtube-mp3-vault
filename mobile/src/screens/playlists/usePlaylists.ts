@@ -22,7 +22,9 @@ export function usePlaylists() {
   // generating, so polling naturally stops once everything settles.
   const schedulePoll = useCallback((list: Playlist[]) => {
     if (pollRef.current) clearTimeout(pollRef.current);
-    const hasActive = list.some(p => p.syncStatus === 'syncing' || p.syncStatus === 'retrying' || p.syncStatus === 'generating');
+    const hasActive = list.some(p =>
+      p.syncStatus === 'syncing' || p.syncStatus === 'retrying' || p.syncStatus === 'generating' || p.syncStatus === 'scanning_hq'
+    );
     if (!hasActive) return;
     pollRef.current = setTimeout(async () => {
       try {

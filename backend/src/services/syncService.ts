@@ -251,7 +251,7 @@ export function releaseSyncClaim(playlistId: string): void {
 export async function resetStuckSyncs(): Promise<void> {
   const [playlists, videos] = await Promise.all([
     prisma.playlist.updateMany({
-      where: { syncStatus: { in: ['syncing', 'retrying'] } },
+      where: { syncStatus: { in: ['syncing', 'retrying', 'scanning_hq'] } },
       data: { syncStatus: 'idle' },
     }),
     prisma.playlistVideo.updateMany({
@@ -804,11 +804,16 @@ export function retryFailedVideos(playlistId: string): void {
 // with no match last time isn't a permanent verdict the way "we already
 // downloaded the upgrade" is.
 //
-// Uses the regular 'syncing' status (not a distinct one) since it's still a
-// genuine download-pending-videos pass, just one that happens to find
-// nothing pending to download most of the time — the frontend's syncPhase
-// reporting already makes the metadata/quality-check work visible
-// regardless.
+// Uses its own distinct 'scanning_hq' status (rather than reusing 'syncing')
+// so the frontend can label this run accurately for its entire duration —
+// syncPhase reporting alone only disambiguates it once the run reaches the
+// quality sub-phase (see Info.tsx), leaving the metadata sub-phase and the
+// brief startup window (before downloadPendingVideos ever sets a phase)
+// mislabeled as a regular sync otherwise. Still pausable exactly like a
+// regular sync (see the /pause route, which only special-cases 'retrying'),
+// even though pausing has little practical effect here — the metadata/
+// quality-check phases run unconditionally regardless of syncPaused, see
+// downloadPendingVideos.
 // ignoreDuration: from the "Scan for HQ" modal's toggle — see
 // downloadPendingVideos/resolvePlaylistQuality's own options of the same
 // name for what it does.
@@ -823,7 +828,7 @@ export function scanForHqUpgrades(playlistId: string, options: { ignoreDuration?
     try {
       await prisma.playlist.update({
         where: { id: playlistId },
-        data: { syncStatus: 'syncing' },
+        data: { syncStatus: 'scanning_hq' },
       });
       await downloadPendingVideos(playlistId, {
         rescanAll: true,

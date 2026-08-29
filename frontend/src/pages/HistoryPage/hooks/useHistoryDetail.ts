@@ -1,21 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { playlistsApi, PlaylistVideo } from '../../../api/youtube';
-import {
-  useTrackFilterParams, computeGenreCounts, filterByGenres, filterByHq, filterBySearch, sortTracks,
-} from '../../PlaylistDetailPage/hooks/genreFilter';
+import { filterBySearch } from '../../PlaylistDetailPage/hooks/genreFilter';
 
 export interface HistorySummary {
   songCount: number;
   totalDurationSec: number;
 }
 
-// Mirrors useAllTracksDetail — same client-side genre/HQ/search/sort
-// filtering over a full track list — pointed at GET /history instead of
-// /all-tracks, and defaulting to "most recently played first" (the backend
-// already returns rows in that order; this default just keeps the UI's own
-// re-sort from silently overriding it) rather than "most recently added".
+const SEARCH_PARAM = 'q';
+
+// Unlike PlaylistDetailPage/AllTracksPage, History has no sort/genre/HQ
+// controls at all — the whole point of this list is "most recently played
+// first", the fixed order GET /history already returns; letting it be
+// re-sorted or filtered down by genre/HQ would fight that. Search is kept
+// since narrowing to a track you know you played doesn't fight the ordering
+// the same way sorting/filtering would. So this manages its own `?q=` param
+// directly rather than pulling in the shared useTrackFilterParams.
 export function useHistoryDetail() {
   const [data, setData] = useState<{ videos: PlaylistVideo[]; summary: HistorySummary } | 'loading' | 'error'>('loading');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get(SEARCH_PARAM) ?? '';
 
   useEffect(() => {
     playlistsApi.getHistory()
@@ -23,19 +28,20 @@ export function useHistoryDetail() {
       .catch(() => setData('error'));
   }, []);
 
-  const {
-    selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
-  } = useTrackFilterParams('played-desc');
+  const setSearchQuery = useCallback((next: string) => {
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      if (next.trim()) params.set(SEARCH_PARAM, next); else params.delete(SEARCH_PARAM);
+      return params;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   const videos = useMemo(() => (data === 'loading' || data === 'error' ? [] : data.videos), [data]);
 
-  const genreCounts = useMemo(() => computeGenreCounts(videos), [videos]);
-
-  const filteredTracks = useMemo(() => {
-    const filtered = filterBySearch(filterByHq(filterByGenres(videos, selectedGenres), hqFilter), searchQuery);
-    return sortTracks(filtered, sort);
-  }, [videos, selectedGenres, hqFilter, searchQuery, sort]);
+  // No sortTracks/filterByGenres/filterByHq here — `videos` is already in
+  // the order the backend returned it (most-recently-played first), and
+  // search is the only narrowing this page offers.
+  const filteredTracks = useMemo(() => filterBySearch(videos, searchQuery), [videos, searchQuery]);
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
@@ -50,8 +56,7 @@ export function useHistoryDetail() {
   return {
     status: data === 'loading' ? 'loading' as const : data === 'error' ? 'error' as const : 'ready' as const,
     summary: data === 'loading' || data === 'error' ? null : data.summary,
-    genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
     removeVideo, updateVideo,
   };

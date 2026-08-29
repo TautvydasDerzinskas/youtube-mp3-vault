@@ -125,8 +125,13 @@ export function getTheme(mode: ThemeMode) {
   // augmentColor computes light/dark/contrastText the same way MUI's built-in
   // colors get them — custom palette keys don't go through that automatically,
   // so it's called explicitly here rather than hand-picking those shades.
-  // Same yellow in both modes, per "rest of colors leave the same, for now".
-  theme.palette.hq = theme.palette.augmentColor({ color: { main: '#e7ff07' } });
+  // Distinct per mode (unlike every other palette color, still shared) — the
+  // bright yellow reads fine against light mode's white/near-white surfaces,
+  // but a dark theme wants something that doesn't compete with the primary
+  // accent, hence the navy blue instead. Every consumer reads hq.main/
+  // hq.contrastText as tokens (never the literal hex), so this is the one
+  // place that needs to know either color exists.
+  theme.palette.hq = theme.palette.augmentColor({ color: { main: mode === 'dark' ? '#2d4886' : '#e7ff07' } });
 
   return theme;
 }

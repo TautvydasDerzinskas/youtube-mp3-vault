@@ -36,7 +36,10 @@ export function Header({ playlist, canPlayFirst, onPlayFirst, isPlaying }: Heade
     else disableOffline(playlist.id);
   };
 
-  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || playlist.syncStatus === 'retrying';
+  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating'
+    || playlist.syncStatus === 'retrying' || playlist.syncStatus === 'scanning_hq';
+  // Deliberately excludes 'scanning_hq' — pausing doesn't affect a scan in
+  // progress, so this shouldn't claim it's pausing/paused while one runs.
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
   const progress = playlist.videoCount > 0 ? (playlist.downloadedCount + playlist.failedCount) / playlist.videoCount : 0;
 

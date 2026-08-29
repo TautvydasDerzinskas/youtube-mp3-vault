@@ -15,8 +15,7 @@ import { TrackList } from '../PlaylistDetailPage/TrackList';
 export default function HistoryPage() {
   const { t } = useTranslation();
   const {
-    status, summary, genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    status, summary, searchQuery, setSearchQuery,
     filteredTracks, playableTracks, removeVideo, updateVideo,
   } = useHistoryDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
@@ -34,14 +33,6 @@ export default function HistoryPage() {
       <Header
         summary={summary}
         visibleCount={filteredTracks.length}
-        genreCounts={genreCounts}
-        selectedGenres={selectedGenres}
-        onToggleGenre={toggleGenre}
-        onClearGenres={clearGenres}
-        sort={sort}
-        onSortChange={setSort}
-        hqFilter={hqFilter}
-        onHqFilterChange={setHqFilter}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
       />

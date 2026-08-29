@@ -71,7 +71,13 @@ export function PlaylistActionsMenu({
   // hadn't yet hit MAX_DOWNLOAD_ATTEMPTS — would otherwise sit unresolved
   // forever with nothing left to ever retry it.
   const showRetry = !playlist.syncPaused && !isBusy && playlist.lastSyncedAt && playlist.failedCount > 0;
-  const showPauseToggle = !isGenerated && !isRetrying && (isBusy || playlist.syncPaused);
+  // Hidden entirely while actively scanning (not just disabled) — pausing
+  // has no effect on a scan in progress (see the comment on scanHqDisabled
+  // below: the metadata/quality-check phases never check syncPaused), so
+  // offering a control that visually claims to work but doesn't would be
+  // actively misleading. Still shown once the scan finishes if syncPaused
+  // is left over true from a regular sync paused earlier.
+  const showPauseToggle = !isGenerated && !isRetrying && playlist.syncStatus !== 'scanning_hq' && (isBusy || playlist.syncPaused);
   const renameDisabled = isPausing || isBusy || isLockedBySource;
   const syncDisabled = isBusy || !online || isLockedBySource;
   const deleteDisabled = isPausing || isBusy || isLockedBySource;
@@ -94,7 +100,9 @@ export function PlaylistActionsMenu({
       {showSync && (
         <MenuItem disabled={syncDisabled} onClick={e => { closeMenu(); onSync(e, playlist.id); }}>
           <ListItemIcon>{isBusy ? <CircularProgress size={16} /> : <SyncIcon fontSize="small" />}</ListItemIcon>
-          <ListItemText>{isBusy ? t('playlists.syncing') : t('playlists.syncNow')}</ListItemText>
+          <ListItemText>
+            {isBusy ? (playlist.syncStatus === 'scanning_hq' ? t('playlists.scanningHq') : t('playlists.syncing')) : t('playlists.syncNow')}
+          </ListItemText>
         </MenuItem>
       )}
       <MenuItem disabled={scanHqDisabled} onClick={e => { closeMenu(); onScanHq(e, playlist); }}>

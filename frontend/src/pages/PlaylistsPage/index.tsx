@@ -76,7 +76,7 @@ export default function PlaylistsPage() {
   const previouslyBusyIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const busyIds = new Set(
-      playlists.filter(p => p.syncStatus === 'syncing' || p.syncStatus === 'retrying').map(p => p.id)
+      playlists.filter(p => p.syncStatus === 'syncing' || p.syncStatus === 'retrying' || p.syncStatus === 'scanning_hq').map(p => p.id)
     );
     const justFinished = [...previouslyBusyIdsRef.current].some(id => !busyIds.has(id));
     previouslyBusyIdsRef.current = busyIds;

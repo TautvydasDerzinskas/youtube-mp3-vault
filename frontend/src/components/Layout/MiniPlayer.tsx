@@ -59,14 +59,14 @@ export function MiniPlayer({
   );
   const repeatButton = (
     <Tooltip title={t('playlists.miniPlayer.repeat')}>
-      <IconButton size="small" onClick={onToggleRepeat} sx={{ flexShrink: 0, color: isRepeat ? 'error.main' : undefined }}>
+      <IconButton size="small" onClick={onToggleRepeat} sx={{ flexShrink: 0, color: isRepeat ? 'primary.main' : undefined }}>
         <RepeatIcon fontSize="small" />
       </IconButton>
     </Tooltip>
   );
   const shuffleButton = (
     <Tooltip title={t('playlists.miniPlayer.shuffle')}>
-      <IconButton size="small" onClick={onToggleShuffle} sx={{ flexShrink: 0, color: isShuffle ? 'error.main' : undefined }}>
+      <IconButton size="small" onClick={onToggleShuffle} sx={{ flexShrink: 0, color: isShuffle ? 'primary.main' : undefined }}>
         <ShuffleIcon fontSize="small" />
       </IconButton>
     </Tooltip>

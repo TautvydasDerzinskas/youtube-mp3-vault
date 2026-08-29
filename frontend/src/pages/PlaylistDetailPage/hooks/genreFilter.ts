@@ -43,26 +43,25 @@ function parseGenres(raw: string | null): Set<string> {
   return new Set((raw ?? '').split(',').map(normalizeGenreKey).filter(Boolean));
 }
 
-function parseSort(raw: string | null, defaultSort: SortOption): SortOption {
-  return SORT_OPTIONS.has(raw as SortOption) ? (raw as SortOption) : defaultSort;
+function parseSort(raw: string | null): SortOption {
+  return SORT_OPTIONS.has(raw as SortOption) ? (raw as SortOption) : DEFAULT_SORT;
 }
 
 function parseHqFilter(raw: string | null): HqFilterOption {
   return HQ_FILTER_OPTIONS.has(raw as HqFilterOption) ? (raw as HqFilterOption) : DEFAULT_HQ_FILTER;
 }
 
-// Shared by usePlaylistDetail, useAllTracksDetail, and useHistoryDetail —
-// all three read/write the same URL param conventions (?genres=, ?sort=,
-// ?hq=, ?q=), so every track filter/sort control is deep-linkable and
-// survives a refresh the same way on any of them. `defaultSort` lets a page
-// pick its own baseline order (History wants "most recently played" instead
-// of "most recently added") without a `?sort=` param in the URL looking like
-// a deliberate user choice.
-export function useTrackFilterParams(defaultSort: SortOption = DEFAULT_SORT) {
+// Shared by usePlaylistDetail and useAllTracksDetail — both read/write the
+// same URL param conventions (?genres=, ?sort=, ?hq=, ?q=), so every track
+// filter/sort control is deep-linkable and survives a refresh the same way
+// on either page. useHistoryDetail deliberately doesn't use this — History
+// has no sort/genre/HQ controls at all (see its own doc comment), just a
+// search box, so it manages its own `?q=` param directly instead.
+export function useTrackFilterParams() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedGenres = useMemo(() => parseGenres(searchParams.get(GENRES_PARAM)), [searchParams]);
-  const sort = useMemo(() => parseSort(searchParams.get(SORT_PARAM), defaultSort), [searchParams, defaultSort]);
+  const sort = useMemo(() => parseSort(searchParams.get(SORT_PARAM)), [searchParams]);
   const hqFilter = useMemo(() => parseHqFilter(searchParams.get(HQ_PARAM)), [searchParams]);
   const searchQuery = searchParams.get(SEARCH_PARAM) ?? '';
 
@@ -88,10 +87,10 @@ export function useTrackFilterParams(defaultSort: SortOption = DEFAULT_SORT) {
   const setSort = useCallback((next: SortOption) => {
     setSearchParams(prev => {
       const params = new URLSearchParams(prev);
-      if (next === defaultSort) params.delete(SORT_PARAM); else params.set(SORT_PARAM, next);
+      if (next === DEFAULT_SORT) params.delete(SORT_PARAM); else params.set(SORT_PARAM, next);
       return params;
     }, { replace: true });
-  }, [setSearchParams, defaultSort]);
+  }, [setSearchParams]);
 
   const setHqFilter = useCallback((next: HqFilterOption) => {
     setSearchParams(prev => {

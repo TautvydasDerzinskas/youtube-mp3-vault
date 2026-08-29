@@ -32,7 +32,7 @@ export interface Playlist {
   // actually listen to right now, not the nominal length of everything
   // nominally in the playlist.
   totalDurationSec: number;
-  syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'error';
+  syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'scanning_hq' | 'error';
   syncPaused: boolean;
   lastSyncedAt: string | null;
   createdAt: string;

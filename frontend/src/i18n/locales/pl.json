@@ -74,6 +74,7 @@
     "allSynced": "Wszystkie utwory zsynchronizowane",
     "failedCount": "Nieudane: {{count}}",
     "syncing": "Synchronizowanie…",
+    "scanningHq": "Wyszukiwanie HQ…",
     "syncedAgo": "Zsynchronizowano {{time}}",
     "neverSynced": "Nigdy nie synchronizowano",
     "notSynced": "Niezsynchronizowane",

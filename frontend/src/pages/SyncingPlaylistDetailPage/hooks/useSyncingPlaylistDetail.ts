@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { playlistsApi, Playlist, PlaylistVideo } from '../../../api/youtube';
 
 function isBusy(playlist: Playlist): boolean {
-  return playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || playlist.syncStatus === 'retrying';
+  return playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating'
+    || playlist.syncStatus === 'retrying' || playlist.syncStatus === 'scanning_hq';
 }
 
 // Mirrors PlaylistsPage/hooks/usePlaylists.ts's schedulePoll pattern (a

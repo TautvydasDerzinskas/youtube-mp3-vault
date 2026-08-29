@@ -12,7 +12,7 @@ export interface Playlist {
   failedCount: number;
   totalSize: number;
   totalDurationSec: number;
-  syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'error';
+  syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'scanning_hq' | 'error';
   syncPaused: boolean;
   lastSyncedAt: string | null;
   createdAt: string;

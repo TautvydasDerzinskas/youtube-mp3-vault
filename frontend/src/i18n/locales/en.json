@@ -74,6 +74,7 @@
     "allSynced": "All songs synced",
     "failedCount": "{{count}} failed",
     "syncing": "Syncing…",
+    "scanningHq": "Scanning for HQ…",
     "syncedAgo": "Synced {{time}}",
     "neverSynced": "Never synced",
     "notSynced": "Not synced",

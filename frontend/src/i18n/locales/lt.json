@@ -74,6 +74,7 @@
     "allSynced": "Visos dainos sinchronizuotos",
     "failedCount": "Nepavyko: {{count}}",
     "syncing": "Sinchronizuojama…",
+    "scanningHq": "Ieškoma HQ…",
     "syncedAgo": "Sinchronizuota {{time}}",
     "neverSynced": "Dar nesinchronizuota",
     "notSynced": "Nesinchronizuota",

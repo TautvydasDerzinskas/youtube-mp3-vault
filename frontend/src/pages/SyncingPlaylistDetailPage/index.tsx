@@ -47,7 +47,11 @@ export default function SyncingPlaylistDetailPage() {
   const videoMap = new Map(videos.map(v => [v.id, v]));
   const orderedProcessed = [...processedIds].reverse();
 
-  const progressMessage = playlist.syncPaused
+  // Excludes 'scanning_hq' — same reasoning as PlaylistRow's isPausing:
+  // pausing doesn't affect a scan in progress, so this shouldn't claim it's
+  // pausing/paused while one is actively running; it falls through to the
+  // phase message below instead, which accurately reflects what's happening.
+  const progressMessage = playlist.syncPaused && playlist.syncStatus !== 'scanning_hq'
     ? (playlist.currentVideo
       ? t('playlists.pausingMessage', { title: playlist.currentVideo.title })
       : t('playlists.pausingMessageGeneric'))
@@ -84,13 +88,15 @@ export default function SyncingPlaylistDetailPage() {
         <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1 }}>
           <Chip label={playlist.syncStatus === 'generating'
               ? t('playlists.generatingChip')
-              : phase?.phase === 'quality' ? t('playlists.videoList.searchingHq') : t('playlists.syncing')}
+              : phase?.phase === 'quality' ? t('playlists.videoList.searchingHq')
+              : playlist.syncStatus === 'scanning_hq' ? t('playlists.scanningHq')
+              : t('playlists.syncing')}
             size="small"
             color={playlist.syncStatus === 'generating' ? 'info' : undefined}
             sx={playlist.syncStatus === 'generating' ? undefined : { bgcolor: 'common.black', color: 'common.white' }} />
           {phase?.phase === 'quality' && hqFoundSet.size > 0 && (
             <Chip label={t('playlists.hqFoundSoFar', { count: hqFoundSet.size })} size="small"
-              sx={{ bgcolor: 'hq.main', color: 'common.black' }} />
+              sx={{ bgcolor: 'hq.main', color: 'hq.contrastText' }} />
           )}
         </Stack>
         <Typography variant="body2" color="text.secondary" noWrap>{progressMessage}</Typography>

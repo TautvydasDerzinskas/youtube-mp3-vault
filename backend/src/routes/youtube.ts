@@ -1161,8 +1161,8 @@ router.post('/:id/scan-hq', requireAuth, async (req: AuthRequest, res, next) => 
       return;
     }
 
-    // Return immediately with 'syncing' status — actual work is async
-    const [syncing] = await withDownloadStats([{ ...playlist, syncStatus: 'syncing' }]);
+    // Return immediately with 'scanning_hq' status — actual work is async
+    const [syncing] = await withDownloadStats([{ ...playlist, syncStatus: 'scanning_hq' }]);
     res.json({ playlist: syncing });
 
     // ignoreDuration: from the frontend's "Scan for HQ" modal toggle — off
@@ -1189,6 +1189,17 @@ router.post('/:id/pause', requireAuth, async (req: AuthRequest, res, next) => {
     // record that a retry was ever in progress. So it's never pausable.
     if (playlist.syncStatus === 'retrying') {
       res.status(409).json({ error: 'Cannot pause while retrying failed videos' });
+      return;
+    }
+    // A "Scan for HQ" pass never touches the pending-download queue the
+    // pause flag actually gates (see downloadPendingVideos) — its metadata/
+    // quality-check work runs unconditionally regardless of syncPaused — so
+    // pausing here would set the flag but do nothing to the run itself. The
+    // frontend already hides the Pause control while scanning_hq for the
+    // same reason; this guard just keeps a direct API call from doing the
+    // same misleading no-op.
+    if (playlist.syncStatus === 'scanning_hq') {
+      res.status(409).json({ error: 'Cannot pause while scanning for HQ upgrades' });
       return;
     }
     const updated = await setSyncPaused(playlist.id, true);

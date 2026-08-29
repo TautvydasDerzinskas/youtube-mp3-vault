@@ -51,14 +51,21 @@ export function PlaylistRow({
   const hasOfflineDiff = offlineEnabled && !isDiffEmpty(offlineDiffs[playlist.id]);
 
   const isRetrying = playlist.syncStatus === 'retrying';
-  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating' || isRetrying;
+  const isBusy = playlist.syncStatus === 'syncing' || playlist.syncStatus === 'generating'
+    || playlist.syncStatus === 'scanning_hq' || isRetrying;
+  // Deliberately excludes 'scanning_hq' — pausing doesn't affect a scan in
+  // progress (metadata/quality-check phases never check syncPaused), so this
+  // shouldn't dim/show "Pausing…" for a run the pause flag can't touch.
   const isPausing = playlist.syncPaused && playlist.syncStatus === 'syncing';
   const isGenerated = playlist.youtubeId === null;
   const fullySynced = !isGenerated && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
 
   const showSync = !isGenerated && !playlist.syncPaused;
   const showRetry = !playlist.syncPaused && !isBusy && playlist.lastSyncedAt !== null && playlist.failedCount > 0;
-  const showPauseToggle = !isGenerated && !isRetrying && (isBusy || playlist.syncPaused);
+  // Hidden entirely (not just disabled) while actively scanning — same
+  // reasoning as web's PlaylistActionsMenu: offering a pause control that
+  // visually claims to work but has no effect on the scan would mislead.
+  const showPauseToggle = !isGenerated && !isRetrying && playlist.syncStatus !== 'scanning_hq' && (isBusy || playlist.syncPaused);
   const hasCompletedSync = !isBusy && playlist.lastSyncedAt !== null;
   const showGenerateSimilar = !isGenerated && hasCompletedSync && canGenerateSimilar && !hasGeneratedPlaylist;
 
