@@ -291,8 +291,6 @@
       "sortArtistDesc": "Artist (Z-A)",
       "sortPlaysDesc": "Plays (High-Low)",
       "sortPlaysAsc": "Plays (Low-High)",
-      "sortPlayedDesc": "Last played (newest first)",
-      "sortPlayedAsc": "Last played (oldest first)",
       "hqFilterLabel": "HQ",
       "hqFilterAll": "All",
       "hqFilterHqOnly": "HQ only",

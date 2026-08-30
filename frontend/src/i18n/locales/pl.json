@@ -317,8 +317,6 @@
       "sortArtistDesc": "Wykonawcy (Z-A)",
       "sortPlaysDesc": "Odtworzeń (malejąco)",
       "sortPlaysAsc": "Odtworzeń (rosnąco)",
-      "sortPlayedDesc": "Ostatnio odtwarzane (najpierw najnowsze)",
-      "sortPlayedAsc": "Ostatnio odtwarzane (najpierw najstarsze)",
       "hqFilterLabel": "HQ",
       "hqFilterAll": "Wszystkie",
       "hqFilterHqOnly": "Tylko HQ",

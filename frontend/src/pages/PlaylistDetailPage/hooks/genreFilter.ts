@@ -9,8 +9,7 @@ export const NO_GENRE_KEY = 'none';
 
 export type SortOption =
   | 'import-asc' | 'import-desc'
-  | 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'plays-asc' | 'plays-desc'
-  | 'played-asc' | 'played-desc';
+  | 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'plays-asc' | 'plays-desc';
 // "Import order" = addedAt, i.e. the order tracks were actually added to the
 // library — not YouTube's mutable per-playlist `position`, which only makes
 // sense within a single playlist and would collide across playlists on the
@@ -22,7 +21,6 @@ export const DEFAULT_SORT: SortOption = 'import-desc';
 const SORT_OPTIONS = new Set<SortOption>([
   'import-asc', 'import-desc',
   'name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'plays-asc', 'plays-desc',
-  'played-asc', 'played-desc',
 ]);
 
 // 'hq' = only tracks with an HQ file actually downloaded (v.hqFileDownloaded).
@@ -172,14 +170,5 @@ export function sortTracks(videos: PlaylistVideo[], sort: SortOption): PlaylistV
     case 'artist-desc': return sorted.sort((a, b) => (b.artist ?? '').localeCompare(a.artist ?? '') || a.title.localeCompare(b.title));
     case 'plays-asc': return sorted.sort((a, b) => a.playCount - b.playCount || a.title.localeCompare(b.title));
     case 'plays-desc': return sorted.sort((a, b) => b.playCount - a.playCount || a.title.localeCompare(b.title));
-    // Never-played tracks (null) sort after everything with a real
-    // timestamp in both directions — there's no meaningful "earlier" or
-    // "later" for a track that was never started.
-    case 'played-asc': return sorted.sort((a, b) =>
-      (a.lastPlayStartedAt ? Date.parse(a.lastPlayStartedAt) : Infinity) -
-      (b.lastPlayStartedAt ? Date.parse(b.lastPlayStartedAt) : Infinity) || a.title.localeCompare(b.title));
-    case 'played-desc': return sorted.sort((a, b) =>
-      (b.lastPlayStartedAt ? Date.parse(b.lastPlayStartedAt) : -Infinity) -
-      (a.lastPlayStartedAt ? Date.parse(a.lastPlayStartedAt) : -Infinity) || a.title.localeCompare(b.title));
   }
 }
