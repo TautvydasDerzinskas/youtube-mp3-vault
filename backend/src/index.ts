@@ -11,6 +11,7 @@ import adminRouter from './routes/admin';
 import dashboardRouter from './routes/dashboard';
 import artistsRouter from './routes/artists';
 import nowPlayingRouter from './routes/nowPlaying';
+import playbackStateRouter from './routes/playbackState';
 import { errorHandler } from './middleware/errorHandler';
 import { resetStuckSyncs } from './services/syncService';
 import { ensureDemoUser } from './services/demoUser';
@@ -45,6 +46,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/artists', artistsRouter);
 app.use('/api/now-playing', nowPlayingRouter);
+app.use('/api/playback-state', playbackStateRouter);
 
 app.use(errorHandler);
 

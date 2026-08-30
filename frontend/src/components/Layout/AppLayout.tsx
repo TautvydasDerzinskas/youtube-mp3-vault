@@ -15,7 +15,7 @@ function AppLayoutContent() {
   const location = useLocation();
   const {
     nowPlaying, nowPlayingVideo, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
-    setIsAudioPlaying, handleTrackEnded, playNext, playPrevious, toggleRepeat, toggleShuffle, handleClosePlayer,
+    setIsAudioPlaying, handlePause, handleTrackEnded, playNext, playPrevious, toggleRepeat, toggleShuffle, handleClosePlayer,
   } = usePlayer();
 
   // Goes back to wherever playback was actually started from (a specific
@@ -71,7 +71,7 @@ function AppLayoutContent() {
           isRepeat={isRepeat}
           isShuffle={isShuffle}
           onPlay={() => setIsAudioPlaying(true)}
-          onPause={() => setIsAudioPlaying(false)}
+          onPause={handlePause}
           onEnded={handleTrackEnded}
           onNext={playNext}
           onPrevious={playPrevious}

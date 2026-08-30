@@ -56,6 +56,29 @@ model User {
   nowPlayingArtist          String?
   nowPlayingTitle           String?
   nowPlayingHeartbeatAt     DateTime?
+  // Durable cross-device mini-player resume state — unlike nowPlaying*
+  // above (a soft-expiring public broadcast with no track identifiers),
+  // this is a private snapshot precise enough to actually reconstruct
+  // playback: which track, where in it, and the full queue/shuffle-history
+  // around it. Written by the web client (PlayerContext.tsx) on session
+  // start, track advance, pause, and periodically while playing; read back
+  // once on app mount to restore the mini player (paused, not autoplaying)
+  // on a different device/session. Cleared (all fields null) only when the
+  // user explicitly closes the mini player — see routes/playbackState.ts.
+  playbackPlaylistId        String?
+  playbackVideoId           String?
+  playbackPositionSeconds   Float?
+  playbackIsShuffle         Boolean    @default(false)
+  playbackIsRepeat          Boolean    @default(false)
+  playbackOriginPath        String?
+  // Ordered array of { playlistId, videoId } pairs — the exact queue as of
+  // session start, so "All Tracks"/shuffled sessions resume with next/prev
+  // intact rather than being re-derived from a single playlist.
+  playbackQueue             Json?
+  // Same shape as playbackQueue — shuffle mode's "previous" stack, mirrors
+  // PlayerContext.tsx's historyRef (capped at MAX_HISTORY = 50).
+  playbackHistory           Json       @default("[]")
+  playbackUpdatedAt         DateTime?
   // A user's own Deezer account "arl" cookie — opt-in, per-user (unlike
   // slskd/JioSaavn, which are app-wide fallbacks), since it authorizes
   // downloading tracks that specific Deezer account is entitled to, not a
