@@ -370,6 +370,16 @@
       "light": "Jasny",
       "dark": "Ciemny"
     },
+    "keyboard": {
+      "label": "Klawiatura",
+      "title": "Skróty klawiszowe",
+      "playPause": "Odtwórz / Wstrzymaj",
+      "shuffle": "Losowo",
+      "previous": "Poprzedni utwór",
+      "next": "Następny utwór",
+      "volumeDown": "Zmniejsz głośność",
+      "volumeUp": "Zwiększ głośność"
+    },
     "logout": "Wyloguj się",
     "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
     "settings": {

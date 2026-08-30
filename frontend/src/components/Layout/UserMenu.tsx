@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Avatar, Box, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
-import { Person as PersonIcon, Settings as SettingsIcon, Palette as PaletteIcon, Check as CheckIcon } from '@mui/icons-material';
+import { Person as PersonIcon, Settings as SettingsIcon, Palette as PaletteIcon, Check as CheckIcon, Keyboard as KeyboardIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useGravatarUrl } from '../../hooks/useGravatarUrl';
+import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
 
 interface ServiceBadgeDef {
   key: 'lastfm' | 'deezer' | 'qobuz' | 'tidal';
@@ -46,10 +47,15 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
   const avatarUrl = useGravatarUrl(user?.email, 128);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [themeAnchorEl, setThemeAnchorEl] = useState<HTMLElement | null>(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const themeMode = user?.themeMode === 'dark' ? 'dark' : 'light';
 
   const closeMenu = () => setAnchorEl(null);
   const closeThemeMenu = () => setThemeAnchorEl(null);
+  const openKeyboardDialog = () => {
+    closeMenu();
+    setKeyboardOpen(true);
+  };
   const goToTab = (tab: string) => {
     closeMenu();
     navigate(`/profile?tab=${tab}`);
@@ -108,6 +114,10 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
           <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('profile.tabSettings')}</ListItemText>
         </MenuItem>
+        <MenuItem onClick={openKeyboardDialog} title={t('profile.keyboard.label')}>
+          <ListItemIcon><KeyboardIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('profile.keyboard.label')}</ListItemText>
+        </MenuItem>
         <Divider />
         <Box sx={{ px: 2, py: 1.25, display: 'flex', gap: 0.75 }}>
           {SERVICE_BADGES.map(svc => (
@@ -142,6 +152,7 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
           </MenuItem>
         ))}
       </Menu>
+      <KeyboardShortcutsDialog open={keyboardOpen} onClose={() => setKeyboardOpen(false)} />
     </>
   );
 }

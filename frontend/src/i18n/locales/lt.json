@@ -357,6 +357,16 @@
       "light": "Šviesi",
       "dark": "Tamsi"
     },
+    "keyboard": {
+      "label": "Klaviatūra",
+      "title": "Klaviatūros trumpiniai",
+      "playPause": "Groti / Pristabdyti",
+      "shuffle": "Maišyti",
+      "previous": "Ankstesnis takelis",
+      "next": "Kitas takelis",
+      "volumeDown": "Sumažinti garsą",
+      "volumeUp": "Padidinti garsą"
+    },
     "logout": "Atsijungti",
     "genericError": "Įvyko klaida. Bandykite dar kartą.",
     "settings": {

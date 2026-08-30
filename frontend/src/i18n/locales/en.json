@@ -344,6 +344,16 @@
       "light": "Light",
       "dark": "Dark"
     },
+    "keyboard": {
+      "label": "Keyboard",
+      "title": "Keyboard shortcuts",
+      "playPause": "Play / Pause",
+      "shuffle": "Shuffle",
+      "previous": "Previous track",
+      "next": "Next track",
+      "volumeDown": "Decrease volume",
+      "volumeUp": "Increase volume"
+    },
     "logout": "Logout",
     "genericError": "Something went wrong. Please try again.",
     "settings": {

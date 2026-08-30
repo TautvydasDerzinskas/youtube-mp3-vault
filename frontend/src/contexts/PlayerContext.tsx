@@ -24,6 +24,10 @@ const NOW_PLAYING_HEARTBEAT_MS = 25 * 1000;
 // next time the app loads — mirrors mobile's shuffleStorage.ts.
 const SHUFFLE_STORAGE_KEY = 'shuffle_mode';
 
+// How much Cmd/Ctrl+Up/Down nudges volume per keypress (see the global
+// shortcut effect below) — matches KeyboardShortcutsDialog's documented step.
+const VOLUME_STEP = 0.1;
+
 interface PlayerContextType {
   nowPlaying: NowPlaying | null;
   nowPlayingVideo: PlaylistVideo | undefined;
@@ -251,6 +255,56 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(SHUFFLE_STORAGE_KEY, String(next));
     return next;
   }), []);
+
+  // Global mini-player shortcuts (see UserMenu's KeyboardShortcutsDialog for
+  // the user-facing list) — only active once a track is loaded, and ignored
+  // while the user is typing in a text field so Space/Cmd+S etc. don't hijack
+  // normal typing/browser-save behavior.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!currentRef.current) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (audioRef.current?.paused) audioRef.current.play().catch(() => {});
+        else audioRef.current?.pause();
+        return;
+      }
+
+      if (!e.metaKey && !e.ctrlKey) return;
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          playPrevious();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          playNext();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          if (audioRef.current) audioRef.current.volume = Math.min(1, audioRef.current.volume + VOLUME_STEP);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          if (audioRef.current) audioRef.current.volume = Math.max(0, audioRef.current.volume - VOLUME_STEP);
+          break;
+        case 's':
+        case 'S':
+          e.preventDefault();
+          toggleShuffle();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [playNext, playPrevious, toggleShuffle]);
 
   const stopIfPlaylist = useCallback((playlistId: string) => {
     setCurrent(prev => (prev?.playlistId === playlistId ? null : prev));
