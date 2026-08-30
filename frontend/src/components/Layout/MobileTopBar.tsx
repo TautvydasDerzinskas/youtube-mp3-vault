@@ -50,7 +50,12 @@ export default function MobileTopBar() {
   };
 
   return (
-    <AppBar position="fixed" color="default" elevation={2} sx={{ backgroundColor: 'background.paper', backgroundImage: 'none' }}>
+    // MUI's default AppBar z-index (1100) sits below MiniPlayer's fixed
+    // bottom bar (1200, see MiniPlayer.tsx) — on short screens the expanded
+    // nav Collapse below can extend low enough to be covered by it, so this
+    // needs to sit above that (and still below MUI's modal/dialog default
+    // of 1300, so a Dialog opened from the nav still layers on top of it).
+    <AppBar position="fixed" color="default" elevation={2} sx={{ zIndex: 1250, backgroundColor: 'background.paper', backgroundImage: 'none' }}>
       <Toolbar sx={{ minHeight: MOBILE_TOPBAR_HEIGHT, gap: 1 }}>
         <IconButton
           edge="start"
@@ -72,7 +77,7 @@ export default function MobileTopBar() {
           sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1, cursor: 'pointer' }}
         >
           <MusicNoteIcon sx={{ color: 'primary.main' }} />
-          <Typography variant="h6" fontWeight={700} color="primary.main">
+          <Typography variant="h6" fontWeight={700} color="text.primary">
             {t('auth.appName')}
           </Typography>
         </Box>

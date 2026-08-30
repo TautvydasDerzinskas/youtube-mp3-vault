@@ -7,6 +7,7 @@ import { Playlist } from '../../../api/youtube';
 import { NowPlaying } from '../types';
 import { Thumbnail } from './Thumbnail';
 import { Info } from './Info';
+import { StatusChips } from './StatusChips';
 import { Actions } from './Actions';
 
 interface PlaylistRowProps {
@@ -89,6 +90,7 @@ export function PlaylistRow({
         </Tooltip>
       </Box>
       <Info playlist={playlist} isBusy={isBusy} isPausing={isPausing} />
+      <StatusChips playlist={playlist} isBusy={isBusy} />
       <Actions
         playlist={playlist}
         isBusy={isBusy}

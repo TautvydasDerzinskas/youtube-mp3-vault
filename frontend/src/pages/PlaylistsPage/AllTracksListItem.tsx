@@ -51,15 +51,15 @@ export function AllTracksListItem({ refreshOn }: AllTracksListItemProps) {
             {formatPlaybackTime(summary.totalDurationSec, t)} · {t('playlists.allTracks.sourcedFromYoutube')}
           </Typography>
         )}
-
-        <Stack direction="row" gap={1} sx={{ mt: 0.5 }}>
-          <Chip label={t('playlists.detail.trackCount', { count: summary.songCount })}
-            size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
-          {summary.totalSize > 0 && (
-            <Chip label={formatBytes(summary.totalSize)} size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
-          )}
-        </Stack>
       </Box>
+
+      <Stack direction="row" gap={1} alignItems="center" justifyContent="flex-end" flexWrap="wrap" sx={{ flexShrink: 0 }}>
+        <Chip label={t('playlists.detail.trackCount', { count: summary.songCount })}
+          size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
+        {summary.totalSize > 0 && (
+          <Chip label={formatBytes(summary.totalSize)} size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
+        )}
+      </Stack>
 
       <Tooltip title={t('playlists.openPlaylist')}>
         <IconButton size="small" onClick={e => { e.stopPropagation(); open(); }}>

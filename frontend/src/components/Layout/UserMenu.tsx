@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Avatar, Box, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
-import { Person as PersonIcon, Settings as SettingsIcon, Palette as PaletteIcon, Check as CheckIcon, Keyboard as KeyboardIcon } from '@mui/icons-material';
+import { Avatar, Box, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography } from '@mui/material';
+import { Person as PersonIcon, Settings as SettingsIcon, Palette as PaletteIcon, Check as CheckIcon, Keyboard as KeyboardIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useGravatarUrl } from '../../hooks/useGravatarUrl';
+import { useLogout } from '../../hooks/useLogout';
 import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
 
 interface ServiceBadgeDef {
@@ -34,9 +35,9 @@ interface UserMenuProps {
 // of bottom-of-sidebar) that opens a dropdown with identity, quick links
 // into the Profile page's own tabs (see ProfilePage/index.tsx's `tab` query
 // param), and at-a-glance connection status for every optional music
-// service, each clickable straight to the tab that manages it. Logout stays
-// reachable from the Profile page itself (see ProfileHeader.tsx) rather than
-// living here too.
+// service, each clickable straight to the tab that manages it. Logout also
+// sits inline on the identity row here (one click from anywhere in the app)
+// — kept alongside, not instead of, ProfileHeader.tsx's own Logout button.
 const THEME_MODES = ['light', 'dark'] as const;
 
 export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
@@ -44,6 +45,7 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
   const { user, updateTheme } = useAuth();
   const { showError } = useToast();
   const navigate = useNavigate();
+  const handleLogout = useLogout();
   const avatarUrl = useGravatarUrl(user?.email, 128);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [themeAnchorEl, setThemeAnchorEl] = useState<HTMLElement | null>(null);
@@ -97,9 +99,16 @@ export function UserMenu({ avatarSize = 36 }: UserMenuProps) {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Box sx={{ px: 2, py: 1.25, minWidth: 220 }}>
-          <Typography variant="body2" fontWeight={600} noWrap>{user?.displayName}</Typography>
-          <Typography variant="caption" color="text.secondary" noWrap>{user?.email}</Typography>
+        <Box sx={{ pl: 2, pr: 1, py: 1.25, minWidth: 220, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+            <Typography variant="body2" fontWeight={600} noWrap>{user?.displayName}</Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>{user?.email}</Typography>
+          </Box>
+          <Tooltip title={t('profile.logout')}>
+            <IconButton size="small" onClick={() => { closeMenu(); handleLogout(); }}>
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
         <Divider />
         <MenuItem onClick={() => goToTab('profile')} title={t('profile.tabProfile')}>

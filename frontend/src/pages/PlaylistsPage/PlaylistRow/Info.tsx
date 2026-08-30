@@ -1,8 +1,8 @@
 import { Box, Typography, Chip, Stack, Tooltip, LinearProgress, Link } from '@mui/material';
-import { ErrorOutline, Check as CheckIcon } from '@mui/icons-material';
+import { ErrorOutline } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
-import { displayName, formatBytes, formatPlaybackTime, timeAgo, youtubePlaylistUrl } from '../utils';
+import { displayName, formatPlaybackTime, youtubePlaylistUrl } from '../utils';
 
 interface InfoProps {
   playlist: Playlist;
@@ -19,7 +19,6 @@ export function Info({ playlist, isBusy, isPausing }: InfoProps) {
   // source is later deleted, even though this is still very much a
   // generated playlist with nothing to sync from).
   const isGenerated = playlist.youtubeId === null;
-  const fullySynced = !isGenerated && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
 
   return (
     <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
@@ -58,56 +57,6 @@ export function Info({ playlist, isBusy, isPausing }: InfoProps) {
           )}
         </Typography>
       )}
-
-      <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ mt: 0.5 }}>
-        {playlist.syncStatus === 'generating' ? (
-          <Chip label={t('playlists.generatingChip')} size="small" color="info" sx={{ fontSize: 11 }} />
-        ) : isBusy ? (
-          <>
-            <Chip label={
-                playlist.syncPhase?.phase === 'quality' ? t('playlists.videoList.searchingHq')
-                : playlist.syncStatus === 'scanning_hq' ? t('playlists.scanningHq')
-                : t('playlists.syncing')
-              }
-              size="small" sx={{ fontSize: 11, bgcolor: 'common.black', color: 'common.white' }} />
-            {playlist.syncPhase?.phase === 'quality' && playlist.syncPhase.hqFoundIds.length > 0 && (
-              <Chip label={t('playlists.hqFoundSoFar', { count: playlist.syncPhase.hqFoundIds.length })}
-                size="small" sx={{ fontSize: 11, bgcolor: 'hq.main', color: 'hq.contrastText' }} />
-            )}
-          </>
-        ) : (
-          <>
-            {isGenerated ? (
-              <Chip label={t('playlists.generatedBadge')} size="small" color="secondary" sx={{ fontSize: 11 }} />
-            ) : fullySynced ? (
-              <Tooltip title={playlist.lastSyncedAt ? t('playlists.syncedAgo', { time: timeAgo(playlist.lastSyncedAt, t) }) : ''}>
-                <Chip
-                  label={<CheckIcon sx={{ fontSize: 14, display: 'flex' }} />}
-                  size="small"
-                  sx={{ fontSize: 11, bgcolor: 'hq.main', color: 'hq.contrastText', '& .MuiChip-label': { px: 0.75, display: 'flex', alignItems: 'center' } }}
-                />
-              </Tooltip>
-            ) : (
-              <Chip label={t('playlists.downloadedCount', { count: playlist.downloadedCount, total: playlist.videoCount })}
-                size="small" sx={{ fontSize: 11 }} />
-            )}
-            <Chip label={t('playlists.detail.trackCount', { count: playlist.videoCount })} size="small"
-              sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
-          </>
-        )}
-        {/* Generated playlists auto-drop failed/unusable candidates on their
-            own (see audioAnalysisWorker.ts/playlistGenerator.ts) — there's
-            never anything for the user to act on, so don't show this. */}
-        {playlist.failedCount > 0 && !isGenerated && (
-          <Chip label={t('playlists.failedCount', { count: playlist.failedCount })} size="small" color="error" sx={{ fontSize: 11 }} />
-        )}
-        {playlist.totalSize > 0 && (
-          <Chip label={formatBytes(playlist.totalSize)} size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
-        )}
-        {!isBusy && !isGenerated && !playlist.lastSyncedAt && (
-          <Chip label={t('playlists.notSynced')} size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
-        )}
-      </Stack>
 
       {isPausing ? (
         <Typography variant="caption" color="warning.main" noWrap component="div" sx={{ mt: 0.25 }}>
