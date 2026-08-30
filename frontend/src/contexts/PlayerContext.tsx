@@ -97,7 +97,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
     const { title, artist } = current.video;
-    document.title = `YoutubeVault :: ${artist ? `${artist} - ${title}` : title}`;
+    document.title = `${artist ? `${artist} - ${title}` : title} - YoutubeVault`;
   }, [current]);
 
   // Broadcasts "now playing" (see api/nowPlaying.ts) only while genuinely
