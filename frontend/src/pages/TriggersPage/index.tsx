@@ -5,9 +5,13 @@ import { adminApi, AdminUser } from '../../api/admin';
 import { Playlist } from '../../api/youtube';
 import { displayName } from '../PlaylistsPage/utils';
 import { useToast } from '../../contexts/ToastContext';
+import { usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export default function TriggersPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  usePageTitle(t('triggers.title'));
   const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState<AdminUser[] | 'loading' | 'error'>('loading');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -83,7 +87,7 @@ export default function TriggersPage() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 560 }}>
-      <Typography variant="h5" fontWeight={700} mb={1}>{t('triggers.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={1}>{t('triggers.title')}</Typography>}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
         <TextField

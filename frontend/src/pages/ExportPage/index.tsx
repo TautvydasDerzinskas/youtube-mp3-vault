@@ -3,9 +3,13 @@ import { Box, Typography, FormControlLabel, Switch, Button, CircularProgress } f
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../../api/admin';
 import { useToast } from '../../contexts/ToastContext';
+import { usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export default function ExportPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  usePageTitle(t('export.title'));
   const { showError } = useToast();
   const [onlyNonHq, setOnlyNonHq] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -31,7 +35,7 @@ export default function ExportPage() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 560 }}>
-      <Typography variant="h5" fontWeight={700} mb={1}>{t('export.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={1}>{t('export.title')}</Typography>}
       <Typography variant="body2" color="text.secondary" mb={3}>{t('export.description')}</Typography>
 
       <FormControlLabel

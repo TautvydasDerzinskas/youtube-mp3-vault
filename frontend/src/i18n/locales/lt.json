@@ -64,7 +64,7 @@
     "empty": "Kol kas pranešimų nėra."
   },
   "playlists": {
-    "title": "Jūsų grojaraščiai",
+    "title": "Grojaraščiai",
     "addPlaylist": "Pridėti grojaraštį",
     "importButton": "Importuoti",
     "failedToLoad": "Nepavyko įkelti grojaraščių.",
@@ -288,6 +288,7 @@
       "removed": "pašalinta"
     },
     "detail": {
+      "pageTitle": "Grojaraštis",
       "failedToLoad": "Nepavyko įkelti šio grojaraščio.",
       "trackCount": "{{count}} dainų",
       "trackCountFiltered": "{{visible}} / {{total}} dainų",
@@ -311,6 +312,7 @@
       "searchPlaceholder": "Ieškoti pagal pavadinimą ar atlikėją…"
     },
     "trackDetail": {
+      "pageTitle": "Daina",
       "failedToLoad": "Nepavyko įkelti šios dainos.",
       "recommendedTitle": "Panašios dainos",
       "discoverTitle": "Atraskite",
@@ -691,7 +693,8 @@
       "totalPlayCount_few": "{{count}} peržiūros",
       "totalPlayCount_other": "{{count}} peržiūrų",
       "appearsIn": "Yra grojaraščiuose",
-      "failedToLoad": "Nepavyko įkelti atlikėjo."
+      "failedToLoad": "Nepavyko įkelti atlikėjo.",
+      "pageTitle": "Atlikėjas"
     }
   }
 }

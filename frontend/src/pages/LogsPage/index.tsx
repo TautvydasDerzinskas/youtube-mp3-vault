@@ -5,6 +5,8 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { adminApi, AdminUser, LogEntry, LogAction } from '../../api/admin';
+import { usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -41,6 +43,8 @@ const ACTION_COLORS: Record<LogAction, 'default' | 'primary' | 'success' | 'warn
 
 export default function LogsPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  usePageTitle(t('logs.title'));
   const [users, setUsers] = useState<AdminUser[] | 'loading' | 'error'>('loading');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [fromDate, setFromDate] = useState(() => toDateInput(new Date(Date.now() - 7 * MS_PER_DAY)));
@@ -113,7 +117,7 @@ export default function LogsPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>{t('logs.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={3}>{t('logs.title')}</Typography>}
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <TextField

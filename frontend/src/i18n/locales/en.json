@@ -64,7 +64,7 @@
     "empty": "No notifications yet."
   },
   "playlists": {
-    "title": "Your Playlists",
+    "title": "Playlists",
     "addPlaylist": "Add Playlist",
     "importButton": "Import",
     "failedToLoad": "Failed to load playlists.",
@@ -275,6 +275,7 @@
       "removed": "removed"
     },
     "detail": {
+      "pageTitle": "Playlist",
       "failedToLoad": "Failed to load this playlist.",
       "trackCount": "{{count}} tracks",
       "trackCountFiltered": "{{visible}} / {{total}} tracks",
@@ -298,6 +299,7 @@
       "searchPlaceholder": "Search"
     },
     "trackDetail": {
+      "pageTitle": "Track",
       "failedToLoad": "Failed to load this track.",
       "recommendedTitle": "Similar songs",
       "discoverTitle": "Discover",
@@ -670,7 +672,8 @@
       "totalPlayCount_one": "{{count}} play",
       "totalPlayCount_other": "{{count}} plays",
       "appearsIn": "Appears in",
-      "failedToLoad": "Failed to load artist."
+      "failedToLoad": "Failed to load artist.",
+      "pageTitle": "Artist"
     }
   }
 }

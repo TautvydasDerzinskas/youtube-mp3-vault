@@ -64,7 +64,7 @@
     "empty": "Brak powiadomień."
   },
   "playlists": {
-    "title": "Twoje playlisty",
+    "title": "Playlisty",
     "addPlaylist": "Dodaj playlistę",
     "importButton": "Importuj",
     "failedToLoad": "Nie udało się załadować playlist.",
@@ -301,6 +301,7 @@
       "removed": "usunięte"
     },
     "detail": {
+      "pageTitle": "Playlista",
       "failedToLoad": "Nie udało się załadować tej playlisty.",
       "trackCount": "{{count}} utworów",
       "trackCountFiltered": "{{visible}} / {{total}} utworów",
@@ -324,6 +325,7 @@
       "searchPlaceholder": "Szukaj wg nazwy lub wykonawcy…"
     },
     "trackDetail": {
+      "pageTitle": "Utwór",
       "failedToLoad": "Nie udało się załadować tego utworu.",
       "recommendedTitle": "Podobne utwory",
       "discoverTitle": "Odkrywaj",
@@ -712,7 +714,8 @@
       "totalPlayCount_many": "{{count}} odtworzeń",
       "totalPlayCount_other": "{{count}} odtworzeń",
       "appearsIn": "Występuje w playlistach",
-      "failedToLoad": "Nie udało się załadować artysty."
+      "failedToLoad": "Nie udało się załadować artysty.",
+      "pageTitle": "Wykonawca"
     }
   }
 }

@@ -8,6 +8,11 @@ interface PageBackTarget {
 interface PageBackContextType {
   backTarget: PageBackTarget | null;
   setBackTarget: (target: PageBackTarget | null) => void;
+  // Lets a routed page hand its heading to TopBar (see usePageTitle below)
+  // instead of rendering it inline, freeing up vertical space in the
+  // content viewport — same registration pattern as backTarget.
+  pageTitle: string | null;
+  setPageTitle: (title: string | null) => void;
 }
 
 const PageBackContext = createContext<PageBackContextType | null>(null);
@@ -17,8 +22,9 @@ const PageBackContext = createContext<PageBackContextType | null>(null);
 // TopBar/MobileTopBar that read it, both of which live inside AppLayout.
 export function PageBackProvider({ children }: { children: ReactNode }) {
   const [backTarget, setBackTarget] = useState<PageBackTarget | null>(null);
+  const [pageTitle, setPageTitle] = useState<string | null>(null);
   return (
-    <PageBackContext.Provider value={{ backTarget, setBackTarget }}>
+    <PageBackContext.Provider value={{ backTarget, setBackTarget, pageTitle, setPageTitle }}>
       {children}
     </PageBackContext.Provider>
   );
@@ -46,4 +52,17 @@ export function usePageBack(path: string | null, label: string): void {
     setBackTarget(path ? { path, label } : null);
     return () => setBackTarget(null);
   }, [path, label, setBackTarget]);
+}
+
+// Same pattern as usePageBack, for a page's heading — TopBar renders it
+// next to the back button (desktop only; mobile pages still render their
+// own inline heading, see e.g. GenresPage). Independent of usePageBack so a
+// page can register a title with no back button (e.g. Playlists) or vice
+// versa.
+export function usePageTitle(title: string | null): void {
+  const { setPageTitle } = usePageBackContext();
+  useEffect(() => {
+    setPageTitle(title);
+    return () => setPageTitle(null);
+  }, [title, setPageTitle]);
 }

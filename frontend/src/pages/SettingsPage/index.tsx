@@ -6,6 +6,8 @@ import { SmtpTab } from './SmtpTab';
 import { LastfmTab } from './LastfmTab';
 import { HqTab } from './HqTab';
 import { PostgresTab } from './PostgresTab';
+import { usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const EMPTY_SMTP: SmtpSettings = { host: null, port: 587, secure: false, user: null, pass: null, from: '' };
 const EMPTY_POSTGRES: PostgresSettings = { database: '', user: '', password: '' };
@@ -14,6 +16,8 @@ const EMPTY_HQ: HqSettings = { autoDownloadEnabled: false, allowedUserProviders:
 
 export default function SettingsPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  usePageTitle(t('settings.title'));
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -41,7 +45,7 @@ export default function SettingsPage() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 560 }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>{t('settings.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={3}>{t('settings.title')}</Typography>}
 
       <Tabs value={tab} onChange={(_, v: number) => setTab(v)} variant="fullWidth" sx={{ mb: 3 }}>
         <Tab label={t('settings.smtp.title')} />

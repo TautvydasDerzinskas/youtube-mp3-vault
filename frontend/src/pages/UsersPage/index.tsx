@@ -11,9 +11,13 @@ import { adminApi, AdminUser } from '../../api/admin';
 import { UserDetailDialog } from './UserDetailDialog';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useToast } from '../../contexts/ToastContext';
+import { usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export default function UsersPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  usePageTitle(t('users.title'));
   const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState<AdminUser[] | 'loading' | 'error'>('loading');
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -65,7 +69,7 @@ export default function UsersPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>{t('users.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={3}>{t('users.title')}</Typography>}
 
       <TableContainer component={Paper}>
         <Table size="small">

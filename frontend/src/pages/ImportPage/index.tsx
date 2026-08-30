@@ -3,9 +3,13 @@ import { Box, Typography, Button, CircularProgress, Alert, Chip } from '@mui/mat
 import { useTranslation } from 'react-i18next';
 import { adminApi, TrackImportSummary } from '../../api/admin';
 import { useToast } from '../../contexts/ToastContext';
+import { usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export default function ImportPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  usePageTitle(t('import.title'));
   const { showError } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -40,7 +44,7 @@ export default function ImportPage() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 560 }}>
-      <Typography variant="h5" fontWeight={700} mb={1}>{t('import.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={1}>{t('import.title')}</Typography>}
       <Typography variant="body2" color="text.secondary" mb={3}>{t('import.description')}</Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>

@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi, DashboardGenre } from '../../api/dashboard';
 import { allTracksGenreUrl } from '../PlaylistsPage/utils';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Sorting and search are both client-side, local `useState` — the backend
 // already returns every genre in one shot (there's no pagination to defeat),
@@ -31,6 +33,9 @@ function sortGenres(genres: DashboardGenre[], sort: SortOption): DashboardGenre[
 export default function GenresPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  usePageBack('/dashboard', t('common.backToDashboard'));
+  usePageTitle(t('genres.title'));
   const [genres, setGenres] = useState<DashboardGenre[] | 'loading' | 'error'>('loading');
   const [sort, setSort] = useState<SortOption>(DEFAULT_SORT);
   const [query, setQuery] = useState('');
@@ -55,7 +60,7 @@ export default function GenresPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight={700} mb={2}>{t('genres.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={2}>{t('genres.title')}</Typography>}
 
       {genres.length === 0 ? (
         <Typography color="text.secondary">{t('genres.empty')}</Typography>

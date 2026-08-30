@@ -7,6 +7,8 @@ import { Search as SearchIcon, MusicNote as MusicNoteIcon } from '@mui/icons-mat
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { artistsApi, ArtistSummary } from '../../api/artists';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Search is backend-driven (matches artist name OR song title, see
 // artistStats.ts) rather than filtered client-side — matching on song titles
@@ -37,6 +39,9 @@ function sortArtists(artists: ArtistSummary[], sort: SortOption): ArtistSummary[
 export default function ArtistsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  usePageBack('/dashboard', t('common.backToDashboard'));
+  usePageTitle(t('artists.title'));
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [artists, setArtists] = useState<ArtistSummary[] | 'loading' | 'error'>('loading');
@@ -58,7 +63,7 @@ export default function ArtistsPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight={700} mb={2}>{t('artists.title')}</Typography>
+      {isMobile && <Typography variant="h5" fontWeight={700} mb={2}>{t('artists.title')}</Typography>}
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ minWidth: 220 }}>

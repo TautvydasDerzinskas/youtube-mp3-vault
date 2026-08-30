@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ArtistDetail } from '../../api/artists';
 import { allTracksGenreUrl } from '../PlaylistsPage/utils';
-import { usePageBack } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
 
 interface HeaderProps {
   artist: ArtistDetail;
@@ -14,6 +14,7 @@ export function Header({ artist }: HeaderProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   usePageBack('/artists', t('common.backToArtists'));
+  usePageTitle(t('artists.detail.pageTitle'));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>

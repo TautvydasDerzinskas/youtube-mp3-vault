@@ -2,7 +2,8 @@ import { Stack, Typography, Button } from '@mui/material';
 import { Logout as LogoutIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useLogout } from '../../hooks/useLogout';
-import { usePageBack } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface ProfileHeaderProps {
   title: string;
@@ -15,12 +16,14 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ title, backPath, backLabel }: ProfileHeaderProps) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const handleLogout = useLogout();
   usePageBack(backPath, backLabel);
+  usePageTitle(title);
 
   return (
-    <Stack direction="row" alignItems="center" gap={1} mb={3}>
-      <Typography variant="h5" fontWeight={700} sx={{ flexGrow: 1 }}>{title}</Typography>
+    <Stack direction="row" alignItems="center" justifyContent={isMobile ? 'space-between' : 'flex-end'} gap={1} mb={3}>
+      {isMobile && <Typography variant="h5" fontWeight={700}>{title}</Typography>}
       <Button variant="outlined" color="error" size="small" startIcon={<LogoutIcon />} onClick={handleLogout}>
         {t('profile.logout')}
       </Button>

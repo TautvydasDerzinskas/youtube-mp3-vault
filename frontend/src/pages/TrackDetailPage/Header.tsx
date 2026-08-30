@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PlaylistVideo, UsedInPlaylist } from '../../api/youtube';
 import { formatDuration, formatGenre, normalizeGenreKey, allTracksGenreUrl, artistUrl, STATUS_ICON } from '../PlaylistsPage/utils';
-import { usePageBack } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
 import { useTrackActions } from '../../hooks/useTrackActions';
 import { TrackContextMenu } from '../../components/TrackContextMenu';
 import { CloseHqCandidatesDialog } from '../../components/CloseHqCandidatesDialog';
@@ -35,6 +35,7 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
     searching, closeCandidates, handleSearchHq, handleRename, handleDismissCloseCandidates, handleSelectCloseCandidate,
   } = useTrackActions({ video, playlistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onUpdated });
   usePageBack(`/playlists/${playlistId}`, t('common.backToPlaylist'));
+  usePageTitle(t('playlists.trackDetail.pageTitle'));
 
   return (
     <Box sx={{ mb: 4 }}>

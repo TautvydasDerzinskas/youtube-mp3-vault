@@ -6,7 +6,7 @@ import { displayName, formatBytes } from '../PlaylistsPage/utils';
 import { GenreCount, SortOption, HqFilterOption } from './hooks/genreFilter';
 import { TrackFilterBar } from './TrackFilterBar';
 import { PlaylistActionsMenu } from '../PlaylistsPage/PlaylistRow/PlaylistActionsMenu';
-import { usePageBack } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
 
 interface HeaderProps {
   playlist: Playlist;
@@ -49,6 +49,7 @@ export function Header({
 }: HeaderProps) {
   const { t } = useTranslation();
   usePageBack('/playlists', t('common.backToPlaylists'));
+  usePageTitle(t('playlists.detail.pageTitle'));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>

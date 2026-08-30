@@ -9,6 +9,8 @@ import { usePlaylists } from './hooks/usePlaylists';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { AddPlaylistDialog } from './AddPlaylistDialog';
 import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
@@ -22,6 +24,8 @@ import { displayName } from './utils';
 export default function PlaylistsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  usePageTitle(t('playlists.title'));
   const [searchParams, setSearchParams] = useSearchParams();
   const [addOpen, setAddOpen] = useState(false);
 
@@ -184,8 +188,8 @@ export default function PlaylistsPage() {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h5" fontWeight={700}>{t('playlists.title')}</Typography>
+      <Stack direction="row" alignItems="center" justifyContent={isMobile ? 'space-between' : 'flex-end'} mb={3}>
+        {isMobile && <Typography variant="h5" fontWeight={700}>{t('playlists.title')}</Typography>}
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>{t('playlists.addPlaylist')}</Button>
       </Stack>
 
