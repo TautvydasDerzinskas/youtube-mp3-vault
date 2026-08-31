@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { playlistsApi, PlaylistVideo, CloseHqCandidate } from '../api/youtube';
+import { playlistsApi, PlaylistVideo } from '../api/youtube';
 import { useToast } from '../contexts/ToastContext';
-import { setTrackScanning, useTrackScanningStatus } from './trackScanStatus';
+import { setTrackScanning, useTrackScanningStatus, setTrackCloseCandidates, useTrackCloseCandidates } from './trackScanStatus';
 
 // 2s between polls — frequent enough that the caller's "in progress"
 // indicator doesn't linger for long after the search actually finishes,
@@ -32,10 +31,11 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
   // Keyed by video id in a module-level store, not local useState — a
   // scanning/renaming track's row can be unmounted mid-poll by react-window
   // virtualization (scrolled out of view) and later remounted; local state
-  // would silently reset to false on remount, losing the progress indicator
-  // even though the background poll below kept running the whole time.
+  // would silently reset on remount, losing both the progress indicator and
+  // any close-candidates result even though the background poll below kept
+  // running the whole time.
   const searching = useTrackScanningStatus(v.id);
-  const [closeCandidates, setCloseCandidates] = useState<CloseHqCandidate[]>([]);
+  const closeCandidates = useTrackCloseCandidates(v.id);
 
   // Shared tail end of both Search for HQ and Rename track — polls GET
   // .../videos/:videoId (the same single-video endpoint TrackDetailPage
@@ -70,7 +70,7 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
           // richer signal than plain "nothing found" — offer them as
           // one-click rename suggestions instead of the plain toast.
           if (closeHqCandidates.length > 0) {
-            setCloseCandidates(closeHqCandidates);
+            setTrackCloseCandidates(v.id, closeHqCandidates);
           } else {
             showInfo(t('playlists.videoList.hqNotFoundForTrack', { title: fresh.title }));
           }
@@ -84,7 +84,7 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
   };
 
   const handleDismissCloseCandidates = () => {
-    setCloseCandidates([]);
+    setTrackCloseCandidates(v.id, []);
     playlistsApi.dismissHqCandidates(trackPlaylistId, v.id).catch(() => {});
   };
 
@@ -112,7 +112,7 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
   // "found"/"renamed" toasts from pollForCompletion above) rather than any
   // separate code path.
   const handleSelectCloseCandidate = async (artist: string, title: string) => {
-    setCloseCandidates([]);
+    setTrackCloseCandidates(v.id, []);
     try {
       await handleRename(artist, title);
     } catch (err: any) {
