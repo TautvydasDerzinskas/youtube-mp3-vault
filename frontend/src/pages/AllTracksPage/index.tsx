@@ -12,7 +12,7 @@ export default function AllTracksPage() {
   const { t } = useTranslation();
   const {
     status, summary, genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks, removeVideo, updateVideo,
   } = useAllTracksDetail();
   const { nowPlaying, isAudioPlaying, handleTogglePlay } = usePlayer();
@@ -38,6 +38,7 @@ export default function AllTracksPage() {
       // list again.
       if (selectedGenres.size > 0) clearGenres();
       if (hqFilter !== 'all') setHqFilter('all');
+      if (favouriteFilter !== 'all') setFavouriteFilter('all');
       if (searchQuery) setSearchQuery('');
       return;
     }
@@ -46,7 +47,7 @@ export default function AllTracksPage() {
     scrolledForKeyRef.current = location.key;
   }, [
     location, nowPlaying, filteredTracks, listRef,
-    selectedGenres, clearGenres, hqFilter, setHqFilter, searchQuery, setSearchQuery, status,
+    selectedGenres, clearGenres, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery, status,
   ]);
 
   if (status === 'loading') {
@@ -69,6 +70,8 @@ export default function AllTracksPage() {
         onSortChange={setSort}
         hqFilter={hqFilter}
         onHqFilterChange={setHqFilter}
+        favouriteFilter={favouriteFilter}
+        onFavouriteFilterChange={setFavouriteFilter}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
       />

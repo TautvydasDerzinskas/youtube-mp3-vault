@@ -32,9 +32,14 @@ export type HqFilterOption = 'all' | 'hq' | 'lq';
 export const DEFAULT_HQ_FILTER: HqFilterOption = 'all';
 const HQ_FILTER_OPTIONS = new Set<HqFilterOption>(['all', 'hq', 'lq']);
 
+export type FavouriteFilterOption = 'all' | 'favourite' | 'not-favourite';
+export const DEFAULT_FAVOURITE_FILTER: FavouriteFilterOption = 'all';
+const FAVOURITE_FILTER_OPTIONS = new Set<FavouriteFilterOption>(['all', 'favourite', 'not-favourite']);
+
 const GENRES_PARAM = 'genres';
 const SORT_PARAM = 'sort';
 const HQ_PARAM = 'hq';
+const FAV_PARAM = 'fav';
 const SEARCH_PARAM = 'q';
 
 function parseGenres(raw: string | null): Set<string> {
@@ -49,6 +54,10 @@ function parseHqFilter(raw: string | null): HqFilterOption {
   return HQ_FILTER_OPTIONS.has(raw as HqFilterOption) ? (raw as HqFilterOption) : DEFAULT_HQ_FILTER;
 }
 
+function parseFavouriteFilter(raw: string | null): FavouriteFilterOption {
+  return FAVOURITE_FILTER_OPTIONS.has(raw as FavouriteFilterOption) ? (raw as FavouriteFilterOption) : DEFAULT_FAVOURITE_FILTER;
+}
+
 // Shared by usePlaylistDetail and useAllTracksDetail — both read/write the
 // same URL param conventions (?genres=, ?sort=, ?hq=, ?q=), so every track
 // filter/sort control is deep-linkable and survives a refresh the same way
@@ -61,6 +70,7 @@ export function useTrackFilterParams() {
   const selectedGenres = useMemo(() => parseGenres(searchParams.get(GENRES_PARAM)), [searchParams]);
   const sort = useMemo(() => parseSort(searchParams.get(SORT_PARAM)), [searchParams]);
   const hqFilter = useMemo(() => parseHqFilter(searchParams.get(HQ_PARAM)), [searchParams]);
+  const favouriteFilter = useMemo(() => parseFavouriteFilter(searchParams.get(FAV_PARAM)), [searchParams]);
   const searchQuery = searchParams.get(SEARCH_PARAM) ?? '';
 
   const toggleGenre = useCallback((genre: string) => {
@@ -98,6 +108,14 @@ export function useTrackFilterParams() {
     }, { replace: true });
   }, [setSearchParams]);
 
+  const setFavouriteFilter = useCallback((next: FavouriteFilterOption) => {
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      if (next === DEFAULT_FAVOURITE_FILTER) params.delete(FAV_PARAM); else params.set(FAV_PARAM, next);
+      return params;
+    }, { replace: true });
+  }, [setSearchParams]);
+
   const setSearchQuery = useCallback((next: string) => {
     setSearchParams(prev => {
       const params = new URLSearchParams(prev);
@@ -110,6 +128,7 @@ export function useTrackFilterParams() {
     selectedGenres, toggleGenre, clearGenres,
     sort, setSort,
     hqFilter, setHqFilter,
+    favouriteFilter, setFavouriteFilter,
     searchQuery, setSearchQuery,
   };
 }
@@ -150,6 +169,12 @@ export function filterByGenres(videos: PlaylistVideo[], selectedGenres: Set<stri
 export function filterByHq(videos: PlaylistVideo[], hqFilter: HqFilterOption): PlaylistVideo[] {
   if (hqFilter === 'hq') return videos.filter(v => v.hqFileDownloaded);
   if (hqFilter === 'lq') return videos.filter(v => !v.hqFileDownloaded);
+  return videos;
+}
+
+export function filterByFavourite(videos: PlaylistVideo[], favouriteFilter: FavouriteFilterOption): PlaylistVideo[] {
+  if (favouriteFilter === 'favourite') return videos.filter(v => v.isFavourite);
+  if (favouriteFilter === 'not-favourite') return videos.filter(v => !v.isFavourite);
   return videos;
 }
 

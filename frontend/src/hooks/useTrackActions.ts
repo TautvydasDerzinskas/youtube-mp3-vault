@@ -114,6 +114,18 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
     }
   };
 
+  // Instant toggle, no polling lifecycle needed — the backend just flips the
+  // one flag and returns it, unlike Search for HQ/rename's async follow-up.
+  const handleToggleFavourite = async () => {
+    try {
+      const { isFavourite } = await playlistsApi.toggleFavourite(trackPlaylistId, v.id);
+      onUpdated?.({ ...v, isFavourite });
+    } catch {
+      // Silent — a transient failure here just leaves the heart as it was,
+      // no worse than the click never having registered.
+    }
+  };
+
   const handleSearchHq = async () => {
     // A found-and-replaced file would disrupt playback out from under the
     // user mid-song — stop it up front rather than let that happen silently.
@@ -130,5 +142,8 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
     pollForCompletion('search');
   };
 
-  return { searching, closeCandidates, handleSearchHq, handleRename, handleDismissCloseCandidates, handleSelectCloseCandidate };
+  return {
+    searching, closeCandidates, handleSearchHq, handleRename,
+    handleDismissCloseCandidates, handleSelectCloseCandidate, handleToggleFavourite,
+  };
 }

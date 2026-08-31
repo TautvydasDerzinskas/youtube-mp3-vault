@@ -3,7 +3,7 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { GenreCount, SortOption, HqFilterOption } from './hooks/genreFilter';
+import { GenreCount, SortOption, HqFilterOption, FavouriteFilterOption } from './hooks/genreFilter';
 import { GenreFilterBar } from './GenreFilterBar';
 
 interface TrackFilterBarProps {
@@ -15,6 +15,8 @@ interface TrackFilterBarProps {
   onSortChange: (sort: SortOption) => void;
   hqFilter: HqFilterOption;
   onHqFilterChange: (hqFilter: HqFilterOption) => void;
+  favouriteFilter: FavouriteFilterOption;
+  onFavouriteFilterChange: (favouriteFilter: FavouriteFilterOption) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
 }
@@ -25,7 +27,8 @@ interface TrackFilterBarProps {
 // header stays a fixed, predictable height.
 export function TrackFilterBar({
   genreCounts, selectedGenres, onToggleGenre, onClearGenres,
-  sort, onSortChange, hqFilter, onHqFilterChange, searchQuery, onSearchQueryChange,
+  sort, onSortChange, hqFilter, onHqFilterChange,
+  favouriteFilter, onFavouriteFilterChange, searchQuery, onSearchQueryChange,
 }: TrackFilterBarProps) {
   const { t } = useTranslation();
 
@@ -68,6 +71,20 @@ export function TrackFilterBar({
           <MenuItem value="all">{t('playlists.detail.hqFilterAll')}</MenuItem>
           <MenuItem value="hq">{t('playlists.detail.hqFilterHqOnly')}</MenuItem>
           <MenuItem value="lq">{t('playlists.detail.hqFilterLqOnly')}</MenuItem>
+        </Select>
+      </FormControl>
+
+      <FormControl size="small" sx={{ minWidth: 140 }}>
+        <InputLabel id="track-favourite-filter-label">{t('playlists.detail.favouriteFilterLabel')}</InputLabel>
+        <Select
+          labelId="track-favourite-filter-label"
+          label={t('playlists.detail.favouriteFilterLabel')}
+          value={favouriteFilter}
+          onChange={(e: SelectChangeEvent) => onFavouriteFilterChange(e.target.value as FavouriteFilterOption)}
+        >
+          <MenuItem value="all">{t('playlists.detail.favouriteFilterAll')}</MenuItem>
+          <MenuItem value="favourite">{t('playlists.detail.favouriteFilterOnly')}</MenuItem>
+          <MenuItem value="not-favourite">{t('playlists.detail.favouriteFilterExclude')}</MenuItem>
         </Select>
       </FormControl>
 

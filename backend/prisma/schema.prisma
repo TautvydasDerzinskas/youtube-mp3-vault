@@ -275,6 +275,11 @@ model PlaylistVideo {
   // — never set by the free self-hosted slskd path, which only ever flags
   // betterQualityExists above without touching the file.
   hqFileDownloaded       Boolean    @default(false)
+  // User-toggled favourite flag — see GET /favourites/summary and POST
+  // .../favourite. Filtered client-side everywhere it's used (All Tracks'
+  // Favourites/Not Favourites/All toggle), same as hqFileDownloaded above,
+  // so no dedicated index.
+  isFavourite            Boolean    @default(false)
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt
 

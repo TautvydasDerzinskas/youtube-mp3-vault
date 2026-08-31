@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { playlistsApi, Playlist, PlaylistVideo } from '../../../api/youtube';
-import { useTrackFilterParams, computeGenreCounts, filterByGenres, filterByHq, filterBySearch, sortTracks } from './genreFilter';
+import { useTrackFilterParams, computeGenreCounts, filterByGenres, filterByHq, filterByFavourite, filterBySearch, sortTracks } from './genreFilter';
 
 export function usePlaylistDetail() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +19,7 @@ export function usePlaylistDetail() {
 
   const {
     selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery,
   } = useTrackFilterParams();
 
   const currentVideos = useMemo(
@@ -30,9 +30,12 @@ export function usePlaylistDetail() {
   const genreCounts = useMemo(() => computeGenreCounts(currentVideos), [currentVideos]);
 
   const filteredTracks = useMemo(() => {
-    const filtered = filterBySearch(filterByHq(filterByGenres(currentVideos, selectedGenres), hqFilter), searchQuery);
+    const filtered = filterBySearch(
+      filterByFavourite(filterByHq(filterByGenres(currentVideos, selectedGenres), hqFilter), favouriteFilter),
+      searchQuery
+    );
     return sortTracks(filtered, sort);
-  }, [currentVideos, selectedGenres, hqFilter, searchQuery, sort]);
+  }, [currentVideos, selectedGenres, hqFilter, favouriteFilter, searchQuery, sort]);
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
@@ -66,7 +69,7 @@ export function usePlaylistDetail() {
     playlistId: id ?? '',
     playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
     orderedPlayableTracks, firstPlayableTrack,
     removeVideo, updateVideo, updatePlaylist,

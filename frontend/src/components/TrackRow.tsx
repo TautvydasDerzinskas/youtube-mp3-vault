@@ -4,6 +4,7 @@ import {
   MusicNote as MusicNoteIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, HighQuality as HqIcon,
   WarningAmber as WarningAmberIcon, MoreVert as MoreVertIcon,
+  Favorite as FavoriteIcon, FavoriteBorder as FavoriteBorderIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +45,7 @@ export const TRACK_ROW_LAYOUT = {
   yearWidth: 40,
   genreWidth: 110,
   durationWidth: 44,
+  favouriteWidth: 28,
   // Reserves space for the one icon that can render here (download-status
   // icon or, once done, the low-bitrate warning — the two are mutually
   // exclusive) so the actions column after it never shifts left/right
@@ -67,7 +69,8 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
   const trackPlaylistId = v.playlistId ?? playlistId ?? '';
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const {
-    searching, closeCandidates, handleSearchHq, handleRename, handleDismissCloseCandidates, handleSelectCloseCandidate,
+    searching, closeCandidates, handleSearchHq, handleRename,
+    handleDismissCloseCandidates, handleSelectCloseCandidate, handleToggleFavourite,
   } = useTrackActions({ video: v, playlistId: trackPlaylistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onUpdated });
 
   return (
@@ -173,6 +176,16 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
         {formatDuration(v.duration)}
       </Typography>
 
+      <Box sx={{ width: TRACK_ROW_LAYOUT.favouriteWidth, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+        <Tooltip title={t(v.isFavourite ? 'playlists.videoList.removeFavourite' : 'playlists.videoList.addFavourite')}>
+          <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleToggleFavourite(); }}>
+            {v.isFavourite
+              ? <FavoriteIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+              : <FavoriteBorderIcon sx={{ fontSize: 16, color: 'text.secondary' }} />}
+          </IconButton>
+        </Tooltip>
+      </Box>
+
       <Box sx={{ width: TRACK_ROW_LAYOUT.utilityClusterWidth, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
         {v.downloadStatus !== 'done' && (
           <Tooltip title={v.downloadStatus === 'failed' && v.downloadError ? v.downloadError : t(`playlists.status.${v.downloadStatus}`)}>
@@ -207,6 +220,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       searching={searching}
       onSearchHq={handleSearchHq}
       onRename={handleRename}
+      onToggleFavourite={handleToggleFavourite}
     />
     {closeCandidates.length > 0 && (
       <CloseHqCandidatesDialog

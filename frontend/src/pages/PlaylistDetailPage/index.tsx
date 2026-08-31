@@ -22,7 +22,7 @@ export default function PlaylistDetailPage() {
   const {
     playlistId, playlist, videos,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks, orderedPlayableTracks, firstPlayableTrack,
     removeVideo, updateVideo, updatePlaylist,
   } = usePlaylistDetail();
@@ -155,6 +155,7 @@ export default function PlaylistDetailPage() {
       // a harmless no-op.
       if (selectedGenres.size > 0) clearGenres();
       if (hqFilter !== 'all') setHqFilter('all');
+      if (favouriteFilter !== 'all') setFavouriteFilter('all');
       if (searchQuery) setSearchQuery('');
       return;
     }
@@ -163,7 +164,7 @@ export default function PlaylistDetailPage() {
     scrolledForKeyRef.current = location.key;
   }, [
     location, nowPlaying, filteredTracks, playlistId, listRef,
-    selectedGenres, clearGenres, hqFilter, setHqFilter, searchQuery, setSearchQuery, playlist, videos,
+    selectedGenres, clearGenres, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery, playlist, videos,
   ]);
 
   if (!playlistId) return <Navigate to="/playlists" replace />;
@@ -200,6 +201,8 @@ export default function PlaylistDetailPage() {
         onSortChange={setSort}
         hqFilter={hqFilter}
         onHqFilterChange={setHqFilter}
+        favouriteFilter={favouriteFilter}
+        onFavouriteFilterChange={setFavouriteFilter}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
         onPlayFirst={handlePlayFirst}

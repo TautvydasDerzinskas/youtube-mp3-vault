@@ -109,6 +109,8 @@ export interface PlaylistVideo {
   // The HQ service actually downloaded and replaced the local file with a
   // higher-bitrate exact match — see services/hqReplace.ts.
   hqFileDownloaded: boolean;
+  // User-toggled favourite flag — see toggleFavourite/getFavouritesSummary.
+  isFavourite: boolean;
   // Only populated by cross-playlist endpoints (e.g. getAllTracks) — a
   // single-playlist fetch (getVideos) omits it since the page already knows
   // which playlist every row belongs to.
@@ -201,6 +203,15 @@ export const playlistsApi = {
   // needs — same rationale as getAllTracksSummary.
   getHistorySummary: async (): Promise<{ songCount: number; totalDurationSec: number; totalSize: number }> => {
     const { data } = await client.get<{ songCount: number; totalDurationSec: number; totalSize: number }>('/playlists/history/summary');
+    return data;
+  },
+
+  // Just the numbers the "Favourites" row in the playlists list needs —
+  // same rationale as getAllTracksSummary. Favourited tracks themselves are
+  // viewed via getAllTracks with the favourite filter, not a separate list
+  // endpoint.
+  getFavouritesSummary: async (): Promise<{ songCount: number; totalDurationSec: number; totalSize: number }> => {
+    const { data } = await client.get<{ songCount: number; totalDurationSec: number; totalSize: number }>('/playlists/favourites/summary');
     return data;
   },
 
@@ -298,6 +309,11 @@ export const playlistsApi = {
   // syncService.ts for why that's unavoidable given the shared file store.
   deleteTrack: async (playlistId: string, videoId: string): Promise<void> => {
     await client.delete(`/playlists/${playlistId}/videos/${videoId}`);
+  },
+
+  toggleFavourite: async (playlistId: string, videoId: string): Promise<{ isFavourite: boolean }> => {
+    const { data } = await client.post<{ isFavourite: boolean }>(`/playlists/${playlistId}/videos/${videoId}/favourite`);
+    return data;
   },
 
   markPlayed: async (playlistId: string, videoId: string): Promise<{ playCount: number; lastPlayedAt: string }> => {

@@ -1,5 +1,5 @@
 import { Box, Typography, Tooltip } from '@mui/material';
-import { AccessTime as DurationIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
+import { AccessTime as DurationIcon, MoreVert as MoreVertIcon, FavoriteBorder as FavoriteBorderIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { TRACK_ROW_LAYOUT } from '../../components/TrackRow';
 
@@ -38,6 +38,12 @@ export function TrackListHeader() {
       <Tooltip title={t('playlists.videoList.columnDuration')}>
         <Box sx={{ width: TRACK_ROW_LAYOUT.durationWidth, flexShrink: 0, display: 'flex', justifyContent: 'flex-end' }}>
           <DurationIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+        </Box>
+      </Tooltip>
+
+      <Tooltip title={t('playlists.videoList.columnFavourite')}>
+        <Box sx={{ width: TRACK_ROW_LAYOUT.favouriteWidth, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+          <FavoriteBorderIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
         </Box>
       </Tooltip>
 

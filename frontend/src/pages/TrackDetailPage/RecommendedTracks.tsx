@@ -36,6 +36,11 @@ function toQueueTrack(rec: RecommendedTrack): QueueTrack {
     lastPlayStartedAt: null,
     betterQualityExists: rec.betterQualityExists,
     hqFileDownloaded: rec.hqFileDownloaded,
+    // Not exposed by /recommendations either — same simplification as
+    // originalTitle above. Means a favourited track's heart shows
+    // unfilled here specifically; toggling it from this list still works
+    // and updates the real row, just without the preview reflecting it.
+    isFavourite: false,
   };
 }
 

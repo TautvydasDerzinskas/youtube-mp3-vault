@@ -138,6 +138,10 @@
       "title": "Visos dainos",
       "sourcedFromYoutube": "Šaltinis: YouTube"
     },
+    "favourites": {
+      "title": "Mėgstamiausi",
+      "description": "Jūsų mėgstamiausios dainos"
+    },
     "history": {
       "title": "Klausymo istorija",
       "description": "Paskutinės 100 grotų dainų"
@@ -176,6 +180,9 @@
       "columnPlays": "Grojimai",
       "columnGenre": "Žanras",
       "columnDuration": "Trukmė",
+      "columnFavourite": "Mėgstamiausi",
+      "addFavourite": "Pridėti prie mėgstamiausių",
+      "removeFavourite": "Pašalinti iš mėgstamiausių",
       "moreActions": "Daugiau veiksmų",
       "lowQuality": "Prasta originalo kokybė (~{{bitrate}}kbps)",
       "hqAvailable": "Yra prieinama aukštesnės kokybės šio failo versija",
@@ -309,6 +316,10 @@
       "hqFilterAll": "Visi",
       "hqFilterHqOnly": "Tik HQ",
       "hqFilterLqOnly": "Tik LQ",
+      "favouriteFilterLabel": "Mėgstamiausi",
+      "favouriteFilterAll": "Visi",
+      "favouriteFilterOnly": "Tik mėgstamiausi",
+      "favouriteFilterExclude": "Ne mėgstamiausi",
       "searchPlaceholder": "Ieškoti pagal pavadinimą ar atlikėją…"
     },
     "trackDetail": {

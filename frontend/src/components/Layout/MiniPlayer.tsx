@@ -3,6 +3,7 @@ import {
   MusicNote as MusicNoteIcon, Close as CloseIcon,
   SkipPrevious as SkipPreviousIcon, SkipNext as SkipNextIcon,
   Repeat as RepeatIcon, Shuffle as ShuffleIcon,
+  Favorite as FavoriteIcon, FavoriteBorder as FavoriteBorderIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -11,6 +12,8 @@ interface MiniPlayerProps {
   title: string | undefined;
   artist: string | null | undefined;
   thumbnailUrl: string | null | undefined;
+  isFavourite: boolean | undefined;
+  onToggleFavourite: () => void;
   audioRef: React.RefObject<HTMLAudioElement>;
   hasNext: boolean;
   hasPrevious: boolean;
@@ -31,7 +34,7 @@ interface MiniPlayerProps {
 }
 
 export function MiniPlayer({
-  title, artist, thumbnailUrl, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
+  title, artist, thumbnailUrl, isFavourite, onToggleFavourite, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
   onPlay, onPause, onEnded, onNext, onPrevious, onToggleRepeat, onToggleShuffle, onClose, onTitleClick,
 }: MiniPlayerProps) {
   const { t } = useTranslation();
@@ -71,6 +74,15 @@ export function MiniPlayer({
       </IconButton>
     </Tooltip>
   );
+  const favouriteButton = (
+    <Tooltip title={t(isFavourite ? 'playlists.videoList.removeFavourite' : 'playlists.videoList.addFavourite')}>
+      <IconButton size="small" onClick={onToggleFavourite} sx={{ flexShrink: 0 }}>
+        {isFavourite
+          ? <FavoriteIcon fontSize="small" sx={{ color: 'primary.main' }} />
+          : <FavoriteBorderIcon fontSize="small" />}
+      </IconButton>
+    </Tooltip>
+  );
   const closeButton = (
     <Tooltip title={t('playlists.miniPlayer.close')}>
       <IconButton size="small" onClick={onClose} sx={{ flexShrink: 0 }}>
@@ -103,7 +115,10 @@ export function MiniPlayer({
         {thumbnail}
         {previousButton}
         <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-          {titleBlock}
+          <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+            <Box sx={{ minWidth: 0, flexGrow: 1 }}>{titleBlock}</Box>
+            {favouriteButton}
+          </Box>
           <audio
             ref={audioRef}
             controls
@@ -138,8 +153,9 @@ export function MiniPlayer({
             would shift left/right depending on how long the current track's
             name happens to be. noWrap on the Typography inside (see
             titleBlock above) ellipsizes whatever doesn't fit instead. */}
-        <Box sx={{ width: 220, flexShrink: 0, minWidth: 0 }}>
-          {titleBlock}
+        <Box sx={{ width: 220, flexShrink: 0, minWidth: 0, display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ minWidth: 0, flexGrow: 1 }}>{titleBlock}</Box>
+          {favouriteButton}
         </Box>
       </Box>
 

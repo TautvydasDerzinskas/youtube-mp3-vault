@@ -16,6 +16,7 @@ function AppLayoutContent() {
   const {
     nowPlaying, nowPlayingVideo, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
     setIsAudioPlaying, handlePause, handleTrackEnded, playNext, playPrevious, toggleRepeat, toggleShuffle, handleClosePlayer,
+    toggleFavourite,
   } = usePlayer();
 
   // Goes back to wherever playback was actually started from (a specific
@@ -65,6 +66,8 @@ function AppLayoutContent() {
           title={nowPlayingVideo?.title}
           artist={nowPlayingVideo?.artist}
           thumbnailUrl={nowPlayingVideo?.thumbnailUrl}
+          isFavourite={nowPlayingVideo?.isFavourite}
+          onToggleFavourite={toggleFavourite}
           audioRef={audioRef}
           hasNext={hasNext}
           hasPrevious={hasPrevious}

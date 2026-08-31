@@ -34,6 +34,7 @@ const VIDEO_SELECT_WITHOUT_EMBEDDING = {
   genres: true, releaseYear: true, mbRecordingId: true, metadataStatus: true,
   metadataFetchedAt: true, audioAnalysisStatus: true, audioAnalysisFetchedAt: true,
   playCount: true, lastPlayedAt: true, lastPlayStartedAt: true, betterQualityExists: true, hqFileDownloaded: true,
+  isFavourite: true,
   createdAt: true, updatedAt: true,
 } as const;
 
@@ -93,6 +94,31 @@ router.get('/all-tracks/summary', requireAuth, async (req: AuthRequest, res, nex
       }),
       prisma.playlistVideo.aggregate({
         where: { playlist: { userId }, isAvailable: true, downloadStatus: 'done' },
+        _sum: { duration: true, fileSize: true },
+      }),
+    ]);
+    res.json({
+      songCount,
+      totalDurationSec: doneAggregate._sum.duration ?? 0,
+      totalSize: doneAggregate._sum.fileSize ?? 0,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Lightweight counterpart for the "Favourites" row shown in the playlists
+// list — same rationale as all-tracks/summary above. Declared before /:id
+// for the same reason as all-tracks.
+router.get('/favourites/summary', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.userId!;
+    const [songCount, doneAggregate] = await Promise.all([
+      prisma.playlistVideo.count({
+        where: { playlist: { userId }, isAvailable: true, downloadStatus: { not: 'removed' }, isFavourite: true },
+      }),
+      prisma.playlistVideo.aggregate({
+        where: { playlist: { userId }, isAvailable: true, downloadStatus: 'done', isFavourite: true },
         _sum: { duration: true, fileSize: true },
       }),
     ]);
@@ -1044,6 +1070,34 @@ router.post('/:id/videos/:videoId/played', requireAuth, async (req: AuthRequest,
       if (artist) void scrobble({ sessionKey: user.lastfmSessionKey, artist, track: title, timestamp });
     }
 
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/videos/:videoId/favourite', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const playlist = await prisma.playlist.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+    });
+    if (!playlist) {
+      res.status(404).json({ error: 'Playlist not found' });
+      return;
+    }
+    const video = await prisma.playlistVideo.findFirst({
+      where: { id: req.params.videoId, playlistId: playlist.id },
+    });
+    if (!video) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+
+    const updated = await prisma.playlistVideo.update({
+      where: { id: video.id },
+      data: { isFavourite: !video.isFavourite },
+      select: { isFavourite: true },
+    });
     res.json(updated);
   } catch (err) {
     next(err);

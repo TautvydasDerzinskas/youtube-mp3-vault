@@ -142,6 +142,10 @@
       "title": "Wszystkie utwory",
       "sourcedFromYoutube": "Źródło: YouTube"
     },
+    "favourites": {
+      "title": "Ulubione",
+      "description": "Twoje ulubione utwory"
+    },
     "history": {
       "title": "Historia odtwarzania",
       "description": "Ostatnie 100 odtworzonych utworów"
@@ -181,6 +185,9 @@
       "columnPlays": "Odtworzenia",
       "columnGenre": "Gatunek",
       "columnDuration": "Czas trwania",
+      "columnFavourite": "Ulubione",
+      "addFavourite": "Dodaj do ulubionych",
+      "removeFavourite": "Usuń z ulubionych",
       "moreActions": "Więcej opcji",
       "hqAvailable": "Dostępna jest wersja tego pliku w wyższej jakości",
       "hqDownloaded": "Zaktualizowano do pliku w wyższej jakości",
@@ -322,6 +329,10 @@
       "hqFilterAll": "Wszystkie",
       "hqFilterHqOnly": "Tylko HQ",
       "hqFilterLqOnly": "Tylko LQ",
+      "favouriteFilterLabel": "Ulubione",
+      "favouriteFilterAll": "Wszystkie",
+      "favouriteFilterOnly": "Tylko ulubione",
+      "favouriteFilterExclude": "Bez ulubionych",
       "searchPlaceholder": "Szukaj wg nazwy lub wykonawcy…"
     },
     "trackDetail": {

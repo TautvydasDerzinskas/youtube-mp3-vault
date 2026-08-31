@@ -3,6 +3,7 @@ import { Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/materi
 import {
   Edit as EditIcon, DeleteOutline as DeleteIcon, HighQuality as ScanHqIcon,
   YouTube as YouTubeIcon, Download as DownloadIcon,
+  Favorite as FavoriteIcon, FavoriteBorder as FavoriteBorderIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
@@ -34,12 +35,13 @@ interface TrackContextMenuProps {
   // RenameTrackDialog's own doc comment for why this only needs to resolve
   // once the initial request succeeds, not the full background follow-up.
   onRename: (artist: string | null, title: string) => Promise<void>;
+  onToggleFavourite: () => void;
 }
 
 // Right-click track menu — shared by every list that renders TrackRow (see
 // that component's own doc comment for why there's only one of it) so a
 // track's menu looks and behaves identically everywhere it's rendered.
-export function TrackContextMenu({ playlistId, video, position, onClose, onDeleted, searching, onSearchHq, onRename }: TrackContextMenuProps) {
+export function TrackContextMenu({ playlistId, video, position, onClose, onDeleted, searching, onSearchHq, onRename, onToggleFavourite }: TrackContextMenuProps) {
   const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const [confirming, setConfirming] = useState(false);
@@ -104,6 +106,10 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
         <MenuItem disabled={searching || hqDownloaded || video.downloadStatus !== 'done'} onClick={() => { onClose(); onSearchHq(); }}>
           <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t(searchHqLabel)}</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { onClose(); onToggleFavourite(); }}>
+          <ListItemIcon>{video.isFavourite ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}</ListItemIcon>
+          <ListItemText>{t(video.isFavourite ? 'playlists.videoList.removeFavourite' : 'playlists.videoList.addFavourite')}</ListItemText>
         </MenuItem>
         <Divider />
         <MenuItem component="a" href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" onClick={onClose}>

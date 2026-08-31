@@ -3,7 +3,7 @@ import { MusicNote as MusicNoteIcon, PlayArrow as PlayArrowIcon, Pause as PauseI
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../api/youtube';
 import { displayName, formatBytes } from '../PlaylistsPage/utils';
-import { GenreCount, SortOption, HqFilterOption } from './hooks/genreFilter';
+import { GenreCount, SortOption, HqFilterOption, FavouriteFilterOption } from './hooks/genreFilter';
 import { TrackFilterBar } from './TrackFilterBar';
 import { PlaylistActionsMenu } from '../PlaylistsPage/PlaylistRow/PlaylistActionsMenu';
 import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
@@ -19,6 +19,8 @@ interface HeaderProps {
   onSortChange: (sort: SortOption) => void;
   hqFilter: HqFilterOption;
   onHqFilterChange: (hqFilter: HqFilterOption) => void;
+  favouriteFilter: FavouriteFilterOption;
+  onFavouriteFilterChange: (favouriteFilter: FavouriteFilterOption) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   onPlayFirst: () => void;
@@ -42,7 +44,8 @@ interface HeaderProps {
 
 export function Header({
   playlist, visibleCount, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
-  sort, onSortChange, hqFilter, onHqFilterChange, searchQuery, onSearchQueryChange,
+  sort, onSortChange, hqFilter, onHqFilterChange,
+  favouriteFilter, onFavouriteFilterChange, searchQuery, onSearchQueryChange,
   onPlayFirst, canPlayFirst, isPlaying,
   isBusy, isPausing, isRetrying, online, menuPos, onMenuPosChange,
   onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete,
@@ -117,6 +120,8 @@ export function Header({
         onSortChange={onSortChange}
         hqFilter={hqFilter}
         onHqFilterChange={onHqFilterChange}
+        favouriteFilter={favouriteFilter}
+        onFavouriteFilterChange={onFavouriteFilterChange}
         searchQuery={searchQuery}
         onSearchQueryChange={onSearchQueryChange}
       />

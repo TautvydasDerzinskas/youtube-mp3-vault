@@ -49,6 +49,7 @@ interface PlayerContextType {
   handleTrackEnded: () => void;
   stopIfPlaylist: (playlistId: string) => void;
   handleClosePlayer: () => void;
+  toggleFavourite: () => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -509,12 +510,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     playbackStateApi.clear().catch(() => {});
   }, []);
 
+  // Patches the currently-playing track's own flag in place (rather than
+  // relying on a later refetch) so the mini player's heart reflects the
+  // toggle immediately, whether it was clicked there or on a track row
+  // elsewhere that happens to be the same track.
+  const toggleFavourite = useCallback(() => {
+    const cur = currentRef.current;
+    if (!cur) return;
+    playlistsApi.toggleFavourite(cur.playlistId, cur.video.id)
+      .then(({ isFavourite }) => {
+        setCurrent(prev => (prev ? { ...prev, video: { ...prev.video, isFavourite } } : prev));
+      })
+      .catch(() => {});
+  }, []);
+
   const value: PlayerContextType = {
     nowPlaying: current ? { playlistId: current.playlistId, videoId: current.video.id, originPath: current.originPath } : null,
     nowPlayingVideo: current?.video,
     isAudioPlaying, setIsAudioPlaying, handlePause, audioRef, analyserNode,
     hasNext, hasPrevious, isRepeat, isShuffle, toggleRepeat, toggleShuffle,
-    handleTogglePlay, playNext, playPrevious, handleTrackEnded, stopIfPlaylist, handleClosePlayer,
+    handleTogglePlay, playNext, playPrevious, handleTrackEnded, stopIfPlaylist, handleClosePlayer, toggleFavourite,
   };
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

@@ -32,7 +32,8 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
   const isPlayingThis = isCurrentTrack && isAudioPlaying;
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const {
-    searching, closeCandidates, handleSearchHq, handleRename, handleDismissCloseCandidates, handleSelectCloseCandidate,
+    searching, closeCandidates, handleSearchHq, handleRename,
+    handleDismissCloseCandidates, handleSelectCloseCandidate, handleToggleFavourite,
   } = useTrackActions({ video, playlistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onUpdated });
   usePageBack(`/playlists/${playlistId}`, t('common.backToPlaylist'));
   usePageTitle(t('playlists.trackDetail.pageTitle'));
@@ -156,6 +157,7 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
         searching={searching}
         onSearchHq={handleSearchHq}
         onRename={handleRename}
+        onToggleFavourite={handleToggleFavourite}
       />
       {closeCandidates.length > 0 && (
         <CloseHqCandidatesDialog

@@ -134,6 +134,10 @@
       "title": "All Tracks",
       "sourcedFromYoutube": "Sourced from YouTube"
     },
+    "favourites": {
+      "title": "Favourites",
+      "description": "Your favourited tracks"
+    },
     "history": {
       "title": "Listening history",
       "description": "Your last 100 played tracks"
@@ -172,6 +176,9 @@
       "columnPlays": "Plays",
       "columnGenre": "Genre",
       "columnDuration": "Duration",
+      "columnFavourite": "Favourite",
+      "addFavourite": "Add to favourites",
+      "removeFavourite": "Remove from favourites",
       "moreActions": "More actions",
       "lowQuality": "Low source quality (~{{bitrate}}kbps)",
       "hqAvailable": "A higher-quality version of this file is available",
@@ -296,6 +303,10 @@
       "hqFilterAll": "All",
       "hqFilterHqOnly": "HQ only",
       "hqFilterLqOnly": "LQ only",
+      "favouriteFilterLabel": "Favourites",
+      "favouriteFilterAll": "All",
+      "favouriteFilterOnly": "Favourites only",
+      "favouriteFilterExclude": "Not favourites",
       "searchPlaceholder": "Search"
     },
     "trackDetail": {

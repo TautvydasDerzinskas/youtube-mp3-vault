@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { playlistsApi, PlaylistVideo } from '../../../api/youtube';
 import {
-  useTrackFilterParams, computeGenreCounts, filterByGenres, filterByHq, filterBySearch, sortTracks,
+  useTrackFilterParams, computeGenreCounts, filterByGenres, filterByHq, filterByFavourite, filterBySearch, sortTracks,
 } from '../../PlaylistDetailPage/hooks/genreFilter';
 
 export interface AllTracksSummary {
@@ -20,7 +20,7 @@ export function useAllTracksDetail() {
 
   const {
     selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery,
   } = useTrackFilterParams();
 
   const videos = useMemo(() => (data === 'loading' || data === 'error' ? [] : data.videos), [data]);
@@ -28,9 +28,12 @@ export function useAllTracksDetail() {
   const genreCounts = useMemo(() => computeGenreCounts(videos), [videos]);
 
   const filteredTracks = useMemo(() => {
-    const filtered = filterBySearch(filterByHq(filterByGenres(videos, selectedGenres), hqFilter), searchQuery);
+    const filtered = filterBySearch(
+      filterByFavourite(filterByHq(filterByGenres(videos, selectedGenres), hqFilter), favouriteFilter),
+      searchQuery
+    );
     return sortTracks(filtered, sort);
-  }, [videos, selectedGenres, hqFilter, searchQuery, sort]);
+  }, [videos, selectedGenres, hqFilter, favouriteFilter, searchQuery, sort]);
 
   const playableTracks = useMemo(() => filteredTracks.filter(v => v.downloadStatus === 'done'), [filteredTracks]);
 
@@ -51,7 +54,7 @@ export function useAllTracksDetail() {
     status: data === 'loading' ? 'loading' as const : data === 'error' ? 'error' as const : 'ready' as const,
     summary: data === 'loading' || data === 'error' ? null : data.summary,
     genreCounts, selectedGenres, toggleGenre, clearGenres,
-    sort, setSort, hqFilter, setHqFilter, searchQuery, setSearchQuery,
+    sort, setSort, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery,
     filteredTracks, playableTracks,
     removeVideo, updateVideo,
   };
