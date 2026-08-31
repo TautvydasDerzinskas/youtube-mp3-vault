@@ -26,7 +26,7 @@ export default function PlaylistDetailPage() {
     filteredTracks, playableTracks, orderedPlayableTracks, firstPlayableTrack,
     removeVideo, updateVideo, updatePlaylist,
   } = usePlaylistDetail();
-  const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist, isShuffle } = usePlayer();
+  const { nowPlaying, isAudioPlaying, handleTogglePlay, stopIfPlaylist, isShuffle, skipSignal } = usePlayer();
   const online = useOnlineStatus();
 
   // "..." actions menu (Sync/Scan HQ/Rename/Retry Failed/Pause-Resume/
@@ -144,10 +144,18 @@ export default function PlaylistDetailPage() {
   const handleListResize = useCallback((size: { height: number }) => {
     if (size.height > 0) setListMeasured(true);
   }, []);
+  // Second, independent trigger for the same scroll-to-now-playing effect
+  // below — an explicit Next/Previous (mini player buttons or their
+  // keyboard shortcuts) while already sitting on this page, which never
+  // touches `location` at all. Initialized to the current skipSignal (not
+  // 0) so mounting this page doesn't itself count as a pending skip just
+  // because some Next/Previous clicks happened earlier, elsewhere.
+  const respondedSkipRef = useRef(skipSignal);
 
   useEffect(() => {
-    if (!location.state?.scrollToNowPlaying) return;
-    if (scrolledForKeyRef.current === location.key) return;
+    const locationTriggered = Boolean(location.state?.scrollToNowPlaying) && scrolledForKeyRef.current !== location.key;
+    const skipTriggered = skipSignal !== respondedSkipRef.current;
+    if (!locationTriggered && !skipTriggered) return;
     if (!nowPlaying || nowPlaying.playlistId !== playlistId) return;
     // playlist and videos come from two independent requests that can
     // resolve in different renders — TrackList (and listRef) only mounts
@@ -172,9 +180,10 @@ export default function PlaylistDetailPage() {
     }
 
     listRef.current.scrollToRow({ index, align: 'center', behavior: 'smooth' });
-    scrolledForKeyRef.current = location.key;
+    if (locationTriggered) scrolledForKeyRef.current = location.key;
+    if (skipTriggered) respondedSkipRef.current = skipSignal;
   }, [
-    location, nowPlaying, filteredTracks, playlistId, listRef, listMeasured,
+    location, nowPlaying, filteredTracks, playlistId, listRef, listMeasured, skipSignal,
     selectedGenres, clearGenres, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery, playlist, videos,
   ]);
 

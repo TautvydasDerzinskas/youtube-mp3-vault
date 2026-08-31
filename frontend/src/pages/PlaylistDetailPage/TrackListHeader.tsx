@@ -12,8 +12,7 @@ export function TrackListHeader() {
 
   return (
     <Box sx={{
-      display: 'flex', alignItems: 'center', gap: TRACK_ROW_LAYOUT.gap, px: 1.5, py: 0.75,
-      borderBottom: 1, borderColor: 'divider',
+      display: 'flex', alignItems: 'center', gap: TRACK_ROW_LAYOUT.gap, px: 1.5, py: 0.75, pb: 2,
       // This header itself never scrolls, but needs to reserve the exact
       // same gutter width react-window's list below always reserves (see
       // its own scrollbarGutter) — overflowY: hidden is what makes

@@ -2,10 +2,12 @@ import {
   createContext, useContext, useEffect, useCallback, useRef, useState, ReactNode,
 } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo } from '../api/youtube';
 import { nowPlayingApi } from '../api/nowPlaying';
 import { playbackStateApi, PersistedQueueEntry } from '../api/playbackState';
 import { NowPlaying } from '../pages/PlaylistsPage/types';
+import { useToast } from './ToastContext';
 
 export type QueueTrack = PlaylistVideo & { playlistId?: string };
 
@@ -32,6 +34,10 @@ const VOLUME_STEP = 0.1;
 interface PlayerContextType {
   nowPlaying: NowPlaying | null;
   nowPlayingVideo: PlaylistVideo | undefined;
+  // Increments on every explicit playNext/playPrevious — see its own
+  // declaration in PlayerProvider for why callers should treat this (not
+  // `nowPlaying` itself) as the "should I scroll to it?" signal.
+  skipSignal: number;
   isAudioPlaying: boolean;
   setIsAudioPlaying: (playing: boolean) => void;
   handlePause: () => void;
@@ -55,7 +61,17 @@ interface PlayerContextType {
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const { showSuccess } = useToast();
   const [current, setCurrent] = useState<{ playlistId: string; video: PlaylistVideo; originPath: string } | null>(null);
+  // Bumped only by an explicit playNext/playPrevious (mini player buttons or
+  // their keyboard shortcuts) — never by handleTrackEnded's own automatic
+  // advance. PlaylistDetailPage/AllTracksPage watch this to scroll their
+  // track list to the new current track on a deliberate skip, while leaving
+  // a track ending on its own alone — jumping the list out from under
+  // someone who's mid-scroll reading it would be far more disruptive than
+  // useful for something they didn't ask for.
+  const [skipSignal, setSkipSignal] = useState(0);
   const [queue, setQueue] = useState<QueueTrack[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
@@ -94,6 +110,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // mounted across every route change.
   const locationRef = useRef('/playlists');
   locationRef.current = useLocation().pathname;
+  // `current` gets a new object identity on every setCurrent call, including
+  // toggleFavourite's in-place patch of current.video.isFavourite above —
+  // that's not an actual track change, so effects below that should only
+  // fire when the track itself changes (reloading/restarting the <audio>
+  // element, re-bumping Listening History, re-broadcasting "now playing")
+  // key on this instead of `current` directly. Its own dependents still read
+  // the fresh `current`/`video` via closure when they do fire — playlistId/
+  // video.id (all any of them actually need) are exactly what make up this
+  // key, so they're never stale relative to it.
+  const currentTrackKey = current ? `${current.playlistId}:${current.video.id}` : null;
 
   useEffect(() => {
     if (!current || !audioRef.current) return;
@@ -110,14 +136,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return () => audioEl.removeEventListener('loadedmetadata', handleLoadedMetadata);
     }
     audioEl.play().catch(() => {});
-  }, [current]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrackKey]);
 
   // Enters this track into Listening History the instant it's picked, not
   // when it finishes (that's markPlayed/handleTrackEnded below) — keyed on
-  // `current` the same way the effect above is, so it fires exactly once
-  // per distinct track (a repeat-mode restart doesn't change `current`, so
-  // it correctly doesn't re-bump this track's spot in the history list). A
-  // restored-but-not-yet-played session shouldn't count as a play either —
+  // currentTrackKey the same way the effect above is, so it fires exactly
+  // once per distinct track (neither a repeat-mode restart nor a favourite
+  // toggle changes currentTrackKey, so it correctly doesn't re-bump this
+  // track's spot in the history list). A restored-but-not-yet-played session
+  // shouldn't count as a play either —
   // this is also where isRestoringRef gets cleared (see its declaration;
   // this effect runs after the src-setting effect above in the same commit,
   // so it's the correct place to consume-and-clear it).
@@ -128,7 +156,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
     playlistsApi.markPlayStarted(current.playlistId, current.video.id).catch(() => {});
-  }, [current]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrackKey]);
 
   // Cross-device resume: on mount, pull whatever playback state was last
   // saved (see the save call sites throughout this file) and hydrate the
@@ -178,13 +207,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // the <audio> element's own 'play' DOM event fires (see AppLayout.tsx),
   // so this can't report a track that's still buffering or that errored out
   // before playback actually started. Re-runs (clearing, then immediately
-  // re-reporting) on every track change since `current` gets a new object
-  // identity each time, and on pause/close since isAudioPlaying or `current`
-  // itself changes — the cleanup below is what calls clear() in both cases,
-  // so there's exactly one place that does. Repeat mode is the one case
-  // that does neither: handleTrackEnded restarts the same audio element
-  // in place without changing `current`, so this effect (and its interval)
-  // just keeps running uninterrupted through the loop, correctly.
+  // re-reporting) on every track change since currentTrackKey changes, and
+  // on pause/close since isAudioPlaying or currentTrackKey itself changes —
+  // the cleanup below is what calls clear() in both cases, so there's
+  // exactly one place that does. Repeat mode and a favourite toggle are the
+  // cases that do neither: handleTrackEnded restarts the same audio element
+  // in place and toggleFavourite only patches current.video.isFavourite,
+  // neither of which changes currentTrackKey, so this effect (and its
+  // interval) just keeps running uninterrupted through either, correctly.
   useEffect(() => {
     if (!current || !isAudioPlaying) return;
     const { playlistId, video, originPath } = current;
@@ -205,7 +235,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       clearInterval(interval);
       nowPlayingApi.clear().catch(() => {});
     };
-  }, [current, isAudioPlaying]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrackKey, isAudioPlaying]);
 
   const isPlayingSession = Boolean(current);
   useEffect(() => {
@@ -313,6 +344,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     historyRef.current = [...historyRef.current, { ...prev.video, playlistId: prev.playlistId }].slice(-MAX_HISTORY);
     const playlistId = next.playlistId ?? prev.playlistId;
     setCurrent({ playlistId, video: next, originPath: prev.originPath });
+    setSkipSignal(s => s + 1);
     playbackStateApi.save({
       playlistId, videoId: next.id, positionSeconds: 0,
       isShuffle: isShuffleRef.current, isRepeat: isRepeatRef.current, originPath: prev.originPath,
@@ -336,6 +368,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!target) return;
     const playlistId = target.playlistId ?? prev.playlistId;
     setCurrent({ playlistId, video: target, originPath: prev.originPath });
+    setSkipSignal(s => s + 1);
     playbackStateApi.save({
       playlistId, videoId: target.id, positionSeconds: 0,
       isShuffle: isShuffleRef.current, isRepeat: isRepeatRef.current, originPath: prev.originPath,
@@ -520,13 +553,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     playlistsApi.toggleFavourite(cur.playlistId, cur.video.id)
       .then(({ isFavourite }) => {
         setCurrent(prev => (prev ? { ...prev, video: { ...prev.video, isFavourite } } : prev));
+        showSuccess(t(isFavourite ? 'playlists.videoList.favouriteAdded' : 'playlists.videoList.favouriteRemoved', { title: cur.video.title }));
       })
       .catch(() => {});
-  }, []);
+  }, [t, showSuccess]);
 
   const value: PlayerContextType = {
     nowPlaying: current ? { playlistId: current.playlistId, videoId: current.video.id, originPath: current.originPath } : null,
     nowPlayingVideo: current?.video,
+    skipSignal,
     isAudioPlaying, setIsAudioPlaying, handlePause, audioRef, analyserNode,
     hasNext, hasPrevious, isRepeat, isShuffle, toggleRepeat, toggleShuffle,
     handleTogglePlay, playNext, playPrevious, handleTrackEnded, stopIfPlaylist, handleClosePlayer, toggleFavourite,
