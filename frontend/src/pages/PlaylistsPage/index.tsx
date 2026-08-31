@@ -9,7 +9,7 @@ import { usePlaylists } from './hooks/usePlaylists';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { usePageTitle } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { AddPlaylistDialog } from './AddPlaylistDialog';
 import { RenameDialog } from './RenameDialog';
@@ -25,6 +25,7 @@ export default function PlaylistsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  usePageBack('/dashboard', t('common.backToDashboard'));
   usePageTitle(t('playlists.title'));
   const [searchParams, setSearchParams] = useSearchParams();
   const [addOpen, setAddOpen] = useState(false);

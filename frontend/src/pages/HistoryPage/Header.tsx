@@ -3,7 +3,8 @@ import { History as HistoryIcon, Search as SearchIcon } from '@mui/icons-materia
 import { useTranslation } from 'react-i18next';
 import { formatPlaybackTime } from '../PlaylistsPage/utils';
 import { HistorySummary } from './hooks/useHistoryDetail';
-import { usePageBack } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface HeaderProps {
   summary: HistorySummary;
@@ -21,7 +22,9 @@ interface HeaderProps {
 // played doesn't fight the ordering the way sorting/filtering would.
 export function Header({ summary, visibleCount, searchQuery, onSearchQueryChange }: HeaderProps) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   usePageBack('/playlists', t('common.backToPlaylists'));
+  usePageTitle(t('playlists.history.title'));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>
@@ -31,10 +34,12 @@ export function Header({ summary, visibleCount, searchQuery, onSearchQueryChange
         </Avatar>
 
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-          <Typography variant="h5" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
-            {t('playlists.history.title')}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+          {isMobile && (
+            <Typography variant="h5" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
+              {t('playlists.history.title')}
+            </Typography>
+          )}
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: isMobile ? 0.25 : 0 }}>
             {summary.totalDurationSec > 0
               ? `${formatPlaybackTime(summary.totalDurationSec, t)} · ${t('playlists.history.description')}`
               : t('playlists.history.description')}

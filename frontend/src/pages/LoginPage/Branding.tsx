@@ -7,7 +7,7 @@ export function Branding() {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 3 }}>
       <MusicNoteIcon sx={{ color: 'primary.main', fontSize: 36 }} />
-      <Typography variant="h5" fontWeight={700} color="primary.main">
+      <Typography variant="h5" fontWeight={700} color="text.primary">
         {t('auth.appName')}
       </Typography>
     </Box>

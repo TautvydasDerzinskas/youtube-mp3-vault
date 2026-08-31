@@ -5,7 +5,8 @@ import { GenreCount, SortOption, HqFilterOption } from '../PlaylistDetailPage/ho
 import { TrackFilterBar } from '../PlaylistDetailPage/TrackFilterBar';
 import { formatPlaybackTime } from '../PlaylistsPage/utils';
 import { AllTracksSummary } from './hooks/useAllTracksDetail';
-import { usePageBack } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface HeaderProps {
   summary: AllTracksSummary;
@@ -33,7 +34,9 @@ export function Header({
   sort, onSortChange, hqFilter, onHqFilterChange, searchQuery, onSearchQueryChange,
 }: HeaderProps) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   usePageBack('/playlists', t('common.backToPlaylists'));
+  usePageTitle(t('playlists.allTracks.title'));
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>
@@ -43,10 +46,12 @@ export function Header({
         </Avatar>
 
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-          <Typography variant="h5" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
-            {t('playlists.allTracks.title')}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+          {isMobile && (
+            <Typography variant="h5" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
+              {t('playlists.allTracks.title')}
+            </Typography>
+          )}
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: isMobile ? 0.25 : 0 }}>
             {summary.totalDurationSec > 0
               ? `${formatPlaybackTime(summary.totalDurationSec, t)} · ${t('playlists.allTracks.sourcedFromYoutube')}`
               : t('playlists.allTracks.sourcedFromYoutube')}
