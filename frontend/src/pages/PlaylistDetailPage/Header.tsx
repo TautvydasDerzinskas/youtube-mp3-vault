@@ -141,6 +141,9 @@ export function Header({
         isLockedBySource={false}
         menuPos={menuPos}
         onMenuPosChange={onMenuPosChange}
+        isPlaying={isPlaying}
+        canPlayFirst={canPlayFirst}
+        onPlayFirst={onPlayFirst}
         onRename={onRename}
         onSync={onSync}
         onRetryFailed={onRetryFailed}

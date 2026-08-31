@@ -6,9 +6,7 @@ import { TRACK_ROW_LAYOUT } from '../../components/TrackRow';
 // Column labels for TrackList's rows below — widths mirror
 // TRACK_ROW_LAYOUT exactly (same constants TrackRow.tsx itself uses) so
 // this stays pixel-aligned with the columns it's labeling as either one
-// changes. The release-year column between "Plays" and "Genre" has no
-// label of its own (a small secondary detail, not one of the named
-// columns), so it's just a same-width blank spacer here.
+// changes.
 export function TrackListHeader() {
   const { t } = useTranslation();
 
@@ -16,6 +14,12 @@ export function TrackListHeader() {
     <Box sx={{
       display: 'flex', alignItems: 'center', gap: TRACK_ROW_LAYOUT.gap, px: 1.5, py: 0.75,
       borderBottom: 1, borderColor: 'divider',
+      // This header itself never scrolls, but needs to reserve the exact
+      // same gutter width react-window's list below always reserves (see
+      // its own scrollbarGutter) — overflowY: hidden is what makes
+      // scrollbarGutter apply at all here, since it's a no-op on boxes
+      // with the default 'visible' overflow.
+      overflowY: 'hidden', scrollbarGutter: 'stable',
     }}>
       <Box sx={{ width: TRACK_ROW_LAYOUT.thumbnailWidth, flexShrink: 0 }} />
 
@@ -27,8 +31,6 @@ export function TrackListHeader() {
         sx={{ width: TRACK_ROW_LAYOUT.playsWidth, flexShrink: 0, textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
         {t('playlists.videoList.columnPlays')}
       </Typography>
-
-      <Box sx={{ width: TRACK_ROW_LAYOUT.yearWidth, flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
 
       <Typography variant="caption" color="text.secondary" fontWeight={600}
         sx={{ width: TRACK_ROW_LAYOUT.genreWidth, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>

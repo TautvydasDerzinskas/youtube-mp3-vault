@@ -38,8 +38,12 @@ export function Header({
 }: HeaderProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  // Reused by FavouritesListItem (see its own doc comment) via ?fav=favourite
+  // rather than a dedicated route/page — so the title needs to reflect
+  // whichever entry point brought the user here, not always say "All Tracks".
+  const title = favouriteFilter === 'favourite' ? t('playlists.favourites.title') : t('playlists.allTracks.title');
   usePageBack('/playlists', t('common.backToPlaylists'));
-  usePageTitle(t('playlists.allTracks.title'));
+  usePageTitle(title);
 
   return (
     <Box sx={{ mb: 3, flexShrink: 0 }}>
@@ -51,7 +55,7 @@ export function Header({
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
           {isMobile && (
             <Typography variant="h5" fontWeight={700} sx={{ wordBreak: 'break-word' }}>
-              {t('playlists.allTracks.title')}
+              {title}
             </Typography>
           )}
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: isMobile ? 0.25 : 0 }}>
@@ -79,6 +83,7 @@ export function Header({
         onHqFilterChange={onHqFilterChange}
         favouriteFilter={favouriteFilter}
         onFavouriteFilterChange={onFavouriteFilterChange}
+        showFavouriteFilter={false}
         searchQuery={searchQuery}
         onSearchQueryChange={onSearchQueryChange}
       />

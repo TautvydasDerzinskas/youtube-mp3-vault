@@ -19,6 +19,14 @@ interface TrackListProps {
   onDeleted?: (videoId: string) => void;
   onUpdated?: (video: PlaylistVideo) => void;
   listRef?: React.RefObject<ListImperativeAPI>;
+  // react-window only learns its real height via an async ResizeObserver —
+  // its internal container size is still 0 for the first render or two after
+  // mount, which silently breaks the vertical-centering math a scrollToRow
+  // call does immediately on mount (see the scroll-to-now-playing effects in
+  // PlaylistDetailPage/AllTracksPage, which use this to know when a
+  // scrollToRow call can be trusted rather than firing blind against a
+  // zero-height container).
+  onResize?: (size: { height: number; width: number }) => void;
 }
 
 // The row itself renders 8px shorter than this and centers within it (see
@@ -26,7 +34,7 @@ interface TrackListProps {
 // below every row, separating them from each other.
 const ROW_HEIGHT = 64;
 
-export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated, listRef }: TrackListProps) {
+export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAudioPlaying, onTogglePlay, onDeleted, onUpdated, listRef, onResize }: TrackListProps) {
   const { t } = useTranslation();
 
   const rowProps = useMemo((): TrackRowProps => (
@@ -47,11 +55,19 @@ export function TrackList({ tracks, playableTracks, playlistId, nowPlaying, isAu
       <Box sx={{ flexGrow: 1, minHeight: 0 }}>
         <List
           listRef={listRef}
+          onResize={onResize}
           rowCount={tracks.length}
           rowHeight={ROW_HEIGHT}
           rowComponent={TrackRow}
           rowProps={rowProps}
-          style={{ height: '100%', width: '100%' }}
+          // scrollbarGutter keeps this reserved at a constant width whether
+          // or not the list is actually tall enough to scroll right now —
+          // without it, a native (non-overlay) scrollbar only narrows the
+          // row content once the list overflows, so TrackListHeader (which
+          // never scrolls, and so never reserves this space on its own)
+          // drifts out of alignment with the rows on long playlists. See its
+          // matching scrollbarGutter/overflowY below.
+          style={{ height: '100%', width: '100%', scrollbarGutter: 'stable' }}
         />
       </Box>
     </Box>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ListImperativeAPI } from 'react-window';
@@ -133,6 +133,17 @@ export default function PlaylistDetailPage() {
   // same path), matching the mini player's "act like back-to-playlist"
   // click, which can fire repeatedly while already on this page.
   const scrolledForKeyRef = useRef<string | null>(null);
+  // react-window's own container size starts at 0 and is only ever updated
+  // asynchronously (via ResizeObserver, after this component's mount/layout
+  // effects have already run) — calling scrollToRow before that first real
+  // measurement lands computes its "center" offset against a 0-height
+  // container, landing nowhere near the actual track (the bug this fixes:
+  // scrolling silently failing on the very first click of the mini player's
+  // title, only working on a second click once react-window had caught up).
+  const [listMeasured, setListMeasured] = useState(false);
+  const handleListResize = useCallback((size: { height: number }) => {
+    if (size.height > 0) setListMeasured(true);
+  }, []);
 
   useEffect(() => {
     if (!location.state?.scrollToNowPlaying) return;
@@ -144,7 +155,7 @@ export default function PlaylistDetailPage() {
     // then, otherwise a scroll landing in the gap between the two silently
     // no-ops (listRef.current is still null) and never gets retried, since
     // neither of these is otherwise a dependency of this effect.
-    if (playlist === 'loading' || videos === 'loading' || !listRef.current) return;
+    if (playlist === 'loading' || videos === 'loading' || !listRef.current || !listMeasured) return;
 
     const index = filteredTracks.findIndex(v => v.id === nowPlaying.videoId);
     if (index < 0) {
@@ -163,7 +174,7 @@ export default function PlaylistDetailPage() {
     listRef.current.scrollToRow({ index, align: 'center', behavior: 'smooth' });
     scrolledForKeyRef.current = location.key;
   }, [
-    location, nowPlaying, filteredTracks, playlistId, listRef,
+    location, nowPlaying, filteredTracks, playlistId, listRef, listMeasured,
     selectedGenres, clearGenres, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery, playlist, videos,
   ]);
 
@@ -237,6 +248,7 @@ export default function PlaylistDetailPage() {
           onDeleted={removeVideo}
           onUpdated={updateVideo}
           listRef={listRef}
+          onResize={handleListResize}
         />
       </Box>
 

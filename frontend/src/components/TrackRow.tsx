@@ -42,7 +42,6 @@ export const TRACK_ROW_LAYOUT = {
   gap: 1.5, // MUI spacing units (×8px = 12px) — the row's own `gap` below
   thumbnailWidth: 42,
   playsWidth: 70,
-  yearWidth: 40,
   genreWidth: 110,
   durationWidth: 44,
   favouriteWidth: 28,
@@ -127,7 +126,13 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
                 sx={{
                   position: 'absolute', inset: 0, borderRadius: 1, p: 0,
                   bgcolor: 'rgba(0,0,0,0.55)', color: '#fff',
-                  opacity: 0, pointerEvents: 'none', transition: 'opacity 0.15s ease',
+                  // Actively playing stays visible without needing hover — a
+                  // playing track should read as playing at a glance, not
+                  // only once the pointer happens to be over it. Every other
+                  // row still relies on the row's own hover rule above.
+                  opacity: isCurrentTrack && isAudioPlaying ? 1 : 0,
+                  pointerEvents: isCurrentTrack && isAudioPlaying ? 'auto' : 'none',
+                  transition: 'opacity 0.15s ease',
                   '&:hover': { bgcolor: 'rgba(0,0,0,0.65)' },
                 }}
               >
@@ -161,10 +166,6 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
           {t('artists.detail.totalPlayCount', { count: v.playCount })}
         </Typography>
       )}
-
-      <Typography variant="caption" color="text.secondary" sx={{ width: TRACK_ROW_LAYOUT.yearWidth, flexShrink: 0, textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
-        {v.releaseYear ?? ''}
-      </Typography>
 
       {v.genres.length > 0 && (
         <Typography variant="caption" color="text.secondary" noWrap sx={{ width: TRACK_ROW_LAYOUT.genreWidth, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>

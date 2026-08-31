@@ -19,6 +19,13 @@ interface TrackFilterBarProps {
   onFavouriteFilterChange: (favouriteFilter: FavouriteFilterOption) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
+  // AllTracksPage reuses this same route/page for the "Favourites" entry
+  // point (see FavouritesListItem) by pre-setting favouriteFilter via the
+  // `fav` URL param rather than exposing a manual filter control — so it
+  // hides this Select entirely and drives favouriteFilter behind the scenes.
+  // PlaylistDetailPage still wants the manual control, hence a prop rather
+  // than removing the Select outright.
+  showFavouriteFilter?: boolean;
 }
 
 // Shared by PlaylistDetailPage and AllTracksPage. Layout is deliberately one
@@ -29,6 +36,7 @@ export function TrackFilterBar({
   genreCounts, selectedGenres, onToggleGenre, onClearGenres,
   sort, onSortChange, hqFilter, onHqFilterChange,
   favouriteFilter, onFavouriteFilterChange, searchQuery, onSearchQueryChange,
+  showFavouriteFilter = true,
 }: TrackFilterBarProps) {
   const { t } = useTranslation();
 
@@ -74,19 +82,21 @@ export function TrackFilterBar({
         </Select>
       </FormControl>
 
-      <FormControl size="small" sx={{ minWidth: 140 }}>
-        <InputLabel id="track-favourite-filter-label">{t('playlists.detail.favouriteFilterLabel')}</InputLabel>
-        <Select
-          labelId="track-favourite-filter-label"
-          label={t('playlists.detail.favouriteFilterLabel')}
-          value={favouriteFilter}
-          onChange={(e: SelectChangeEvent) => onFavouriteFilterChange(e.target.value as FavouriteFilterOption)}
-        >
-          <MenuItem value="all">{t('playlists.detail.favouriteFilterAll')}</MenuItem>
-          <MenuItem value="favourite">{t('playlists.detail.favouriteFilterOnly')}</MenuItem>
-          <MenuItem value="not-favourite">{t('playlists.detail.favouriteFilterExclude')}</MenuItem>
-        </Select>
-      </FormControl>
+      {showFavouriteFilter && (
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel id="track-favourite-filter-label">{t('playlists.detail.favouriteFilterLabel')}</InputLabel>
+          <Select
+            labelId="track-favourite-filter-label"
+            label={t('playlists.detail.favouriteFilterLabel')}
+            value={favouriteFilter}
+            onChange={(e: SelectChangeEvent) => onFavouriteFilterChange(e.target.value as FavouriteFilterOption)}
+          >
+            <MenuItem value="all">{t('playlists.detail.favouriteFilterAll')}</MenuItem>
+            <MenuItem value="favourite">{t('playlists.detail.favouriteFilterOnly')}</MenuItem>
+            <MenuItem value="not-favourite">{t('playlists.detail.favouriteFilterExclude')}</MenuItem>
+          </Select>
+        </FormControl>
+      )}
 
       <TextField
         size="small"

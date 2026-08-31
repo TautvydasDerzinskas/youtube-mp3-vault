@@ -103,6 +103,9 @@ export function PlaylistRow({
         menuPos={menuPos}
         onMenuPosChange={setMenuPos}
         onOpen={open}
+        isPlaying={isRowPlaying}
+        canPlayFirst={playlist.downloadedCount > 0}
+        onPlayFirst={onPlayFirst}
         onRename={onRename}
         onSync={onSync}
         onRetryFailed={onRetryFailed}

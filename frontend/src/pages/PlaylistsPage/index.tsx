@@ -239,9 +239,9 @@ export default function PlaylistsPage() {
       ))}
 
       <Divider sx={{ my: 2, borderColor: 'divider' }} />
-      <AllTracksListItem refreshOn={playlists} />
       <FavouritesListItem refreshOn={playlists} />
       <HistoryListItem refreshOn={playlists} />
+      <AllTracksListItem refreshOn={playlists} />
 
       <AddPlaylistDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={handleAdded} />
       {renaming && (

@@ -54,11 +54,6 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
   // that timed out, ...), which is exactly the case a manual retry can
   // still help with, so that alone must never disable this action.
   const hqDownloaded = video.hqFileDownloaded;
-  const searchHqLabel = searching
-    ? 'playlists.videoList.searchingHq'
-    : hqDownloaded
-    ? 'playlists.videoList.alreadyHasHq'
-    : 'playlists.videoList.searchForHq';
 
   // Renaming only has something to offer while at least one of the two
   // automatic passes hasn't already resolved this track — once MusicBrainz
@@ -105,7 +100,7 @@ export function TrackContextMenu({ playlistId, video, position, onClose, onDelet
         </MenuItem>
         <MenuItem disabled={searching || hqDownloaded || video.downloadStatus !== 'done'} onClick={() => { onClose(); onSearchHq(); }}>
           <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>{t(searchHqLabel)}</ListItemText>
+          <ListItemText>{t(searching ? 'playlists.videoList.searchingHq' : 'playlists.videoList.searchForHq')}</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => { onClose(); onToggleFavourite(); }}>
           <ListItemIcon>{video.isFavourite ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}</ListItemIcon>

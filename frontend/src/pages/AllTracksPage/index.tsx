@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { ListImperativeAPI } from 'react-window';
 import { useLocation } from 'react-router-dom';
@@ -24,12 +24,23 @@ export default function AllTracksPage() {
   // which can fire repeatedly while already on this page. Mirrors
   // PlaylistDetailPage's identical handling.
   const scrolledForKeyRef = useRef<string | null>(null);
+  // react-window's own container size starts at 0 and is only ever updated
+  // asynchronously (via ResizeObserver, after this component's mount/layout
+  // effects have already run) — calling scrollToRow before that first real
+  // measurement lands computes its "center" offset against a 0-height
+  // container, landing nowhere near the actual track (the bug this fixes:
+  // scrolling silently failing on the very first click of the mini player's
+  // title, only working on a second click once react-window had caught up).
+  const [listMeasured, setListMeasured] = useState(false);
+  const handleListResize = useCallback((size: { height: number }) => {
+    if (size.height > 0) setListMeasured(true);
+  }, []);
 
   useEffect(() => {
     if (!location.state?.scrollToNowPlaying) return;
     if (scrolledForKeyRef.current === location.key) return;
     if (!nowPlaying) return;
-    if (status === 'loading' || !listRef.current) return;
+    if (status === 'loading' || !listRef.current || !listMeasured) return;
 
     const index = filteredTracks.findIndex(v => v.id === nowPlaying.videoId);
     if (index < 0) {
@@ -46,7 +57,7 @@ export default function AllTracksPage() {
     listRef.current.scrollToRow({ index, align: 'center', behavior: 'smooth' });
     scrolledForKeyRef.current = location.key;
   }, [
-    location, nowPlaying, filteredTracks, listRef,
+    location, nowPlaying, filteredTracks, listRef, listMeasured,
     selectedGenres, clearGenres, hqFilter, setHqFilter, favouriteFilter, setFavouriteFilter, searchQuery, setSearchQuery, status,
   ]);
 
@@ -87,6 +98,7 @@ export default function AllTracksPage() {
           onDeleted={removeVideo}
           onUpdated={updateVideo}
           listRef={listRef}
+          onResize={handleListResize}
         />
       </Box>
     </Box>

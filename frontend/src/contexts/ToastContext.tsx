@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import { Snackbar, Alert, AlertColor } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 interface ToastMessage {
   key: number;
@@ -25,6 +26,7 @@ let nextKey = 0;
 // error immediately followed by a page navigation's own toast) would just
 // clobber whichever was showing instead of both being seen.
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const theme = useTheme();
   const [queue, setQueue] = useState<ToastMessage[]>([]);
   const [current, setCurrent] = useState<ToastMessage | null>(null);
   const [open, setOpen] = useState(false);
@@ -68,7 +70,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         slotProps={{ transition: { onExited: handleExited } }}
       >
         {current ? (
-          <Alert onClose={handleClose} severity={current.severity} variant="filled" sx={{ width: '100%' }}>
+          <Alert
+            onClose={handleClose}
+            severity={current.severity}
+            variant="filled"
+            sx={current.severity === 'success' ? {
+              // MUI's stock success green doesn't fit this app's black/gold
+              // palette (see theme.ts) — a plain monochrome swap reads as
+              // "confirmed" without clashing, and inverts with theme mode the
+              // same way the rest of the app's palette does.
+              width: '100%',
+              bgcolor: theme.palette.mode === 'dark' ? 'common.white' : 'common.black',
+              color: theme.palette.mode === 'dark' ? 'common.black' : 'common.white',
+              '& .MuiAlert-icon, & .MuiAlert-action': { color: 'inherit' },
+            } : { width: '100%' }}
+          >
             {current.message}
           </Alert>
         ) : undefined}

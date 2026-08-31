@@ -33,6 +33,9 @@ interface ActionsProps {
   // other way to reach the detail page from inside the menu (unlike the
   // accordion row, which already expands on click).
   onOpen?: () => void;
+  isPlaying: boolean;
+  canPlayFirst: boolean;
+  onPlayFirst: (e: React.MouseEvent, playlist: Playlist) => void;
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
@@ -48,7 +51,7 @@ interface ActionsProps {
 export function Actions({
   playlist, isBusy, isPausing, isRetrying, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
   menuPos, onMenuPosChange,
-  onOpen, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete, onGenerateSimilar,
+  onOpen, isPlaying, canPlayFirst, onPlayFirst, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete, onGenerateSimilar,
 }: ActionsProps) {
   const { t } = useTranslation();
 
@@ -90,6 +93,9 @@ export function Actions({
         menuPos={menuPos}
         onMenuPosChange={onMenuPosChange}
         onOpen={onOpen}
+        isPlaying={isPlaying}
+        canPlayFirst={canPlayFirst}
+        onPlayFirst={onPlayFirst}
         onRename={onRename}
         onSync={onSync}
         onRetryFailed={onRetryFailed}

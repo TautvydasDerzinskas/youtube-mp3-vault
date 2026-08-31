@@ -2,9 +2,11 @@ import { Menu, MenuItem, ListItemIcon, ListItemText, CircularProgress, Divider }
 import {
   Sync as SyncIcon, DeleteOutline as DeleteIcon, Edit as EditIcon, Replay as ReplayIcon,
   PauseCircleOutline as PauseIcon, PlayCircleOutline as ResumeIcon, Launch as OpenIcon, HighQuality as ScanHqIcon,
+  PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, YouTube as YouTubeIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
+import { youtubePlaylistUrl } from '../utils';
 
 export interface PlaylistActionsMenuProps {
   playlist: Playlist;
@@ -31,6 +33,13 @@ export interface PlaylistActionsMenuProps {
   // accordion row, which already expands on click) — omitted entirely when
   // rendered from the detail page itself, since there's nowhere else to go.
   onOpen?: () => void;
+  // Same play/pause action as the row's own thumbnail overlay (list row) or
+  // header button (detail page) — offered here too so the menu is a complete
+  // list of everything that can be done with this playlist, not just the
+  // overflow of what didn't fit elsewhere.
+  isPlaying: boolean;
+  canPlayFirst: boolean;
+  onPlayFirst: (e: React.MouseEvent, playlist: Playlist) => void;
   onRename: (playlist: Playlist) => void;
   onSync: (e: React.MouseEvent, id: string) => void;
   onRetryFailed: (e: React.MouseEvent, id: string) => void;
@@ -40,18 +49,19 @@ export interface PlaylistActionsMenuProps {
 }
 
 /**
- * Sync now / Scan for HQ files / divider / [Open] / Rename / Retry Failed /
- * Pause-Resume / Delete — the one playlist actions menu, shared by the
- * playlist list row (PlaylistRow/Actions.tsx, which also renders the visible
- * Generate Similar icon and the "..." trigger button around this) and
- * PlaylistDetailPage's own header (which has nowhere to put "Open" and
- * renders its own trigger), so a playlist's menu looks and behaves
- * identically everywhere it's offered.
+ * Sync now / Scan for HQ files / divider / Play / [Open] / Rename / Retry
+ * Failed / Pause-Resume / Delete / divider / [Open in YouTube] — the one
+ * playlist actions menu, shared by the playlist list row
+ * (PlaylistRow/Actions.tsx, which also renders the visible Generate Similar
+ * icon and the "..." trigger button around this) and PlaylistDetailPage's
+ * own header (which has nowhere to put "Open" and renders its own trigger),
+ * so a playlist's menu looks and behaves identically everywhere it's
+ * offered.
  */
 export function PlaylistActionsMenu({
   playlist, isBusy, isPausing, isRetrying, online, isLockedBySource,
   menuPos, onMenuPosChange,
-  onOpen, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete,
+  onOpen, isPlaying, canPlayFirst, onPlayFirst, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete,
 }: PlaylistActionsMenuProps) {
   const { t } = useTranslation();
 
@@ -110,6 +120,10 @@ export function PlaylistActionsMenu({
         <ListItemText>{t('playlists.scanHq')}</ListItemText>
       </MenuItem>
       <Divider />
+      <MenuItem disabled={!canPlayFirst} onClick={e => { closeMenu(); onPlayFirst(e, playlist); }}>
+        <ListItemIcon>{isPlaying ? <PauseTrackIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}</ListItemIcon>
+        <ListItemText>{t(isPlaying ? 'playlists.videoList.pause' : 'playlists.videoList.play')}</ListItemText>
+      </MenuItem>
       {onOpen && (
         <MenuItem onClick={() => { closeMenu(); onOpen(); }}>
           <ListItemIcon><OpenIcon fontSize="small" /></ListItemIcon>
@@ -136,6 +150,17 @@ export function PlaylistActionsMenu({
         <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
         <ListItemText>{t('playlists.remove')}</ListItemText>
       </MenuItem>
+      {/* A generated ("similar") playlist has no real YouTube playlist behind
+          it (see isGenerated above) — nothing to open. */}
+      {playlist.youtubeId && (
+        <>
+          <Divider />
+          <MenuItem component="a" href={youtubePlaylistUrl(playlist.youtubeId)} target="_blank" rel="noopener noreferrer" onClick={closeMenu}>
+            <ListItemIcon><YouTubeIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>{t('playlists.openInYoutube')}</ListItemText>
+          </MenuItem>
+        </>
+      )}
     </Menu>
   );
 }

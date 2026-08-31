@@ -120,6 +120,7 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
     try {
       const { isFavourite } = await playlistsApi.toggleFavourite(trackPlaylistId, v.id);
       onUpdated?.({ ...v, isFavourite });
+      showSuccess(t(isFavourite ? 'playlists.videoList.favouriteAdded' : 'playlists.videoList.favouriteRemoved', { title: v.title }));
     } catch {
       // Silent — a transient failure here just leaves the heart as it was,
       // no worse than the click never having registered.
