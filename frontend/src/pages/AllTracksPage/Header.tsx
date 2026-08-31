@@ -20,7 +20,6 @@ interface HeaderProps {
   hqFilter: HqFilterOption;
   onHqFilterChange: (hqFilter: HqFilterOption) => void;
   favouriteFilter: FavouriteFilterOption;
-  onFavouriteFilterChange: (favouriteFilter: FavouriteFilterOption) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
 }
@@ -34,7 +33,7 @@ interface HeaderProps {
 export function Header({
   summary, visibleCount, genreCounts, selectedGenres, onToggleGenre, onClearGenres,
   sort, onSortChange, hqFilter, onHqFilterChange,
-  favouriteFilter, onFavouriteFilterChange, searchQuery, onSearchQueryChange,
+  favouriteFilter, searchQuery, onSearchQueryChange,
 }: HeaderProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -81,9 +80,6 @@ export function Header({
         onSortChange={onSortChange}
         hqFilter={hqFilter}
         onHqFilterChange={onHqFilterChange}
-        favouriteFilter={favouriteFilter}
-        onFavouriteFilterChange={onFavouriteFilterChange}
-        showFavouriteFilter={false}
         searchQuery={searchQuery}
         onSearchQueryChange={onSearchQueryChange}
       />

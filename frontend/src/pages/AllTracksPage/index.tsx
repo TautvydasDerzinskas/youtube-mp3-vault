@@ -91,7 +91,6 @@ export default function AllTracksPage() {
         hqFilter={hqFilter}
         onHqFilterChange={setHqFilter}
         favouriteFilter={favouriteFilter}
-        onFavouriteFilterChange={setFavouriteFilter}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
       />

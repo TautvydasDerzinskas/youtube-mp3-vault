@@ -318,10 +318,6 @@
       "hqFilterAll": "Visi",
       "hqFilterHqOnly": "Tik HQ",
       "hqFilterLqOnly": "Tik LQ",
-      "favouriteFilterLabel": "Mėgstamiausi",
-      "favouriteFilterAll": "Visi",
-      "favouriteFilterOnly": "Tik mėgstamiausi",
-      "favouriteFilterExclude": "Ne mėgstamiausi",
       "searchPlaceholder": "Ieškoti pagal pavadinimą ar atlikėją…"
     },
     "trackDetail": {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { playlistsApi, PlaylistVideo, CloseHqCandidate } from '../api/youtube';
 import { useToast } from '../contexts/ToastContext';
+import { setTrackScanning, useTrackScanningStatus } from './trackScanStatus';
 
 // 2s between polls — frequent enough that the caller's "in progress"
 // indicator doesn't linger for long after the search actually finishes,
@@ -28,7 +29,12 @@ interface UseTrackActionsParams {
 export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onUpdated }: UseTrackActionsParams) {
   const { t } = useTranslation();
   const { showSuccess, showInfo, showError } = useToast();
-  const [searching, setSearching] = useState(false);
+  // Keyed by video id in a module-level store, not local useState — a
+  // scanning/renaming track's row can be unmounted mid-poll by react-window
+  // virtualization (scrolled out of view) and later remounted; local state
+  // would silently reset to false on remount, losing the progress indicator
+  // even though the background poll below kept running the whole time.
+  const searching = useTrackScanningStatus(v.id);
   const [closeCandidates, setCloseCandidates] = useState<CloseHqCandidate[]>([]);
 
   // Shared tail end of both Search for HQ and Rename track — polls GET
@@ -51,7 +57,7 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
           setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
           return;
         }
-        setSearching(false);
+        setTrackScanning(v.id, false);
         onUpdated?.(fresh);
         if (mode === 'rename') {
           showSuccess(t('playlists.videoList.trackRenamed', { title: fresh.title }));
@@ -71,7 +77,7 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
         }
       } catch {
         // Network hiccup — stop polling silently rather than spin forever.
-        setSearching(false);
+        setTrackScanning(v.id, false);
       }
     };
     setTimeout(poll, SEARCH_POLL_INTERVAL_MS);
@@ -91,11 +97,11 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
   const handleRename = async (artist: string | null, title: string) => {
     if (isCurrentTrack && isAudioPlaying) onTogglePlay();
 
-    setSearching(true);
+    setTrackScanning(v.id, true);
     try {
       await playlistsApi.renameTrack(trackPlaylistId, v.id, artist, title);
     } catch (err) {
-      setSearching(false);
+      setTrackScanning(v.id, false);
       throw err;
     }
     pollForCompletion('rename');
@@ -132,12 +138,12 @@ export function useTrackActions({ video: v, playlistId: trackPlaylistId, isCurre
     // user mid-song — stop it up front rather than let that happen silently.
     if (isCurrentTrack && isAudioPlaying) onTogglePlay();
 
-    setSearching(true);
+    setTrackScanning(v.id, true);
     try {
       await playlistsApi.searchTrackHq(trackPlaylistId, v.id);
     } catch (err: any) {
       showError(err.response?.data?.error ?? t('playlists.videoList.searchHqError'));
-      setSearching(false);
+      setTrackScanning(v.id, false);
       return;
     }
     pollForCompletion('search');

@@ -221,8 +221,6 @@ export default function PlaylistDetailPage() {
         onSortChange={setSort}
         hqFilter={hqFilter}
         onHqFilterChange={setHqFilter}
-        favouriteFilter={favouriteFilter}
-        onFavouriteFilterChange={setFavouriteFilter}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
         onPlayFirst={handlePlayFirst}

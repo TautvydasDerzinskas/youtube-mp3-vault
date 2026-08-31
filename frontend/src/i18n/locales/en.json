@@ -305,10 +305,6 @@
       "hqFilterAll": "All",
       "hqFilterHqOnly": "HQ only",
       "hqFilterLqOnly": "LQ only",
-      "favouriteFilterLabel": "Favourites",
-      "favouriteFilterAll": "All",
-      "favouriteFilterOnly": "Favourites only",
-      "favouriteFilterExclude": "Not favourites",
       "searchPlaceholder": "Search"
     },
     "trackDetail": {

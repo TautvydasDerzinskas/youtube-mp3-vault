@@ -331,10 +331,6 @@
       "hqFilterAll": "Wszystkie",
       "hqFilterHqOnly": "Tylko HQ",
       "hqFilterLqOnly": "Tylko LQ",
-      "favouriteFilterLabel": "Ulubione",
-      "favouriteFilterAll": "Wszystkie",
-      "favouriteFilterOnly": "Tylko ulubione",
-      "favouriteFilterExclude": "Bez ulubionych",
       "searchPlaceholder": "Szukaj wg nazwy lub wykonawcy…"
     },
     "trackDetail": {
