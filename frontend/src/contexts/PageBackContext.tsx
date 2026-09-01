@@ -13,6 +13,12 @@ interface PageBackContextType {
   // content viewport — same registration pattern as backTarget.
   pageTitle: string | null;
   setPageTitle: (title: string | null) => void;
+  // Lets a routed page hand TopBar a control (e.g. a "..." menu trigger) to
+  // render right next to pageTitle — same registration pattern as
+  // backTarget/pageTitle, for actions that would otherwise need their own
+  // dedicated row in the page content.
+  pageActions: ReactNode | null;
+  setPageActions: (actions: ReactNode | null) => void;
 }
 
 const PageBackContext = createContext<PageBackContextType | null>(null);
@@ -23,8 +29,9 @@ const PageBackContext = createContext<PageBackContextType | null>(null);
 export function PageBackProvider({ children }: { children: ReactNode }) {
   const [backTarget, setBackTarget] = useState<PageBackTarget | null>(null);
   const [pageTitle, setPageTitle] = useState<string | null>(null);
+  const [pageActions, setPageActions] = useState<ReactNode | null>(null);
   return (
-    <PageBackContext.Provider value={{ backTarget, setBackTarget, pageTitle, setPageTitle }}>
+    <PageBackContext.Provider value={{ backTarget, setBackTarget, pageTitle, setPageTitle, pageActions, setPageActions }}>
       {children}
     </PageBackContext.Provider>
   );
@@ -65,4 +72,16 @@ export function usePageTitle(title: string | null): void {
     setPageTitle(title);
     return () => setPageTitle(null);
   }, [title, setPageTitle]);
+}
+
+// Same pattern again, for a control (e.g. a "..." menu trigger) TopBar
+// renders right after the title — desktop only, same as pageTitle; a page
+// that also needs the equivalent on mobile (where TopBar doesn't render at
+// all, see AppLayout) renders it inline itself alongside its own heading.
+export function usePageActions(actions: ReactNode | null): void {
+  const { setPageActions } = usePageBackContext();
+  useEffect(() => {
+    setPageActions(actions);
+    return () => setPageActions(null);
+  }, [actions, setPageActions]);
 }

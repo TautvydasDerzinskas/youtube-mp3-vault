@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Typography, Button, Alert, CircularProgress, Stack, Divider } from '@mui/material';
-import { Add as AddIcon, MusicNote as MusicNoteIcon } from '@mui/icons-material';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { Box, Typography, Alert, CircularProgress, Stack, Divider } from '@mui/material';
+import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Playlist, playlistsApi } from '../../api/youtube';
@@ -9,9 +9,10 @@ import { usePlaylists } from './hooks/usePlaylists';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
+import { usePageBack, usePageTitle, usePageActions } from '../../contexts/PageBackContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { AddPlaylistDialog } from './AddPlaylistDialog';
+import { PlaylistsPageMenu } from './PlaylistsPageMenu';
 import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
 import { AllTracksListItem } from './AllTracksListItem';
@@ -30,6 +31,13 @@ export default function PlaylistsPage() {
   usePageTitle(t('playlists.title'));
   const [searchParams, setSearchParams] = useSearchParams();
   const [addOpen, setAddOpen] = useState(false);
+  const handleImport = useCallback(() => setAddOpen(true), []);
+  // Memoized so the registered node's identity is stable across renders —
+  // usePageActions re-registers on every change of its argument, and a
+  // fresh element each render would re-trigger the context update (which
+  // re-renders this very component) in a loop.
+  const pageMenu = useMemo(() => <PlaylistsPageMenu onImport={handleImport} />, [handleImport]);
+  usePageActions(pageMenu);
 
   // Lets the top bar's global "Import" button (see TopBar/MobileTopBar) open
   // this dialog from any page — it navigates here with ?add=1, which this
@@ -189,11 +197,16 @@ export default function PlaylistsPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent={isMobile ? 'space-between' : 'flex-end'} mb={3}>
-        {isMobile && <Typography variant="h5" fontWeight={700}>{t('playlists.title')}</Typography>}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setAddOpen(true)}>{t('playlists.addPlaylist')}</Button>
-      </Stack>
+      {/* Header — desktop gets its title+menu from TopBar (see usePageTitle/
+          usePageActions above); mobile has no page-title slot in its own
+          AppBar (MobileTopBar shows the app name instead), so it's rendered
+          inline here. */}
+      {isMobile && (
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
+          <Typography variant="h5" fontWeight={700}>{t('playlists.title')}</Typography>
+          {pageMenu}
+        </Stack>
+      )}
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {generateError && (

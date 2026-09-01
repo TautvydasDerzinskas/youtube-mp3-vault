@@ -16,7 +16,7 @@ import { usePageBackContext } from '../../contexts/PageBackContext';
 export function TopBar() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { backTarget, pageTitle } = usePageBackContext();
+  const { backTarget, pageTitle, pageActions } = usePageBackContext();
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, px: 3, py: 1.5 }}>
@@ -31,6 +31,7 @@ export function TopBar() {
         {pageTitle && (
           <Typography variant="h6" fontWeight={700} noWrap>{pageTitle}</Typography>
         )}
+        {pageActions}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Button

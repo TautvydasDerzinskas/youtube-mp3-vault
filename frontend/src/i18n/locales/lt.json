@@ -65,11 +65,11 @@
   },
   "playlists": {
     "title": "Grojaraščiai",
-    "addPlaylist": "Pridėti grojaraštį",
+    "importPlaylists": "Importuoti grojaraščius",
     "importButton": "Importuoti",
     "failedToLoad": "Nepavyko įkelti grojaraščių.",
     "offlineBanner": "Šiuo metu paslauga neturi interneto ryšio, todėl sinchronizavimas negalimas. Jau atsisiųstų dainų grojimas veikia įprastai.",
-    "emptyState": "Grojaraščių dar nėra. Spustelėkite „Pridėti grojaraštį“ ir įklijuokite YouTube grojaraščio nuorodą.",
+    "emptyState": "Grojaraščių dar nėra. Atidarykite meniu viršuje ir pasirinkite „Importuoti grojaraščius“, kad įklijuotumėte YouTube grojaraščio nuorodą.",
     "downloadedCount": "Atsisiųsta: {{count}}/{{total}}",
     "allSynced": "Visos dainos sinchronizuotos",
     "failedCount": "Nepavyko: {{count}}",
