@@ -168,9 +168,11 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       )}
 
       {v.genres.length > 0 && (
-        <Typography variant="caption" color="text.secondary" noWrap sx={{ width: TRACK_ROW_LAYOUT.genreWidth, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
-          {v.genres.map(formatGenre).join(', ')}
-        </Typography>
+        <Tooltip title={v.genres.map(formatGenre).join(', ')}>
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ width: TRACK_ROW_LAYOUT.genreWidth, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
+            {v.genres.map(formatGenre).join(', ')}
+          </Typography>
+        </Tooltip>
       )}
 
       <Typography variant="caption" color="text.secondary" sx={{ width: TRACK_ROW_LAYOUT.durationWidth, flexShrink: 0, textAlign: 'right' }}>

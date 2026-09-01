@@ -42,8 +42,22 @@ const HQ_PARAM = 'hq';
 const FAV_PARAM = 'fav';
 const SEARCH_PARAM = 'q';
 
+// Each genre key is individually encodeURIComponent'd before being joined
+// with ',' (see toggleGenre and allTracksGenreUrl in PlaylistsPage/utils.tsx)
+// specifically because a genre key can itself contain a real comma (e.g.
+// Discogs-style "folk, world, & country") — decoding first and splitting on
+// ',' after would mis-split that single genre into several bogus ones.
+// Splitting on the still-encoded string first means only the actual
+// separators are literal commas; any comma belonging to a key's own name is
+// still hiding behind %2C at that point.
 function parseGenres(raw: string | null): Set<string> {
-  return new Set((raw ?? '').split(',').map(normalizeGenreKey).filter(Boolean));
+  if (!raw) return new Set();
+  return new Set(
+    raw.split(',')
+      .map(part => { try { return decodeURIComponent(part); } catch { return part; } })
+      .map(normalizeGenreKey)
+      .filter(Boolean)
+  );
 }
 
 function parseSort(raw: string | null): SortOption {
@@ -79,7 +93,7 @@ export function useTrackFilterParams() {
       const next = parseGenres(prev.get(GENRES_PARAM));
       if (next.has(key)) next.delete(key); else next.add(key);
       const params = new URLSearchParams(prev);
-      if (next.size > 0) params.set(GENRES_PARAM, [...next].join(',')); else params.delete(GENRES_PARAM);
+      if (next.size > 0) params.set(GENRES_PARAM, [...next].map(encodeURIComponent).join(',')); else params.delete(GENRES_PARAM);
       return params;
     }, { replace: true });
   }, [setSearchParams]);

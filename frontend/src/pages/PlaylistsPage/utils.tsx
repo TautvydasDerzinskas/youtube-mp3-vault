@@ -31,8 +31,17 @@ export function youtubePlaylistUrl(youtubeId: string): string {
 
 // Links a genre through to All Tracks pre-filtered to just that one — used
 // by the dashboard's genre card/modal and the standalone Genres page alike.
+//
+// Double-encoded: a genre key can itself contain a comma (e.g. Discogs-style
+// "folk, world, & country"), and the ?genres= param uses a comma to join
+// multiple selected keys together (see genreFilter.ts's parseGenres/
+// toggleGenre) — so each key is encodeURIComponent'd individually first
+// (turning any real comma into a harmless %2C) before that result is itself
+// encoded to become the URL's query string. Without the inner encoding, a
+// comma-containing genre would come back from useSearchParams already
+// decoded to its real commas and get mis-split into several bogus genres.
 export function allTracksGenreUrl(genreKey: string): string {
-  return `/all-tracks?genres=${encodeURIComponent(genreKey)}`;
+  return `/all-tracks?genres=${encodeURIComponent(encodeURIComponent(genreKey))}`;
 }
 
 // Links an artist name through to their detail page. Normalized (trim +

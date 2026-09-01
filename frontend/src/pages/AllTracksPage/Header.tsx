@@ -1,7 +1,7 @@
 import { Box, Typography, Avatar, Chip } from '@mui/material';
 import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { GenreCount, SortOption, HqFilterOption, FavouriteFilterOption } from '../PlaylistDetailPage/hooks/genreFilter';
+import { GenreCount, NO_GENRE_KEY, SortOption, HqFilterOption, FavouriteFilterOption } from '../PlaylistDetailPage/hooks/genreFilter';
 import { TrackFilterBar } from '../PlaylistDetailPage/TrackFilterBar';
 import { formatPlaybackTime } from '../PlaylistsPage/utils';
 import { AllTracksSummary } from './hooks/useAllTracksDetail';
@@ -40,7 +40,16 @@ export function Header({
   // Reused by FavouritesListItem (see its own doc comment) via ?fav=favourite
   // rather than a dedicated route/page — so the title needs to reflect
   // whichever entry point brought the user here, not always say "All Tracks".
-  const title = favouriteFilter === 'favourite' ? t('playlists.favourites.title') : t('playlists.allTracks.title');
+  // Same idea for a single-genre deep link (see allTracksGenreUrl): once
+  // exactly one genre is selected, that's a much more useful heading than
+  // the generic page title — falls back to it once a second genre is added,
+  // since there's no single name left to show.
+  const singleSelectedGenre = selectedGenres.size === 1
+    ? genreCounts.find(g => selectedGenres.has(g.key))
+    : undefined;
+  const title = singleSelectedGenre
+    ? (singleSelectedGenre.key === NO_GENRE_KEY ? t('playlists.detail.noGenre', { count: singleSelectedGenre.count }) : singleSelectedGenre.label)
+    : favouriteFilter === 'favourite' ? t('playlists.favourites.title') : t('playlists.allTracks.title');
   usePageBack('/playlists', t('common.backToPlaylists'));
   usePageTitle(title);
 
