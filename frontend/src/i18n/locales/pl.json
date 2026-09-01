@@ -65,11 +65,11 @@
   },
   "playlists": {
     "title": "Playlisty",
-    "importPlaylists": "Importuj playlisty",
+    "importPlaylist": "Importuj playlistę",
     "importButton": "Importuj",
     "failedToLoad": "Nie udało się załadować playlist.",
     "offlineBanner": "Usługa nie ma teraz połączenia z internetem, więc synchronizacja jest niedostępna. Odtwarzanie już pobranych utworów nadal działa normalnie.",
-    "emptyState": "Nie masz jeszcze żadnych playlist. Otwórz menu powyżej i wybierz „Importuj playlisty”, aby wkleić link do playlisty YouTube.",
+    "emptyState": "Nie masz jeszcze żadnych playlist. Otwórz menu powyżej i wybierz „Importuj playlistę”, aby wkleić link do playlisty YouTube.",
     "downloadedCount": "Pobrano: {{count}}/{{total}}",
     "allSynced": "Wszystkie utwory zsynchronizowane",
     "failedCount": "Nieudane: {{count}}",

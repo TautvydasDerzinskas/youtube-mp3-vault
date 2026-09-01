@@ -65,11 +65,11 @@
   },
   "playlists": {
     "title": "Playlists",
-    "importPlaylists": "Import playlists",
+    "importPlaylist": "Import playlist",
     "importButton": "Import",
     "failedToLoad": "Failed to load playlists.",
     "offlineBanner": "This service can't reach the internet right now, so syncing is unavailable. Playback of already-downloaded songs still works fine.",
-    "emptyState": "No playlists yet. Open the menu above and choose \"Import playlists\" to paste a YouTube playlist URL.",
+    "emptyState": "No playlists yet. Open the menu above and choose \"Import playlist\" to paste a YouTube playlist URL.",
     "downloadedCount": "{{count}}/{{total}} downloaded",
     "allSynced": "All songs synced",
     "failedCount": "{{count}} failed",

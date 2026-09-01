@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { MoreHoriz as MoreHorizIcon, Add as AddIcon } from '@mui/icons-material';
+import { MoreVert as MoreVertIcon, Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
 interface PlaylistsPageMenuProps {
@@ -17,12 +17,12 @@ export function PlaylistsPageMenu({ onImport }: PlaylistsPageMenuProps) {
   return (
     <>
       <IconButton size="small" onClick={e => setAnchorEl(e.currentTarget)} aria-label={t('playlists.moreActions')}>
-        <MoreHorizIcon fontSize="small" />
+        <MoreVertIcon fontSize="small" />
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => { setAnchorEl(null); onImport(); }}>
           <ListItemIcon><AddIcon fontSize="small" /></ListItemIcon>
-          <ListItemText>{t('playlists.importPlaylists')}</ListItemText>
+          <ListItemText>{t('playlists.importPlaylist')}</ListItemText>
         </MenuItem>
       </Menu>
     </>
