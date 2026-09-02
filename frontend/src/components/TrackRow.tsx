@@ -12,7 +12,6 @@ import { PlaylistVideo } from '../api/youtube';
 import { formatDuration, formatGenre, STATUS_ICON, isLowBitrate } from '../pages/PlaylistsPage/utils';
 import { useTrackActions } from '../hooks/useTrackActions';
 import { TrackContextMenu } from './TrackContextMenu';
-import { CloseHqCandidatesDialog } from './CloseHqCandidatesDialog';
 
 export interface TrackRowProps {
   video: PlaylistVideo;
@@ -68,8 +67,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
   const trackPlaylistId = v.playlistId ?? playlistId ?? '';
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const {
-    searching, closeCandidates, handleSearchHq, handleRename,
-    handleDismissCloseCandidates, handleSelectCloseCandidate, handleToggleFavourite,
+    searching, handleSearchHq, handleRename, handleToggleFavourite,
   } = useTrackActions({ video: v, playlistId: trackPlaylistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onUpdated });
 
   return (
@@ -225,14 +223,6 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
       onRename={handleRename}
       onToggleFavourite={handleToggleFavourite}
     />
-    {closeCandidates.length > 0 && (
-      <CloseHqCandidatesDialog
-        video={v}
-        candidates={closeCandidates}
-        onDismiss={handleDismissCloseCandidates}
-        onSelect={handleSelectCloseCandidate}
-      />
-    )}
     </>
   );
 }

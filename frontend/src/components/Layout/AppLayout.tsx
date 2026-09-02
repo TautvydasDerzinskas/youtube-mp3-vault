@@ -5,6 +5,7 @@ import MobileTopBar from './MobileTopBar';
 import { TopBar } from './TopBar';
 import { SIDEBAR_WIDTH, MOBILE_TOPBAR_HEIGHT } from './constants';
 import { MiniPlayer } from './MiniPlayer';
+import { PendingHqCandidatesModal } from '../PendingHqCandidatesModal';
 import { PlayerProvider, usePlayer } from '../../contexts/PlayerContext';
 import { PageBackProvider } from '../../contexts/PageBackContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -84,6 +85,12 @@ function AppLayoutContent() {
           onTitleClick={handleTitleClick}
         />
       )}
+
+      {/* Always mounted here (not inside any track row) so a "Search for
+          HQ" run's result surfaces regardless of scroll position in a
+          virtualized list or which page the search was started from — see
+          its own doc comment for the full story. */}
+      <PendingHqCandidatesModal />
     </Box>
   );
 }

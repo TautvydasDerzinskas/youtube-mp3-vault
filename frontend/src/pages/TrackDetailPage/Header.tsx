@@ -12,7 +12,6 @@ import { formatDuration, formatGenre, normalizeGenreKey, allTracksGenreUrl, arti
 import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
 import { useTrackActions } from '../../hooks/useTrackActions';
 import { TrackContextMenu } from '../../components/TrackContextMenu';
-import { CloseHqCandidatesDialog } from '../../components/CloseHqCandidatesDialog';
 
 interface HeaderProps {
   playlistId: string;
@@ -32,8 +31,7 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
   const isPlayingThis = isCurrentTrack && isAudioPlaying;
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const {
-    searching, closeCandidates, handleSearchHq, handleRename,
-    handleDismissCloseCandidates, handleSelectCloseCandidate, handleToggleFavourite,
+    searching, handleSearchHq, handleRename, handleToggleFavourite,
   } = useTrackActions({ video, playlistId, isCurrentTrack, isAudioPlaying, onTogglePlay, onUpdated });
   usePageBack(`/playlists/${playlistId}`, t('common.backToPlaylist'));
   usePageTitle(t('playlists.trackDetail.pageTitle'));
@@ -159,14 +157,6 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
         onRename={handleRename}
         onToggleFavourite={handleToggleFavourite}
       />
-      {closeCandidates.length > 0 && (
-        <CloseHqCandidatesDialog
-          video={video}
-          candidates={closeCandidates}
-          onDismiss={handleDismissCloseCandidates}
-          onSelect={handleSelectCloseCandidate}
-        />
-      )}
     </Box>
   );
 }
