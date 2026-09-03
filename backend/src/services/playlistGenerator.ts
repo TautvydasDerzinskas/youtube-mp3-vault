@@ -9,6 +9,12 @@ import { createLog } from './auditLog';
 
 const CANDIDATES_PER_TIER = 10;
 const CONCURRENCY = 4;
+// Below this, there's too little for Last.fm's similar-tracks signal (and
+// the remix/original fallback) to meaningfully characterize the source
+// playlist's taste — a 2-3 track source tends to produce a thin, barely-
+// related result. Enforced here (not just hidden in the UI) since this is
+// the one place every entry point into generation actually goes through.
+const MIN_SOURCE_TRACKS_FOR_GENERATE = 10;
 
 interface SourceVideo {
   youtubeId: string;
@@ -175,6 +181,9 @@ export async function startGeneratePlaylist(sourcePlaylistId: string, userId: st
   if (!source) return { started: false, error: 'Playlist not found' };
   if (source.sourcePlaylistId) return { started: false, error: 'Cannot generate a similar playlist from a generated one' };
   if (source.syncStatus !== 'idle') return { started: false, error: 'The source playlist must finish syncing first' };
+  if (source.videoCount < MIN_SOURCE_TRACKS_FOR_GENERATE) {
+    return { started: false, error: `The source playlist needs at least ${MIN_SOURCE_TRACKS_FOR_GENERATE} tracks to generate a similar playlist` };
+  }
   if (!isOnline()) return { started: false, error: 'This service is offline' };
   if (!isLastfmDiscoverEnabled()) return { started: false, error: 'Last.fm is not configured' };
 

@@ -126,6 +126,7 @@
     "creatingChip": "Creating…",
     "createdBadge": "Created",
     "createdOn": "Created on {{date}}",
+    "syncedBadge": "Synced",
     "playbackTime": {
       "days_one": "{{count}} day",
       "days_other": "{{count}} days",

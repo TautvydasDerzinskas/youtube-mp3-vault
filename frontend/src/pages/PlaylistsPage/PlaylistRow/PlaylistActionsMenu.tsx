@@ -2,7 +2,7 @@ import { Menu, MenuItem, ListItemIcon, ListItemText, CircularProgress, Divider }
 import {
   Sync as SyncIcon, DeleteOutline as DeleteIcon, Edit as EditIcon, Replay as ReplayIcon,
   PauseCircleOutline as PauseIcon, PlayCircleOutline as ResumeIcon, Launch as OpenIcon, HighQuality as ScanHqIcon,
-  PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, YouTube as YouTubeIcon,
+  PlayArrow as PlayArrowIcon, Pause as PauseTrackIcon, YouTube as YouTubeIcon, AutoAwesome as GenerateSimilarIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
@@ -23,6 +23,15 @@ export interface PlaylistActionsMenuProps {
   // routes/youtube.ts — this just keeps the button from appearing at all).
   isRetrying: boolean;
   online: boolean;
+  // Generate Similar is only offered when a caller passes both of these —
+  // omitted entirely (as PlaylistDetailPage's header does today) just hides
+  // the menu item, same as any other precondition below.
+  canGenerateSimilar?: boolean;
+  // True once a similar playlist has already been generated from this one —
+  // only one is ever allowed, so the action disappears for good rather than
+  // just being disabled.
+  hasGeneratedPlaylist?: boolean;
+  onGenerateSimilar?: (e: React.MouseEvent, playlist: Playlist) => void;
   // True while this playlist's own generated derivative is actively being
   // built (still reading this playlist's video list) — rename/delete/sync
   // are disabled for the duration, since any of them could change the very
@@ -49,19 +58,18 @@ export interface PlaylistActionsMenuProps {
 }
 
 /**
- * Sync now / Scan for HQ files / divider / Play / [Open] / Rename / Retry
- * Failed / Pause-Resume / Delete / divider / [Open in YouTube] — the one
- * playlist actions menu, shared by the playlist list row
- * (PlaylistRow/Actions.tsx, which also renders the visible Generate Similar
- * icon and the "..." trigger button around this) and PlaylistDetailPage's
- * own header (which has nowhere to put "Open" and renders its own trigger),
- * so a playlist's menu looks and behaves identically everywhere it's
- * offered.
+ * Sync now / Scan for HQ files / [Generate Similar] / divider / Play /
+ * [Open] / Rename / Retry Failed / Pause-Resume / Delete / divider / [Open
+ * in YouTube] — the one playlist actions menu, shared by the playlist list
+ * row (PlaylistRow/Actions.tsx, which renders just the "..." trigger button
+ * around this) and PlaylistDetailPage's own header (which has nowhere to
+ * put "Open" and renders its own trigger), so a playlist's menu looks and
+ * behaves identically everywhere it's offered.
  */
 export function PlaylistActionsMenu({
-  playlist, isBusy, isPausing, isRetrying, online, isLockedBySource,
+  playlist, isBusy, isPausing, isRetrying, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
   menuPos, onMenuPosChange,
-  onOpen, isPlaying, canPlayFirst, onPlayFirst, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete,
+  onOpen, isPlaying, canPlayFirst, onPlayFirst, onRename, onSync, onRetryFailed, onScanHq, onTogglePause, onDelete, onGenerateSimilar,
 }: PlaylistActionsMenuProps) {
   const { t } = useTranslation();
 
@@ -95,6 +103,20 @@ export function PlaylistActionsMenu({
   // unconditionally, regardless of pause state) — the only real
   // precondition is not already being busy.
   const scanHqDisabled = isBusy || !online || isLockedBySource;
+  // Generating a similar playlist reads this playlist's video list, so it
+  // only needs to have actually finished a sync pass at least once — not
+  // 100% success. Requiring downloadedCount === videoCount meant a single
+  // failed video (routine in a large library) hid this forever, since a
+  // playlist with any failures never reaches that exact equality again on
+  // its own. lastSyncedAt is only ever null for a playlist that's never
+  // completed a sync at all — see downloadPendingVideos. MIN_TRACKS mirrors
+  // the same floor startGeneratePlaylist enforces server-side (see its own
+  // comment) — too few tracks for Last.fm's similar-tracks signal to mean
+  // much, so hidden here rather than left to fail after the fact.
+  const MIN_TRACKS_FOR_GENERATE_SIMILAR = 10;
+  const hasCompletedSync = !isBusy && playlist.lastSyncedAt !== null;
+  const showGenerateSimilar = Boolean(onGenerateSimilar) && playlist.origin !== 'generated' && hasCompletedSync
+    && canGenerateSimilar && !hasGeneratedPlaylist && playlist.videoCount >= MIN_TRACKS_FOR_GENERATE_SIMILAR;
 
   const closeMenu = () => onMenuPosChange(null);
 
@@ -118,6 +140,12 @@ export function PlaylistActionsMenu({
         <ListItemIcon><ScanHqIcon fontSize="small" /></ListItemIcon>
         <ListItemText>{t('playlists.scanHq')}</ListItemText>
       </MenuItem>
+      {showGenerateSimilar && (
+        <MenuItem onClick={e => { closeMenu(); onGenerateSimilar!(e, playlist); }}>
+          <ListItemIcon><GenerateSimilarIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('playlists.generateSimilar')}</ListItemText>
+        </MenuItem>
+      )}
       <Divider />
       <MenuItem disabled={!canPlayFirst} onClick={e => { closeMenu(); onPlayFirst(e, playlist); }}>
         <ListItemIcon>{isPlaying ? <PauseTrackIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}</ListItemIcon>

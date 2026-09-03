@@ -126,6 +126,7 @@
     "creatingChip": "Tworzenie…",
     "createdBadge": "Utworzona",
     "createdOn": "Utworzono {{date}}",
+    "syncedBadge": "Zsynchronizowano",
     "importedFromPrefix": "Zaimportowano z",
     "importedFromLinkText": "YouTube",
     "playbackTime": {

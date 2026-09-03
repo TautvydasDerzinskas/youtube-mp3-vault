@@ -125,6 +125,7 @@
     "creatingChip": "Kuriama…",
     "createdBadge": "Sukurtas",
     "createdOn": "Sukurta {{date}}",
+    "syncedBadge": "Sinchronizuota",
     "importedFromPrefix": "Importuota iš",
     "importedFromLinkText": "YouTube",
     "playbackTime": {

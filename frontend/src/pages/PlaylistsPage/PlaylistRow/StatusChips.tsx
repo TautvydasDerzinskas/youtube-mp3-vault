@@ -1,5 +1,4 @@
 import { Chip, Stack, Tooltip } from '@mui/material';
-import { Check as CheckIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
 import { formatBytes, timeAgo } from '../utils';
@@ -43,13 +42,13 @@ export function StatusChips({ playlist, isBusy }: StatusChipsProps) {
           {isGenerated ? (
             <Chip label={t('playlists.generatedBadge')} size="small" color="secondary" sx={{ fontSize: 11 }} />
           ) : isCreated ? (
-            <Chip label={t('playlists.createdBadge')} size="small" color="secondary" sx={{ fontSize: 11 }} />
+            <Chip label={t('playlists.createdBadge')} size="small" color="primary" sx={{ fontSize: 11 }} />
           ) : fullySynced ? (
             <Tooltip title={playlist.lastSyncedAt ? t('playlists.syncedAgo', { time: timeAgo(playlist.lastSyncedAt, t) }) : ''}>
               <Chip
-                label={<CheckIcon sx={{ fontSize: 14, display: 'flex' }} />}
+                label={t('playlists.syncedBadge')}
                 size="small"
-                sx={{ fontSize: 11, bgcolor: 'hq.main', color: 'hq.contrastText', '& .MuiChip-label': { px: 0.75, display: 'flex', alignItems: 'center' } }}
+                sx={{ fontSize: 11, bgcolor: 'hq.main', color: 'hq.contrastText' }}
               />
             </Tooltip>
           ) : (

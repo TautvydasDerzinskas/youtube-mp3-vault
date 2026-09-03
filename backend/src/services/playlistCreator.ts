@@ -22,9 +22,15 @@ interface ResolvedTrack {
 // the line) for anything that doesn't parse or isn't available.
 async function resolveUrlLine(line: string): Promise<ResolvedTrack | null> {
   const videoId = parseVideoId(line);
-  if (!videoId) return null;
+  if (!videoId) {
+    console.warn(`[create] line did not parse as a video URL, skipping: "${line}"`);
+    return null;
+  }
   const meta = await fetchVideoMetadata(videoId);
-  if (!meta) return null;
+  if (!meta) {
+    console.warn(`[create] no metadata for video ${videoId} ("${line}") — unavailable/private/deleted, skipping`);
+    return null;
+  }
   return { youtubeId: meta.id, title: meta.title, channelName: meta.channelName, thumbnailUrl: meta.thumbnailUrl, duration: meta.duration };
 }
 
@@ -44,19 +50,34 @@ async function resolveUrlLine(line: string): Promise<ResolvedTrack | null> {
 // playlistGenerator.ts's findAlternative already uses.
 async function resolveTextLine(line: string): Promise<ResolvedTrack | null> {
   const { artist, title } = splitArtistTitle(line);
-  if (!artist) return null; // shouldn't happen given the frontend's own validation, but defensive
+  if (!artist) {
+    console.warn(`[create] line didn't split into artist/title, skipping: "${line}"`);
+    return null;
+  }
 
-  const results = await searchTopMatches(`${artist} ${title}`, SEARCH_RESULTS_PER_LINE);
-  if (results.length === 0) return null;
+  const query = `${artist} ${title}`;
+  const results = await searchTopMatches(query, SEARCH_RESULTS_PER_LINE);
+  if (results.length === 0) {
+    console.warn(`[create] no search results at all for "${line}" (query: "${query}")`);
+    return null;
+  }
 
   for (const tier of MATCH_TIERS_TRUSTED_NAME) {
     for (const r of results) {
       const parsed = parseArtistAndTitle(r.title, r.channelName);
       if (!tier.textMatch(parsed.artist ?? '', parsed.title, artist, title)) continue;
       if (!isDurationPlausible(r.duration, null, tier.durationStrictness, tier.requireKnownDuration)) continue;
+      console.log(`[create] "${line}" -> "${r.title}" (${r.id}, channel "${r.channelName}", parsed as "${parsed.artist} - ${parsed.title}")`);
       return { youtubeId: r.id, title: r.title, channelName: r.channelName, thumbnailUrl: r.thumbnailUrl, duration: r.duration };
     }
   }
+  // Nothing cleared any tier — log exactly what was compared against so a
+  // report like "I typed X and it didn't add anything" is diagnosable from
+  // server logs alone, without needing to reproduce it by hand.
+  const candidateSummary = results
+    .map(r => { const p = parseArtistAndTitle(r.title, r.channelName); return `"${p.artist ?? '?'} - ${p.title}" (raw: "${r.title}", channel: "${r.channelName}")`; })
+    .join('; ');
+  console.warn(`[create] no confident match for "${line}" (parsed as "${artist} - ${title}") among ${results.length} results: ${candidateSummary}`);
   return null;
 }
 
@@ -148,6 +169,7 @@ async function logCreationResult(newPlaylistId: string, failedCount: number): Pr
 async function runCreate(newPlaylistId: string, lines: string[]): Promise<void> {
   try {
     const tracks = await resolveLines(lines);
+    console.log(`[create] playlist ${newPlaylistId}: resolved ${tracks.length}/${lines.length} pasted line(s)`);
 
     if (tracks.length > 0) {
       await prisma.playlistVideo.createMany({

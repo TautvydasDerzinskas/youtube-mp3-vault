@@ -1,5 +1,5 @@
-import { Box, IconButton, Tooltip } from '@mui/material';
-import { MoreVert as MoreVertIcon, AutoAwesome as GenerateSimilarIcon } from '@mui/icons-material';
+import { Box, IconButton } from '@mui/material';
+import { MoreVert as MoreVertIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { Playlist } from '../../../api/youtube';
 import { PlaylistActionsMenu } from './PlaylistActionsMenu';
@@ -45,9 +45,10 @@ interface ActionsProps {
   onGenerateSimilar: (e: React.MouseEvent, playlist: Playlist) => void;
 }
 
-// Sync and Generate Similar are the only actions visible directly — everything
-// else (Open, Rename, Retry Failed, Pause/Resume, Delete) lives behind the
-// trailing "more actions" menu, kept as the very last item in the row.
+// The "..." trigger button plus the shared PlaylistActionsMenu it opens —
+// every action (Sync, Scan HQ, Generate Similar, Play, Rename, Retry Failed,
+// Pause/Resume, Delete, Open in YouTube) lives in that one menu, kept as the
+// very last item in the row.
 export function Actions({
   playlist, isBusy, isPausing, isRetrying, online, canGenerateSimilar, hasGeneratedPlaylist, isLockedBySource,
   menuPos, onMenuPosChange,
@@ -55,27 +56,8 @@ export function Actions({
 }: ActionsProps) {
   const { t } = useTranslation();
 
-  const isGenerated = playlist.origin === 'generated';
-  // Generating a similar playlist reads this playlist's video list, so it
-  // only needs to have actually finished a sync pass at least once — not
-  // 100% success. Requiring downloadedCount === videoCount meant a single
-  // failed video (routine in a large library) hid this forever, since a
-  // playlist with any failures never reaches that exact equality again on
-  // its own. lastSyncedAt is only ever null for a playlist that's never
-  // completed a sync at all — see downloadPendingVideos.
-  const hasCompletedSync = !isBusy && playlist.lastSyncedAt !== null;
-  const showGenerateSimilar = !isGenerated && hasCompletedSync && canGenerateSimilar && !hasGeneratedPlaylist;
-
   return (
     <Box onClick={e => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexShrink: 0 }}>
-      {showGenerateSimilar && (
-        <Tooltip title={t('playlists.generateSimilar')}>
-          <IconButton size="small" onClick={e => onGenerateSimilar(e, playlist)}>
-            <GenerateSimilarIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      )}
-
       <IconButton size="small" onClick={e => onMenuPosChange({ top: e.clientY, left: e.clientX })} aria-label={t('playlists.moreActions')}>
         <MoreVertIcon fontSize="small" />
       </IconButton>
@@ -85,6 +67,8 @@ export function Actions({
         isPausing={isPausing}
         isRetrying={isRetrying}
         online={online}
+        canGenerateSimilar={canGenerateSimilar}
+        hasGeneratedPlaylist={hasGeneratedPlaylist}
         isLockedBySource={isLockedBySource}
         menuPos={menuPos}
         onMenuPosChange={onMenuPosChange}
@@ -98,6 +82,7 @@ export function Actions({
         onScanHq={onScanHq}
         onTogglePause={onTogglePause}
         onDelete={onDelete}
+        onGenerateSimilar={onGenerateSimilar}
       />
     </Box>
   );
