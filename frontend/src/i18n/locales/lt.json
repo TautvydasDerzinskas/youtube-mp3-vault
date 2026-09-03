@@ -66,6 +66,7 @@
   "playlists": {
     "title": "Grojaraščiai",
     "importPlaylist": "Importuoti grojaraštį",
+    "createPlaylist": "Sukurti grojaraštį",
     "importButton": "Importuoti",
     "failedToLoad": "Nepavyko įkelti grojaraščių.",
     "offlineBanner": "Šiuo metu paslauga neturi interneto ryšio, todėl sinchronizavimas negalimas. Jau atsisiųstų dainų grojimas veikia įprastai.",
@@ -121,6 +122,9 @@
     "generatingChip": "Generuojama…",
     "generatedBadge": "Sugeneruotas",
     "generatedFrom": "Sukurta pagal {{name}}",
+    "creatingChip": "Kuriama…",
+    "createdBadge": "Sukurtas",
+    "createdOn": "Sukurta {{date}}",
     "importedFromPrefix": "Importuota iš",
     "importedFromLinkText": "YouTube",
     "playbackTime": {
@@ -152,7 +156,7 @@
       "waiting": "Dainos rodysis čia, kai tik bus apdorotos…"
     },
     "addDialog": {
-      "title": "Pridėti grojaraštį",
+      "title": "Importuoti grojaraštį",
       "urlLabel": "YouTube grojaraščio nuoroda",
       "nameLabel": "Pasirinktinis pavadinimas (nebūtina)",
       "namePlaceholder": "Palikite tuščią, kad būtų naudojamas YouTube pavadinimas",
@@ -160,6 +164,20 @@
       "add": "Pridėti",
       "genericError": "Nepavyko pridėti grojaraščio. Patikrinkite nuorodą ir bandykite dar kartą.",
       "added": "Pridėta „{{name}}“."
+    },
+    "createDialog": {
+      "title": "Sukurti grojaraštį",
+      "nameLabel": "Grojaraščio pavadinimas",
+      "tracksLabel": "Dainos (nebūtina)",
+      "tracksHelp": "Po vieną eilutėje: įklijuokite YouTube vaizdo įrašo nuorodą arba įveskite „Atlikėjas - Pavadinimas“ ir surasime artimiausią atitikmenį. Dainas galėsite pridėti ir vėliau.",
+      "tracksPlaceholder": "https://www.youtube.com/watch?v=…\nDaft Punk - One More Time",
+      "create": "Sukurti",
+      "creating": "Kuriamas grojaraštis…",
+      "created": "Sukurta „{{name}}“.",
+      "genericError": "Nepavyko sukurti grojaraščio. Bandykite dar kartą.",
+      "lineErrorPlaylistUrl": "{{line}} eilutė: tai grojaraščio nuoroda — įklijuokite atskirų vaizdo įrašų nuorodas arba naudokite „Importuoti grojaraštį“.",
+      "lineErrorInvalid": "{{line}} eilutė: naudokite formatą „Atlikėjas - Pavadinimas“ arba įklijuokite YouTube vaizdo įrašo nuorodą.",
+      "moreLineErrors": "+ dar {{count}} eilutė(-ių) su ta pačia problema"
     },
     "renameDialog": {
       "title": "Pervadinti grojaraštį",

@@ -185,6 +185,7 @@ export async function startGeneratePlaylist(sourcePlaylistId: string, userId: st
     data: {
       userId,
       youtubeId: null,
+      origin: 'generated',
       title: `${source.customName ?? source.title} (YoutubeVault Remix)`,
       thumbnailUrl: source.thumbnailUrl,
       sourcePlaylistId: source.id,

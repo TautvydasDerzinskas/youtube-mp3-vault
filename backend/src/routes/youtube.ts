@@ -22,6 +22,7 @@ import {
 } from '../services/syncService';
 import { isTrackBusy, startTrackHqSearch, startTrackRename, getCloseHqCandidates, dismissCloseHqCandidates } from '../services/slskdQualityWorker';
 import { startGeneratePlaylist } from '../services/playlistGenerator';
+import { startCreatePlaylist } from '../services/playlistCreator';
 import { createLog } from '../services/auditLog';
 
 const router = Router();
@@ -420,6 +421,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
         data: {
           userId: req.userId!,
           youtubeId: normalized.playlistId,
+          origin: 'imported',
           title: info.title,
           customName: displayName,
           thumbnailUrl: info.thumbnailUrl,
@@ -465,6 +467,50 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
       playlistId: playlist.id,
       details: { name: displayName ?? info.title, songCount: info.videos.length },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/playlists/create — create from scratch ─────────────────────────
+// Builds a new playlist from a user-typed name plus optional pasted lines
+// (YouTube video links and/or "Artist - Title" text) — see
+// services/playlistCreator.ts. No real YouTube playlist behind it, same as a
+// generated one.
+
+const MAX_CREATE_LINES = 300;
+
+router.post('/create', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { name, lines } = req.body as { name?: unknown; lines?: unknown };
+
+    if (typeof name !== 'string' || !name.trim()) {
+      res.status(400).json({ error: 'name is required' });
+      return;
+    }
+
+    let cleanLines: string[] = [];
+    if (lines !== undefined) {
+      if (!Array.isArray(lines) || !lines.every((l) => typeof l === 'string')) {
+        res.status(400).json({ error: 'lines must be an array of strings' });
+        return;
+      }
+      if (lines.length > MAX_CREATE_LINES) {
+        res.status(400).json({ error: `Too many lines — max ${MAX_CREATE_LINES}` });
+        return;
+      }
+      cleanLines = lines.map((l) => l.trim()).filter(Boolean);
+    }
+
+    const result = await startCreatePlaylist(req.userId!, name.trim(), cleanLines);
+    if (!result.started) {
+      res.status(409).json({ error: result.error });
+      return;
+    }
+
+    const newPlaylist = await prisma.playlist.findUniqueOrThrow({ where: { id: result.playlistId } });
+    const [enriched] = await withDownloadStats([newPlaylist]);
+    res.status(201).json({ playlist: enriched });
   } catch (err) {
     next(err);
   }

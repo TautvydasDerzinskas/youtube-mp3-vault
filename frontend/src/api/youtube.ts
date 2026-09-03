@@ -19,8 +19,15 @@ export interface SyncPhase {
 
 export interface Playlist {
   id: string;
-  // Null only for a generated ("similar playlist") entry — see sourcePlaylistId.
+  // Null for both a generated ("similar playlist") and a created-from-scratch
+  // entry — see `origin` below for which.
   youtubeId: string | null;
+  // How this playlist came to exist — 'imported' (a real YouTube playlist),
+  // 'generated' (see sourcePlaylistId below), or 'created' (built from a
+  // typed name + pasted links/text, see CreatePlaylistDialog.tsx). The
+  // authoritative distinction — youtubeId alone can't tell 'generated' and
+  // 'created' apart, both are always null.
+  origin: 'imported' | 'generated' | 'created';
   title: string;
   customName: string | null;
   thumbnailUrl: string | null;
@@ -32,7 +39,7 @@ export interface Playlist {
   // actually listen to right now, not the nominal length of everything
   // nominally in the playlist.
   totalDurationSec: number;
-  syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'scanning_hq' | 'error';
+  syncStatus: 'idle' | 'syncing' | 'retrying' | 'generating' | 'creating' | 'scanning_hq' | 'error';
   syncPaused: boolean;
   lastSyncedAt: string | null;
   createdAt: string;
@@ -220,6 +227,15 @@ export const playlistsApi = {
       url,
       customName: customName || undefined,
     });
+    return data;
+  },
+
+  // `lines` is the pasted-tracks textarea split into non-blank lines —
+  // each one either a YouTube video link or "Artist - Title" text, resolved
+  // server-side (see services/playlistCreator.ts). Omitted/empty is valid —
+  // tracks are optional at creation time.
+  create: async (name: string, lines: string[]): Promise<{ playlist: Playlist }> => {
+    const { data } = await client.post<{ playlist: Playlist }>('/playlists/create', { name, lines });
     return data;
   },
 

@@ -48,6 +48,40 @@ export function normalizePlaylistUrl(raw: string): { url: string; playlistId: st
   };
 }
 
+// Pulls a single video ID out of a watch/shorts/youtu.be URL — the sibling
+// of normalizePlaylistUrl above, but for the "paste individual video links"
+// side of playlistCreator.ts's input (as opposed to a ?list=… playlist URL,
+// which this deliberately does NOT resolve to its first video — a playlist
+// link pasted here should be rejected, not silently treated as one track).
+// Returns null for anything that isn't a single-video URL, including a bare
+// playlist link (no `v=`/`/shorts/` id present) — callers treat that the
+// same as "not a URL at all" (i.e. try parsing it as free text instead).
+export function parseVideoId(raw: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+
+  const host = parsed.hostname.replace(/^www\./, '');
+  if (!['youtube.com', 'youtu.be', 'music.youtube.com'].includes(host)) return null;
+
+  if (host === 'youtu.be') {
+    const id = parsed.pathname.slice(1).split('/')[0];
+    return id || null;
+  }
+
+  const shortsMatch = parsed.pathname.match(/^\/shorts\/([^/]+)/);
+  if (shortsMatch) return shortsMatch[1];
+
+  if (parsed.pathname === '/watch') {
+    return parsed.searchParams.get('v');
+  }
+
+  return null;
+}
+
 const PLACEHOLDER_TITLE_RE = /^\[(private video|deleted video|video unavailable|unavailable)\]$/i;
 
 function isPlaceholderTitle(title: string | undefined): boolean {
@@ -158,6 +192,62 @@ export async function fetchPlaylist(playlistUrl: string): Promise<PlaylistInfo> 
     title: playlistTitle,
     thumbnailUrl: videos[0]?.thumbnailUrl ?? null,
     videos,
+  };
+}
+
+// 30 seconds — a single video's metadata, not a whole playlist to paginate
+// through.
+const VIDEO_METADATA_TIMEOUT_MS = 30 * 1000;
+
+// Metadata-only lookup for one video (no download) — the counterpart to
+// fetchPlaylist above, for playlistCreator.ts's "paste individual video
+// links" input. Same --flat-playlist --dump-json approach works fine
+// pointed at a single watch URL, just returns one JSON line instead of many.
+// Returns null (not a thrown error) for anything unavailable/private/
+// deleted/geo-blocked — playlistCreator.ts treats that as "skip this line",
+// the same convention searchTopMatches/resolveTopMatch already use for "no
+// usable result."
+export async function fetchVideoMetadata(videoId: string): Promise<VideoEntry | null> {
+  const args = [
+    '--flat-playlist',
+    '--dump-json',
+    '--no-warnings',
+    '--ignore-errors',
+    '--extractor-args', 'youtube:player_client=default,android,-tv',
+    ...potProviderExtractorArgs(),
+    `https://www.youtube.com/watch?v=${videoId}`,
+  ];
+
+  let raw: string;
+  try {
+    const result = await runYtDlp(args, VIDEO_METADATA_TIMEOUT_MS);
+    if (result.code !== 0) return null;
+    raw = result.stdout;
+  } catch {
+    return null;
+  }
+
+  const line = raw.split('\n').map((l) => l.trim()).find(Boolean);
+  if (!line) return null;
+
+  let entry: Record<string, unknown>;
+  try {
+    entry = JSON.parse(line);
+  } catch {
+    return null;
+  }
+
+  const id = entry.id as string | undefined;
+  if (!id || isPlaceholderTitle(entry.title as string | undefined)) return null;
+
+  return {
+    id,
+    title: (entry.title as string | undefined) ?? '[Unavailable]',
+    duration: typeof entry.duration === 'number' ? entry.duration : null,
+    thumbnailUrl: pickThumbnail(entry.thumbnails) ?? (entry.thumbnail as string | null) ?? null,
+    position: 0,
+    isAvailable: true,
+    channelName: (entry.channel as string | undefined) || (entry.uploader as string | undefined) || null,
   };
 }
 

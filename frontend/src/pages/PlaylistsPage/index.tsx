@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePageBack, usePageTitle, usePageActions } from '../../contexts/PageBackContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { AddPlaylistDialog } from './AddPlaylistDialog';
+import { CreatePlaylistDialog } from './CreatePlaylistDialog';
 import { PlaylistsPageMenu } from './PlaylistsPageMenu';
 import { RenameDialog } from './RenameDialog';
 import { PlaylistRow } from './PlaylistRow';
@@ -31,12 +32,14 @@ export default function PlaylistsPage() {
   usePageTitle(t('playlists.title'));
   const [searchParams, setSearchParams] = useSearchParams();
   const [addOpen, setAddOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const handleImport = useCallback(() => setAddOpen(true), []);
+  const handleCreate = useCallback(() => setCreateOpen(true), []);
   // Memoized so the registered node's identity is stable across renders —
   // usePageActions re-registers on every change of its argument, and a
   // fresh element each render would re-trigger the context update (which
   // re-renders this very component) in a loop.
-  const pageMenu = useMemo(() => <PlaylistsPageMenu onImport={handleImport} />, [handleImport]);
+  const pageMenu = useMemo(() => <PlaylistsPageMenu onImport={handleImport} onCreate={handleCreate} />, [handleImport, handleCreate]);
   usePageActions(pageMenu);
 
   // Lets the top bar's global "Import" button (see TopBar/MobileTopBar) open
@@ -257,6 +260,7 @@ export default function PlaylistsPage() {
       <AllTracksListItem refreshOn={playlists} />
 
       <AddPlaylistDialog open={addOpen} onClose={() => setAddOpen(false)} onAdded={handleAdded} />
+      <CreatePlaylistDialog open={createOpen} onClose={() => setCreateOpen(false)} onAdded={handleAdded} />
       {renaming && (
         <RenameDialog playlist={renaming} onClose={() => setRenaming(null)}
           onRenamed={updated => { updatePlaylist(updated); setRenaming(null); }} />

@@ -32,7 +32,8 @@ export function usePlaylists() {
   const schedulePoll = useCallback((list: Playlist[]) => {
     if (pollRef.current) clearTimeout(pollRef.current);
     const hasSyncing = list.some(p =>
-      p.syncStatus === 'syncing' || p.syncStatus === 'retrying' || p.syncStatus === 'generating' || p.syncStatus === 'scanning_hq'
+      p.syncStatus === 'syncing' || p.syncStatus === 'retrying' || p.syncStatus === 'generating'
+      || p.syncStatus === 'creating' || p.syncStatus === 'scanning_hq'
     );
     if (!hasSyncing) return;
     pollRef.current = setTimeout(async () => {

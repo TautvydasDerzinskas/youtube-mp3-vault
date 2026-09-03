@@ -153,6 +153,15 @@ model Playlist {
   // nothing. Not consulted by anything server-side.
   offlineEnabled Boolean       @default(false)
   lastSyncedAt DateTime?
+  // How this playlist came to exist — 'imported' (a real YouTube playlist,
+  // the default/original case), 'generated' (see sourcePlaylistId below), or
+  // 'created' (built from a user-typed name + pasted links/text, see
+  // playlistCreator.ts). Introduced because youtubeId===null used to be the
+  // only signal for "not a real imported playlist," which stopped being
+  // enough once a second null-youtubeId case (created) existed alongside
+  // generated — every frontend chip/action that used to infer this from
+  // youtubeId now reads this field directly instead.
+  origin       String          @default("imported")
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   videos       PlaylistVideo[]

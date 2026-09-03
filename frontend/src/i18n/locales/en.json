@@ -66,6 +66,7 @@
   "playlists": {
     "title": "Playlists",
     "importPlaylist": "Import playlist",
+    "createPlaylist": "Create playlist",
     "importButton": "Import",
     "failedToLoad": "Failed to load playlists.",
     "offlineBanner": "This service can't reach the internet right now, so syncing is unavailable. Playback of already-downloaded songs still works fine.",
@@ -122,6 +123,9 @@
     "generatedFrom": "Based on {{name}}",
     "importedFromPrefix": "Imported from",
     "importedFromLinkText": "YouTube",
+    "creatingChip": "Creating…",
+    "createdBadge": "Created",
+    "createdOn": "Created on {{date}}",
     "playbackTime": {
       "days_one": "{{count}} day",
       "days_other": "{{count}} days",
@@ -148,7 +152,7 @@
       "waiting": "Tracks will appear here as they're processed…"
     },
     "addDialog": {
-      "title": "Add Playlist",
+      "title": "Import playlist",
       "urlLabel": "YouTube Playlist URL",
       "nameLabel": "Custom name (optional)",
       "namePlaceholder": "Leave blank to use YouTube title",
@@ -156,6 +160,20 @@
       "add": "Add",
       "genericError": "Failed to add playlist. Check the URL and try again.",
       "added": "Added \"{{name}}\"."
+    },
+    "createDialog": {
+      "title": "Create Playlist",
+      "nameLabel": "Playlist name",
+      "tracksLabel": "Tracks (optional)",
+      "tracksHelp": "One per line: paste a YouTube video link, or type \"Artist - Title\" and we'll find the closest match. You can also add tracks later.",
+      "tracksPlaceholder": "https://www.youtube.com/watch?v=…\nDaft Punk - One More Time",
+      "create": "Create",
+      "creating": "Creating playlist…",
+      "created": "Created \"{{name}}\".",
+      "genericError": "Failed to create playlist. Please try again.",
+      "lineErrorPlaylistUrl": "Line {{line}}: that's a playlist link — paste individual video links, or use Import Playlist instead.",
+      "lineErrorInvalid": "Line {{line}}: use \"Artist - Title\" format or paste a YouTube video link.",
+      "moreLineErrors": "+ {{count}} more line(s) with the same issue"
     },
     "renameDialog": {
       "title": "Rename Playlist",

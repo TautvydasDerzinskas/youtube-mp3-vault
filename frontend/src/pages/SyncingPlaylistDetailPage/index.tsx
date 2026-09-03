@@ -88,12 +88,14 @@ export default function SyncingPlaylistDetailPage() {
         <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 1 }}>
           <Chip label={playlist.syncStatus === 'generating'
               ? t('playlists.generatingChip')
+              : playlist.syncStatus === 'creating'
+              ? t('playlists.creatingChip')
               : phase?.phase === 'quality' ? t('playlists.videoList.searchingHq')
               : playlist.syncStatus === 'scanning_hq' ? t('playlists.scanningHq')
               : t('playlists.syncing')}
             size="small"
-            color={playlist.syncStatus === 'generating' ? 'info' : undefined}
-            sx={playlist.syncStatus === 'generating' ? undefined : { bgcolor: 'common.black', color: 'common.white' }} />
+            color={playlist.syncStatus === 'generating' || playlist.syncStatus === 'creating' ? 'info' : undefined}
+            sx={playlist.syncStatus === 'generating' || playlist.syncStatus === 'creating' ? undefined : { bgcolor: 'common.black', color: 'common.white' }} />
           {phase?.phase === 'quality' && hqFoundSet.size > 0 && (
             <Chip label={t('playlists.hqFoundSoFar', { count: hqFoundSet.size })} size="small"
               sx={{ bgcolor: 'hq.main', color: 'hq.contrastText' }} />

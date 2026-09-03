@@ -14,11 +14,6 @@ export function Info({ playlist, isBusy, isPausing }: InfoProps) {
   const { t } = useTranslation();
   const progress = playlist.videoCount > 0
     ? Math.round(((playlist.downloadedCount + playlist.failedCount) / playlist.videoCount) * 100) : 0;
-  // A generated playlist has no YouTube playlist behind it — that's the one
-  // authoritative signal (unlike sourcePlaylistId, which goes null if the
-  // source is later deleted, even though this is still very much a
-  // generated playlist with nothing to sync from).
-  const isGenerated = playlist.youtubeId === null;
 
   return (
     <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
@@ -35,15 +30,15 @@ export function Info({ playlist, isBusy, isPausing }: InfoProps) {
         )}
       </Stack>
 
-      {playlist.totalDurationSec > 0 && (
+      {(playlist.totalDurationSec > 0 || playlist.origin === 'created') && (
         <Typography variant="caption" color="text.secondary" noWrap component="div">
-          {formatPlaybackTime(playlist.totalDurationSec, t)}
-          {isGenerated && playlist.sourcePlaylistName && (
-            <> · {t('playlists.generatedFrom', { name: playlist.sourcePlaylistName })}</>
+          {playlist.totalDurationSec > 0 && formatPlaybackTime(playlist.totalDurationSec, t)}
+          {playlist.origin === 'generated' && playlist.sourcePlaylistName && (
+            <>{playlist.totalDurationSec > 0 ? ' · ' : ''}{t('playlists.generatedFrom', { name: playlist.sourcePlaylistName })}</>
           )}
-          {!isGenerated && playlist.youtubeId && (
+          {playlist.origin === 'imported' && playlist.youtubeId && (
             <>
-              {' · '}{t('playlists.importedFromPrefix')}{' '}
+              {playlist.totalDurationSec > 0 ? ' · ' : ''}{t('playlists.importedFromPrefix')}{' '}
               <Link
                 href={youtubePlaylistUrl(playlist.youtubeId)}
                 target="_blank"
@@ -54,6 +49,9 @@ export function Info({ playlist, isBusy, isPausing }: InfoProps) {
                 {t('playlists.importedFromLinkText')}
               </Link>
             </>
+          )}
+          {playlist.origin === 'created' && (
+            <>{playlist.totalDurationSec > 0 ? ' · ' : ''}{t('playlists.createdOn', { date: new Date(playlist.createdAt).toLocaleDateString() })}</>
           )}
         </Typography>
       )}

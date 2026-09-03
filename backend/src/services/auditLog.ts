@@ -14,6 +14,7 @@ export type LogAction =
   | 'generated_playlist_created'
   | 'generated_playlist_renamed'
   | 'generated_playlist_deleted'
+  | 'created_playlist_created'
   | 'user_logged_in_web'
   | 'user_logged_in_mobile'
   | 'user_logged_out_web'

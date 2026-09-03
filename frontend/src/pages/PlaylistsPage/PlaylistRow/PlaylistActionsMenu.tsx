@@ -65,12 +65,11 @@ export function PlaylistActionsMenu({
 }: PlaylistActionsMenuProps) {
   const { t } = useTranslation();
 
-  // A generated playlist has no YouTube playlist behind it — that's the one
-  // authoritative signal (unlike sourcePlaylistId, which goes null if the
-  // source is later deleted, even though this is still very much a
-  // generated playlist).
-  const isGenerated = playlist.youtubeId === null;
-  const showSync = !isGenerated && !playlist.syncPaused;
+  // Sync/pause only make sense for a real YouTube playlist — a generated or
+  // created one has nothing to periodically re-fetch from YouTube, so both
+  // are hidden for either (not just generated).
+  const isImported = playlist.origin === 'imported';
+  const showSync = isImported && !playlist.syncPaused;
   // Unlike Sync, this never touches YouTube (retryFailedVideos only resets
   // already-downloaded-once videos stuck at downloadStatus 'failed' back to
   // pending) — so it works the same for a generated playlist as a regular
@@ -87,7 +86,7 @@ export function PlaylistActionsMenu({
   // offering a control that visually claims to work but doesn't would be
   // actively misleading. Still shown once the scan finishes if syncPaused
   // is left over true from a regular sync paused earlier.
-  const showPauseToggle = !isGenerated && !isRetrying && playlist.syncStatus !== 'scanning_hq' && (isBusy || playlist.syncPaused);
+  const showPauseToggle = isImported && !isRetrying && playlist.syncStatus !== 'scanning_hq' && (isBusy || playlist.syncPaused);
   const renameDisabled = isPausing || isBusy || isLockedBySource;
   const syncDisabled = isBusy || !online || isLockedBySource;
   const deleteDisabled = isPausing || isBusy || isLockedBySource;

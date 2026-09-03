@@ -55,11 +55,7 @@ export function Actions({
 }: ActionsProps) {
   const { t } = useTranslation();
 
-  // A generated playlist has no YouTube playlist behind it — that's the one
-  // authoritative signal (unlike sourcePlaylistId, which goes null if the
-  // source is later deleted, even though this is still very much a
-  // generated playlist).
-  const isGenerated = playlist.youtubeId === null;
+  const isGenerated = playlist.origin === 'generated';
   // Generating a similar playlist reads this playlist's video list, so it
   // only needs to have actually finished a sync pass at least once — not
   // 100% success. Requiring downloadedCount === videoCount meant a single

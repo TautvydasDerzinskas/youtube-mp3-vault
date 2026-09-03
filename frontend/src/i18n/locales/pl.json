@@ -66,6 +66,7 @@
   "playlists": {
     "title": "Playlisty",
     "importPlaylist": "Importuj playlistę",
+    "createPlaylist": "Utwórz playlistę",
     "importButton": "Importuj",
     "failedToLoad": "Nie udało się załadować playlist.",
     "offlineBanner": "Usługa nie ma teraz połączenia z internetem, więc synchronizacja jest niedostępna. Odtwarzanie już pobranych utworów nadal działa normalnie.",
@@ -122,6 +123,9 @@
     "generatingChip": "Generowanie…",
     "generatedBadge": "Wygenerowana",
     "generatedFrom": "Na podstawie {{name}}",
+    "creatingChip": "Tworzenie…",
+    "createdBadge": "Utworzona",
+    "createdOn": "Utworzono {{date}}",
     "importedFromPrefix": "Zaimportowano z",
     "importedFromLinkText": "YouTube",
     "playbackTime": {
@@ -156,7 +160,7 @@
       "waiting": "Utwory pojawią się tutaj w miarę ich przetwarzania…"
     },
     "addDialog": {
-      "title": "Dodaj playlistę",
+      "title": "Importuj playlistę",
       "urlLabel": "Link do playlisty YouTube",
       "nameLabel": "Własna nazwa (opcjonalnie)",
       "namePlaceholder": "Pozostaw puste, aby użyć nazwy z YouTube",
@@ -164,6 +168,20 @@
       "add": "Dodaj",
       "genericError": "Nie udało się dodać playlisty. Sprawdź link i spróbuj ponownie.",
       "added": "Dodano „{{name}}”."
+    },
+    "createDialog": {
+      "title": "Utwórz playlistę",
+      "nameLabel": "Nazwa playlisty",
+      "tracksLabel": "Utwory (opcjonalnie)",
+      "tracksHelp": "Po jednym w wierszu: wklej link do filmu YouTube albo wpisz „Wykonawca - Tytuł”, a znajdziemy najbliższe dopasowanie. Utwory możesz dodać też później.",
+      "tracksPlaceholder": "https://www.youtube.com/watch?v=…\nDaft Punk - One More Time",
+      "create": "Utwórz",
+      "creating": "Tworzenie playlisty…",
+      "created": "Utworzono „{{name}}”.",
+      "genericError": "Nie udało się utworzyć playlisty. Spróbuj ponownie.",
+      "lineErrorPlaylistUrl": "Wiersz {{line}}: to link do playlisty — wklej linki do pojedynczych filmów albo użyj opcji „Importuj playlistę”.",
+      "lineErrorInvalid": "Wiersz {{line}}: użyj formatu „Wykonawca - Tytuł” albo wklej link do filmu YouTube.",
+      "moreLineErrors": "+ jeszcze {{count}} wiersz(y) z tym samym problemem"
     },
     "renameDialog": {
       "title": "Zmień nazwę playlisty",

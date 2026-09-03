@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { MoreVert as MoreVertIcon, Add as AddIcon } from '@mui/icons-material';
+import { MoreVert as MoreVertIcon, Add as AddIcon, PlaylistAdd as PlaylistAddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
 interface PlaylistsPageMenuProps {
   onImport: () => void;
+  onCreate: () => void;
 }
 
 // "..." menu next to the Playlists page title (rendered in TopBar via
 // usePageActions on desktop, inline next to the page's own heading on
 // mobile) — replaces what used to be a full-width "Add Playlist" button.
-export function PlaylistsPageMenu({ onImport }: PlaylistsPageMenuProps) {
+export function PlaylistsPageMenu({ onImport, onCreate }: PlaylistsPageMenuProps) {
   const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -23,6 +24,10 @@ export function PlaylistsPageMenu({ onImport }: PlaylistsPageMenuProps) {
         <MenuItem onClick={() => { setAnchorEl(null); onImport(); }}>
           <ListItemIcon><AddIcon fontSize="small" /></ListItemIcon>
           <ListItemText>{t('playlists.importPlaylist')}</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { setAnchorEl(null); onCreate(); }}>
+          <ListItemIcon><PlaylistAddIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('playlists.createPlaylist')}</ListItemText>
         </MenuItem>
       </Menu>
     </>

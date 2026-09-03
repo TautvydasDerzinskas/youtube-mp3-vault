@@ -15,17 +15,16 @@ interface StatusChipsProps {
 // row's own alignItems: 'center') instead of stacked underneath it.
 export function StatusChips({ playlist, isBusy }: StatusChipsProps) {
   const { t } = useTranslation();
-  // A generated playlist has no YouTube playlist behind it — that's the one
-  // authoritative signal (unlike sourcePlaylistId, which goes null if the
-  // source is later deleted, even though this is still very much a
-  // generated playlist with nothing to sync from).
-  const isGenerated = playlist.youtubeId === null;
-  const fullySynced = !isGenerated && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
+  const isGenerated = playlist.origin === 'generated';
+  const isCreated = playlist.origin === 'created';
+  const fullySynced = playlist.origin === 'imported' && playlist.videoCount > 0 && playlist.downloadedCount === playlist.videoCount;
 
   return (
     <Stack direction="row" gap={1} alignItems="center" justifyContent="flex-end" flexWrap="wrap" sx={{ flexShrink: 0 }}>
       {playlist.syncStatus === 'generating' ? (
         <Chip label={t('playlists.generatingChip')} size="small" color="info" sx={{ fontSize: 11 }} />
+      ) : playlist.syncStatus === 'creating' ? (
+        <Chip label={t('playlists.creatingChip')} size="small" color="info" sx={{ fontSize: 11 }} />
       ) : isBusy ? (
         <>
           <Chip label={
@@ -43,6 +42,8 @@ export function StatusChips({ playlist, isBusy }: StatusChipsProps) {
         <>
           {isGenerated ? (
             <Chip label={t('playlists.generatedBadge')} size="small" color="secondary" sx={{ fontSize: 11 }} />
+          ) : isCreated ? (
+            <Chip label={t('playlists.createdBadge')} size="small" color="secondary" sx={{ fontSize: 11 }} />
           ) : fullySynced ? (
             <Tooltip title={playlist.lastSyncedAt ? t('playlists.syncedAgo', { time: timeAgo(playlist.lastSyncedAt, t) }) : ''}>
               <Chip
@@ -68,7 +69,7 @@ export function StatusChips({ playlist, isBusy }: StatusChipsProps) {
       {playlist.totalSize > 0 && (
         <Chip label={formatBytes(playlist.totalSize)} size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
       )}
-      {!isBusy && !isGenerated && !playlist.lastSyncedAt && (
+      {!isBusy && playlist.origin === 'imported' && !playlist.lastSyncedAt && (
         <Chip label={t('playlists.notSynced')} size="small" sx={{ fontSize: 11, bgcolor: 'divider', color: 'common.white' }} />
       )}
     </Stack>
