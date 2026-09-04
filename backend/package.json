@@ -12,6 +12,8 @@
     "prisma:studio": "prisma studio",
     "backfill:filenames": "node dist/scripts/renameLibraryFiles.js",
     "backfill:filenames:dev": "ts-node-dev --transpile-only src/scripts/renameLibraryFiles.ts",
+    "backfill:genres": "node dist/scripts/stripExcludedGenres.js",
+    "backfill:genres:dev": "ts-node-dev --transpile-only src/scripts/stripExcludedGenres.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

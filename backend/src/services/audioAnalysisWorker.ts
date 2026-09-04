@@ -5,6 +5,7 @@ import { getSharedFilePath } from './downloader';
 import { removePlaylistVideo, markVideoRemoved } from './syncService';
 import { bufferToFloat32Array, cosineSimilarity } from './embeddings';
 import { matchingAutoDeleteGenre } from './autoDeleteGenres';
+import { stripExcludedGenres } from './excludedGenres';
 import { writeTrackTags } from './id3Tags';
 
 const IDLE_POLL_MS = 60_000; // nothing pending, or the analysis service is unreachable
@@ -93,7 +94,7 @@ async function loop(): Promise<void> {
 
     try {
       const result = await analyzeAudio(getSharedFilePath(video.mediaFile.filename));
-      const genres = result ? result.genres.map(capitalizeFirst) : [];
+      const genres = result ? stripExcludedGenres(result.genres.map(capitalizeFirst)) : [];
       const embeddingBuffer = result ? Buffer.from(new Float32Array(result.embedding).buffer) : null;
       await prisma.playlistVideo.update({
         where: { id: video.id },

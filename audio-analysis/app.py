@@ -18,6 +18,15 @@ GENRE_LABELS_PATH = MODEL_DIR / "genre_discogs400-discogs-effnet-1.json"
 MAX_PARENT_GENRES = 3
 MIN_PARENT_SCORE = 0.12
 
+# Discogs400 top-level parent genres excluded from a track's returned
+# genres outright — too broad to be useful on their own (nearly every
+# dance/pop-adjacent track scores highly on "Electronic"), and sorting
+# alphabetically first in every genre list, it crowded out the far more
+# specific, more useful subgenre a track actually gets classified as
+# (House, Techno, etc.) — that subgenre is untouched by this exclusion,
+# since it comes from top_sub below, independent of parent ranking.
+EXCLUDED_PARENT_GENRES = {"Electronic"}
+
 app = FastAPI(title="audio-analysis")
 
 _mono_loader_cls = None
@@ -91,9 +100,10 @@ def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
         parent_scores[parent] = parent_scores.get(parent, 0.0) + float(score)
 
     ranked_parents = sorted(parent_scores.items(), key=lambda kv: kv[1], reverse=True)
-    genres = [name for name, score in ranked_parents[:MAX_PARENT_GENRES] if score >= MIN_PARENT_SCORE]
-    if not genres:
-        genres = [ranked_parents[0][0]]  # always keep at least the strongest genre
+    eligible_parents = [(name, score) for name, score in ranked_parents if name not in EXCLUDED_PARENT_GENRES]
+    genres = [name for name, score in eligible_parents[:MAX_PARENT_GENRES] if score >= MIN_PARENT_SCORE]
+    if not genres and eligible_parents:
+        genres = [eligible_parents[0][0]]  # always keep at least the strongest non-excluded genre
 
     if top_sub and top_sub not in genres:
         genres.append(top_sub)
