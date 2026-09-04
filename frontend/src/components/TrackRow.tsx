@@ -161,7 +161,7 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
 
       <Typography variant="caption" color="text.secondary" noWrap component="div"
         sx={{ width: TRACK_ROW_LAYOUT.playsWidth, flexShrink: 0, textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
-        <RollingPlaysCount videoId={v.id} playCount={v.playCount} isCurrentTrack={isCurrentTrack} />
+        <RollingPlaysCount videoId={v.id} playCount={v.playCount} />
       </Typography>
 
       {v.genres.length > 0 && (

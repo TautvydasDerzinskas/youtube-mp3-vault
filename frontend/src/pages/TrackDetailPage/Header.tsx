@@ -109,7 +109,7 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
               </Tooltip>
             )}
             <Chip size="small" variant="outlined"
-              label={<RollingPlaysCount videoId={video.id} playCount={video.playCount} isCurrentTrack={isCurrentTrack} hideWhenZero={false} />} />
+              label={<RollingPlaysCount videoId={video.id} playCount={video.playCount} hideWhenZero={false} />} />
           </Stack>
 
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>

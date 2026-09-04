@@ -20,11 +20,6 @@ const rollOut = keyframes`
 interface RollingPlaysCountProps {
   videoId: string;
   playCount: number;
-  // Only the row/chip for the track that's actually playing can ever be the
-  // target of a bump — every other instance no-ops immediately on it, so
-  // callers pass their own isCurrentTrack rather than this component
-  // guessing from context alone.
-  isCurrentTrack: boolean;
   // TrackRow's list column has always omitted itself entirely at zero
   // plays; the track detail page's Chip has always shown "0 plays" rather
   // than hiding. Defaults to true (TrackRow's behavior, the more common
@@ -40,10 +35,10 @@ interface RollingPlaysCountProps {
  * that moment, the old count slides down and out while the new one rolls
  * down from above it, odometer-style, instead of silently swapping — a
  * little reward for the row you're actually looking at when a play lands.
- * Off-screen (or if this isn't the current track, or IntersectionObserver
- * isn't available), the count still updates, just without the animation.
+ * Off-screen (or if IntersectionObserver isn't available), the count still
+ * updates, just without the animation.
  */
-export function RollingPlaysCount({ videoId, playCount, isCurrentTrack, hideWhenZero = true }: RollingPlaysCountProps) {
+export function RollingPlaysCount({ videoId, playCount, hideWhenZero = true }: RollingPlaysCountProps) {
   const { t } = useTranslation();
   const { justPlayedBump } = usePlayer();
   const elRef = useRef<HTMLSpanElement>(null);
@@ -56,7 +51,14 @@ export function RollingPlaysCount({ videoId, playCount, isCurrentTrack, hideWhen
   useEffect(() => setDisplayCount(playCount), [playCount]);
 
   useEffect(() => {
-    if (!isCurrentTrack || !justPlayedBump || justPlayedBump.videoId !== videoId || justPlayedBump.playCount === displayCount) return;
+    // Matched purely by videoId — deliberately NOT gated on "is this the
+    // current track," since by the time this bump actually arrives (after
+    // markPlayed's network round-trip), handleTrackEnded has already
+    // synchronously advanced `current` to the *next* track. The row that
+    // just finished is the one this bump is for, and it's no longer
+    // "current" by definition — gating on that here would mean this could
+    // never fire for the row it's actually meant for.
+    if (!justPlayedBump || justPlayedBump.videoId !== videoId || justPlayedBump.playCount === displayCount) return;
     const el = elRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') {
       setDisplayCount(justPlayedBump.playCount);
