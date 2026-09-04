@@ -3,7 +3,7 @@ import { prisma } from './prisma';
 import { isOnline } from './connectivity';
 import { parseVideoId, fetchVideoMetadata, searchTopMatches } from './youtube';
 import { parseArtistAndTitle } from './musicbrainz';
-import { splitArtistTitle, MATCH_TIERS_TRUSTED_NAME, isDurationPlausible } from './trackMatching';
+import { splitArtistTitle, MATCH_TIERS_TRUSTED_NAME, isDurationPlausible, foldForMatch } from './trackMatching';
 import { tryClaimSync, releaseSyncClaim, downloadPendingVideos } from './syncService';
 import { createLog } from './auditLog';
 
@@ -160,6 +160,23 @@ async function resolveTextLine(line: string, libraryCandidates: LibraryCandidate
   if (existingMatch) {
     console.log(`[create] "${line}" -> already in library as "${existingMatch.artist ?? existingMatch.channelName} - ${existingMatch.title}" (${existingMatch.youtubeId}), reusing instead of searching YouTube`);
     return toResolvedTrack(existingMatch);
+  }
+  // No library candidate cleared any tier. Rather than dumping the whole
+  // (potentially huge) library, log only "near miss" candidates — same
+  // folded title or same folded artist as what was typed — so "I already
+  // have this, why did it add a duplicate?" is diagnosable from server logs
+  // alone: this surfaces exactly which stored artist/title string didn't
+  // clear a tier, e.g. an extra parenthetical, differing punctuation, or a
+  // stray whitespace character that isn't visible in the UI.
+  const foldedArtist = foldForMatch(artist);
+  const foldedTitle = foldForMatch(title);
+  const nearMisses = libraryCandidates.filter((c) => {
+    const ca = c.artist ?? c.channelName ?? '';
+    return (foldedArtist !== '' && foldForMatch(ca) === foldedArtist) || (foldedTitle !== '' && foldForMatch(c.title) === foldedTitle);
+  });
+  if (nearMisses.length > 0) {
+    const summary = nearMisses.map((c) => `"${c.artist ?? c.channelName ?? '?'} - ${c.title}" (duration ${c.duration ?? 'unknown'})`).join('; ');
+    console.log(`[create] "${line}" (parsed as "${artist} - ${title}") found ${nearMisses.length} near-miss library candidate(s) that didn't clear a match tier: ${summary}`);
   }
 
   const query = `${artist} ${title}`;
