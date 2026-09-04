@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, IconButton, Tooltip, Avatar, Slider } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Avatar, Slider, Popover } from '@mui/material';
 import {
   MusicNote as MusicNoteIcon, Close as CloseIcon,
   SkipPrevious as SkipPreviousIcon, SkipNext as SkipNextIcon,
   Repeat as RepeatIcon, Shuffle as ShuffleIcon,
   Favorite as FavoriteIcon, FavoriteBorder as FavoriteBorderIcon,
   PlayArrow as PlayArrowIcon, Pause as PauseIcon,
+  VolumeUp as VolumeUpIcon, VolumeDown as VolumeDownIcon, VolumeOff as VolumeOffIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -52,26 +53,37 @@ export function MiniPlayer({
   const isMobile = useIsMobile();
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  // Mirrors audioEl.volume — kept in sync below via the native
+  // 'volumechange' event, so it stays correct whether it was changed here
+  // (the popover slider) or elsewhere (e.g. PlayerContext's Cmd/Ctrl+Up/Down
+  // shortcut, which sets audioEl.volume directly).
+  const [volume, setVolume] = useState(1);
+  const [volumeAnchorEl, setVolumeAnchorEl] = useState<HTMLElement | null>(null);
 
   // The <audio> element itself is native and unstyled (see the hidden
-  // element rendered below) — this mirrors its currentTime/duration onto
-  // state so the custom scrubber below can render them. Re-binds whenever
-  // the mobile/desktop layout swap remounts the underlying <audio> node
-  // (each layout renders its own, sharing the same ref).
+  // element rendered below) — this mirrors its currentTime/duration/volume
+  // onto state so the custom scrubber/volume slider below can render them.
+  // Re-binds whenever the mobile/desktop layout swap remounts the
+  // underlying <audio> node (each layout renders its own, sharing the same
+  // ref).
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
     const updateTime = () => setCurrentTime(audioEl.currentTime);
     const updateDuration = () => setDuration(audioEl.duration || 0);
+    const updateVolume = () => setVolume(audioEl.muted ? 0 : audioEl.volume);
     updateTime();
     updateDuration();
+    updateVolume();
     audioEl.addEventListener('timeupdate', updateTime);
     audioEl.addEventListener('durationchange', updateDuration);
     audioEl.addEventListener('loadedmetadata', updateDuration);
+    audioEl.addEventListener('volumechange', updateVolume);
     return () => {
       audioEl.removeEventListener('timeupdate', updateTime);
       audioEl.removeEventListener('durationchange', updateDuration);
       audioEl.removeEventListener('loadedmetadata', updateDuration);
+      audioEl.removeEventListener('volumechange', updateVolume);
     };
   }, [audioRef, isMobile]);
 
@@ -88,24 +100,42 @@ export function MiniPlayer({
     if (audioRef.current) audioRef.current.currentTime = time;
   };
 
+  const handleVolumeChange = (_event: Event, value: number | number[]) => {
+    const v = (Array.isArray(value) ? value[0] : value) / 100;
+    setVolume(v);
+    if (audioRef.current) {
+      audioRef.current.volume = v;
+      audioRef.current.muted = false;
+    }
+  };
+
   const thumbnail = (
     <Avatar src={thumbnailUrl ?? undefined} variant="rounded"
       sx={{ width: isMobile ? 48 : 40, height: isMobile ? 48 : 40, borderRadius: 1, flexShrink: 0 }}>
       <MusicNoteIcon />
     </Avatar>
   );
-  const previousButton = hasPrevious && (
+  // Always rendered (not conditionally hidden) so the control cluster never
+  // reflows as hasPrevious/hasNext change — just disabled, with the theme's
+  // default reduced opacity for a disabled IconButton. Tooltip needs its
+  // child wrapped in a <span> here: a disabled button fires no pointer
+  // events of its own for Tooltip to hook into.
+  const previousButton = (
     <Tooltip title={t('playlists.miniPlayer.previous')}>
-      <IconButton size="small" onClick={onPrevious} sx={{ flexShrink: 0 }}>
-        <SkipPreviousIcon fontSize="small" />
-      </IconButton>
+      <span>
+        <IconButton size="small" onClick={onPrevious} disabled={!hasPrevious} sx={{ flexShrink: 0 }}>
+          <SkipPreviousIcon fontSize="small" />
+        </IconButton>
+      </span>
     </Tooltip>
   );
-  const nextButton = hasNext && (
+  const nextButton = (
     <Tooltip title={t('playlists.miniPlayer.next')}>
-      <IconButton size="small" onClick={onNext} sx={{ flexShrink: 0 }}>
-        <SkipNextIcon fontSize="small" />
-      </IconButton>
+      <span>
+        <IconButton size="small" onClick={onNext} disabled={!hasNext} sx={{ flexShrink: 0 }}>
+          <SkipNextIcon fontSize="small" />
+        </IconButton>
+      </span>
     </Tooltip>
   );
   const playPauseButton = (
@@ -147,6 +177,34 @@ export function MiniPlayer({
         <CloseIcon sx={{ fontSize: 18 }} />
       </IconButton>
     </Tooltip>
+  );
+
+  const VolumeIcon = volume === 0 ? VolumeOffIcon : volume < 0.5 ? VolumeDownIcon : VolumeUpIcon;
+  const volumeButton = (
+    <>
+      <Tooltip title={t('playlists.miniPlayer.volume')}>
+        <IconButton size="small" onClick={(e) => setVolumeAnchorEl(e.currentTarget)} sx={{ flexShrink: 0 }}>
+          <VolumeIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Popover
+        open={Boolean(volumeAnchorEl)}
+        anchorEl={volumeAnchorEl}
+        onClose={() => setVolumeAnchorEl(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Box sx={{ height: 120, display: 'flex', alignItems: 'center', py: 2, px: 1.5 }}>
+          <Slider
+            orientation="vertical"
+            size="small"
+            value={volume * 100}
+            onChange={handleVolumeChange}
+            sx={{ color: 'primary.main' }}
+          />
+        </Box>
+      </Popover>
+    </>
   );
 
   const controlsRow = (
@@ -221,6 +279,7 @@ export function MiniPlayer({
           <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
             <Box sx={{ minWidth: 0, flexGrow: 1 }}>{titleBlock}</Box>
             {favouriteButton}
+            {volumeButton}
             {closeButton}
           </Box>
           {controlsRow}
@@ -260,7 +319,8 @@ export function MiniPlayer({
         {hiddenAudio}
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+        {volumeButton}
         {closeButton}
       </Box>
     </Box>

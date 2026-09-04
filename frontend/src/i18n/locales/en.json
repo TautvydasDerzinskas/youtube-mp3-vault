@@ -243,6 +243,7 @@
       "next": "Next",
       "play": "Play",
       "pause": "Pause",
+      "volume": "Volume",
       "repeat": "Repeat current song",
       "shuffle": "Shuffle",
       "backToPlaylist": "Back to playlist"
