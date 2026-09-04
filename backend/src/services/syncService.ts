@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
-import { fetchPlaylist } from './youtube';
+import { fetchPlaylist, fetchVideoMetadata } from './youtube';
 import { downloadVideo, publishToSharedStore, removeSharedFile, isPermanentlyUnavailable, isLikelyRateLimited, isAgeRestricted, isSignInRequired } from './downloader';
 import { resolvePlaylistMetadata } from './metadataWorker';
 import { resolvePlaylistQuality } from './slskdQualityWorker';
@@ -352,7 +352,35 @@ export async function refreshPlaylistFromYoutube(
           data: { missingSince: new Date() },
         });
       } else if (stillMissing) {
-        // Missing two syncs running — treat as genuinely removed.
+        // Missing two syncs running — but before treating this as genuinely
+        // removed, check the video itself directly (independent of any
+        // playlist) rather than assuming "absent from this playlist's
+        // scrape" always means "deliberately removed from it." The two
+        // causes look identical from the playlist scrape alone, but are very
+        // different in practice: a curator dropping it from the playlist vs.
+        // the video's own uploader (or YouTube) deleting/privating/taking it
+        // down entirely — the latter being far more common for a personal
+        // playlist nobody else edits. fetchVideoMetadata returns null only
+        // in the second case (see its own doc comment).
+        const stillOnYoutube = await fetchVideoMetadata(dbVideo.youtubeId);
+        if (!stillOnYoutube) {
+          // The video itself is gone — keep the already-downloaded track
+          // exactly as it is (file, downloadStatus, everything untouched)
+          // rather than losing it just because its source vanished; that's
+          // the entire point of archiving it locally in the first place.
+          // Just clear missingSince so this doesn't get re-checked again
+          // until it's missing for a fresh two-sync stretch.
+          await prisma.playlistVideo.update({
+            where: { id: dbVideo.id },
+            data: { missingSince: null },
+          });
+          console.log(`[sync] playlist ${playlistId}: kept ${dbVideo.youtubeId} — no longer on YouTube (deleted/private/taken down), already downloaded`);
+          continue;
+        }
+
+        // Still reachable on YouTube directly — genuinely dropped from this
+        // playlist's own curation, not a vanished video. Proceed exactly as
+        // before.
         await prisma.playlistVideo.update({
           where: { id: dbVideo.id },
           data: { downloadStatus: 'removed', mediaFileId: null, fileSize: null, bitrate: null, missingSince: null },
