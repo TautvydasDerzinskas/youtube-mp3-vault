@@ -15,7 +15,7 @@ function AppLayoutContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-    nowPlaying, nowPlayingVideo, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
+    nowPlaying, nowPlayingVideo, audioRef, isAudioPlaying, hasNext, hasPrevious, isRepeat, isShuffle,
     setIsAudioPlaying, handlePause, handleTrackEnded, playNext, playPrevious, toggleRepeat, toggleShuffle, handleClosePlayer,
     toggleFavourite,
   } = usePlayer();
@@ -70,6 +70,7 @@ function AppLayoutContent() {
           isFavourite={nowPlayingVideo?.isFavourite}
           onToggleFavourite={toggleFavourite}
           audioRef={audioRef}
+          isAudioPlaying={isAudioPlaying}
           hasNext={hasNext}
           hasPrevious={hasPrevious}
           isRepeat={isRepeat}

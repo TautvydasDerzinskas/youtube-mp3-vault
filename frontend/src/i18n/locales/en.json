@@ -241,6 +241,8 @@
       "close": "Close player",
       "previous": "Previous",
       "next": "Next",
+      "play": "Play",
+      "pause": "Pause",
       "repeat": "Repeat current song",
       "shuffle": "Shuffle",
       "backToPlaylist": "Back to playlist"

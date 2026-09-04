@@ -245,6 +245,8 @@
       "close": "Uždaryti grotuvą",
       "previous": "Ankstesnis",
       "next": "Kitas",
+      "play": "Groti",
+      "pause": "Pristabdyti",
       "repeat": "Kartoti dabartinę dainą",
       "shuffle": "Maišyti",
       "backToPlaylist": "Grįžti į grojaraštį"

@@ -1,9 +1,11 @@
-import { Box, Typography, IconButton, Tooltip, Avatar } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box, Typography, IconButton, Tooltip, Avatar, Slider } from '@mui/material';
 import {
   MusicNote as MusicNoteIcon, Close as CloseIcon,
   SkipPrevious as SkipPreviousIcon, SkipNext as SkipNextIcon,
   Repeat as RepeatIcon, Shuffle as ShuffleIcon,
   Favorite as FavoriteIcon, FavoriteBorder as FavoriteBorderIcon,
+  PlayArrow as PlayArrowIcon, Pause as PauseIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -15,6 +17,7 @@ interface MiniPlayerProps {
   isFavourite: boolean | undefined;
   onToggleFavourite: () => void;
   audioRef: React.RefObject<HTMLAudioElement>;
+  isAudioPlaying: boolean;
   hasNext: boolean;
   hasPrevious: boolean;
   isRepeat: boolean;
@@ -33,12 +36,57 @@ interface MiniPlayerProps {
   onTitleClick: () => void;
 }
 
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
+  const total = Math.floor(seconds);
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
 export function MiniPlayer({
-  title, artist, thumbnailUrl, isFavourite, onToggleFavourite, audioRef, hasNext, hasPrevious, isRepeat, isShuffle,
+  title, artist, thumbnailUrl, isFavourite, onToggleFavourite, audioRef, isAudioPlaying, hasNext, hasPrevious, isRepeat, isShuffle,
   onPlay, onPause, onEnded, onNext, onPrevious, onToggleRepeat, onToggleShuffle, onClose, onTitleClick,
 }: MiniPlayerProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  // The <audio> element itself is native and unstyled (see the hidden
+  // element rendered below) — this mirrors its currentTime/duration onto
+  // state so the custom scrubber below can render them. Re-binds whenever
+  // the mobile/desktop layout swap remounts the underlying <audio> node
+  // (each layout renders its own, sharing the same ref).
+  useEffect(() => {
+    const audioEl = audioRef.current;
+    if (!audioEl) return;
+    const updateTime = () => setCurrentTime(audioEl.currentTime);
+    const updateDuration = () => setDuration(audioEl.duration || 0);
+    updateTime();
+    updateDuration();
+    audioEl.addEventListener('timeupdate', updateTime);
+    audioEl.addEventListener('durationchange', updateDuration);
+    audioEl.addEventListener('loadedmetadata', updateDuration);
+    return () => {
+      audioEl.removeEventListener('timeupdate', updateTime);
+      audioEl.removeEventListener('durationchange', updateDuration);
+      audioEl.removeEventListener('loadedmetadata', updateDuration);
+    };
+  }, [audioRef, isMobile]);
+
+  const handlePlayPauseClick = () => {
+    const audioEl = audioRef.current;
+    if (!audioEl) return;
+    if (audioEl.paused) audioEl.play().catch(() => {});
+    else audioEl.pause();
+  };
+
+  const handleSeek = (_event: Event, value: number | number[]) => {
+    const time = Array.isArray(value) ? value[0] : value;
+    setCurrentTime(time);
+    if (audioRef.current) audioRef.current.currentTime = time;
+  };
 
   const thumbnail = (
     <Avatar src={thumbnailUrl ?? undefined} variant="rounded"
@@ -57,6 +105,16 @@ export function MiniPlayer({
     <Tooltip title={t('playlists.miniPlayer.next')}>
       <IconButton size="small" onClick={onNext} sx={{ flexShrink: 0 }}>
         <SkipNextIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+  const playPauseButton = (
+    <Tooltip title={t(isAudioPlaying ? 'playlists.miniPlayer.pause' : 'playlists.miniPlayer.play')}>
+      <IconButton onClick={handlePlayPauseClick} sx={{
+        flexShrink: 0, width: 44, height: 44, bgcolor: 'primary.main', color: 'primary.contrastText',
+        '&:hover': { bgcolor: 'primary.dark' },
+      }}>
+        {isAudioPlaying ? <PauseIcon /> : <PlayArrowIcon sx={{ ml: '2px' }} />}
       </IconButton>
     </Tooltip>
   );
@@ -91,6 +149,52 @@ export function MiniPlayer({
     </Tooltip>
   );
 
+  const controlsRow = (
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+      {shuffleButton}
+      {previousButton}
+      {playPauseButton}
+      {nextButton}
+      {repeatButton}
+    </Box>
+  );
+
+  const progressRow = (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+      <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, minWidth: 32, textAlign: 'right' }}>
+        {formatTime(currentTime)}
+      </Typography>
+      <Slider
+        size="small"
+        value={Math.min(currentTime, duration || 0)}
+        min={0}
+        max={duration || 0}
+        disabled={!duration}
+        onChange={handleSeek}
+        sx={{
+          color: 'primary.main',
+          py: 0.5,
+          '& .MuiSlider-rail': { opacity: 1, bgcolor: 'divider' },
+          '& .MuiSlider-thumb': {
+            width: 12, height: 12,
+            boxShadow: 'none',
+            '&:hover, &.Mui-focusVisible': { boxShadow: (theme) => `0 0 0 8px ${theme.palette.primary.main}29` },
+          },
+        }}
+      />
+      <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, minWidth: 32 }}>
+        {formatTime(duration)}
+      </Typography>
+    </Box>
+  );
+
+  // Kept mounted (never `controls`) purely as the actual playback engine —
+  // PlayerContext reads/drives it via audioRef, and the Web Audio graph for
+  // visualization taps it too. All transport UI above is custom.
+  const hiddenAudio = (
+    <audio ref={audioRef} onPlay={onPlay} onPause={onPause} onEnded={onEnded} style={{ display: 'none' }} />
+  );
+
   // Acts like "back to playlist" + auto-scroll to the playing track there —
   // see PlaylistDetailPage's scrollToNowPlaying handling.
   const titleBlock = (
@@ -113,36 +217,27 @@ export function MiniPlayer({
       <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
         borderTop: 1, borderColor: 'divider', px: 1, py: 0.75, display: 'flex', alignItems: 'center', gap: 1, zIndex: 1200 }}>
         {thumbnail}
-        {previousButton}
-        <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+        <Box sx={{ minWidth: 0, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
             <Box sx={{ minWidth: 0, flexGrow: 1 }}>{titleBlock}</Box>
             {favouriteButton}
+            {closeButton}
           </Box>
-          <audio
-            ref={audioRef}
-            controls
-            style={{ width: '100%', height: 28 }}
-            onPlay={onPlay}
-            onPause={onPause}
-            onEnded={onEnded}
-          />
+          {controlsRow}
+          {progressRow}
         </Box>
-        {nextButton}
-        {repeatButton}
-        {shuffleButton}
-        {closeButton}
+        {hiddenAudio}
       </Box>
     );
   }
 
   return (
     // 3-column grid (not a plain flex row) so the center cluster
-    // (prev/audio/next/repeat/shuffle) sits at the bar's true horizontal
-    // center regardless of how wide the left (thumbnail+title) or right
-    // (close button) content actually is — the two 1fr columns always claim
-    // equal space either side of the auto-sized center one, unlike a flex
-    // row where the center's position would shift with its neighbors' sizes.
+    // (controls + scrubber) sits at the bar's true horizontal center
+    // regardless of how wide the left (thumbnail+title) or right (close
+    // button) content actually is — the two 1fr columns always claim equal
+    // space either side of the auto-sized center one, unlike a flex row
+    // where the center's position would shift with its neighbors' sizes.
     <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, bgcolor: 'background.paper',
       borderTop: 1, borderColor: 'divider', px: 2, py: 1,
       display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 1.5, zIndex: 1200 }}>
@@ -159,19 +254,10 @@ export function MiniPlayer({
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        {previousButton}
-        <audio
-          ref={audioRef}
-          controls
-          style={{ height: 32, width: 'clamp(240px, 30vw, 500px)' }}
-          onPlay={onPlay}
-          onPause={onPause}
-          onEnded={onEnded}
-        />
-        {nextButton}
-        {repeatButton}
-        {shuffleButton}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, width: 'clamp(240px, 30vw, 500px)' }}>
+        {controlsRow}
+        {progressRow}
+        {hiddenAudio}
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

@@ -249,6 +249,8 @@
       "close": "Zamknij odtwarzacz",
       "previous": "Poprzedni",
       "next": "Następny",
+      "play": "Odtwórz",
+      "pause": "Wstrzymaj",
       "repeat": "Powtarzaj bieżący utwór",
       "shuffle": "Losowa kolejność",
       "backToPlaylist": "Wróć do playlisty"
