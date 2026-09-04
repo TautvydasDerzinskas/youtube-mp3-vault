@@ -56,6 +56,13 @@ interface PlayerContextType {
   stopIfPlaylist: (playlistId: string) => void;
   handleClosePlayer: () => void;
   toggleFavourite: () => void;
+  // Set once markPlayed's response comes back after a natural completion —
+  // a one-shot broadcast (not part of `current`/`nowPlaying`, which describe
+  // the *next* track by then) that TrackRow reads to animate its own Plays
+  // counter when this is the track it's rendering. Identity changes on every
+  // broadcast (see handleTrackEnded) so a row can tell a fresh bump apart
+  // from the same object lingering in context, even if playCount is unchanged.
+  justPlayedBump: { videoId: string; playCount: number } | null;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -76,6 +83,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const [isRepeat, setIsRepeat] = useState(false);
+  const [justPlayedBump, setJustPlayedBump] = useState<{ videoId: string; playCount: number } | null>(null);
   const [isShuffle, setIsShuffle] = useState(() => localStorage.getItem(SHUFFLE_STORAGE_KEY) === 'true');
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentRef = useRef(current);
@@ -378,7 +386,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const handleTrackEnded = useCallback(() => {
     const prev = currentRef.current;
-    if (prev) playlistsApi.markPlayed(prev.playlistId, prev.video.id).catch(() => {});
+    if (prev) {
+      const videoId = prev.video.id;
+      playlistsApi.markPlayed(prev.playlistId, videoId)
+        .then(({ playCount }) => setJustPlayedBump({ videoId, playCount }))
+        .catch(() => {});
+    }
 
     // Repeat loops the same track — restart it directly rather than
     // advancing `current` (which isn't changing, so the src-setting effect
@@ -565,6 +578,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     isAudioPlaying, setIsAudioPlaying, handlePause, audioRef, analyserNode,
     hasNext, hasPrevious, isRepeat, isShuffle, toggleRepeat, toggleShuffle,
     handleTogglePlay, playNext, playPrevious, handleTrackEnded, stopIfPlaylist, handleClosePlayer, toggleFavourite,
+    justPlayedBump,
   };
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

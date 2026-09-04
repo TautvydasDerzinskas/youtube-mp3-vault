@@ -12,6 +12,7 @@ import { PlaylistVideo } from '../api/youtube';
 import { formatDuration, formatGenre, STATUS_ICON, isLowBitrate } from '../pages/PlaylistsPage/utils';
 import { useTrackActions } from '../hooks/useTrackActions';
 import { TrackContextMenu } from './TrackContextMenu';
+import { RollingPlaysCount } from './RollingPlaysCount';
 
 export interface TrackRowProps {
   video: PlaylistVideo;
@@ -158,12 +159,10 @@ export function TrackRow({ video: v, playlistId, isCurrentTrack, isAudioPlaying,
         )}
       </Box>
 
-      {v.playCount > 0 && (
-        <Typography variant="caption" color="text.secondary" noWrap
-          sx={{ width: TRACK_ROW_LAYOUT.playsWidth, flexShrink: 0, textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
-          {t('artists.detail.totalPlayCount', { count: v.playCount })}
-        </Typography>
-      )}
+      <Typography variant="caption" color="text.secondary" noWrap component="div"
+        sx={{ width: TRACK_ROW_LAYOUT.playsWidth, flexShrink: 0, textAlign: 'left', display: { xs: 'none', sm: 'block' } }}>
+        <RollingPlaysCount videoId={v.id} playCount={v.playCount} isCurrentTrack={isCurrentTrack} />
+      </Typography>
 
       {v.genres.length > 0 && (
         <Tooltip title={v.genres.map(formatGenre).join(', ')}>

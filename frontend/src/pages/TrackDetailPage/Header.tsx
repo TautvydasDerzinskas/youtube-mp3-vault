@@ -12,6 +12,7 @@ import { formatDuration, formatGenre, normalizeGenreKey, allTracksGenreUrl, arti
 import { usePageBack, usePageTitle } from '../../contexts/PageBackContext';
 import { useTrackActions } from '../../hooks/useTrackActions';
 import { TrackContextMenu } from '../../components/TrackContextMenu';
+import { RollingPlaysCount } from '../../components/RollingPlaysCount';
 
 interface HeaderProps {
   playlistId: string;
@@ -107,7 +108,8 @@ export function Header({ playlistId, video, isCurrentTrack, isAudioPlaying, onTo
                 <Chip size="small" variant="outlined" label={t('playlists.trackDetail.hqLabel')} />
               </Tooltip>
             )}
-            <Chip size="small" variant="outlined" label={t('artists.detail.totalPlayCount', { count: video.playCount })} />
+            <Chip size="small" variant="outlined"
+              label={<RollingPlaysCount videoId={video.id} playCount={video.playCount} isCurrentTrack={isCurrentTrack} hideWhenZero={false} />} />
           </Stack>
 
           <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
